@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "radar-cangkang",
-      "runtimeExecutable": "pwsh",
+      "runtimeExecutable": "powershell",
       "runtimeArgs": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "website/serve.ps1"],
       "port": 8765
     }

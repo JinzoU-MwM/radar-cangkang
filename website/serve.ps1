@@ -498,8 +498,15 @@ function Get-Benchmark([string[]]$deals) {
       $peak = (@($pr | Where-Object { $_.d -ge $baseDate -and $_.d -le $runTo }) | ForEach-Object { $_.v } | Measure-Object -Maximum).Maximum
       $p0 = $after[0].v; $last = $after[-1].v
       if ($base -le 0 -or $p0 -le 0) { continue }
+      $peakDate = (@($pr | Where-Object { $_.d -ge $baseDate -and $_.d -le $runTo -and $_.v -eq $peak }) | Select-Object -First 1).d
+      $dayOf = { param($s) [int]([datetime]::ParseExact($s, "yyyy-MM-dd", $null) - $d0).TotalDays }
+      # Deret siklus: harga ÷ harga saat PTW dimulai, diukur dalam hari dari PTW (titik tiap ±3 hari bursa agar ringan).
+      $win = @($pr | Where-Object { $_.d -ge $preFrom })
+      $series = @(for ($i = 0; $i -lt $win.Count; $i += 3) { ,@((& $dayOf $win[$i].d), [Math]::Round($win[$i].v / $p0, 4)) })
       $rows += [ordered]@{ ticker = $sym; start = $start; base = $base; peak = $peak; p0 = $p0; last = $last
-        runupX = [Math]::Round($peak / $base, 2); postX = [Math]::Round($last / $p0, 2) }
+        runupX = [Math]::Round($peak / $base, 2); postX = [Math]::Round($last / $p0, 2)
+        baseDay = (& $dayOf $baseDate); peakDay = $(if ($peakDate) { & $dayOf $peakDate } else { $null }); lastDay = (& $dayOf $after[-1].d)
+        series = $series }
     } catch {}
     Start-Sleep -Milliseconds 200
   }

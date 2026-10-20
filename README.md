@@ -22,6 +22,10 @@ radar-cangkang/
 │   ├── pengendali-verified.json Profil pengendali baru
 │   ├── pandangan-analis.json    Pandangan analis per emiten
 │   ├── analisa.json             Catatan analis
+│   ├── aset-verified.json       Aset injeksi, transaksi & status KJPP per emiten
+│   ├── profil-pengendali.json   Profil pengendali per orang, pengurus & afiliasi pihak lawan
+│   ├── hsc.json                 Daftar saham HSC BEI
+│   ├── changelog.json           Catatan panel "Pembaruan Website"
 │   ├── .stockbit-token          token Bearer Stockbit, JANGAN dibagikan
 │   └── .lan-key                 kunci akses mode LAN, JANGAN dibagikan selain lewat link
 └── versi-claude/

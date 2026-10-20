@@ -170,7 +170,7 @@
                  "nilaiWajar":  {
                                     "bawah":  43,
                                     "atas":  100,
-                                    "metode":  "Bawah: nilai buku per saham pasca-placement; atas: harga placement Rp100 sebagai harga yang dibayar orang dalam."
+                                    "metode":  "Bawah: nilai buku per saham pasca-placement; atas: harga placement Rp100 sebagai harga yang dibayar insider."
                                 },
                  "pengendaliBergerak":  "GIGP masuk 87,48% (Apr 2026) lalu menjual bertahap ke 77,11% dan 65,86% (22 transaksi jual hingga 17 Sep 2026); Andry Hakim masuk 10,02% pada 16–17 Sep 2026.",
                  "likuiditas":  "Nilai transaksi rata-rata sekitar Rp206 juta/hari; keluar Rp100 juta dengan 20% volume butuh sekitar 2,4 hari, namun volume hari ini nol dan harga diam di Rp1.065 sejak 18 Sep 2026 sehingga likuiditas riil patut diragukan.",
@@ -886,7 +886,7 @@
                  "nilaiWajar":  {
                                     "bawah":  51,
                                     "atas":  90,
-                                    "metode":  "PBV 1,0–1,75 kali atas BVPS Rp51,39; batas atas mengasumsikan kontrak baru Rp83,34 M mengembalikan laba. Harga Rp25 milik Liqun hanya menjadi referensi lantai transaksi orang dalam, bukan nilai wajar."
+                                    "metode":  "PBV 1,0–1,75 kali atas BVPS Rp51,39; batas atas mengasumsikan kontrak baru Rp83,34 M mengembalikan laba. Harga Rp25 milik Liqun hanya menjadi referensi lantai transaksi insider, bukan nilai wajar."
                                 },
                  "pengendaliBergerak":  "Liqun naik dari 0 menjadi 24,25% (2 pembelian, Juli 2026). Kreatif Konstruksi Indonesia (2 penjualan, sisa 11,50%), Ling Sun (5,60% menjadi 0), dan Jinfeng Gao melepas di Rp25. Penjual adalah lingkaran pengendali lama, dan tidak ada pembelian di harga pasar.",
                  "likuiditas":  "Nilai transaksi harian sekitar Rp2,33 M (18,38 juta lembar × Rp127); posisi Rp100 juta keluar dalam kurang dari 1 hari (sekitar 0,2 hari pada 20% volume).",
