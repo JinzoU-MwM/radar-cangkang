@@ -1,0 +1,12 @@
+# Token Stockbit pribadi: jangan pernah di-commit atau diunggah
+.stockbit-token
+**/.stockbit-token
+.env
+**/.stockbit-refresh
+**/.stockbit-refresh-last.json
+**/.cache.sqlite*
+
+# build/runtime noise
+__pycache__/
+*.pyc
+.impeccable/

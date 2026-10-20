@@ -1,0 +1,54 @@
+{
+  "_petunjuk": "quote: harga dari halaman publik stockbit.com (tanpa token). reports: keterbukaan informasi BEI dari Stockbit Reports (butuh token di .stockbit-token). days = berapa hari ke belakang. skipTitle = regex judul laporan rutin yang diabaikan.",
+  "quote": {
+    "source": "page",
+    "url": "https://stockbit.com/symbol/{ticker}",
+    "mcapDivisor": 1000000000,
+    "fields": {
+      "name": "props.pageProps.company.name",
+      "price": "props.pageProps.company.lastprice",
+      "mcap": "",
+      "float": "",
+      "uma": "props.pageProps.company.uma",
+      "corpAction": "props.pageProps.company.corp_action.active",
+      "volume": "props.pageProps.company.volume",
+      "avgVolume": "props.pageProps.company.average"
+    }
+  },
+  "reports": {
+    "source": "api",
+    "url": "https://exodus.stockbit.com/stream/v3/symbol/{ticker}?category=STREAM_CATEGORY_REPORTS&report_type=REPORT_TYPE_ALL&last_stream_id=0&limit=30",
+    "days": 365,
+    "skipTitle": "Laporan Bulanan Registrasi Pemegang Efek|Laporan Keuangan|Penyampaian Laporan Tahunan|Laporan Keberlanjutan|Rencana Penyelenggaraan Public Expose",
+    "maxPages": 4
+  },
+  "backdoor": {
+    "_petunjuk": "include: emiten backdoor yang pasti dimasukkan ke Progress walau tidak ada di daftar penawaran tender. exclude: pengambilalihan yang bukan backdoor (emiten besar / go-private) dan disembunyikan. corpactionUrl: riwayat aksi korporasi per emiten untuk mencari tender lama.",
+    "include": ["ASPI","AGAR","AYLS","BIKE","BLUE","DOOH","EPAC","ELIT","FITT","FORU","FUTR","GPSO","IDEA","KDTN","LOPI","MBSS","MEJA","MGLV","MKNT","NAYZ","NINE","OLIV","PACK","PGJO","PIPA","SOFA","STAR","TRUK","TGUK","ULTJ","VISI","SMKM",
+                "DPUM","PNGO","KOKA","PTMR"],
+    "exclude": ["MAPI","TCID","SGRO","SUPR"],
+    "corpactionUrl": "https://exodus.stockbit.com/corpaction/{ticker}?limit=40"
+  },
+  "tenders": {
+    "_petunjuk": "Daftar penawaran tender seluruh BEI (butuh token). Emiten di sini otomatis masuk menu Progress emiten. minPercent: tender di bawah persentase ini (sisa saham/sukarela) diabaikan.",
+    "source": "api",
+    "url": "https://exodus.stockbit.com/corpaction/tenderoffer?limit=200",
+    "minPercent": 10
+  },
+  "news": {
+    "_petunjuk": "Berita masuk bila judul/ringkasan cocok 'keywords' (regex, tidak peka huruf besar) atau menyebut kode saham yang ada di radar. type rss = feed RSS; html = halaman daftar artikel + 'pattern' (regex URL artikel).",
+    "keywords": "backdoor|ganti pengendali|pengendali baru|pemegang saham pengendali|pengambilalihan|akuisisi|caplok|tender offer|penawaran tender|\\bMTO\\b|inbreng|rights issue|HMETD|private placement|PMTHMETD|RUPSLB|ganti nama|reverse takeover|divestasi|borong saham|aksi korporasi",
+    "sources": [
+      { "name": "IDX Channel",       "type": "rss",  "url": "https://sindikasi.idxchannel.com/rss/market-news" },
+      { "name": "Bloomberg Technoz", "type": "html", "url": "https://www.bloombergtechnoz.com/kanal/market", "pattern": "bloombergtechnoz\\.com/detail-news/\\d+" },
+      { "name": "Investor.id",       "type": "html", "url": "https://investor.id/market", "pattern": "investor\\.id/market/\\d+/" },
+      { "name": "CNBC Indonesia",    "type": "rss",  "url": "https://www.cnbcindonesia.com/market/rss" },
+      { "name": "CNN Indonesia",     "type": "rss",  "url": "https://www.cnnindonesia.com/ekonomi/rss" },
+      { "name": "Kontan",            "type": "html", "url": "https://investasi.kontan.co.id/", "pattern": "investasi\\.kontan\\.co\\.id/news/" },
+      { "name": "Katadata",          "type": "html", "url": "https://katadata.co.id/finansial", "pattern": "katadata\\.co\\.id/finansial/(bursa|korporasi)/" },
+      { "name": "EmitenNews",        "type": "html", "url": "https://www.emitennews.com/category/emiten", "pattern": "emitennews\\.com/news/" },
+      { "name": "Bisnis.com",        "type": "html", "url": "https://market.bisnis.com/bursa-saham", "pattern": "bisnis\\.com/read/" },
+      { "name": "detikFinance",      "type": "rss",  "url": "https://finance.detik.com/rss" }
+    ]
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "_info": {
+    "tanggal": "2026-10-15",
+    "dasar": "48 emiten backdoor di radar, 32 transaksi dengan data harga 3 tahun Stockbit, 233 laporan Stockbit Reports 30 hari terakhir, data story terverifikasi, dan riset profil pengendali 48 emiten.",
+    "disclaimer": "Analisa ini adalah kerangka berpikir dan pembacaan data, bukan rekomendasi beli/jual."
+  },
+  "update": {
+    "tesis": "Bacalah keterbukaan informasi seperti membaca niat pengendali: yang penting bukan banyaknya laporan, melainkan jenis laporannya. Uang dibuat oleh pihak yang membaca transaksi material dan perubahan kegiatan usaha lebih dulu, bukan oleh yang mengejar penjelasan volatilitas.",
+    "poin": [
+      "Hierarki sinyal. Tertinggi: rencana transaksi material, perubahan kegiatan usaha, inbreng, prospektus PMHMETD, dan laporan penilai (KJPP). Menengah: pemanggilan RUPSLB, perubahan pengurus. Rendah/derau: penjelasan atas volatilitas dan permintaan penjelasan bursa — itu tanda harga sudah bergerak, bukan tanda nilai bertambah.",
+      "Dalam 30 hari terakhir ada 233 laporan; aktivitas terpadat di PACK, INPS, MKNT, FORU, MGLV, dan DOOH. Kepadatan laporan setelah PTW selesai biasanya berarti fase injeksi aset sedang disiapkan — fase yang menentukan apakah harga bertahan.",
+      "Penempatan terbatas tanpa HMETD (INPS, MKNT) memberi saham baru kepada pihak tertentu tanpa hak pemegang saham publik. Selalu cek harga pelaksanaan terhadap harga pasar dan siapa pembelinya: jika di bawah pasar dan pembelinya afiliasi pengendali, publik yang menanggung dilusinya.",
+      "Transaksi afiliasi atau material tanpa persetujuan RUPS (SOFA) sah bila di bawah ambang aturan, tetapi justru di situ tata kelola diuji. Baca nilai transaksi, pihak lawan, dan laporan penilainya sebelum percaya pada cerita perubahan usaha.",
+      "Pengumuman kepemilikan saham terkonsentrasi tinggi dan penundaan RUPSLB (BIKE) adalah dua bendera kuning yang muncul bersamaan: likuiditas tipis membuat harga mudah digerakkan, dan jadwal korporasi yang mundur menandakan dokumen belum siap."
+    ],
+    "pantau": [
+      { "t": "ULTJ", "txt": "Rencana transaksi material dengan RUPSLB — inbreng Frisian Flag Rp14,57 T. Ini merger usaha operasional, bukan cangkang; kuncinya suara pemegang saham independen dan kewajaran nilai." },
+      { "t": "BIKE", "txt": "Akuisisi 72% PT Sumber Bara Abadi (batu bara), RUPSLB ditunda, kepemilikan terkonsentrasi. Tunggu jadwal RUPSLB baru dan laporan penilai." },
+      { "t": "INPS", "txt": "Penempatan terbatas + akuisisi 90% PT Tri Satria Indah Motor + pinjaman Rp6 M. Neraca tipis; nilai tambah bergantung pada kualitas anak usaha baru." },
+      { "t": "SOFA", "txt": "Transaksi material/afiliasi tanpa RUPS dan perubahan kegiatan usaha. Baca pihak lawan dan penilai." },
+      { "t": "TRUK", "txt": "Penawaran tender sukarela untuk memenuhi aturan OJK — biasanya terkait struktur kepemilikan/free float, bukan injeksi aset." },
+      { "t": "EPAC", "txt": "Transaksi afiliasi dan pemanggilan RUPSLB berjalan bersamaan; agenda RUPSLB akan menunjukkan arah usaha baru." }
+    ],
+    "aturan": [
+      "Laporan yang sama dikirim berulang (koreksi) sering berarti dokumen direvisi atas permintaan regulator — perhatikan apa yang berubah.",
+      "Berita media tanpa kode saham dalam konteks transaksi bukan sinyal; utamakan keterbukaan informasi resmi."
+    ]
+  },
+  "progress": {
+    "tesis": "Pada saham backdoor, keuntungan terbesar terjadi sebelum penawaran tender wajib diumumkan. Setelah PTW, rata-rata pasar sudah tidak memberi keunggulan: median harga kini 0,96× harga saat PTW dimulai. Yang menentukan sesudahnya hanya satu hal — apakah pengendali benar-benar memasukkan aset bernilai.",
+    "poin": [
+      "Harga PTW bukan lantai. Enam emiten kini di bawah harga PTW: KRYA (−52%), MMLP (−49%), GPSO (−46%), FORU (−31%), NINE (−31%), PNGO (−13%). Pengendali membeli lebih mahal dari pasar hari ini — pasar meragukan rencananya, atau rencananya belum dieksekusi.",
+      "PTW yang sedang berjalan diperdagangkan di atas harga tender: NAYZ (Rp90 vs Rp75), DOOH (Rp290 vs Rp148), MBSS (Rp3.650 vs Rp2.915). Pasar sudah membayar di muka untuk cerita berikutnya; tidak ada ruang arbitrase tender di sini.",
+      "Porsi publik di bawah 7,5% (PNGO 0,52%, FORU 1,63%) mewajibkan penjualan kembali saham ke publik (refloat). Refloat hampir selalu dilakukan dengan diskon — itu pasokan saham yang menekan harga, bukan katalis naik.",
+      "Tidak semua nama di kolom pengendali adalah pengambil alih. Hasil pengecekan: di 11 emiten (ULTJ, AGAR, TRUK, ELIT, ASPI, BLUE, KDTN, PTMR, TGUK, IDEA, LOPI) nama yang tercatat adalah pengendali lama/penjual. Sebagian transaksinya belum efektif (AGAR, ASPI, IDEA masih negosiasi), ditahan OJK (BLUE, KDTN, PTMR), atau bukan backdoor sama sekali (ELIT, LOPI). Konfirmasi satu-satunya: pengumuman PTW dengan harga dan jadwal.",
+      "Progres tonggak bukan nilai. Emiten dengan progres tinggi tetapi tanpa injeksi aset bermakna (contoh: STAR, AMMS) justru turun paling dalam dari puncaknya."
+    ],
+    "pantau": [
+      { "t": "MBSS", "txt": "Pembayaran PTW 15 Okt 2026. Setelah tender tuntas, harga kehilangan penopang — pantau perilaku harga pekan-pekan berikutnya." },
+      { "t": "NAYZ", "txt": "PTW berjalan sampai 3 Nov, harga 20% di atas tender. Pengendali masuk di Rp23,5; inbreng 75% Bangkok Tellink maks. USD125 juta (keterbukaan 5 Okt 2026) ≈ 9–10× kapitalisasi — penentu berikutnya adalah laporan penilai dan harga HMETD." },
+      { "t": "DOOH", "txt": "Harga hampir 2× harga tender. Injeksi 29,88% INET Rp2,01 T: nilai DOOH kini ikut bergantung pada harga INET." },
+      { "t": "PNGO", "txt": "Di bawah PTW dan porsi publik 0,52% — wajib refloat. Kombinasi pasokan dan likuiditas tipis." },
+      { "t": "MKNT", "txt": "Utang pengendali dikonversi menjadi saham di Rp1/saham: publik terdilusi 99,46% dan porsi publik tinggal ±0,41%. Contoh paling ekstrem bahwa progres tonggak bisa berarti kerugian bagi publik." }
+    ],
+    "aturan": [
+      "Urutan aman membaca progres: PTW selesai → RUPSLB perubahan usaha → penilaian aset (KJPP) → inbreng/PMHMETD → laporan keuangan pertama dengan usaha baru. Harga yang mendahului urutan ini adalah spekulasi.",
+      "Pengendali yang menambah porsi lewat pasar setelah PTW lebih kredibel daripada yang menambah porsi lewat penerbitan saham baru untuk dirinya sendiri."
+    ]
+  },
+  "story": {
+    "tesis": "Pasar tidak membayar cerita; pasar membayar aset besar yang benar-benar sudah masuk. Dari 32 transaksi, injeksi ≥Rp1 T yang sudah dieksekusi (FORU, PACK, MGLV) memiliki median harga kini 2,24× harga saat PTW. Injeksi ≥Rp1 T yang baru diumumkan (DOOH, NAYZ, SMKM, NINE) hanya 0,78×, dan injeksi kecil di bawah Rp300 M 0,68×. Pengumuman nilai besar belum dihargai; eksekusinya yang dihargai.",
+    "poin": [
+      "Ukuran relatif lebih penting dari jenis sektor. Aset tambang, data center, atau AI sama saja bila nilainya kecil terhadap kapitalisasi pasar: harga sudah naik berkali lipat untuk aset yang menambah sedikit laba.",
+      "Inbreng adalah transaksi saham baru untuk pengendali dengan imbalan aset. Bila penilai memberi nilai tinggi pada aset yang belum terbukti laba, pemegang saham publik terdilusi diam-diam. Periksa: laba historis aset, kelipatan valuasi terhadap emiten sejenis, dan masa kunci (lock-up) saham pengendali.",
+      "Pola dilusi berulang: pengendali masuk murah, membeli aset afiliasi dengan utang pemegang saham, lalu melunasi utang dengan saham baru. Contoh: MKNT (konversi utang di Rp1/saham, dilusi publik 99,46%), SOFA (rights issue, dilusi ±97%), DOOH (PMHMETD hingga 95,24% setelah masuk di diskon ±80%), INPS (penempatan terbatas Rp100 jauh di bawah PTW Rp552). Bila pengendali tidak menyetor uang segar di harga yang sama dengan publik, story-nya adalah transfer nilai, bukan penciptaan nilai.",
+      "Usaha campuran (MKNT: baja dan tambak udang) biasanya mendapat diskon konglomerasi — pasar sulit menilai, analis sulit meliput.",
+      "Injeksi berupa saham minoritas perusahaan tercatat lain (DOOH atas INET) tidak menciptakan nilai baru; nilai emiten menjadi turunan harga saham lain plus risiko tata kelolanya.",
+      "Emiten tanpa injeksi yang tetap bertahan (MBSS, BOGA, ASLI, PADA, AYLS: harga ≥1× PTW) umumnya diambil alih sebagai usaha yang sudah berjalan — itu akuisisi strategis, bukan backdoor cangkang, dan harus dinilai seperti saham biasa."
+    ],
+    "pantau": [
+      { "t": "ULTJ", "txt": "FrieslandCampina masuk lewat inbreng Frisian Flag Rp14,57 T dalam PMHMETD IV di Rp2.150 (±29–31%), RUPSLB 27 Okt 2026. Pembeli strategis global dengan aset riil — kualitas tertinggi di radar; risikonya dilusi bila tidak menebus HMETD." },
+      { "t": "FORU", "txt": "Inbreng 49% PT Borneo Prima Rp20,82 T sudah berjalan lewat PMHMETD; porsi publik 1,63% — refloat adalah risiko pasokan berikutnya." },
+      { "t": "SMKM", "txt": "Akuakultur udang: PAA ±USD100 juta (estimasi) + LOH Rp172,25 M, target selesai paling lambat 31 Mar 2027. SMKM juga sudah meminjamkan Rp30 M ke PAA (afiliasi) sebelum transaksi tuntas." },
+      { "t": "NAYZ", "txt": "75% Bangkok Tellink maks. USD125 juta (20% tunai, 80% inbreng HMETD), dengan batas atas: bila nilai penilai lebih rendah, nilai penilai yang dipakai. Klausul ini melindungi publik; yang belum diketahui adalah harga dan rasio HMETD." },
+      { "t": "NINE", "txt": "Opsi beli aset tambang Poh Group di Mongolia, indikatif ±USD150 juta, lewat rights issue tahap II. Masih opsi, belum transaksi." },
+      { "t": "BIKE", "txt": "Masuk batu bara lewat akuisisi 72% Sumber Bara Abadi; kapitalisasi sudah Rp5,65 T sebelum nilai aset jelas." },
+      { "t": "MKNT", "txt": "Injeksi Rp824,5 M (baja & udang) dibeli dari afiliasi tanpa RUPS, dibayar dengan utang yang dikonversi di Rp1/saham. Aset masuk, tetapi nilainya hampir seluruhnya jatuh ke pengendali." }
+    ],
+    "aturan": [
+      "Pertanyaan pertama untuk setiap story: berapa laba bersih aset yang masuk dibanding kapitalisasi pasar hari ini? Bila jawabannya tidak bisa dihitung, harga sedang memperdagangkan harapan.",
+      "Nilai injeksi yang berubah antarlaporan (contoh FORU: Rp21,24 T → Rp20,81 T) wajar; yang tidak wajar adalah nilai yang tidak pernah disebut sampai RUPSLB."
+    ]
+  },
+  "potensi": {
+    "tesis": "Distribusi hasil backdoor sangat miring: median kenaikan pra-rumor ke puncak 7,56×, kuartil 3,59–13,87×, ekstrem 113× (PACK). Rata-rata menipu. Setelah puncak, 14 dari 32 saham kehilangan ≥50% dan median harga kini hanya 0,96× harga saat PTW. Potensi nyata ada pada asimetri, bukan pada cerita.",
+    "poin": [
+      "Kenaikan yang terlalu panas memakan masa depannya sendiri. Saham dengan kenaikan pra-PTW ≥13× memiliki median harga kini 0,85× PTW; yang naik <5× justru 1,04×.",
+      "Jenis pengendali penting. Pengendali berupa SPV luar negeri (Pte Ltd/Limited, 9 transaksi) median 0,78× PTW; pengendali badan usaha dalam negeri/perorangan (23 transaksi) sekitar 0,99×. UBO yang jelas dan rekam jejak di Indonesia mengurangi risiko janji yang tidak dieksekusi.",
+      "Injeksi besar yang sudah dieksekusi adalah pembeda terkuat: median 2,24× (FORU, PACK, MGLV). Injeksi besar yang baru diumumkan 0,78× (DOOH, NAYZ, SMKM, NINE), dan injeksi kecil 0,68×. Asimetri ada di jarak antara pengumuman dan eksekusi, bila pengendalinya kredibel.",
+      "Harga PTW adalah biaya masuk pengendali, bukan lantai harga. Jarak harga kini ke PTW adalah ukuran risiko turun; jarak ke puncak siklus adalah ukuran optimisme yang sudah pernah dibayar pasar.",
+      "Peta jaringan pengendali. Grup Triple Berkah Bersama (Noprian Fadli) terhubung ke EPAC, MEJA, PIPA (lewat Morris Capital) dan memegang 5,17% GPSO. Sinar Mas lewat DSSA mengendalikan KETR dan MORA. Ekosistem Tinawati/WIFI terhubung dengan DOOH, INET, dan PADA. Saham dalam satu jaringan cenderung bergerak bersama dan rawan transaksi afiliasi — perlakukan sebagai satu eksposur, bukan diversifikasi.",
+      "Pembeli paling kredibel menurut riset pengendali: FrieslandCampina (ULTJ), AEP Plantations yang tercatat di LSE (PNGO), INET dengan pembayaran tunai (PADA), Wibowo Group dengan akuisisi tunai di harga sekitar pasar (MBSS), dan Sinar Mas (KETR, MORA). Red flag terberat: MKNT, KRYA, PGJO, DOOH, SOFA, INPS.",
+      "Kerangka asimetri: harga dekat atau di bawah PTW + pengendali domestik dengan UBO jelas + injeksi besar yang belum dieksekusi + porsi publik sehat (>7,5%). Hindari kombinasi: kenaikan >10× tanpa injeksi, SPV luar negeri dengan UBO kabur, injeksi kecil, porsi publik <7,5%."
+    ],
+    "pantau": [
+      { "t": "MORA", "txt": "Kenaikan 41,7× dan kapitalisasi Rp226 T tanpa injeksi aset terverifikasi — valuasi bertumpu sepenuhnya pada ekspektasi." },
+      { "t": "STAR", "txt": "Kenaikan 29× tanpa injeksi; kini 0,44× PTW. Contoh pola “puncak tanpa isi”." },
+      { "t": "KRYA", "txt": "SPV luar negeri, kini 0,25× harga saat PTW. Tokoh kunci dideportasi, RUPS berulang gagal kuorum, porsi pengendali menyusut dari ±62% ke 22,70% tanpa penjelasan." },
+      { "t": "NINE", "txt": "SPV luar negeri, injeksi belum bernilai, 0,26× harga saat PTW." },
+      { "t": "FORU", "txt": "Pola sebaliknya: injeksi Rp20,8 T, 3,02× harga saat PTW — tetapi porsi publik 1,63% wajib refloat." },
+      { "t": "MGLV", "txt": "Injeksi data center Rp2,54 T, 1,97× harga saat PTW: contoh story yang diisi aset." }
+    ],
+    "aturan": [
+      "Ukur posisi dengan skenario terburuk yang wajar: kembali ke harga PTW, atau ke harga pra-rumor bila pengendali tidak mengeksekusi rencana.",
+      "Saham backdoor likuiditasnya tipis; ukuran posisi harus ditentukan oleh kemampuan keluar, bukan oleh potensi naik."
+    ]
+  }
+}

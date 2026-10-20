@@ -1,0 +1,774 @@
+{
+    "_info":  "Story Emiten terverifikasi dari Stockbit Reports (dicek 15 Okt 2026). Prioritas di website: koreksi manual \u003e file ini \u003e data otomatis. Edit file ini untuk memperbaiki; kosongkan field bila memang belum disebut.",
+    "ASPI":  {
+                 "baru":  "",
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "target":  "",
+                 "sourceDate":  "2026-10-06",
+                 "sourceTitle":  "Penjelasan atas Permintaan Penjelasan Bursa",
+                 "note":  "PT GMP Group Investama masih bernegosiasi untuk mengambil alih 51,18% saham. CSPA belum ditandatangani, dan belum ada rencana bisnis atau injeksi aset yang diungkap. Belum ada rencana injeksi aset: transaksi masih tahap negosiasi/uji tuntas dan CSPA belum ditandatangani karena penelaahan dokumen perlu perpanjangan waktu (Public Expose Insidentil 29 Sep 2026). Calon pembeli PT GMP Group Investama adalah perusahaan holding dan perdagangan material bangunan asal Banyuasin, Sumatera Selatan; tujuan akuisisi disebut untuk menunjang pengembangan usaha dan ekspansi korporasi pembeli. Nilai transaksi dan jadwal penyelesaian masih dinegosiasikan.",
+                 "sumberTambahan":  [
+                                        "Andalan Sakti (ASPI) Gonta-ganti Calon Pengendali — EmitenNews, 2026-07-10",
+                                        "Laporan Hasil Public Expose - Insidentil — Stockbit Reports, 2026-09-30",
+                                        "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-10-06",
+                                        "Negosiasi Rencana Pengambilalihan PT Andalan Sakti Primaindo Tbk. — Stockbit Reports, 2026-07-10"
+                                    ]
+             },
+    "AGAR":  {
+                 "baru":  "",
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "target":  "",
+                 "sourceDate":  "2026-08-28",
+                 "sourceTitle":  "Penjelasan atas Permintaan Penjelasan Bursa (KOREKSI)",
+                 "note":  "Suprajitno Sutomo masih melakukan uji tuntas untuk pengambilalihan minimal 51% saham. Harga dan rencana bisnis baru belum diungkap. Tidak ada rencana injeksi aset yang diungkap; tujuan pengambilalihan hanya disebut untuk pengembangan usaha dan ekspansi bisnis. Per 28 Agustus 2026 Suprajitno Sutomo masih uji tuntas dan pembelian tambahan minimal 60 juta saham masih tahap penjajakan term sheet; harga dan jadwal penyelesaian belum disepakati.",
+                 "sumberTambahan":  [
+                                        "Pendiri Galeri Seni Ingin Koleksi Saham AGAR — EmitenNews, 2026-07-22",
+                                        "Saham AGAR Melonjak 186%, BEI Belum Lepas Suspensi Usai Rencana Ganti Pengendali — Kontan, 2026-07-22",
+                                        "Suprajitno Sutomo Siap Akuisisi AGAR, Harga Saham Naik 203% Sepekan — IDNFinancials, 2026-07 (tanggal persis tidak terbaca; halaman 403)",
+                                        "Penjelasan atas Permintaan Penjelasan Bursa (KOREKSI) — Stockbit Reports, 2026-08-28",
+                                        "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-07-28"
+                                    ]
+             },
+    "AYLS":  {
+                 "baru":  "Holding pertambangan, perdagangan mineral, logistik",
+                 "nominal":  "",
+                 "sourceDate":  "2026-06-25",
+                 "sourceTitle":  "Penyampaian Materi Public Expose - Tahunan",
+                 "injectType":  "Akuisisi",
+                 "injectTarget":  "PT Global Pacific Indonesia (4.900 saham)",
+                 "target":  "Pembelian 4.900 saham PT Global Pacific Indonesia sudah selesai 6 Okt 2026 (akta notaris); jadwal injeksi aset berikutnya belum diungkap",
+                 "note":  "Rencana transformasi menjadi holding belum disertai detail aset yang akan diinjeksi. Dibeli dari PT Gunung Daya Permata pada 6 Okt 2026; nilai belum disebut. Menurut Dirut Yang Chuan, pembelian saham GPI bertujuan memperkuat struktur kepemilikan dan memperluas sinergi usaha dengan entitas terkait (rantai pasok, distribusi, pengelolaan sumber daya). Nilai transaksi, persentase kepemilikan, dan bidang usaha GPI tidak diungkap. Per 22 Sep 2026 perseroan menyatakan rencana pengembangan usaha masih dievaluasi dan belum final.",
+                 "sumberTambahan":  [
+                                        "Arkayana (AYLS) Akuisisi 4.900 Saham GPI, Bidik Sinergi Operasional — Bisnis.com, 2026-10-07",
+                                        "AYLS Akuisisi Saham Global Pacific, Bidik Penguatan Aset dan Sinergi Usaha — Pasardana, 2026-10-07",
+                                        "Pembelian 4.900 lembar Saham PT Global Pacific Indonesia milik PT Gunung Daya Permata — Stockbit Reports, 2026-10-07",
+                                        "Transaksi Afiliasi (Opex Mei dan Agustus 2026) — Stockbit Reports, 2026-09-29",
+                                        "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-09-22",
+                                        "Bintang Cahaya Investment Resmi Jadi Pengendali Agro Yasa Lestari (AYLS) — Kontan, 2026-01-16"
+                                    ]
+             },
+    "BIKE":  {
+                 "baru":  "Superholding energi, konstruksi, dan teknologi",
+                 "injectType":  "Tambang batu bara",
+                 "injectTarget":  "PT Sumber Bara Abadi (45%)",
+                 "nominal":  "",
+                 "target":  "2027",
+                 "sourceDate":  "2026-10-12",
+                 "sourceTitle":  "Pemberitahuan Akuisisi PT Sumber Bara Abadi oleh PT Prambanan Nusantara Energi yang merupakan Anak Perusahaan BIKE (KOREKSI)",
+                 "note":  "Nilai akuisisi tidak disebut; US$84 juta adalah proyeksi pendapatan. Ada juga akuisisi 72% PT Berau Usaha Mandiri (2026-10-09). Rp1 triliun dari PMJ adalah pinjaman. Target 2027 adalah target efektifnya transformasi menjadi induk usaha (laporan 2026-08-19). Nilai akuisisi 45% Sumber Bara Abadi dan 72% Berau Usaha Mandiri belum disebut; proyeksi pendapatan SBA USD84 juta/tahun. Didanai pinjaman Rp1 T dari pengendali. Nilai akuisisi 72% PT Berau Usaha Mandiri (7 Okt 2026) dan 45% PT Sumber Bara Abadi (8 Okt 2026) melalui anak usaha PT Prambanan Nusantara Energi tidak diungkap di keterbukaan informasi maupun media; penjual dan sumber dana juga tidak disebut. Akuisisi SBA mencakup fasilitas pelabuhan, conveyor belt, kantor, dan peralatan. RUPSLB dan RUPS Independen dijadwalkan ulang ke 15 Okt 2026; kajian KJPP atas penguatan modal kerja dari pengendali masih berjalan (Public Expose Insidentil 24 Sep 2026).",
+                 "sumberTambahan":  [
+                                        "Pemberitahuan Akuisisi PT Sumber Bara Abadi oleh PT Prambanan Nusantara Energi (KOREKSI) — Stockbit Reports, 2026-10-12",
+                                        "Pemberitahuan PT Bhineka Inovasi Ketahanan Energi Tbk Resmi Akuisisi 72% Saham Perusahaan Tambang Batu Bara — Stockbit Reports, 2026-10-09",
+                                        "Bhineka Inovasi (BIKE) Akuisisi 72% Saham Berau Usaha Mandiri — Kontan, 2026-10-09",
+                                        "Serius ke Bisnis Tambang, BIKE Caplok Lagi 1 Perusahaan, Sahamnya ARA — EmitenNews, 2026-10-12",
+                                        "BIKE Akuisisi 45 Persen Saham Sumber Bara Abadi, Bidik Pendapatan USD84 Juta — Kabarbursa, 2026-10-12",
+                                        "Laporan Hasil Public Expose - Insidentil — Stockbit Reports, 2026-09-25"
+                                    ]
+             },
+    "BLUE":  {
+                 "baru":  "Jasa pertambangan",
+                 "injectType":  "Jasa tambang (akuisisi 99% saham)",
+                 "injectTarget":  "PT Huaan Mining Engineering",
+                 "nominal":  "Rp111,4 miliar",
+                 "sourceDate":  "2026-04-28",
+                 "sourceTitle":  "Penyampaian Informasi rencana Transaksi material - Rencana Transaksi Material Dengan Persetujuan RUPS",
+                 "target":  "Belum ditetapkan: RUPS Independen dan agenda perubahan usaha ditunda atas arahan OJK (2 Jun 2026) hingga POJK 9/2018 dipenuhi; jadwal baru belum diumumkan",
+                 "note":  "RUPS untuk transaksi ini ditunda atas arahan OJK. Persyaratan pendahuluan CSPA dengan Dragonmine masih berjalan per Juli 2026. Per 30 Jul 2026 pemenuhan persyaratan pendahuluan CSPA (diteken 18 Feb 2026) masih berlangsung. Per 8 Okt 2026 perseroan menyatakan tidak ada informasi material baru yang belum diungkap.",
+                 "sumberTambahan":  [
+                                        "Ganti Pengendali, Berkah Prima (BLUE) Bersiap Masuk Ekosistem EV — Kontan, 2026-02-23",
+                                        "Saham BLUE Masuk Radar UMA, Proses Akuisisi Dragonmine Masih Berjalan — IDX Channel, 2026-01-20",
+                                        "PENUNDAAN RAPAT UMUM PEMEGANG SAHAM INDEPENDEN — Stockbit Reports, 2026-06-03",
+                                        "Penyampaian Informasi Mengenai Perkembangan Negosiasi Sehubungan dengan Rencana Pengambilalihan PT Berkah Prima Perkasa Tbk — Stockbit Reports, 2026-07-30",
+                                        "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-10-08"
+                                    ]
+             },
+    "DOOH":  {
+                 "baru":  "Penyedia infrastruktur AI (ekosistem AI)",
+                 "injectType":  "Akuisisi saham (29,88%)",
+                 "injectTarget":  "PT Sinergi Inti Andalan Prima Tbk (INET)",
+                 "nominal":  "Rp2,01 T",
+                 "target":  "RUPSLB 9 November 2026",
+                 "sourceDate":  "2026-10-01",
+                 "sourceTitle":  "Rencana Transaksi Material Dengan Persetujuan RUPS",
+                 "note":  "Akuisisi dilakukan lewat entitas anak dan didanai pinjaman pemegang saham hingga Rp2 T. Ada juga rencana PMHMETD I maksimal 154,78 miliar saham yang menunggu RUPSLB yang sama."
+             },
+    "EPAC":  {
+                 "baru":  "Holding investasi (injeksi perusahaan teknologi)",
+                 "injectType":  "Akuisisi via share swap (RTO)",
+                 "injectTarget":  "PT Media Telekomunikasi Mandiri (MTM)",
+                 "nominal":  "",
+                 "sourceDate":  "2026-08-05",
+                 "sourceTitle":  "Penjelasan atas Permintaan Penjelasan Bursa",
+                 "target":  "RUPSLB 3 Nov 2026 (PMHMETD I maks. 2 miliar saham, buyback, penutupan segmen konvensional); jadwal share swap MTM belum ditetapkan",
+                 "note":  "Skema dan nilai akuisisi MTM belum final; Rp500 miliar adalah estimasi aset MTM. PMHMETD I maksimal 2 miliar saham menunggu RUPSLB 3 November 2026, dan segmen konvensional ditutup 31 Desember 2026. Aset MTM sekitar Rp500 M dan omzet sekitar Rp400 M; nilai transaksi share swap belum final. Per 5 Agu 2026 skema, nilai, dan struktur pemegang saham hasil share swap MTM belum final karena due diligence tertunda (MTM sedang restrukturisasi utang). Per 6 Okt 2026 dana PMHMETD I direncanakan untuk belanja modal, modal kerja, dan pembayaran sebagian utang; belum ada pembeli siaga.",
+                 "sumberTambahan":  [
+                                        "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-08-05",
+                                        "Pemanggilan Rapat Umum Pemegang Saham Luar Biasa — Stockbit Reports, 2026-10-12",
+                                        "Penjelasan atas Permintaan Penjelasan Bursa (PMHMETD I) — Stockbit Reports, 2026-10-06",
+                                        "Perkembangan Negosiasi Pengambilalihan (aset MTM sekitar Rp500 M) — Stockbit Reports, 2026-06-19",
+                                        "EPAC Diambil Alih Triple B, Bidik Jadi Holding Investasi — Kabarbursa, 2026-05"
+                                    ]
+             },
+    "ELIT":  {
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "target":  "",
+                 "sourceDate":  "2026-08-28",
+                 "sourceTitle":  "Ringkasan Risalah Rapat Umum Para Pemegang Saham Luar Biasa",
+                 "baru":  "Tetap: layanan cloud/managed IT (ekspansi ASEAN dan Eropa Barat; fokus AI dan keamanan siber)",
+                 "note":  "Tidak ada laporan pengambilalihan atau injeksi aset; hanya ada fasilitas pembiayaan BCA Syariah Rp60 miliar. Bukan kasus pengambilalihan dan tidak ada rencana injeksi aset: perseroan menyatakan tidak ada aksi korporasi dalam 3 bulan (per 28 Agu 2026) dan pengendali tidak berencana mengubah porsi. Sandiaga Uno masuk sebagai Komisaris sekaligus memimpin Strategic Advisory Council (siaran pers 26 Agu 2026); ekspansi organik ke ASEAN dengan Malaysia sebagai pijakan awal.",
+                 "sumberTambahan":  [
+                                        "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-08-28",
+                                        "Data Sinergitama Jaya Perluas Pasar Layanan Digital ke ASEAN — Antara, 2026-08-26",
+                                        "Jejak Sandiaga Uno dan Tsamanov Merentang dari MUTU, ELIT hingga MITI — IDX Channel, 2026-09-16",
+                                        "Laporan Hasil Public Expose - Tahunan — Stockbit Reports, 2026-06-19"
+                                    ]
+             },
+    "FITT":  {
+                 "baru":  "Holding investasi dan jasa tambang nikel",
+                 "injectType":  "Jasa tambang nikel (50% saham)",
+                 "injectTarget":  "PT Venturi Tambang Perkasa",
+                 "nominal":  "Rp46,5 miliar",
+                 "sourceDate":  "2026-06-24",
+                 "sourceTitle":  "Rencana Transaksi Material Dengan Persetujuan RUPS",
+                 "target":  "Akuisisi 50% VTP selesai 29 Jun 2026; perubahan nama/usaha efektif 1 Sep 2026; injeksi aset berikutnya belum diungkap",
+                 "note":  "Akuisisi sudah efektif per 29-30 Juni 2026. Satu laporan 2026-06-19 menyebut Rp56,83 miliar, berbeda dengan angka Rp46,5 miliar di laporan lain. Per 4 Sep 2026 perseroan menyatakan fokus menyelesaikan implementasi transaksi material dan perubahan kegiatan usaha utama; pengendali dan pemegang saham mayoritas tidak berencana bertransaksi saham. Angka Rp46,5 miliar konsisten di laporan 24 Jun dan Public Expose 23 Jun 2026; angka Rp56,83 miliar hanya muncul di satu laporan 19 Jun 2026.",
+                 "sumberTambahan":  [
+                                        "Jinlong Resources Resmi Jadi Pengendali Hotel Fitra (FITT) — CNBC Indonesia, 2025-12-17",
+                                        "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-09-04",
+                                        "Informasi atau Fakta Material lainnya — Stockbit Reports, 2026-06-30",
+                                        "Perubahan Nama Emiten — Stockbit Reports, 2026-09-01",
+                                        "Akuisisi Perusahaan Tambang, Hotel Fitra (FITT) Bidik Pembalikan Kinerja Keuangan — Investortrust, 2026-06"
+                                    ]
+             },
+    "FORU":  {
+                 "baru":  "Induk perusahaan tambang batu bara",
+                 "injectType":  "Inbreng saham (tambang batu bara kokas)",
+                 "injectTarget":  "PT Borneo Prima (49%)",
+                 "nominal":  "Rp20,82 T",
+                 "sourceDate":  "2026-09-14",
+                 "sourceTitle":  "Penyampaian Perbaikan dan/atau Tambahan Informasi atas Informasi Penting Sehubungan dengan PMHMETD I",
+                 "executed":  true,
+                 "target":  "Selesai: PMHMETD I/inbreng dilaksanakan 25 Sep–6 Okt 2026; pencatatan saham HMETD terakhir 13 Okt 2026 (total 170,08 miliar saham)",
+                 "note":  "PMHMETD I sudah dilaksanakan 25 September–6 Oktober 2026. Nilai inbreng berubah antarlaporan (Rp21,24 triliun di Juni, Rp20,81 triliun di Juli). Langkah berikutnya yang belum dijadwalkan: pemenuhan ketentuan free float (porsi publik sekitar 1,63%).",
+                 "sumberTambahan":  [
+                                        "Borneo, the new frontier of Swiss coal — Public Eye (siaran pers), 2023-06-19",
+                                        "FORU Launches IDR27.1 Trillion Rights Issue for Mining Acquisition — IDNFinancials, 2026",
+                                        "Pencatatan Saham — Stockbit Reports, 2026-10-13",
+                                        "Pencatatan Efek Bersifat Ekuitas dan Pra Pencatatan Saham — Stockbit Reports, 2026-09-25"
+                                    ]
+             },
+    "FUTR":  {
+                 "baru":  "Energi terbarukan dan infrastruktur air bersih",
+                 "injectType":  "Pengolahan air bersih (akuisisi 51% saham)",
+                 "injectTarget":  "PT Dumai Tirta Persada",
+                 "nominal":  "Rp141 M",
+                 "sourceDate":  "2026-10-01",
+                 "sourceTitle":  "Penandatanganan perjanjian jual beli saham bersyarat.",
+                 "target":  "Penyelesaian akuisisi 51% PT Dumai Tirta Persada paling lambat 30 Nov 2026 (atau tanggal lain yang disepakati)",
+                 "note":  "CSPA bersyarat dengan PT Adhi Karya ditandatangani 30 September 2026 lewat lelang. Pengalihan saham baru efektif setelah seluruh persyaratan pendahuluan CSPA terpenuhi; DTP mengelola sistem penyediaan air minum Kota Dumai, Riau, melalui skema KPBU. Sumber pendanaan Rp141 M belum diungkap.",
+                 "sumberTambahan":  [
+                                        "Adhi Karya Bakal Kantongi Rp1,9 Triliun Usai Jual Dua Anak Usaha — Fortune IDN, 2026-10-01",
+                                        "ADHI Lepas DTP Rp141 Miliar, FUTR Kuasai Mayoritas Air Minum Dumai — Fortune IDN, 2026-10-02",
+                                        "Futura (FUTR) Masuk Bisnis Air, Akuisisi Entitas ADHI — Bisnis.com, 2026-10-02",
+                                        "FUTR Bongkar Alasan Strategis Masuknya Ardhantara sebagai Calon Pengendali Baru — Warta Ekonomi, 2025-08-25",
+                                        "Futura Energi Global Milik Siapa? Ini Pengendali dan Bisnis Barunya Usai Akuisisi — IDX Channel, 2025-10-16",
+                                        "Penandatanganan perjanjian jual beli saham bersyarat — Stockbit Reports, 2026-10-01",
+                                        "Keterbukaan Informasi Mengenai Perubahan Struktur Kepemilikan PT Aurora Dhana Nusantara — Stockbit Reports, 2026-08-28"
+                                    ]
+             },
+    "GPSO":  {
+                 "baru":  "Industri komponen mekanikal dan permesinan",
+                 "injectType":  "Aset tanah dan pabrik (afiliasi)",
+                 "injectTarget":  "Aset PT Jaya Indah Casting",
+                 "nominal":  "Rp78,5 miliar",
+                 "sourceDate":  "2026-06-18",
+                 "sourceTitle":  "Perubahan dan/atau Tambahan Informasi atas Perubahan Kegiatan Usaha, Transaksi Material dan PMTHMETD",
+                 "target":  "Desember 2026 (target rights issue dan penyelesaian akuisisi Tahap I ±Rp700 miliar, indikatif); pembelian aset JIC Rp78,5 miliar disetujui RUPSLB 22 Juni 2026, tanggal AJB belum diungkap",
+                 "note":  "Didanai private placement Rp28,47 miliar (selesai Juli 2026) dan pinjaman bank Rp50 miliar. Aset disewakan kembali ke JIC Rp9,3 miliar per tahun. Rp78,5 miliar aset JIC adalah bagian awal dari rencana restrukturisasi Tjokro Group yang lebih besar: CSPA 20 Januari 2026 untuk sekitar Rp700 miliar (75% PT Pulogadung Tempajaya, 70% PT Tjokro Bersaudara Komponenindo, 70% PT Jakarta Marten Logamindo, serta tanah dan bangunan di Jababeka I dan EJIP), dengan proyeksi total aset GPSO sekitar Rp900 miliar dan tahap lanjutan hingga Rp3 T dalam 5–10 tahun.",
+                 "sumberTambahan":  [
+                                        "GPSO Siapkan Rights Issue untuk Akuisisi Rp700 Miliar — Kabarbursa, 2026-03-12",
+                                        "Masuk Tahap Awal Restrukturisasi, Tjokro Group Dorong GPSO Jadi Holding Bernilai Rp900 Miliar — BCA Sekuritas, 2026-01-22",
+                                        "Ringkasan Risalah RUPS Tahunan dan Luar Biasa — Stockbit Reports, 2026-06-24",
+                                        "Pengumuman Hasil PMTHMETD — Stockbit Reports, 2026-07-07"
+                                    ]
+             },
+    "IDEA":  {
+                 "baru":  "",
+                 "injectType":  "Penambahan modal (HMETD)",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "sourceDate":  "2026-09-29",
+                 "sourceTitle":  "Penjelasan atas Permintaan Penjelasan Bursa",
+                 "note":  "PT Nawasena Nugra Investama mengambil alih 66,58%; PMHMETD baru sebatas rencana tanpa nilai, jadwal, atau bisnis baru yang disebutkan.",
+                 "target":  "Belum ditetapkan; nilai dan jadwal penyelesaian akuisisi masih dinegosiasikan. Agenda terdekat: RUPSLB 23 Oktober 2026 (perubahan pengurus dan penyesuaian Pasal 3 AD ke KBLI 2025)",
+                 "sumberTambahan":  [
+                                        "Saham IDEA Melonjak usai Nawa Capital Bidik Akuisisi 66,58% — Fortune IDN, 2026-09-16",
+                                        "Nawasena Nugra Negosiasi Akuisisi 66,58% Idea Indonesia Akademi (IDEA) — Investortrust, 2026-09-16",
+                                        "Negosiasi Rencana Pengambilalihan PT Idea Indonesia Akademi Tbk — Stockbit Reports, 2026-09-16",
+                                        "Pemanggilan Rapat Umum Pemegang Saham Luar Biasa — Stockbit Reports, 2026-10-01"
+                                    ]
+             },
+    "KDTN":  {
+                 "baru":  "Perusahaan induk sektor mineral (tambang nikel)",
+                 "injectType":  "Tambang nikel",
+                 "injectTarget":  "PT Sherman Mineral Indonesia",
+                 "nominal":  "Rp93,06 miliar",
+                 "target":  "Akhir tahun 2026",
+                 "sourceDate":  "2026-05-22",
+                 "sourceTitle":  "Persetujuan Transaksi Material dengan RUPS Independen (KOREKSI)",
+                 "note":  "Akuisisi 99% saham ditargetkan rampung akhir tahun, tetapi per 9 Oktober 2026 RUPS Independen ditunda atas arahan OJK dan Ruby Mining menunda penyelesaian transaksi; aset hotel dijual Rp113,5 miliar.",
+                 "sumberTambahan":  [
+                                        "Puri Sentul Permai (KDTN) Dilirik Investor Hong Kong — IDX Channel, 2025-11-21",
+                                        "Pemilik Hotel Kedaton 8 Banting Setir ke Sektor Tambang Pascaakuisisi — IDNFinancials, 2026 (tanggal tidak tercantum di hasil)",
+                                        "Transaksi Tertunda, Investor Hong Kong Belum Kuasai 86 Persen Saham KDTN — Kabarbursa, 2026-10-09",
+                                        "Keterbukaan atas Informasi atau Fakta Material PT Puri Sentul Permai Tbk (KOREKSI) — Stockbit Reports, 2026-10-09"
+                                    ]
+             },
+    "LOPI":  {
+                 "injectType":  "Penambahan modal (PMTHMETD)",
+                 "injectTarget":  "",
+                 "sourceDate":  "2026-10-09",
+                 "sourceTitle":  "Pemanggilan Rapat Umum Pemegang Saham Luar Biasa",
+                 "baru":  "Tetap: logistik proyek dan freight forwarding (ekspansi ke sarana perkeretaapian bersama CRRC Qiqihar)",
+                 "nominal":  "Belum ditetapkan: maks. 110.001.128 saham (10%) pada harga min. 90% rata-rata 25 hari bursa; bukan injeksi aset",
+                 "target":  "RUPSLB ke-3 19 Oktober 2026; pelaksanaan maks. 2 tahun sejak persetujuan RUPS",
+                 "note":  "Tidak ada indikasi pengambilalihan; private placement maksimal 110.001.129 saham menunggu RUPSLB ke-3 tanggal 19 Oktober 2026 setelah dua rapat sebelumnya tidak kuorum. Dana PMTHMETD untuk memperkuat permodalan dan modal kerja, ditujukan bagi investor strategis yang identitasnya belum diungkap. Paralel ada rencana PMHMETD maks. 1,4 miliar saham (127,27%) yang memerlukan pernyataan efektif OJK.",
+                 "sumberTambahan":  [
+                                        "Logisticsplus (LOPI) Akan Private Placement dan Rights Issue Bernilai Jumbo, Intip Tujuannya — Investortrust, 2026-04-23",
+                                        "Tambah Modal, LOPI Bakal Private Placement 110 Juta Saham Baru — Bisnis.com, 2026-04-23",
+                                        "Pemanggilan Rapat Umum Pemegang Saham Luar Biasa — Stockbit Reports, 2026-10-09",
+                                        "Perolehan atau kehilangan kontrak penting (CRRC Qiqihar) — Stockbit Reports, 2026-08-13"
+                                    ]
+             },
+    "MBSS":  {
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "sourceDate":  "2026-08-03",
+                 "sourceTitle":  "Perubahan Struktur Pemegang Saham",
+                 "baru":  "Tetap: angkutan laut komoditas curah (batu bara, nikel) dan logistik maritim",
+                 "target":  "Tender wajib 9 September–8 Oktober 2026, pembayaran 15 Oktober 2026",
+                 "note":  "Rp4,21 triliun adalah harga akuisisi 82,5% saham oleh PT Wibowo Group Capital, bukan injeksi; belum ada rencana injeksi aset. Akuisisi strategis atas usaha berjalan; tidak ada rencana injeksi aset atau rights issue. WGC berencana mengembangkan segmen angkutan komoditas curah dan jasa pendukung logistik maritim secara bertahap, bersinergi dengan Gandasari Group; per 6 Oktober 2026 perseroan menyatakan tidak ada aksi korporasi yang memengaruhi pencatatan.",
+                 "sumberTambahan":  [
+                                        "MBSS Berganti Bos, Wibowo Group Capital Bidik Ekspansi Pelayaran dan Logistik — Katadata, 2026-08-03",
+                                        "Wibowo Group Capital Gelar Tender Wajib Saham Mitrabahtera Segara Sejati (MBSS) — Kontan Insight, 2026-09 (tanggal tepat tidak tercantum di hasil; jadwal juga di pengumuman KSEI 2026-09-08)",
+                                        "Keterbukaan Informasi Tentang Penawaran Tender Wajib — Stockbit Reports, 2026-09-08",
+                                        "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-10-06"
+                                    ]
+             },
+    "MEJA":  {
+                 "baru":  "Perusahaan holding (tambang batu bara)",
+                 "injectType":  "Tambang batu bara (inbreng saham)",
+                 "injectTarget":  "PT Trimata Coal Perkasa (45%)",
+                 "nominal":  "±USD100 juta (±Rp1,6 T, indikatif)",
+                 "target":  "Kuartal IV 2026",
+                 "sourceDate":  "2026-08-26",
+                 "sourceTitle":  "Tindak Lanjut Hasil RUPSLB dan Rencana Aksi Korporasi",
+                 "note":  "Nilai indikatif ±USD100 juta (±Rp1,6 T) untuk 45% TCP, merujuk penjualan 55% saham TCP ke pihak lain senilai USD100 juta (penjelasan ke BEI, Jan 2026; IDX Channel, Fortune IDN). Nilai final mengikuti penilaian KJPP DAZ \u0026 Rekan (ditunjuk 29 Sep 2026); uang muka Rp12 M sudah dibayar dan menjadi pengurang. Skema tukar saham/rights issue di kisaran Rp450–550 per saham."
+             },
+    "MGLV":  {
+                 "baru":  "Infrastruktur digital (AI)",
+                 "injectType":  "Penambahan modal (HMETD)",
+                 "injectTarget":  "PT Nextier Askara Center \u0026 PT Nextier GenAi Center",
+                 "nominal":  "Rp2,54 T",
+                 "target":  "22 Oktober 2026",
+                 "sourceDate":  "2026-09-10",
+                 "sourceTitle":  "Keterbukaan Informasi terkait Aksi Korporasi - Rencana Penambahan Modal dengan HMETD - 10092026",
+                 "note":  "Akuisisi NAC dan NGC sudah selesai 7 September 2026 tanpa nilai yang diungkap; Rp2,54 T adalah nilai maksimal PMHMETD I untuk pelunasan pengambilalihan, utang ke NDC, dan modal kerja.",
+                 "executed":  true,
+                 "sumberTambahan":  [
+                                        "Boy Thohir Masuk NextAI MGLV di Tengah Geliat Data Center, Bagaimana Prospeknya? — Katadata, 2026-09-29",
+                                        "Saham NexAI Digital Infrastruktur (MGLV) Melesat 450% Sepanjang 2026, Ini Penyebabnya — Kontan, 2026-09-07",
+                                        "Glenn T Sugita Masuk, MGLV Ubah Nama Jadi NexAI Digital Infrastruktur — EmitenNews, 2026 (tanggal tidak tercantum di hasil)",
+                                        "NexAI (MGLV) Muncul di Daftar Sponsor Persib Bareng Bank BJB (BJBR) — EmitenNews, 2026"
+                                    ]
+             },
+    "MKNT":  {
+                 "baru":  "Holding (baja dan tambak udang)",
+                 "injectType":  "Akuisisi produsen baja \u0026 tambak udang",
+                 "injectTarget":  "PT Citra Baru Steel \u0026 PT Radja Udang Malingping",
+                 "nominal":  "Rp824,5 miliar",
+                 "sourceDate":  "2026-06-09",
+                 "sourceTitle":  "Pengambilalihan Mayoritas Saham PT Citra Baru Steel dan PT Radja Udang Malingping",
+                 "note":  "Akuisisi sudah rampung; PMTHMETD Rp1,02 T (termasuk konversi utang Rp822,93 miliar) dicatatkan 30 September 2026, nama berubah menjadi PT Remitra Global International Tbk.",
+                 "executed":  true,
+                 "target":  "Rampung: akuisisi CBS dan RUM selesai; saham PMTHMETD diterbitkan 30 September dan dicatatkan 1 Oktober 2026; nama baru efektif 1 Oktober 2026",
+                 "sumberTambahan":  [
+                                        "Pengumuman Hasil Pelaksanaan Penambahan Modal Tanpa HMETD — Stockbit Reports, 2026-10-02",
+                                        "Perubahan Nama Perseroan — Stockbit Reports, 2026-10-02",
+                                        "Laporan Hasil Public Expose - Insidentil — Stockbit Reports, 2026-10-13"
+                                    ]
+             },
+    "NAYZ":  {
+                 "baru":  "Telekomunikasi dan teknologi",
+                 "sourceTitle":  "Laporan Informasi atau Fakta Material (Perjanjian Pengalihan Saham Bersyarat)",
+                 "nominal":  "maks. USD125 juta",
+                 "sourceDate":  "2026-10-05",
+                 "note":  "Nilai transaksi maksimal USD125 juta; bila nilai penilai independen lebih rendah, nilai penilai yang dipakai. 20% saham BTL dibayar tunai, 80% diinbrengkan Saiko dalam PMHMETD. Butuh persetujuan RUPS Independen.",
+                 "injectTarget":  "Bangkok Tellink Co., Ltd. (75%)",
+                 "injectType":  "Inbreng saham (HMETD) + tunai",
+                 "target":  "Belum ada tanggal pasti (indikatif): RUPS Independen dan PMHMETD dijadwalkan setelah tender wajib selesai (5 Oktober–3 November 2026, pembayaran 10 November 2026); RUPSLB PMHMETD ditargetkan dalam 12 bulan sejak 22 Juli 2026 (sekitar Juli 2027)",
+                 "sumberTambahan":  [
+                                        "NAYZ Siapkan Rights Issue untuk Inbreng Usaha Saiko, Rencana Penggunaan Kas Masih Dibahas — Stockwatch.id, 2026-07-23",
+                                        "NAYZ Akuisisi Bangkok Tellink, Bisnis Makanan Bayi Dilepas Bertahap — EmitenNews, 2026-10-05",
+                                        "Keterbukaan Informasi Tentang Penawaran Tender Wajib — Stockbit Reports, 2026-10-02",
+                                        "Penandatanganan Perjanjian Pengalihan Saham Bersyarat — Stockbit Reports, 2026-10-05"
+                                    ]
+             },
+    "NINE":  {
+                 "baru":  "Tambang batu bara (rencana)",
+                 "target":  "RUPSLB 18 November 2026",
+                 "sourceDate":  "2026-10-12",
+                 "sourceTitle":  "Keterbukaan Informasi sehubungan dengan Rencana PMHMETD I",
+                 "injectType":  "Aset tambang (opsi beli)",
+                 "injectTarget":  "Aset tambang Poh Group (PGGR), Mongolia",
+                 "nominal":  "indikatif ±USD150 juta",
+                 "note":  "PMHMETD I (maks 2,44 miliar saham) untuk modal kerja dan pembayaran utang; rights issue tahap kedua untuk akuisisi tambang batu bara belum menyebut target. Tahap II rights issue untuk injeksi aset tambang; opsi 9 bulan sejak 28 Des 2025 dengan valuasi dua penilai independen."
+             },
+    "OLIV":  {
+                 "baru":  "Ekosistem kendaraan komersial energi baru (NECV)",
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "target":  "Kuartal I 2027",
+                 "sourceDate":  "2026-05-08",
+                 "sourceTitle":  "Penjelasan atas Permintaan Penjelasan Bursa",
+                 "note":  "Belum ada injeksi aset maupun rights issue; belanja modal awal sekitar Rp50 miliar, dan bisnis furnitur dihentikan akhir 2026. Tidak ada rencana injeksi aset: transformasi ke ekosistem kendaraan niaga listrik (sewa, armada, baterai, IoT) dilakukan secara organik dengan capex awal sekitar Rp50 miliar; manajemen juga menyebut drone dan e-commerce. Per 10 September 2026 perseroan menyatakan tidak ada rencana aksi korporasi khusus dalam waktu dekat.",
+                 "sumberTambahan":  [
+                                        "Saham Oscar Mitra (OLIV) Melesat 315%, Ternyata Konsorsium Ini Mau Akuisisi 77,9% — Investortrust, 2025-09-17",
+                                        "Punya Pengendali Baru, OLIV Ganti Nama Perusahaan Jadi Atlas Nexus dan Rombak Pengurus — IDX Channel/RCTI+, 2026-07-13",
+                                        "Saham Atlas Nexus (OLIV) Disebut Bakal Menuju Rp85 — Investortrust, 2026-09-25",
+                                        "Laporan Hasil Public Expose - Tahunan — Stockbit Reports, 2026-06-12",
+                                        "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-09-10"
+                                    ]
+             },
+    "PACK":  {
+                 "baru":  "Tambang nikel",
+                 "injectType":  "Tambang nikel (akuisisi saham)",
+                 "injectTarget":  "PT Karyatama Konawe Utara \u0026 PT Konutara Sejati",
+                 "nominal":  "Rp742,98 miliar + Rp586,55 miliar",
+                 "sourceDate":  "2026-05-19",
+                 "sourceTitle":  "Pemberian Pinjaman serta Pembelian Saham Perusahaan",
+                 "executed":  true,
+                 "target":  "Tahap 14,625% (USD75,91 juta dari WPK) didanai pinjaman ke APR dan SCR pada 22 Mei 2026; tanggal penutupan tidak diungkap. Tahap sebelumnya (Denway, USD168,78 juta) lunas 28 Januari 2026",
+                 "note":  "Masing-masing 14,625% saham, didanai pinjaman perpetual Rp1,63 triliun dari pengendali PT Eco Energi Perkasa; perseroan membantah rencana rights issue. Nama pengendali di sumber adalah PT Eco Energi Perkasa (bukan \u0027Persada\u0027); pinjaman perpetual USD93,14 juta berbunga 8% per tahun, ditandatangani 14 Mei 2026.",
+                 "sumberTambahan":  [
+                                        "Usai Haji Isam Masuk, Abadi Nusantara (PACK) Akuisisi Dua Perusahaan Tambang Nikel — Investortrust, 2026-05-20",
+                                        "PACK Raih Pinjaman dari Pemegang Saham Utama — BCA Sekuritas, 2026-05-20",
+                                        "Emiten Haji Isam PACK Guyur 2 Anak Usaha Rp1,34 Triliun untuk Akuisisi Tambang — Katadata, 2026-05-27",
+                                        "Tuntaskan Akuisisi Strategis, PACK Siap Perkuat Lini Bisnis di Sektor Nikel — BCA Sekuritas, 2026-01-30",
+                                        "Keterbukaan Informasi sehubungan dengan Pemberian Pinjaman dari ANHI kepada PT APR dan PT SCR — Stockbit Reports, 2026-05-26"
+                                    ]
+             },
+    "PGJO":  {
+                 "baru":  "Tambang, perdagangan nikel \u0026 pelayaran",
+                 "injectType":  "Penyertaan modal anak usaha (tambang)",
+                 "injectTarget":  "PT Panca Pertiwi Tambang",
+                 "nominal":  "Rp47,5 miliar",
+                 "sourceDate":  "2026-08-11",
+                 "sourceTitle":  "Transaksi Material Tanpa Persetujuan RUPS",
+                 "note":  "Transformasi lewat penyertaan modal ke anak usaha internal (juga Rp64,9 miliar ke PT Samudera Sejahtera Shipping), bukan injeksi aset dari pihak luar.",
+                 "target":  "Telah dieksekusi: setoran Rp64,9 miliar ke SSS (29 Juni 2026), tugboat dan tongkang Rp62 miliar diserahterimakan 22 Juli 2026, dan setoran Rp47,5 miliar ke PPT (11 Agustus 2026); tidak ada target transaksi berikutnya yang diungkap",
+                 "sumberTambahan":  [
+                                        "Pigijo (PGJO) Mau Diambil Alih Perusahaan China, Saham Sentuh ARA — IDX Channel, 2025-04-17",
+                                        "Investor China Sah Akuisisi Mayoritas Saham PGJO, Banderol Jauh di Bawah Harga Pasar — Kontan Insight, 2025 (tanggal tidak tercantum di hasil)",
+                                        "Zheng Yuan Perbesar Porsi Saham Bahtera Bumi (PGJO) — Kontan, 2025-12-09",
+                                        "Transaksi Material Tanpa Persetujuan RUPS — Stockbit Reports, 2026-08-11",
+                                        "Pengadaan 1 unit Tugboat dan 1 unit Tongkang oleh PT Samudera Sejahtera Shipping — Stockbit Reports, 2026-07-22"
+                                    ]
+             },
+    "PIPA":  {
+                 "baru":  "Pengolahan gas alam (energi)",
+                 "injectType":  "Akuisisi perusahaan pengolahan gas alam",
+                 "injectTarget":  "PT Aztech Pandu Persada (75%)",
+                 "nominal":  "",
+                 "target":  "Kuartal IV 2026 / Kuartal I 2027",
+                 "sourceDate":  "2026-09-08",
+                 "sourceTitle":  "Penandatanganan CSPA atas Saham",
+                 "note":  "CSPA ditandatangani 7 September 2026 dengan pembayaran via saham baru atau surat utang; RUPSLB paling lambat Maret 2027. Nilai transaksi belum diungkap. Aset Aztech Pandu Persada Rp476 M; dibayar saham baru atau surat utang; nilai transaksi belum disebut. Nilai transaksi 75% Aztech Pandu Persada masih indikatif; nilai final ditentukan setelah uji tuntas dan penilaian KJPP Toto Suharto \u0026 Rekan (cut-off 30 September 2026), dibayar dengan saham baru dan/atau surat utang. Sebagai konteks, sejak September 2025 MCI menyatakan komitmen menyuntikkan aset sekitar Rp3 T secara bertahap ke sektor migas (indikatif, tidak dirinci per aset).",
+                 "sumberTambahan":  [
+                                        "Penunjukan KJPP Independen Rencana Transaksi Akuisisi Saham PT Aztech Pandu Persada — Stockbit Reports, 2026-10-01",
+                                        "Penandatanganan CSPA atas Saham — Stockbit Reports, 2026-09-08",
+                                        "Saham PIPA Melonjak, Oxala Energy Siap Akuisisi 75% Saham Perusahaan Migas — Kontan, 2026-09-09",
+                                        "Pengendali Lepas Seluruh Saham Multi Makmur Lemindo (PIPA), Morris Capital Kini Jadi Pengendali Baru — Investortrust, 2025-10-13",
+                                        "Morris Capital Akuisisi Multi Makmur (PIPA), Mau Suntik Duit Rp3 T — CNBC Indonesia, 2025-09-12",
+                                        "Morris Capital Akuisisi PIPA, Suntik Aset Rp3 Triliun untuk Ekspansi Bisnis Infrastruktur — BCA Sekuritas (IQPlus), 2025-10-01",
+                                        "Dikendalikan MCI, PIPA Transformasi Jadi Holding Investasi Energi — Warta Ekonomi, 2025-12-18",
+                                        "Noprian Fadli Masuk, RUPSLB PIPA Putuskan Komisaris-Direksi Baru — Bisnis.com, 2026-02-02 (judul/ringkasan hasil pencarian; halaman 403)"
+                                    ]
+             },
+    "SOFA":  {
+                 "baru":  "Induk investasi EBT (Waste-to-Energy)",
+                 "injectType":  "Investasi konsorsium PSEL",
+                 "injectTarget":  "Konsorsium PSEL Denpasar Raya \u0026 Bogor Raya",
+                 "nominal":  "Rp131,02 M",
+                 "target":  "Awal kuartal IV 2026 (pendaftaran PMHMETD)",
+                 "sourceDate":  "2026-09-29",
+                 "sourceTitle":  "Rencana Transaksi Perubahan Kegiatan Usaha (KOREKSI)",
+                 "note":  "Total kebutuhan dana Rp238,22 M (investasi konsorsium Rp131,02 M + modal kerja Rp107,2 M). Pinjaman Rp16,3 M dari pengendali tidak dihitung sebagai injeksi."
+             },
+    "STAR":  {
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "target":  "",
+                 "sourceDate":  "2026-06-23",
+                 "sourceTitle":  "Penyampaian Materi Public Expose - Tahunan",
+                 "baru":  "Tetap: perdagangan dan investasi/keuangan (anak usaha manajer investasi PT Foster Asset Management); belum ada arah usaha baru",
+                 "note":  "Tidak ada laporan tentang injeksi aset atau bisnis baru; hanya disebut ganti nama dari PT Buana Artha Anugerah Tbk. Tidak ada rencana injeksi aset: penjelasan bursa 8 Juni 2026 menyatakan tidak ada aksi korporasi dalam 3 bulan dan manajemen tetap fokus pada bisnis yang ada; tujuan pengendalian hanya disebut \u0027ekspansi bisnis\u0027 tanpa rincian.",
+                 "sumberTambahan":  [
+                                        "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-06-08",
+                                        "Penyampaian Materi Public Expose - Tahunan — Stockbit Reports, 2026-06-23",
+                                        "Ringkasan Risalah RUPST dan RUPSLB — Stockbit Reports, 2026-07-01",
+                                        "Calculus Akuisisi 32,19% STAR dari Ronny L, David Darius Haryadi Penerima Manfaat Akhir — TheEconopost, 2025-11-21",
+                                        "Buana Artha Anugerah (STAR) Ganti Pengendali, Calculus Investment Gantikan Kencana Selaras Sejahtera — SWA, 2025-11-21",
+                                        "IDX lifts suspension on STAR, who is behind Calculus Investment? — IDNFinancials, 2025-12 (ringkasan hasil pencarian; halaman 403)",
+                                        "Gelar RUPSLB Februari 2026, STAR Agendakan Perubahan Nama hingga Susunan Direksi — BCA Sekuritas, 2026-01"
+                                    ]
+             },
+    "TRUK":  {
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "sourceDate":  "2026-09-09",
+                 "sourceTitle":  "Penjelasan atas Permintaan Penjelasan Bursa",
+                 "baru":  "Tetap: logistik/transportasi darat (perseroan menegaskan tidak ada perubahan bidang usaha pasca-tender)",
+                 "target":  "Tender sukarela 6 November–7 Desember 2026 (perkiraan efektif OJK 4 November 2026; penjatahan 10 Desember, pembayaran 15 Desember 2026)",
+                 "note":  "Pengembangan bisnis baru 2026 masih tahap studi kelayakan; public expose 18 Agustus 2026 menegaskan tidak ada rencana diversifikasi di luar logistik. Belum ada rencana injeksi aset: penjelasan bursa 8 Oktober 2026 menegaskan tidak ada perubahan bidang usaha pasca-tender; pengembangan bisnis baru 2026 masih tahap studi kelayakan (9 September 2026).",
+                 "sumberTambahan":  [
+                                        "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-10-08",
+                                        "Informasi Tambahan dan/atau Perbaikan atas Pernyataan Penawaran Tender Sukarela — Stockbit Reports, 2026-09-28",
+                                        "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-09-09",
+                                        "Pengusaha Muda Gabriel Rey, Bidik Lagi Saham Guna Timur Raya (TRUK) — EmitenNews, 2026-09-25",
+                                        "Bidik Kendali TRUK, Gabriel Rey Siapkan Tender Rp48,3 Miliar — Bisnis.com, 2026-09-25",
+                                        "Investor Kripto Gabriel Rey Borong Saham CBRE, Siap Ekspansi ke Bisnis Migas — Liputan6, 2026-05-09",
+                                        "Gabriel Rey dan Andry Hakim Kuasai 20% Saham TRUK Senilai Rp37,24 Miliar — Buletin Finansial/Investor.id, 2026-09 (ringkasan hasil pencarian)"
+                                    ]
+             },
+    "TGUK":  {
+                 "baru":  "Perdagangan daging beku",
+                 "injectType":  "Penambahan modal (HMETD)",
+                 "nominal":  "",
+                 "target":  "Akhir tahun 2026",
+                 "sourceDate":  "2026-07-23",
+                 "sourceTitle":  "Tanggapan atas Permintaan Penjelasan Bursa",
+                 "injectTarget":  "PT Sumber Prima Anugrah Abadi (pengolahan daging; porsi belum diungkap) dan kerja sama strategis Bakso Sumber Seleras (ejaan IDX Channel)",
+                 "note":  "Visionary Capital Global mengambil alih 56,84% senilai Rp40,6 M (harga akuisisi pengendali, bukan injeksi). Rights issue akhir 2026 tanpa nilai. Dana rights issue (PMHMETD) direncanakan untuk pengembangan usaha, termasuk akuisisi PT Sumber Prima Anugrah Abadi; pelaksanaan ditargetkan akhir 2026 dengan syarat pencabutan suspensi, kondisi pasar, dan persetujuan regulator. Jumlah saham, harga, dan nilai belum diungkap.",
+                 "sumberTambahan":  [
+                                        "Keterbukaan Informasi atas Informasi atau Fakta Material — Stockbit Reports, 2026-10-05",
+                                        "Laporan Hasil Public Expose - Tahunan — Stockbit Reports, 2026-06-15",
+                                        "Teguk (TGUK) Ungkap Rencana Rights Issue, Dana untuk Akuisisi Perusahaan Daging — IDX Channel, 2026-06-15",
+                                        "Bursa Soroti Pendirian Visionary Capital Global, Ini Respons Teguk (TGUK) — IDX Channel, 2025-05-27",
+                                        "Pengendali Baru Platinum (TGUK) Kuasai 56,84% Saham, Harga Akuisisi Cuma Rp 20 — Kontan, 2026-10-05",
+                                        "Investor Borong Saham TGUK, Visionary Capital Jadi Pengendali — Fortune IDN, 2026-10-05"
+                                    ]
+             },
+    "ULTJ":  {
+                 "baru":  "Industri susu (integrasi Frisian Flag Indonesia)",
+                 "injectType":  "Inbreng saham (PMHMETD IV)",
+                 "injectTarget":  "PT Frisian Flag Indonesia (100%)",
+                 "nominal":  "Rp14,57 T",
+                 "target":  "RUPSLB 27 Oktober 2026",
+                 "sourceDate":  "2026-09-18",
+                 "sourceTitle":  "Rencana Transaksi Material Dengan Persetujuan RUPS",
+                 "note":  "FrieslandCampina International Holding B.V. akan menjadi pengendali baru. Tanggal penyelesaian inbreng belum disebut."
+             },
+    "VISI":  {
+                 "baru":  "Induk usaha sektor kesehatan (rumah sakit)",
+                 "injectType":  "Rumah sakit",
+                 "injectTarget":  "PT Hasna Medika Bakti Cirebon (72,91%)",
+                 "nominal":  "Rp286 miliar",
+                 "sourceDate":  "2026-10-02",
+                 "sourceTitle":  "Ringkasan Risalah RUPSLB dan RUPS Independen",
+                 "target":  "Kuartal IV 2026, selambat-lambatnya 23 Oktober 2026 (RUPSLB 30 September 2026 sudah menyetujui)",
+                 "note":  "RUPSLB 30 September 2026 sudah menyetujui. Nilai Rp286 miliar dari laporan 25 Agustus 2026 (Rp255 M saham baru + Rp31 M pembelian), didanai PMTHMETD. Ringkasan Stockbit atas laporan 28 September 2026 menyebut total nilai transaksi Rp319,45 M, berbeda dari Rp286 M (Rp255 M saham baru + Rp31 M pembelian) di laporan 25 Agustus 2026 dan media; perlu verifikasi ke dokumen keterbukaan. Harga pelaksanaan dan investor PMTHMETD belum diungkap.",
+                 "sumberTambahan":  [
+                                        "VISI Akuisisi Hasna Medika Rp286 Miliar, Kuasai 72,91 Persen — Fortune IDN, 2026-08-26",
+                                        "Rencana Transaksi Material Dengan Persetujuan RUPS — Stockbit Reports, 2026-09-28",
+                                        "Ringkasan Risalah RUPSLB dan RUPS Independen — Stockbit Reports, 2026-10-02"
+                                    ]
+             },
+    "SMKM":  {
+                 "baru":  "Akuakultur terintegrasi (udang)",
+                 "injectType":  "Akuisisi perusahaan akuakultur",
+                 "injectTarget":  "PAA (Panasia Aquaculture) dan LOH",
+                 "target":  "Kuartal I 2027",
+                 "sourceDate":  "2026-10-06",
+                 "sourceTitle":  "Penyampaian Press Rilis Perseroan",
+                 "nominal":  "±USD100 juta (PAA) + Rp172,25 M (LOH)",
+                 "note":  "Long stop date CSPA PAA diperpanjang ke 30 Juni 2027. Rights issue direncanakan semester II 2026 - kuartal I 2027. Nilai belum diungkap. Nilai PAA estimasi; final menunggu penilai independen. Target selesai paling lambat 31 Maret 2027."
+             },
+    "DPUM":  {
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "sourceDate":  "2026-09-15",
+                 "sourceTitle":  "Penjelasan atas Volatilitas Transaksi",
+                 "baru":  "Tetap: pengolahan dan ekspor hasil laut (sinergi rantai pasok dan distribusi Unirama Group)",
+                 "target":  "PTW 24 September–23 Oktober 2026, pembayaran 9 November 2026; jadwal rights issue belum diungkap",
+                 "note":  "PT Rama Indonesia jadi pengendali (59,24%, Rp217,65 miliar = harga akuisisi). Tidak ada rencana aksi korporasi dalam waktu dekat. Akuisisi strategis usaha berjalan; tidak ada rencana injeksi aset. Fokus pengendali: tata kelola, optimalisasi fasilitas, modal kerja, utilisasi kapasitas; ekspansi organik dengan capex sekitar Rp100 M yang didanai kombinasi rights issue dan surat utang (nilai dan jadwal belum diungkap).",
+                 "sumberTambahan":  [
+                                        "Informasi mengenai profil, dukungan, dan rencana strategis PT Rama Indonesia sebagai pemegang saham pengendali baru Perseroan — Stockbit Reports, 2026-09-15",
+                                        "Tindak Lanjut atas Rencana Pelaksanaan Penawaran Tender Wajib — Stockbit Reports, 2026-08-28",
+                                        "Penyampaian Informasi Kinerja, Prospek Usaha, dan Rencana Ekspansi Perseroan Pasca Kebakaran — Stockbit Reports, 2026-06-25",
+                                        "Resmi Jadi Pengendali, Rama Indonesia Ungkap Fokus Pengembangan Dua Putra (DPUM) — Investortrust, 2026-09-14",
+                                        "DPUM Siapkan Rights Issue dan Obligasi untuk Ekspansi Produksi — Bisnis.com, 2026-06-25"
+                                    ]
+             },
+    "PNGO":  {
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "sourceDate":  "2026-09-16",
+                 "sourceTitle":  "Laporan Informasi Fakta dan Material atas Perubahan Kegiatan Usaha Perseroan",
+                 "baru":  "Tetap: perkebunan kelapa sawit dan karet terintegrasi di Sumatera Selatan (bagian AEP Plantations Group)",
+                 "target":  "Refloat agar porsi publik minimal 15% paling lambat 31 Maret 2029 (skema dan jadwal belum diungkap; pengendali sedang menjajaki calon investor)",
+                 "note":  "AEP Nusantara Holdings memegang 99,48%. Perubahan KBLI hanya perampingan tanpa bisnis baru. Ada rencana refloat saham pasca tender offer. Akuisisi strategis usaha berjalan; tidak ada rencana injeksi aset AEP lain ke PNGO. Laporan interim AEP (2 September 2026) hanya menyebut rencana IPO terpisah PT AEP Nusantara Plantations Tbk (anak usaha Kalimantan) yang dipertimbangkan pada 2027. Total imbalan untuk sekitar 99,48% sekitar USD160,2 juta, didanai kas internal.",
+                 "sumberTambahan":  [
+                                        "Penjelasan atas Permintaan Penjelasan Bursa (free float/refloat) — Stockbit Reports, 2026-09-04",
+                                        "Laporan Informasi Fakta dan Material atas Perubahan Kegiatan Usaha Perseroan — Stockbit Reports, 2026-09-16",
+                                        "AEP Plantations Plc Interim results for the six months ended 30 June 2026 (RNS) — FCA NSM/London Stock Exchange, 2026-09-02"
+                                    ]
+             },
+    "KOKA":  {
+                 "baru":  "Konstruksi dan perdagangan (anak usaha baru)",
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "target":  "",
+                 "sourceDate":  "2026-07-09",
+                 "sourceTitle":  "Pendirian anak usaha",
+                 "note":  "Pendirian PT Pacific Construction Group (51%) dan PT Koka Trading International (98%), bukan injeksi aset. Tidak ada rencana injeksi aset: penjelasan 24 Juli 2026 menyatakan tidak ada aksi korporasi dalam 3 bulan. Ekspansi berjalan lewat anak usaha baru (Pacific Construction Group 51%, Koka Trading International 98%) dan kontrak konstruksi (Rp31,30 M dan Rp52,04 M). Rencana awal Ningbo Lixing mengambil 63,50% belum terealisasi; harga akhir dan tanggal penyelesaian masih dibahas (CNBC, 20 November 2025).",
+                 "sumberTambahan":  [
+                                        "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-07-24",
+                                        "Keterbukaan Informasi atas Penandatanganan Perjanjian Jual Beli Saham — Stockbit Reports, 2026-07-17",
+                                        "Perluas Bisnis Konstruksi, Pengendali KOKA Kembali Lepas Saham ke Liqun Investments — IDX Channel, 2026-07-18",
+                                        "KOKA Ungkap Calon Pengendali Baru Asal Tiongkok — EmitenNews, 2025-09-16",
+                                        "Perusahaan China Ramai-Ramai Caplok Emiten Kecil di RI, Ada Apa? — CNBC Indonesia, 2025-11-20"
+                                    ]
+             },
+    "PTMR":  {
+                 "baru":  "Pelayaran (perusahaan holding)",
+                 "injectType":  "Akuisisi perusahaan pelayaran",
+                 "injectTarget":  "PT Samudera Layar Nusantara (49%)",
+                 "nominal":  "Rp88,05 miliar",
+                 "sourceDate":  "2026-05-19",
+                 "sourceTitle":  "Rencana Transaksi Material Dengan Persetujuan RUPS (KOREKSI)",
+                 "target":  "Belum ada jadwal baru: target awal 29 Januari 2026 lewat dan RUPS 19 Juni 2026 dibatalkan atas arahan OJK; per 28 September 2026 RUPSLB menunggu selesainya pemeriksaan OJK, dengan penagihan piutang afiliasi dijadwalkan Oktober–31 Desember 2026",
+                 "note":  "RUPS 19 Juni 2026 dibatalkan atas arahan OJK. Per 11 September 2026 rencana akuisisi masih menunggu arahan OJK. Nilai CSPA Deep Source disebut sekitar Rp145,73 M (sekitar Rp99/saham untuk 1,47 miliar saham) oleh IDX Channel (21 November 2025), berbeda dari Rp141,45 M di sumber lain; perlu verifikasi.",
+                 "sumberTambahan":  [
+                                        "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-09-28",
+                                        "Pembatalan RUPSLB dan Independen — Stockbit Reports, 2026-06-17",
+                                        "Master Print (PTMR) Perkirakan Akuisisi oleh Deep Source Tuntas Awal 2026 — IDX Channel, 2025-11-21",
+                                        "Calon Pengendali Baru Master Print (PTMR) Terungkap, Bisnis di Sektor Komoditas — IDX Channel, 2025-06-26",
+                                        "Identitas Calon Investor Master Print (PTMR) Terbuka, Transaksi di Akhir Masa Lock-Up — TheEconopost, 2025-06-27",
+                                        "Deep Source Holdings Limited (HKG:0990) company summary — Jitta, diakses 2026-10-15"
+                                    ]
+             },
+    "KETR":  {
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "sourceDate":  "2026-06-08",
+                 "sourceTitle":  "Pernyataan Penawaran Tender Sukarela",
+                 "baru":  "Tetap: infrastruktur kabel serat optik/SKKL dan jaringan telekomunikasi (sinergi ekosistem telekomunikasi Grup Sinar Mas)",
+                 "target":  "RUPSLB 12 November 2026 (konfirmasi pengendali hasil tender sukarela dan perubahan direksi/komisaris)",
+                 "note":  "Ada laporan \u0027Rencana Transaksi Perubahan Kegiatan Usaha\u0027 (2025-09-29) tanpa rincian; Rp520,09 miliar adalah nilai tender sukarela IMBS, bukan injeksi. Tidak ada rencana injeksi aset yang diumumkan; motif akuisisi adalah sinergi usaha dan penguatan posisi grup di infrastruktur telekomunikasi. Crossing 28 September 2026: 994,44 juta saham di Rp523 (sekitar Rp520,06 M) adalah harga pengendali, bukan injeksi. IMBS dimiliki 99% PT DSST Mas Gemilang. Merger EMR (anak usaha DSSA) ke MORA adalah transaksi terpisah; KETR sudah bermitra 50:50 dengan MORA di SKKL RISING-8.",
+                 "sumberTambahan":  [
+                                        "Pemanggilan RUPSLB — Stockbit Reports, 2026-10-13",
+                                        "Perubahan dalam pengendalian baik langsung maupun tidak langsung — Stockbit Reports, 2026-09-28",
+                                        "Laporan Hasil Public Expose - Tahunan — Stockbit Reports, 2026-06-23",
+                                        "Geliat Entitas Sinar Mas (DSSA) Jadi Pengendali Baru Triasmitra (KETR) — Katadata, 2026-09-29",
+                                        "Anak Usaha DSSA Bakal Merger dengan Mora Telematika — BCA Sekuritas, 2025-12"
+                                    ]
+             },
+    "PADA":  {
+                 "baru":  "Outsourcing \u0026 kurir, sinergi grup INET",
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "sourceDate":  "2026-07-01",
+                 "sourceTitle":  "Penjelasan atas Permintaan Penjelasan Bursa",
+                 "target":  "Belum ada target transaksi; manajemen menyatakan tidak ada rencana aksi korporasi dalam waktu dekat (6 Agustus 2026). Sinergi berjalan bertahap: jasa kebersihan/keamanan untuk grup INET selama 1 tahun dan layanan penunjang teknis selama 5 tahun.",
+                 "note":  "Pengendali baru INET (53,57%); belum ada injeksi aset, hanya sinergi operasional bertahap dan pinjaman bank. Tidak ada rencana injeksi aset: INET mengakuisisi PADA sebagai usaha berjalan; dana rights issue INET (sekitar Rp3,2 T) dialokasikan ke anak usaha FTTH, bukan ke PADA. Pendanaan PADA berasal dari pinjaman Hibank (Rp150 M pada April 2026 dan Rp5 M pada 18 Agustus 2026 untuk proyek penarikan kabel fiber optik).",
+                 "sumberTambahan":  [
+                                        "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-08-06",
+                                        "Penjelasan atas Permintaan Penjelasan Bursa (sinergi operasional INET) — Stockbit Reports, 2026-07-01",
+                                        "Perjanjian Pinjaman Bank (Hibank Rp5 M) — Stockbit Reports, 2026-08-18",
+                                        "Sinergi Inti Andalan (INET) Siap Akuisisi 53,57% Saham PADA Rp106,39 Miliar — Bisnis.com, 2026-02-03",
+                                        "INET Estimasi Tender Wajib PADA Mulai Maret, Buka Detail Akuisisi THC — IDNFinancials, 2026-02"
+                                    ]
+             },
+    "INPS":  {
+                 "baru":  "Holding (perdagangan suku cadang)",
+                 "injectType":  "Penambahan modal tanpa HMETD (private placement)",
+                 "injectTarget":  "",
+                 "nominal":  "Rp125 M",
+                 "target":  "Pencatatan BEI 11 Desember 2026",
+                 "sourceDate":  "2026-09-29",
+                 "sourceTitle":  "Penambahan modal tanpa HMETD - Penempatan Terbatas (Private Placement)",
+                 "note":  "Dana PP untuk penyertaan modal anak (79,2%) dan pelunasan utang; terpisah, INPS mengakuisisi 90% PT Tri Satria Indah Motor senilai Rp5,8 M (5 Okt 2026); RUPSLB 3 November 2026.",
+                 "sumberTambahan":  [
+                                        "Tender Wajib Indah Prakasa (INPS) Sepi Peminat, Graha Inti Hanya Serap 5.000 Saham — Kontan, 2026-07-27",
+                                        "Resmi Jadi Pengendali Baru, Graha Inti Guna Persada Siap Tender Wajib Saham INPS — Stockwatch, 2026-04-24",
+                                        "PT Graha Inti Guna Persada Lepas 9,35 Juta Saham INPS, Kepemilikan Turun ke 80,62% — Pasardana, 2026-08-21",
+                                        "Graha Inti Guna Persada Kembali Jual Saham INPS, Kepemilikan Turun Jadi 79,06% — Pasardana, 2026-09-10",
+                                        "Penjelasan atas Permintaan Penjelasan Bursa (free float 22,89%; GIGP 77,11%) — Stockbit Reports, 2026-09-17",
+                                        "Perubahan anggota Direksi dan/atau anggota Dewan Komisaris — Stockbit Reports, 2026-09-23"
+                                    ]
+             },
+    "MORA":  {
+                 "sourceDate":  "2026-04-22",
+                 "sourceTitle":  "Perubahan dalam pengendalian baik langsung maupun tidak langsung terhadap Emiten atau Perusahaan Publik",
+                 "baru":  "Operator FTTH ritel terintegrasi (MyRepublic) di atas jaringan serat optik/backbone Moratelindo; ekspansi FWA dan kabel laut",
+                 "injectType":  "Merger (penggabungan usaha) dibayar saham baru",
+                 "injectTarget":  "PT Eka Mas Republik/MyRepublic Indonesia (100%, melebur ke MORA; EMR bubar tanpa likuidasi)",
+                 "nominal":  "Rp10,42 T (nilai pasar 100% ekuitas EMR menurut KJPP SRR per 30 Sep 2025; dibayar 24,13 miliar saham baru MORA, rasio 1 saham EMR = 7.703,81 saham MORA; MORA dinilai Rp10,21 T atau Rp432/saham)",
+                 "target":  "Rampung: RUPSLB 26 Maret 2026, efektif 22 April 2026, saham baru tercatat 23 April 2026. Tidak ada injeksi lanjutan; manajemen menyatakan belum ada rencana aksi korporasi yang memengaruhi pencatatan saham (2 Sep 2026).",
+                 "note":  "Pengendali beralih ke PT Innovate Mas Utama akibat merger; bisnis tetap telekomunikasi/FTTH, bukan backdoor listing yang jelas. Pemegang saham lama terdilusi 50,5%; buyback bagi pemegang saham yang tidak setuju di Rp432/saham (maks. 10%, sekitar Rp1 T). Ekspansi pasca-merger dibiayai utang: BCA Rp4 T (2 Sep 2026), IIF Rp500 M, PUB Sukuk Ijarah II terserap Rp768,18 M dari target Rp3 T.",
+                 "sumberTambahan":  [
+                                        "Rincian Rencana Merger MORA dan EMR: Rasio Konversi, Jadwal dan Dampak Dilusi 50,50% — Pintarsaham, 2026-03-23",
+                                        "Dampak Merger dengan MyRepublic, Pemegang Saham MORA Terdilusi 50,5% — CNBC Indonesia, 2026-03-17",
+                                        "Saham MORA Meroket Ribuan Persen, Ini Risiko \u0026 Peluang Pasca Merger dengan MyRepublic — Kontan, 2025-12-22",
+                                        "Pencatatan Saham (24,12 miliar saham baru hasil penggabungan) — Stockbit Reports, 2026-04-22",
+                                        "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-09-02",
+                                        "Penyampaian Laporan Hasil PUB Sukuk Ijarah Berkelanjutan II — Stockbit Reports, 2026-09-30"
+                                    ]
+             },
+    "ASLI":  {
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "sourceDate":  "2026-05-06",
+                 "sourceTitle":  "Pembelian atau penjualan saham perusahaan yang nilainya material",
+                 "baru":  "Tetap: kontraktor konstruksi, diarahkan ke kontraktor terintegrasi dengan segmen infrastruktur strategis, energi, dan EPC, serta penunjang tambang/angkutan laut (tongkang dan tugboat)",
+                 "target":  "Realisasi rencana bisnis baru mulai triwulan II 2026; target kontrak baru 2026 sekitar Rp710–712 M (pendapatan Rp517 M). Tidak ada rencana aksi korporasi setidaknya 3 bulan sejak 28 Agustus 2026.",
+                 "note":  "PT Cakrawala Multi Mineral masuk sebagai pengendali (11,72%, Rp199,24 miliar = harga beli saham); rencana bisnis baru ditargetkan triwulan II 2026 tanpa rincian. Tidak ada rencana injeksi aset atau rights issue; transformasi dilakukan secara organik dan melalui realokasi sisa dana IPO Rp14,1 M untuk tongkang (Rp11,6 M) dan tugboat (Rp2,5 M). Komposisi target kontrak: BUMN 48,8%, APBN 45,6%, internal 2,2%, lainnya 3,4%.",
+                 "sumberTambahan":  [
+                                        "ASLI Targetkan Kontrak Rp710 Miliar di 2026, Paparkan Transformasi dan Ekspansi Proyek Nasional — Bareksa, 2026-04-28",
+                                        "Asri Karya (ASLI) Punya Pengendali Baru, Bidik Kontrak Rp712M di 2026 — EmitenNews, 2026-04",
+                                        "Laporan Hasil Public Expose - Tahunan — Stockbit Reports, 2026-05-01",
+                                        "Keterbukaan Informasi atas Pengesahan Perubahan Penggunaan Dana Hasil Penawaran Umum — Stockbit Reports, 2026-05-01",
+                                        "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-08-28"
+                                    ]
+             },
+    "LAPD":  {
+                 "baru":  "Jasa penunjang pertambangan",
+                 "injectType":  "Penambahan modal (HMETD II)",
+                 "injectTarget":  "",
+                 "nominal":  "Rp100 M",
+                 "target":  "RUPSLB 20 Oktober 2026",
+                 "sourceDate":  "2026-09-11",
+                 "sourceTitle":  "Keterbukaan Informasi terkait Aksi Korporasi - Rencana Penambahan Modal dengan HMETD - 11092026",
+                 "note":  "Pengendali baru PT JSI Sinergi Mas (51%); rencana divestasi PT Rusindo Eka Raya dan akuisisi perusahaan jasa penunjang tambang yang namanya belum disebut."
+             },
+    "NATO":  {
+                 "injectType":  "Akuisisi saham (perusahaan investasi Singapura)",
+                 "injectTarget":  "ORBIT MARKETING PTE. LTD.",
+                 "nominal":  "10.000 SGD",
+                 "sourceDate":  "2026-05-12",
+                 "sourceTitle":  "Akuisisi Saham ORBIT MARKETING PTE.LTD",
+                 "baru":  "Perusahaan investasi/holding (sebelumnya pengembang dan operator properti/hospitality di Seminyak, Bali)",
+                 "target":  "Tidak ada target transaksi berikutnya; akuisisi Orbit Marketing rampung 16 Januari 2026. Manajemen menyatakan tidak ada rencana aksi korporasi dalam 3 bulan (2 Sep 2026); penerbitan obligasi masih kajian internal tanpa jadwal.",
+                 "note":  "Pengendali baru PT Mercury Strategic Indonesia; akuisisi sudah terjadi 16 Januari 2026 dan tidak material. Isi portofolio investasi dan rencana penggunaan Orbit Marketing belum dirinci; public expose 25 Juni 2026 hanya menyebut akuisisi Orbit untuk tujuan jangka panjang.",
+                 "sumberTambahan":  [
+                                        "NATO Ganti Pengendali, Mercury Strategic Ambil Posisi — Kabarbursa, 2025-12-15",
+                                        "Olympus Strategic Indonesia Tbk Umumkan Akuisisi 100% Saham Orbit Marketing Pte Ltd — Pasardana, 2026-05-12",
+                                        "Laporan Hasil Public Expose - Tahunan — Stockbit Reports, 2026-06-28",
+                                        "Penjelasan atas Volatilitas Transaksi (kajian obligasi) — Stockbit Reports, 2026-09-02",
+                                        "Profil PT Olympus Strategic Indonesia Tbk — IDNFinancials, diakses 2026-10-15"
+                                    ]
+             },
+    "AMMS":  {
+                 "baru":  "Budidaya perairan (akuakultur)",
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "sourceDate":  "2026-06-23",
+                 "sourceTitle":  "Laporan Hasil Public Expose - Tahunan",
+                 "target":  "Tidak ada target transaksi; manajemen menyatakan tidak ada rencana aksi korporasi dalam waktu dekat dan pemegang saham utama tidak berencana mengubah kepemilikan (6 Agustus 2026).",
+                 "note":  "Pengendali baru Radiant Ruby Company Ltd (51%); belum ada injeksi aset. Tidak ada rencana injeksi aset yang resmi diajukan: arah ke aset keuangan digital (produk berbasis token/kripto dan edukasi) hanya disampaikan saat akuisisi Desember 2025, belum dituangkan dalam rencana PMHMETD, inbreng, atau perubahan KBLI; public expose Juni 2026 justru menekankan pengembangan budidaya perairan.",
+                 "sumberTambahan":  [
+                                        "Radiant Ruby Tuntaskan Akuisisi 51% Saham AMMS, Intip Tujuannya — Bisnis.com, 2025-12-29",
+                                        "Sosok di Balik Radiant Ruby Company, Pengendali Baru AMMS — Bisnis.com, 2025-12-29",
+                                        "Laporan Hasil Public Expose - Tahunan — Stockbit Reports, 2026-06-23",
+                                        "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-08-06"
+                                    ]
+             },
+    "BOGA":  {
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "sourceDate":  "2026-06-11",
+                 "sourceTitle":  "Penyampaian Materi Public Expose - Tahunan",
+                 "baru":  "Tetap: usaha lama PT Bintang Oto Global Tbk (otomotif); perubahan nama menjadi PT Apollo Global Interactive Tbk tidak disertai bisnis baru",
+                 "target":  "Tidak ada target transaksi; tidak ada rencana aksi korporasi dalam waktu dekat (6 Agustus 2026). Agenda pendanaan yang terjadwal hanya Sukuk Mudharabah Tahap I Rp400 M (pencatatan dijadwalkan 6 Juli 2026) untuk refinancing MTN Rp200 M jatuh tempo September 2026.",
+                 "note":  "Ada MTO (2026-01-26) tetapi tidak ada rencana bisnis baru atau injeksi; Sukuk hanya untuk refinancing MTN. Tidak ada rencana injeksi aset: pengumuman perubahan nama dan logo (Januari 2026) menyatakan tidak berdampak pada operasional, dan public expose Juni 2026 tidak memuat rencana usaha baru.",
+                 "sumberTambahan":  [
+                                        "Transformasi Bisnis, Emiten BOGA Umumkan Perubahan Nama dan Logo Baru — BCA Sekuritas (IQPlus), 2026-01-27",
+                                        "Two Commissioners and a Director at BOGA Resign in Tandem — IDNFinancials, 2026-01",
+                                        "Penyampaian Materi Public Expose - Tahunan — Stockbit Reports, 2026-06-11",
+                                        "Penyampaian prospektus ringkas (Sukuk Mudharabah Rp400 M) — Stockbit Reports, 2026-05-21",
+                                        "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-08-06"
+                                    ]
+             },
+    "MMLP":  {
+                 "baru":  "Pergudangan, integrasi ekosistem Grup Astra",
+                 "injectType":  "",
+                 "injectTarget":  "",
+                 "nominal":  "",
+                 "sourceDate":  "2026-04-23",
+                 "sourceTitle":  "Penjelasan atas Permintaan Penjelasan Bursa",
+                 "target":  "Tidak ada target transaksi baru; akuisisi rampung 30 September 2025 dan MTO berakhir 24 Desember 2025 (pembelian 534,81 juta saham pada 30 Desember 2025). Pantau kewajiban free float karena porsi publik tinggal sekitar 8,57%.",
+                 "note":  "Diambil alih PT Saka Industrial Arjaya; tidak ada injeksi aset yang diumumkan. Akuisisi strategis usaha berjalan oleh Grup Astra; tidak ada rencana injeksi aset Astra ke MMLP. Fokus: integrasi ke ekosistem Astra, okupansi 13 gudang (96,2% pada 2025), dan pengembangan land bank lebih dari 500.000 m².",
+                 "sumberTambahan":  [
+                                        "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-04-23",
+                                        "Tender Wajib Saham MMLP Digelar, Entitas Astra (ASII) Tawar Rp580,60 per Lembar — Bisnis.com, 2025-11-24",
+                                        "Astra Group Adds 534 Million MMLP Shares, Public Float Left at 8.57% — IDNFinancials, 2026-01",
+                                        "Grup Astra Akuisisi 83,67% Saham MMLP untuk Ekspansi dan Investasi — Fortune IDN, 2025"
+                                    ]
+             },
+    "KRYA":  {
+                 "injectType":  "Konsolidasi anak usaha baru",
+                 "injectTarget":  "PT Green City Traffic",
+                 "sourceDate":  "2026-06-15",
+                 "sourceTitle":  "Penjelasan atas Perubahan Aset dan Liabilitas Perseroan Lebih dari 20%",
+                 "baru":  "Kendaraan listrik: produksi dan distribusi motor listrik ECGO beserta ekosistem baterai (sewa dan tukar baterai); rencana ke roda tiga dan kendaraan niaga listrik",
+                 "nominal":  "Rp10,42 M (penyertaan modal 10,418 juta saham baru PT Green City Traffic pada nominal Rp1.000/saham, setara 9,8% ekuitas KRYA, bukan transaksi material); rencana PUT/rights issue Rp200–300 M bersifat indikatif",
+                 "target":  "Penyertaan 50,99% PT Green City Traffic rampung (entitas anak sejak 30 September 2025). Rights issue belum memiliki jadwal: per 3 September 2026 perseroan masih mempelajari kemungkinan aksi korporasi; RUPS Juli dan Agustus 2026 gagal kuorum, rapat ketiga menunggu izin OJK.",
+                 "note":  "Data minim; anak usaha baru hanya disebut sebagai penyebab kenaikan liabilitas, tanpa nilai akuisisi. Komposisi PT Green City Traffic: KRYA 50,99%, Green City SG Pte Ltd 48,51%, William Teng 0,49%. Target penjualan 55.000 unit pada 2026 (termasuk 50.000 unit ke EVMoto) dan lebih dari 1 juta unit dalam 5 tahun.",
+                 "sumberTambahan":  [
+                                        "Tuntaskan Akuisisi ECGO, Bangun Karya (KRYA) Masuk Bisnis Motor Listrik — Kontan, 2025-08-10",
+                                        "Ekspansi Bisnis Kendaraan Listrik, Bangun Karya (KRYA) Akuisisi 51% Saham Motor Listrik ECGO — Investortrust, 2025-08",
+                                        "KRYA Kuasai 51% Saham GCT, Masuk Bisnis Motor Listrik — Warta Ekonomi, 2025-08",
+                                        "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-09-03",
+                                        "Ringkasan Risalah RUPST dan RUPSLB (gagal kuorum 28,95%) — Stockbit Reports, 2026-08-13",
+                                        "Penjelasan atas Perubahan Aset dan Liabilitas Perseroan Lebih dari 20% — Stockbit Reports, 2026-06-15"
+                                    ]
+             },
+    "CASH":  {
+                 "injectType":  "Penambahan kegiatan usaha",
+                 "injectTarget":  "",
+                 "nominal":  "Rp34,52 M",
+                 "sourceDate":  "2026-10-05",
+                 "sourceTitle":  "Penyampaian Keterbukaan Informasi Sehubungan dengan Penyesuaian dan Penambahan Kegiatan Usaha PT Cashlez Worldwide Indonesia Tbk",
+                 "baru":  "Tetap: pembayaran digital (EDC/payment gateway), ditambah penyewaan perangkat EDC (KBLI 77394), reparasi dan pemeliharaan perangkat (KBLI 95101), dan layanan penunjang jasa keuangan/cash advance (KBLI 66199); KBLI portal web (63122) dihapus",
+                 "target":  "Penambahan kegiatan usaha disetujui RUPSLB 8 Oktober 2026; jadwal realisasi investasi Rp34,51–34,52 M belum diungkap. Sisa dana rights issue sekitar Rp92 M setelah pelunasan utang ke PT Bara Alam Utama.",
+                 "note":  "RUPSLB 8 Okt 2026 menyetujui penambahan kegiatan usaha (jenisnya tidak disebut); dana bersih PMHMETD I Rp235,49 M, sebagian untuk melunasi utang ke PT Bara Alam Utama. Studi kelayakan oleh KJPP Ferdinand, Danar, Ichsan dan Rekan menyatakan penambahan usaha layak. Bukan injeksi aset dari pengendali; dana rights issue justru dialirkan ke afiliasi pengendali (pelunasan utang BAU Rp142,06 M atau 60,33%).",
+                 "sumberTambahan":  [
+                                        "CASH Rencanakan Transaksi Afiliasi Senilai Rp20 Miliar dengan PT Bara Alam Utama — BCA Sekuritas (IQPlus), 2025-10-29",
+                                        "CASH Berencana Pinjam Rp31 Miliar dari BAU, Dana Dipakai untuk Ini — Kabarbursa, 2026-03-06",
+                                        "Langkah Strategis Cashlez Perkuat Bisnis dan Struktur Keuangan — BCA Sekuritas (IQPlus), 2026-10-05",
+                                        "Sesuaikan Kegiatan Usaha, Cashlez (CASH) Umumkan Langkah Strategis — EmitenNews, 2026-10-05",
+                                        "Ringkasan Risalah RUPSLB 8 Oktober 2026 — Stockbit Reports, 2026-10-09",
+                                        "Laporan Hasil Public Expose - Tahunan — Stockbit Reports, 2026-10-12",
+                                        "Lowongan Kerja PT Bara Alam Utama (Bara Coal) — Disnakerja (profil perusahaan), diakses 2026-10-15"
+                                    ]
+             }
+}
