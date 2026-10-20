@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import base64
 import hashlib
+import ipaddress
 import html as html_mod
 import json
 import os
@@ -36,6 +37,8 @@ ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / "stockbit.config.json"
 TOKEN_PATH = ROOT / ".stockbit-token"
 CACHE_DB = ROOT / ".cache.sqlite"
+DIST = ROOT / "dist"
+CGNAT = ipaddress.ip_network("100.64.0.0/10")
 
 UA_BROWSER = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
               "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
@@ -131,6 +134,84 @@ def cache_write(url: str, body: str) -> None:
         con.execute("INSERT OR REPLACE INTO http_cache VALUES(?,?,?)",
                     (url, body, int(time.time())))
         con.commit()
+
+
+# ----------------------------------------------------------------- data ----
+# Data radar tim (item, update, posisi node diagram). Terpisah dari cache supaya
+# .cache.sqlite boleh dihapus tanpa kehilangan catatan tim.
+
+DATA_DB = ROOT / ".radar.sqlite"
+TICKER_RE = re.compile(r"^[A-Z]{4}$")
+MAX_BODY = 1_000_000
+_data_lock = threading.Lock()
+_data: sqlite3.Connection | None = None
+
+
+def data_db() -> sqlite3.Connection:
+    global _data
+    with _data_lock:
+        if _data is None:
+            _data = sqlite3.connect(DATA_DB, check_same_thread=False)
+            _data.execute("PRAGMA journal_mode=WAL")
+            _data.executescript(
+                "CREATE TABLE IF NOT EXISTS items(ticker TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at INTEGER NOT NULL);"
+                "CREATE TABLE IF NOT EXISTS updates(id TEXT PRIMARY KEY, data TEXT NOT NULL, date TEXT);"
+                "CREATE TABLE IF NOT EXISTS layout(ticker TEXT PRIMARY KEY, data TEXT NOT NULL);")
+            _data.commit()
+        return _data
+
+
+def data_rows(sql: str, args: tuple = ()) -> list:
+    con = data_db()
+    with _data_lock:
+        return con.execute(sql, args).fetchall()
+
+
+def data_exec(sql: str, rows: list[tuple]) -> None:
+    con = data_db()
+    with _data_lock:
+        con.executemany(sql, rows)
+        con.commit()
+
+
+def items_all() -> list[dict]:
+    return [json.loads(r[0]) for r in data_rows("SELECT data FROM items ORDER BY ticker")]
+
+
+def item_put(item: dict) -> None:
+    data_exec("INSERT OR REPLACE INTO items VALUES(?,?,?)",
+              [(item["ticker"], json.dumps(item, ensure_ascii=False), int(time.time()))])
+
+
+def updates_all() -> list[dict]:
+    return [json.loads(r[0]) for r in data_rows("SELECT data FROM updates ORDER BY date DESC")]
+
+
+def updates_put(ups: list[dict]) -> None:
+    data_exec("INSERT OR REPLACE INTO updates VALUES(?,?,?)",
+              [(str(u["id"]), json.dumps(u, ensure_ascii=False), str(u.get("date") or "")) for u in ups])
+
+
+def valid_item(it) -> bool:
+    return isinstance(it, dict) and isinstance(it.get("ticker"), str) and bool(TICKER_RE.match(it["ticker"]))
+
+
+def valid_update(u) -> bool:
+    return isinstance(u, dict) and isinstance(u.get("id"), (str, int)) and str(u["id"]) != ""
+
+
+def migrate(payload: dict) -> dict:
+    """Impor data localStorage lama. Hanya berjalan bila tabel items masih kosong,
+    supaya perangkat kedua tidak menimpa data tim."""
+    if data_rows("SELECT 1 FROM items LIMIT 1"):
+        return {"migrated": False, "reason": "sudah ada data di server"}
+    items = [it for it in (payload.get("items") or []) if valid_item(it)]
+    ups = [u for u in (payload.get("updates") or []) if valid_update(u)]
+    for it in items:
+        item_put(it)
+    if ups:
+        updates_put(ups)
+    return {"migrated": True, "items": len(items), "updates": len(ups)}
 
 
 class Stale(Exception):
@@ -746,9 +827,15 @@ class Handler(BaseHTTPRequestHandler):
         return urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get(name, [""])[0]
 
     def is_local(self) -> bool:
-        ip = self.client_address[0]
-        return (re.match(r"^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.)", ip)
-                is not None or ip in ("::1",) or ip.startswith("fe80:"))
+        # IP privat, loopback, link-local, dan CGNAT 100.64/10 (Tailscale). Alamat IPv4
+        # yang dipetakan ke IPv6 (::ffff:a.b.c.d) dibuka dulu.
+        try:
+            ip = ipaddress.ip_address(self.client_address[0])
+        except ValueError:
+            return False
+        if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
+            ip = ip.ipv4_mapped
+        return ip.is_private or ip.is_loopback or ip.is_link_local or ip in CGNAT
 
     # ---- HTTP
     def do_GET(self) -> None:  # noqa: N802
@@ -769,14 +856,78 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 pass
 
+    def do_PUT(self) -> None:  # noqa: N802
+        self.handle_write("PUT")
+
+    def do_POST(self) -> None:  # noqa: N802
+        self.handle_write("POST")
+
+    def do_DELETE(self) -> None:  # noqa: N802
+        self.handle_write("DELETE")
+
+    def read_json(self):
+        """Body JSON penulisan. Content-Type wajib application/json: permintaan lintas situs
+        dengan tipe ini selalu butuh preflight CORS, yang tidak dijawab server ini."""
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            raise ValueError("Content-Type harus application/json.")
+        n = int(self.headers.get("Content-Length") or 0)
+        if n > MAX_BODY:
+            raise ValueError("Body terlalu besar.")
+        return json.loads(self.rfile.read(n) or b"null")
+
+    def handle_write(self, method: str) -> None:
+        try:
+            if not self.is_local():
+                self.reply(b"", 403)
+                return
+            path = urllib.parse.urlparse(self.path).path.strip("/")
+            parts = path.split("/")
+            body = None if method == "DELETE" else self.read_json()
+            if len(parts) == 3 and parts[:2] == ["api", "items"] and TICKER_RE.match(parts[2]):
+                t = parts[2]
+                if method == "DELETE":
+                    data_exec("DELETE FROM items WHERE ticker=?", [(t,)])
+                    self.reply_json({"ok": True})
+                elif method == "PUT" and valid_item(body) and body["ticker"] == t:
+                    item_put(body)
+                    self.reply_json({"ok": True})
+                else:
+                    self.reply_json({"error": "Item tidak valid."}, 400)
+            elif path == "api/updates" and method == "POST":
+                if not isinstance(body, list) or not all(valid_update(u) for u in body):
+                    self.reply_json({"error": "Update tidak valid."}, 400)
+                    return
+                updates_put(body)
+                self.reply_json({"ok": True, "count": len(body)})
+            elif path == "api/migrate" and method == "POST" and isinstance(body, dict):
+                self.reply_json(migrate(body))
+            elif (len(parts) == 3 and parts[:2] == ["api", "layout"] and TICKER_RE.match(parts[2])
+                  and method == "PUT" and isinstance(body, dict)):
+                data_exec("INSERT OR REPLACE INTO layout VALUES(?,?)",
+                          [(parts[2], json.dumps(body, ensure_ascii=False))])
+                self.reply_json({"ok": True})
+            else:
+                self.reply_json({"error": "Tidak ditemukan."}, 404)
+        except (ValueError, json.JSONDecodeError) as e:
+            self.reply_json({"error": str(e)}, 400)
+        except Exception as e:
+            print(f"[error] {method} {self.path}: {e}", file=sys.stderr)
+            self.reply_json({"error": f"Server error: {e}"}, 500)
+
     def serve_static(self, path: str) -> None:
+        # Hasil build Vue (dist/) didahulukan; file data JSON tetap dari ROOT.
         if path == "":
             path = "index.html"
-        f = (ROOT / path).resolve()
-        name = f.name
-        blocked = (name.startswith(".") or name.endswith(".ps1") or name == "server.py"
-                   or name == "stockbit.config.json" or not str(f).startswith(str(ROOT)))
-        if blocked or not f.is_file():
+        f = None
+        for base in (DIST, ROOT):
+            cand = (base / path).resolve()
+            if cand.is_relative_to(base) and cand.is_file():
+                f = cand
+                break
+        name = f.name if f else ""
+        blocked = (not f or name.startswith(".") or name.endswith(".ps1") or name == "server.py"
+                   or name == "stockbit.config.json")
+        if blocked:
             self.reply(b"", 404)
             return
         ext = f.suffix.lower()
@@ -784,6 +935,7 @@ class Handler(BaseHTTPRequestHandler):
                  ".js": "text/javascript", ".mjs": "text/javascript",
                  ".png": "image/png", ".svg": "image/svg+xml",
                  ".json": "application/json", ".ico": "image/x-icon",
+                 ".woff2": "font/woff2", ".map": "application/json",
                  ".webmanifest": "application/manifest+json"}
         try:
             self.reply(f.read_bytes(), 200, types.get(ext, "application/octet-stream"))
@@ -795,7 +947,18 @@ class Handler(BaseHTTPRequestHandler):
         cfg = load_config()
         ticker = self.qs("ticker").upper()
 
-        if path == "api/features":
+        if path == "api/items":
+            self.reply_json(items_all())
+        elif path == "api/updates":
+            self.reply_json(updates_all())
+        elif path.startswith("api/layout/"):
+            t = path.rsplit("/", 1)[1]
+            if not TICKER_RE.match(t):
+                self.reply_json({"error": "Kode saham harus 4 huruf."}, 400)
+                return
+            rows = data_rows("SELECT data FROM layout WHERE ticker=?", (t,))
+            self.reply_json(json.loads(rows[0][0]) if rows else {})
+        elif path == "api/features":
             self.reply_json(cfg.get("features") or {})
         elif path == "api/status":
             exp = token_exp()
@@ -813,9 +976,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "api/tenders":
             self.api_tenders(cfg, fresh)
         elif path == "api/ohlc":
+            tf = self.qs("tf") if self.qs("tf") in ("3m", "6m", "1y", "3y") else "1y"
             self.guard_token() or self.guard_ticker(ticker) or self.reply_json(
-                {"ticker": ticker, "tf": (tf := (self.qs("tf") or "1y")) if tf in ("3m", "6m", "1y", "3y") else "1y",
-                 "bars": get_ohlc(ticker, tf, fresh)})
+                {"ticker": ticker, "tf": tf, "bars": get_ohlc(ticker, tf, fresh)})
         elif path == "api/insider":
             self.guard_token() or self.guard_ticker(ticker) or self.reply_json(
                 get_insider(ticker, max(30, min(720, int(self.qs("days") or 180))), fresh))
@@ -848,14 +1011,13 @@ class Handler(BaseHTTPRequestHandler):
             # Agregat lokal untuk infografis: komposisi tahap emiten dari story-verified.json +
             # daftar backdoor di config — tanpa token Stockbit.
             bd = (cfg.get("backdoor") or {})
-            include = [x for x in (bd.get("exclude") or []) and [] or (bd.get("include") or [])
-                       if re.match(r"^[A-Z]{4}$", str(x))]
+            include = [x for x in (bd.get("include") or []) if TICKER_RE.match(str(x))]
             stages = {"spa": 0, "tender": 0, "rupslb": 0, "injeksi": 0, "selesai": 0}
             verified = 0
             try:
                 sv = json.loads((ROOT / "story-verified.json").read_text(encoding="utf-8"))
                 for tkr, st in sv.items():
-                    if tkr.startswith("_") or not isinstance(st, dict):
+                    if tkr not in include or not isinstance(st, dict):
                         continue
                     verified += 1
                     # tahap ditentukan field yang terisi: target/nominal terisi = injeksi;
@@ -883,6 +1045,8 @@ class Handler(BaseHTTPRequestHandler):
                 "generated": int(time.time()),
             })
         elif path == "api/raw":
+            if self.guard_ticker(ticker):
+                return
             try:
                 pp = page_props(ticker, fresh)
                 pp.pop("posts", None)   # postingan pengguna tidak ikut dikirim

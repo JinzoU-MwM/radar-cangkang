@@ -17,3 +17,6 @@ __pycache__/
 
 # brainstorm companion
 .superpowers/
+**/.radar.sqlite*
+website/dist/
+frontend/node_modules/
