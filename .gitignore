@@ -20,3 +20,5 @@ __pycache__/
 **/.radar.sqlite*
 website/dist/
 frontend/node_modules/
+.playwright-mcp/
+.serena/

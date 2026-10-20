@@ -1,0 +1,185 @@
+// State bersama aplikasi. Data radar (items, updates) tinggal di SQLite server
+// (/api/items, /api/updates); file JSON terverifikasi dibaca apa adanya.
+import { reactive } from 'vue'
+import { api, loadJson } from './api.js'
+import { deriveStory } from './lib/story.js'
+import { syncReports, syncStockbit, syncTenders } from './lib/sync.js'
+
+const LS_ITEMS = 'radar-cangkang.v1'
+const LS_UPD = 'radar-cangkang.updates.v1'
+const LS_SEEN = 'radar-cangkang.seen'
+const AUTO_KEY = 'radar-cangkang.autoSync'
+const AUTO_GAP = 15 * 60e3
+
+const ls = {
+  get(k, d) { try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : d } catch { return d } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)) } catch {} },
+}
+
+// Data awal bila server dan browser sama-sama kosong (sama dengan versi lama).
+const SEED_ITEMS = [
+  { id: 'NAYZ', ticker: 'NAYZ', name: 'PT Hassana Boga Sejahtera Tbk', price: 73, mcap: null, float: null, stage: 'tender',
+    acquirer: 'Saiko Consultancy (Singapura)', flags: { akuisisi: true, kbli: true, rights: true },
+    ms: { spa: true, akuisisi: true, to_umum: true }, updatedAt: '2026-10-14T03:30:00Z',
+    notes: 'Harga Rp73 per 2 Okt 2026. Akuisisi 29,41% pada 19 Agt 2026; penawaran tender wajib Rp75, 5 Okt–3 Nov 2026. Rencana inbreng perusahaan teknologi dan PMHMETD. Sumber: KabarBursa, 2 Okt 2026.' },
+  { id: 'BIKE', ticker: 'BIKE', name: 'PT Sepeda Bersama Indonesia Tbk', price: null, mcap: null, float: null, stage: 'spa',
+    acquirer: 'PT Penajam Makmur Jaya', flags: { akuisisi: true }, ms: { spa: true, akuisisi: true }, updatedAt: '2026-10-14T03:30:00Z',
+    notes: 'Akuisisi 71,22% (921,5 juta saham) pada 15 Apr 2026 melalui pasar negosiasi. Penawaran tender wajib direncanakan; status terbaru perlu diverifikasi. Sumber: Bareksa, 17 Apr 2026.' },
+]
+
+export const store = reactive({
+  ready: false,
+  items: [],
+  updates: [],
+  verified: {},
+  pandangan: {},
+  analisa: {},
+  pengendali: {},
+  relasi: {},
+  status: null,
+  features: {},
+  // Waktu kunjungan terakhir browser ini: penanda "baru" di Monitor dan Berita.
+  seenAt: ls.get(LS_SEEN, ''),
+  busy: { stockbit: false, reports: false },
+  toasts: [],
+  syncNote: '',
+})
+
+let toastId = 0
+export function toast(text, warn = false) {
+  const id = ++toastId
+  store.toasts.push({ id, text, warn })
+  setTimeout(() => { store.toasts = store.toasts.filter(t => t.id !== id) }, warn ? 9000 : 5000)
+}
+
+export const itemOf = t => store.items.find(i => i.ticker === t)
+export const pandanganOf = t => store.pandangan[t] || null
+
+const storyMemo = new Map()
+export function storyOf(t) {
+  const it = itemOf(t)
+  if (!it) return null
+  const key = it.updatedAt + '|' + (it.storyAuto?.at || '') + '|' + store.updates.length
+  const hit = storyMemo.get(t)
+  if (hit && hit.key === key) return hit.v
+  const v = deriveStory(it, { verified: store.verified, updates: store.updates })
+  storyMemo.set(t, { key, v })
+  return v
+}
+
+export async function saveItem(item) {
+  const i = store.items.findIndex(x => x.ticker === item.ticker)
+  if (i >= 0) store.items[i] = item
+  else store.items.push(item)
+  await api.put('/api/items/' + item.ticker, item)
+}
+
+// Simpan hanya item yang berubah supaya tidak menimpa suntingan anggota tim lain.
+export async function saveItems(list) {
+  const before = new Map(store.items.map(i => [i.ticker, JSON.stringify(i)]))
+  const gone = store.items.filter(i => !list.some(x => x.ticker === i.ticker))
+  store.items = list
+  const changed = list.filter(i => before.get(i.ticker) !== JSON.stringify(i))
+  await Promise.all([...changed.map(i => api.put('/api/items/' + i.ticker, i)),
+    ...gone.map(i => api.del('/api/items/' + i.ticker))])
+}
+
+export async function saveUpdates(list) {
+  const known = new Map(store.updates.map(u => [u.id, JSON.stringify(u)]))
+  const changed = list.filter(u => known.get(u.id) !== JSON.stringify(u))
+  store.updates = list
+  if (changed.length) await api.post('/api/updates', changed)
+}
+
+// Data radar dari server. Kunjungan pertama setelah refaktor: kirim isi localStorage lama sekali.
+async function loadData() {
+  let [items, updates] = await Promise.all([api.get('/api/items'), api.get('/api/updates')])
+  if (!items.length) {
+    const oldItems = ls.get(LS_ITEMS, null)
+    const oldUpd = ls.get(LS_UPD, []).filter(u => /^(sb-report-|news-)/.test(u.id))
+    const payload = { items: oldItems && oldItems.length ? oldItems : SEED_ITEMS, updates: oldUpd }
+    const res = await api.post('/api/migrate', payload)
+    if (res.migrated) {
+      if (oldItems) toast(`Data lama dipindah ke server: ${res.items} emiten, ${res.updates} berita.`)
+      ;[items, updates] = await Promise.all([api.get('/api/items'), api.get('/api/updates')])
+    }
+  }
+  store.items = items
+  store.updates = updates
+}
+
+async function loadStatus() {
+  try { store.status = await api.get('/api/status') } catch { store.status = null }
+}
+
+export async function init() {
+  const [verified, pandangan, analisa, pengendali, relasi] = await Promise.all(
+    ['story-verified.json', 'pandangan-analis.json', 'analisa.json', 'pengendali-verified.json', 'relasi-verified.json'].map(loadJson))
+  Object.assign(store, { verified, pandangan, analisa, pengendali, relasi })
+  try { await loadData() } catch (e) { toast('Gagal memuat data dari server: ' + e.message, true) }
+  await loadStatus()
+  try { store.features = await api.get('/api/features') } catch {}
+  store.ready = true
+  addEventListener('pagehide', () => ls.set(LS_SEEN, new Date().toISOString()))
+  setInterval(loadStatus, 5 * 60e3)
+  // Ambil ulang data tim saat tab kembali aktif, supaya suntingan anggota lain terlihat.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') loadData().catch(() => {})
+  })
+}
+
+export const canSync = () => {
+  const s = store.status
+  return !!s && s.configured && !(s.needsToken && !s.tokenLoaded)
+}
+
+export async function runSyncStockbit() {
+  if (store.busy.stockbit) return
+  store.busy.stockbit = true
+  try {
+    // sync.js mencatat kegagalan per emiten (mis. 401) ke `errors` dan berhenti tanpa melempar.
+    const errors = []
+    let items = store.items
+    if (store.status?.tenders) items = await syncTenders(items, api, { errors })
+    items = await syncStockbit(items, api, { errors })
+    await saveItems(items)
+    if (errors.length) for (const e of errors.slice(0, 3)) toast(`${e.source}: ${e.error}`, true)
+    else toast('Harga, kepemilikan, dan tender diperbarui dari Stockbit.')
+  } catch (e) {
+    toast(e.status === 401 ? 'Token Stockbit ditolak atau belum ada.' : 'Gagal memperbarui dari Stockbit: ' + e.message, true)
+  } finally {
+    store.busy.stockbit = false
+  }
+}
+
+export async function runSyncReports() {
+  if (store.busy.reports) return
+  store.busy.reports = true
+  try {
+    // Tanpa `tickers`: sync.js memakai daftar emiten backdoor (di luar tahap penyaringan), seperti versi lama.
+    const res = await syncReports(store.items, store.updates, api, { news: !!store.status?.news, reports: !!store.status?.reports })
+    await saveItems(res.items)
+    await saveUpdates(res.updates)
+    for (const e of res.errors || []) toast(`${e.source}: ${e.error}`, true)
+    toast('Laporan dan berita diperbarui.')
+  } catch (e) {
+    toast('Gagal memperbarui berita: ' + e.message, true)
+  } finally {
+    store.busy.reports = false
+  }
+}
+
+// Paling sering sekali per 15 menit per jenis data per browser, supaya Stockbit tidak dibanjiri.
+export function autoRefresh(kind) {
+  if (!canSync()) return
+  const last = ls.get(AUTO_KEY, {})
+  if (Date.now() - (last[kind] || 0) < AUTO_GAP) return
+  if (kind === 'reports' && !(store.status.reports || store.status.news)) return
+  ls.set(AUTO_KEY, { ...last, [kind]: Date.now() })
+  ;(kind === 'reports' ? runSyncReports() : runSyncStockbit()).catch(() => {})
+}
+
+export function userRefresh(kind) {
+  api.freshFor(120e3)
+  return kind === 'reports' ? runSyncReports() : runSyncStockbit()
+}

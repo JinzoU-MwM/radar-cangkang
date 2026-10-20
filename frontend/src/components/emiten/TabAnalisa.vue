@@ -1,0 +1,369 @@
+<script>
+import { api } from '../../api.js'
+import { store } from '../../store.js'
+
+// Benchmark dari transaksi backdoor nyata di daftar (kode:tanggal mulai PTW), disimpan 6 jam untuk semua instans.
+let bmCache = null, bmAt = 0
+async function getBenchmark() {
+  if (bmCache && Date.now() - bmAt < 6 * 3600e3) return bmCache
+  const deals = store.items.filter(d => d.tender && d.tender.start).map(d => `${d.ticker}:${d.tender.start}`)
+  if (!deals.length) return null
+  bmCache = await api.get('/api/benchmark', { deals: deals.join(',') })
+  bmAt = Date.now()
+  return bmCache
+}
+</script>
+
+<script setup>
+import { computed, reactive, shallowRef, ref, watch } from 'vue'
+import { buildAnalysis, KURS } from '../../lib/analysis.js'
+import { fmt, fmtDate, rp, big, x2, pctTxt } from '../../lib/domain.js'
+import SikapTag from '../SikapTag.vue'
+import { errText } from './ta/useOhlc.js'
+
+const props = defineProps({ ticker: String })
+const loading = ref(true), error = ref(''), A = shallowRef(null)
+// Bobot dimensi (sama dengan sintesis skor di lib/analysis.js).
+const W = { 'Pengendali': 0.25, 'Substansi aset': 0.25, 'Posisi harga': 0.2, 'Struktur & likuiditas': 0.1, 'Katalis': 0.1, 'Fundamental': 0.1 }
+const HI_SIGNAL = /(transaksi material|perubahan kegiatan usaha|inbreng|HMETD|penilai|akuisisi|pengambilalihan|tender|RUPS|private placement|penempatan terbatas)/i
+const NOISE = /(volatilitas|permintaan penjelasan bursa)/i
+
+// Isian kalkulator dilusi (Rp miliar / Rp / %), diisi ulang tiap analisa baru.
+const kc = reactive({ V: 0, C: 0, P: 0, T: 0, H: 100 })
+
+let seq = 0
+async function load() {
+  const t = props.ticker, my = ++seq
+  loading.value = true; error.value = ''; A.value = null
+  try {
+    const item = store.items.find(x => x.ticker === t)
+    const profile = await api.get('/api/profile', { ticker: t })
+    // Laporan: untuk emiten radar pakai data yang sudah tersinkron; selain itu ambil dari Stockbit Reports.
+    let reports = store.updates.filter(u => u.ticker === t && /^sb-report-/.test(u.id))
+    if (!reports.length) reports = await api.get('/api/reports', { ticker: t }).then(j => j.items || [], () => [])
+    reports = [...reports].sort((a, b) => String(b.date).localeCompare(String(a.date)))
+    // Data pelengkap: gagal tidak membatalkan analisa.
+    const [benchmark, insider, quote] = await Promise.all([
+      item ? getBenchmark().catch(() => null) : null,
+      api.get('/api/insider', { ticker: t, days: 365 }).catch(() => null),
+      api.get('/api/quote', { ticker: t }).catch(() => null),
+    ])
+    if (my !== seq) return
+    const a = buildAnalysis({ ticker: t, item, profile, reports, insider, quote, verified: store.verified,
+      pengendali: store.pengendali, pandangan: store.pandangan, analisa: store.analisa, benchmark })
+    const k = a.pa?.kalkulator || {}
+    Object.assign(kc, { V: Math.round((k.nilaiDibayarSaham ?? a.injRp ?? 0) / 1e8) / 10, C: Math.round((k.kasSegar || 0) / 1e8) / 10,
+      P: k.hargaPelaksanaan || a.tender?.price || a.price, T: 0, H: 100 })
+    A.value = a
+  } catch (e) {
+    if (my === seq) error.value = errText(e)
+  } finally {
+    if (my === seq) loading.value = false
+  }
+}
+watch(() => [props.ticker, store.ready], load, { immediate: true })
+
+const tone = s => s >= 6.5 ? 'good' : s >= 4.5 ? 'warn' : 'strong'
+const STANCE = { good: 'good', warn: 'warn', bad: 'strong' }
+const rr = v => v.toFixed(1).replace('.', ',')
+
+// Tangga harga: semua level + harga kini di satu sumbu.
+const ladder = computed(() => {
+  const a = A.value
+  if (!a?.price || !a.levels.length) return null
+  const vals = [a.price, ...a.levels.map(l => l[2])], lo = Math.min(...vals), hi = Math.max(...vals), span = hi - lo || 1
+  const x = v => 4 + (v - lo) / span * 92
+  return { now: x(a.price), ticks: a.levels.map((l, i) => ({ k: l[0], v: l[2], x: x(l[2]), up: i % 2 === 1 })) }
+})
+
+const calcMode = computed(() => {
+  const a = A.value
+  if (!a?.shares || !a.price) return null
+  const k = a.pa?.kalkulator || {}
+  // Penerbitan sudah tereksekusi: jumlah saham sekarang sudah memuat saham baru.
+  if (k.sudahTereksekusi || (!a.pa && a.sv?.executed)) return 'done'
+  if (!(k.nilaiDibayarSaham ?? a.injRp ?? 0) && !k.kasSegar && !a.sv?.injectType) return null
+  return 'on'
+})
+// Model sederhana: hak tebus proporsional, nilai per saham = (ekuitas + aset diakui + kas) ÷ total saham.
+const calc = computed(() => {
+  const a = A.value, S0 = a.shares, E0 = a.equity || 0, f = (a.flt ?? 0) / 100
+  const V = (+kc.V || 0) * 1e9, C = (+kc.C || 0) * 1e9, P = +kc.P || 0
+  const tk = Math.min(100, +kc.T || 0) / 100, h = (+kc.H || 0) / 100
+  if (!P) return null
+  const N = (V + C) / P, S1 = S0 + N
+  return { N, S0, S1, f, pubAfter: (S0 * f + tk * f * N) / S1, vps: (E0 + V * h + C) / S1 }
+})
+const KC = [
+  ['V', 'Nilai dibayar dengan saham baru (Rp miliar)', 0.1, 'inbreng / konversi utang'],
+  ['C', 'Kas segar masuk (Rp miliar)', 0.1, 'setoran tunai HMETD'],
+  ['P', 'Harga pelaksanaan (Rp)', 1, 'harga saham baru'],
+  ['T', 'Publik menebus (%)', 5, '0 = publik tidak ikut'],
+  ['H', 'Nilai aset diakui (%)', 5, 'uji skeptis atas penilaian'],
+]
+const holders = computed(() => (A.value?.holders || []).filter(h => Math.abs(h.change) >= 0.1 || A.value.isCtrlH(h)).slice(0, 8))
+const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
+</script>
+
+<template>
+  <p v-if="loading" class="load muted">Menganalisa {{ ticker }}: memuat profil, harga, dan keterbukaan informasi dari Stockbit…</p>
+  <div v-else-if="error" class="err"><strong>Analisa {{ ticker }} gagal dimuat</strong><span>{{ error }}. Pastikan website dibuka lewat jalankan-radar.sh dan token Stockbit masih berlaku.</span></div>
+  <div v-else-if="A" class="an">
+    <!-- Skor & sikap: satu baris tegas. -->
+    <section class="verdict rule-top">
+      <p class="vline">
+        <b class="cond score" :class="'c-' + STANCE[A.stance.id]">{{ A.score }}</b><span class="cond muted of">/100</span>
+        <strong :class="'c-' + STANCE[A.stance.id]">{{ A.stance.t }}</strong>
+      </p>
+      <p class="small muted">
+        <template v-if="A.p.sector || A.p.industry">{{ [A.p.sector, A.p.industry].filter(Boolean).join(' · ') }} · </template>
+        Harga {{ rp(A.price) }}<template v-if="A.priceDate"> (penutupan {{ fmtDate(A.priceDate) }})</template>
+        · kapitalisasi {{ big(A.mcap) }} · porsi publik {{ A.flt != null ? fmt(A.flt, 2) + '%' : 'belum ada' }}
+        · pengendali {{ A.ctrlName || 'belum ada' }}<template v-if="A.ctrlPct != null"> ({{ fmt(A.ctrlPct, 2) }}%)</template>
+      </p>
+    </section>
+
+    <!-- Pandangan analis. -->
+    <section v-if="A.pa" class="pa rule-top">
+      <h2>Pandangan analis</h2>
+      <p class="pa-head"><SikapTag :sikap="A.pa.sikap" /> <b>{{ A.pa.ringkas }}</b></p>
+      <p>{{ A.pa.tesis }}</p>
+      <div class="grid">
+        <div>
+          <h3 class="lbl">Nilai wajar kasar</h3>
+          <template v-if="A.pa.nilaiWajar && A.pa.nilaiWajar.bawah != null">
+            <p class="big cond">{{ rp(A.pa.nilaiWajar.bawah) }} – {{ rp(A.pa.nilaiWajar.atas) }}</p>
+            <p class="small muted">vs harga kini {{ rp(A.price) }}: {{ pctTxt(A.pa.nilaiWajar.bawah, A.price) }} s.d. {{ pctTxt(A.pa.nilaiWajar.atas, A.price) }}</p>
+            <p class="small muted">{{ A.pa.nilaiWajar.metode || '' }}</p>
+          </template>
+          <p v-else class="small muted">Data belum cukup untuk nilai wajar yang jujur.</p>
+        </div>
+        <div>
+          <h3 class="lbl">Hitungan dilusi</h3>
+          <template v-if="A.pa.dilusi && A.pa.dilusi.berlaku">
+            <table class="ledger"><tbody>
+              <tr v-if="A.pa.dilusi.sahamSekarang"><td>Saham sekarang</td><td class="r num">{{ fmt(A.pa.dilusi.sahamSekarang / 1e6, 0) }} jt</td></tr>
+              <tr v-if="A.pa.dilusi.sahamBaru"><td>Saham baru</td><td class="r num">+{{ fmt(A.pa.dilusi.sahamBaru / 1e6, 0) }} jt</td></tr>
+              <tr v-if="A.pa.dilusi.porsiPublikSetelah != null"><td>Porsi publik (tidak menebus)</td><td class="r num">{{ fmt(A.pa.dilusi.porsiPublikSekarang ?? 0, 2) }}% → {{ fmt(A.pa.dilusi.porsiPublikSetelah, 2) }}%</td></tr>
+              <tr v-if="A.pa.dilusi.nilaiPerSaham"><td>Nilai per saham pasca-transaksi</td><td class="r num">{{ rp(A.pa.dilusi.nilaiPerSaham) }} <span class="muted small">{{ pctTxt(A.pa.dilusi.nilaiPerSaham, A.price) }}</span></td></tr>
+            </tbody></table>
+            <p class="small muted">{{ A.pa.dilusi.asumsi || '' }} {{ A.pa.dilusi.catatan || '' }}</p>
+          </template>
+          <p v-else class="small muted">{{ A.pa.dilusi?.catatan || 'Tidak ada rencana penerbitan saham baru yang material.' }}</p>
+        </div>
+      </div>
+      <div class="grid">
+        <div><h3 class="lbl">Variabel kunci</h3>
+          <ul v-if="(A.pa.variabelKunci || []).length"><li v-for="x in A.pa.variabelKunci" :key="x">{{ x }}</li></ul><p v-else class="small muted">belum ada</p></div>
+        <div><h3 class="lbl">Tesis salah bila</h3>
+          <ul v-if="(A.pa.tesisSalahBila || []).length"><li v-for="x in A.pa.tesisSalahBila" :key="x">{{ x }}</li></ul><p v-else class="small muted">belum ada</p></div>
+      </div>
+      <p v-if="A.pa.pengendaliBergerak" class="small"><b>Pergerakan pengendali:</b> {{ A.pa.pengendaliBergerak }}</p>
+      <p v-if="A.pa.likuiditas" class="small"><b>Likuiditas:</b> {{ A.pa.likuiditas }}</p>
+      <p class="small muted">Pandangan analis per {{ fmtDate(A.pa.asOf || '') }}<template v-if="A.pa.hargaAcuan"> · harga acuan {{ rp(A.pa.hargaAcuan) }}</template>. Kerangka berpikir, bukan rekomendasi beli/jual.</p>
+    </section>
+
+    <section class="rule-top">
+      <h2>{{ A.pa ? 'Ringkasan otomatis' : 'Tesis' }}</h2>
+      <p class="thesis">{{ A.thesis }}</p>
+    </section>
+
+    <!-- Enam dimensi pada satu skala 0–10. -->
+    <section class="rule-top">
+      <h2>Penilaian enam dimensi</h2>
+      <div class="dims">
+        <div class="axis" aria-hidden="true"><span></span><span class="sc"><i style="left:0">0</i><i style="left:50%">5</i><i style="left:100%">10</i></span><span></span></div>
+        <div v-for="d in A.dims" :key="d.k" class="dim">
+          <span class="dk"><b>{{ d.k }}</b> <span class="muted small">bobot {{ Math.round(W[d.k] * 100) }}%</span></span>
+          <span class="track" role="meter" :aria-label="d.k" aria-valuemin="0" aria-valuemax="10" :aria-valuenow="d.s"><i :class="'b-' + tone(d.s)" :style="{ width: d.s * 10 + '%' }"></i></span>
+          <span class="ds cond">{{ fmt(d.s, 1) }}</span>
+          <p v-if="d.why.length" class="why small muted">{{ d.why.join(' ') }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Skenario harga: tangga + tabel. -->
+    <div class="grid">
+      <section class="rule-top">
+        <h2>Skenario harga</h2>
+        <template v-if="A.levels.length">
+          <div v-if="ladder" class="ladder" aria-hidden="true">
+            <div class="rail"></div>
+            <span v-for="t in ladder.ticks" :key="t.k" class="tk" :class="{ up: t.up }" :style="{ left: t.x + '%' }"><i></i><b class="cond">{{ rp(t.v) }}</b></span>
+            <span class="nowm" :style="{ left: ladder.now + '%' }"><i></i><b class="cond">Harga kini {{ rp(A.price) }}</b></span>
+          </div>
+          <table class="ledger"><tbody>
+            <tr v-for="l in A.levels" :key="l[0]"><td><b>{{ l[0] }}</b><div class="small muted">{{ l[1] }}</div></td><td class="r num">{{ rp(l[2]) }}</td><td class="r muted">{{ pctTxt(l[2], A.price) }}</td></tr>
+          </tbody></table>
+        </template>
+        <p v-else class="small muted">Data harga belum cukup.</p>
+        <p v-if="A.rr != null" class="small">Rasio imbal-risiko <b>{{ rr(A.rr) }} : 1</b>. Investor berpengalaman umumnya baru tertarik di atas 3 : 1 untuk saham berlikuiditas tipis.</p>
+        <template v-if="A.sv?.injectType">
+          <h3 class="lbl">Injeksi aset</h3>
+          <p class="small"><b>{{ A.sv.injectType }}</b><template v-if="A.sv.injectTarget"> · {{ A.sv.injectTarget }}</template><template v-if="A.sv.nominal"> · {{ A.sv.nominal }}</template><template v-if="A.injRp && /USD|SGD/.test(A.sv.nominal)"> (≈{{ big(A.injRp) }}, kurs asumsi Rp{{ KURS.USD.toLocaleString('id-ID') }}/USD)</template></p>
+        </template>
+      </section>
+      <section class="rule-top cases">
+        <h2>Kasus naik</h2>
+        <ul v-if="A.bull.length"><li v-for="x in A.bull" :key="x">{{ x }}</li></ul><p v-else class="small muted">Tidak ada yang menonjol.</p>
+        <h2>Kasus turun & red flag</h2>
+        <ul v-if="A.bear.length"><li v-for="x in A.bear" :key="x">{{ x }}</li></ul><p v-else class="small muted">Tidak ada yang menonjol.</p>
+      </section>
+    </div>
+
+    <section v-if="A.pv" class="rule-top">
+      <h2>Pengendali & rencananya</h2>
+      <p v-if="A.pv.bukanPengambilAlih" class="warn">Nama di kolom pengendali adalah pengendali lama/penjual atau bukan pengambil alih.</p>
+      <p><b>Siapa:</b> {{ A.pv.siapa }}</p>
+      <p><b>Grup:</b> {{ A.pv.grup }}</p>
+      <p><b>Rencana:</b> {{ A.pv.rencana }}</p>
+      <p class="warn"><b>Catatan investor:</b> {{ A.pv.catatan }}</p>
+    </section>
+
+    <!-- Kalkulator dilusi. -->
+    <section v-if="calcMode" class="rule-top">
+      <h2>Kalkulator dilusi & nilai per saham</h2>
+      <p v-if="calcMode === 'done'" class="small muted">Penerbitan saham baru sudah tereksekusi — jumlah saham dan porsi publik saat ini sudah mencerminkan dilusinya. Lihat <b>Hitungan dilusi</b> di pandangan analis untuk posisi sebelum dan sesudah.</p>
+      <template v-else>
+        <div class="inputs">
+          <label v-for="[k, label, step, hint] in KC" :key="k" class="in">
+            <span class="small">{{ label }}</span>
+            <input v-model.number="kc[k]" class="field" type="number" :step="step" min="0">
+            <em class="small muted">{{ hint }}</em>
+          </label>
+        </div>
+        <p v-if="!calc" class="small muted">Isi harga pelaksanaan.</p>
+        <dl v-else class="out">
+          <div><dt>Saham baru</dt><dd><b>{{ fmt(calc.N / 1e6, 0) }} jt</b><span>{{ x2(calc.N / calc.S0) }} saham sekarang</span></dd></div>
+          <div><dt>Total saham</dt><dd><b>{{ fmt(calc.S1 / 1e6, 0) }} jt</b></dd></div>
+          <div><dt>Porsi publik</dt><dd><b>{{ fmt(calc.pubAfter * 100, 2) }}%</b><span>dari {{ fmt(calc.f * 100, 2) }}%</span></dd></div>
+          <div><dt>Nilai buku / saham</dt><dd><b>{{ rp(calc.vps) }}</b><span>{{ pctTxt(calc.vps, A.price) }} vs harga {{ rp(A.price) }}</span></dd></div>
+        </dl>
+        <p class="small muted">{{ A.pa?.kalkulator?.dasar || 'Nilai awal dari data injeksi terverifikasi; harga pelaksanaan diasumsikan sama dengan harga PTW/harga kini.' }} Model sederhana: hak tebus proporsional, nilai per saham = (ekuitas + aset diakui + kas) ÷ total saham.</p>
+      </template>
+    </section>
+
+    <!-- Pergerakan pemegang ≥5% dan likuiditas. -->
+    <section v-if="holders.length || A.avgVal != null" class="rule-top">
+      <h2>{{ holders.length ? 'Pergerakan pemegang saham ≥5% (365 hari)' : 'Likuiditas' }}</h2>
+      <table v-if="holders.length" class="ledger">
+        <thead><tr><th class="lbl">Pemegang</th><th class="lbl r">Porsi</th><th class="lbl r">Perubahan</th></tr></thead>
+        <tbody>
+          <tr v-for="h in holders" :key="h.name">
+            <td><b>{{ h.name }}</b> <span v-if="A.isCtrlH(h)" class="tag t-calm">Pengendali</span>
+              <div class="small muted">{{ h.buys }}× beli · {{ h.sells }}× jual · {{ fmtDate(h.firstDate) }} – {{ fmtDate(h.lastDate) }}</div></td>
+            <td class="r num">{{ fmt(h.from, 2) }}% → {{ fmt(h.to, 2) }}%</td>
+            <td class="r num" :class="h.change >= 0 ? 'c-good' : 'c-strong'">{{ h.change >= 0 ? '+' : '' }}{{ fmt(h.change, 2) }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p v-if="A.avgVal != null" class="small muted">Nilai transaksi harian rata-rata <b>{{ big(A.avgVal) }}</b> · keluar dari posisi Rp100 juta ±{{ A.exitDays < 1 ? '<1' : fmt(A.exitDays, 0) }} hari bila mengambil 20% volume harian.</p>
+    </section>
+
+    <section v-if="A.notes.length" class="rule-top">
+      <h2>Catatan analis</h2>
+      <ul><li v-for="x in A.notes" :key="x">{{ x }}</li></ul>
+    </section>
+
+    <div class="grid">
+      <section class="rule-top">
+        <h2>Yang harus terjadi agar tesis benar</h2>
+        <ul v-if="A.checks.length"><li v-for="x in A.checks" :key="x">{{ x }}</li></ul><p v-else class="small muted">Tidak ada yang menonjol.</p>
+      </section>
+      <section class="rule-top">
+        <h2>Sinyal untuk keluar</h2>
+        <ul v-if="A.exits.length"><li v-for="x in A.exits" :key="x">{{ x }}</li></ul><p v-else class="small muted">Tidak ada yang menonjol.</p>
+      </section>
+    </div>
+
+    <section class="rule-top">
+      <h2>Keterbukaan informasi terbaru</h2>
+      <ul v-if="A.reps.length" class="reps">
+        <li v-for="r in A.reps" :key="(r.id || '') + r.date + r.title">
+          <span class="cond d">{{ fmtDate(r.date) }}</span>
+          <a v-if="r.url" :href="r.url" target="_blank" rel="noopener">{{ r.title }}</a><span v-else>{{ r.title }}</span>
+          <span v-if="hiSig(r)" class="tag t-calm">sinyal tinggi</span>
+        </li>
+      </ul>
+      <p v-else class="small muted">Belum ada laporan.</p>
+    </section>
+
+    <div class="foot">
+      <a class="btn" :href="'https://stockbit.com/symbol/' + A.t" target="_blank" rel="noopener">Stockbit</a>
+      <p class="small muted">Analisa otomatis berbasis aturan dari data Stockbit, data transaksi radar, riset pengendali, dan pola 32 transaksi backdoor. Kerangka berpikir, bukan rekomendasi beli/jual.</p>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.load{padding:18px 0}
+.err{display:flex;flex-direction:column;gap:4px;padding:14px 0;border-top:2px solid var(--strong)}
+.err strong{color:var(--strong)}
+.an{display:flex;flex-direction:column;gap:22px}
+section h2{margin-bottom:8px}
+section p{margin:0 0 6px}
+h3.lbl{margin:10px 0 6px;font-size:12.5px}
+ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.r{text-align:right}
+.num{font:700 16px var(--f-display);white-space:nowrap}
+.ledger td.muted{white-space:nowrap}
+.c-good{color:var(--good)} .c-warn{color:var(--warn)} .c-strong{color:var(--strong)}
+.warn{padding:8px 12px;background:var(--warn-bg);color:var(--warn);border-left:3px solid var(--warn)}
+
+.vline{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;margin:0 0 4px}
+.score{font-size:48px;line-height:1;font-weight:700}
+.of{font-size:20px}
+.vline strong{font:700 24px var(--f-display);margin-left:10px}
+.pa-head{display:flex;gap:10px;align-items:baseline}
+.big{font-size:26px;font-weight:700;margin:0}
+.thesis{max-width:80ch}
+
+.dims{display:grid;grid-template-columns:minmax(150px,220px) 1fr 44px;column-gap:14px}
+.axis,.dim{display:contents}
+.axis .sc{position:relative;height:16px;font:600 11px var(--f-display);color:var(--ink-2)}
+.axis i{position:absolute;font-style:normal;transform:translateX(-50%)}
+.axis i:first-child{transform:none}
+.axis i:last-child{transform:translateX(-100%)}
+.dk,.track,.ds{padding-top:9px;border-top:1px solid var(--rule-2)}
+.track{position:relative;align-self:stretch;background:linear-gradient(90deg,transparent calc(50% - .5px),var(--rule) calc(50% - .5px),var(--rule) calc(50% + .5px),transparent calc(50% + .5px))}
+.track i{display:block;height:12px;margin-top:3px}
+.b-good{background:var(--good)} .b-warn{background:var(--warn)} .b-strong{background:var(--strong)}
+.ds{font-size:20px;font-weight:700;text-align:right;line-height:1.1}
+.why{grid-column:1 / -1;margin:4px 0 8px}
+
+.ladder{position:relative;height:78px;margin:6px 48px 10px}
+.rail{position:absolute;left:0;right:0;top:46px;height:2px;background:var(--rule)}
+.tk,.nowm{position:absolute;top:0;bottom:0;transform:translateX(-50%);display:flex;justify-content:center}
+.tk i{position:absolute;top:40px;width:2px;height:14px;background:var(--ink-2)}
+.tk b{position:absolute;top:58px;font-size:13px;white-space:nowrap;color:var(--ink-2)}
+.tk.up b{top:20px}
+.nowm i{position:absolute;top:30px;width:3px;height:32px;background:var(--ink)}
+.nowm b{position:absolute;top:0;font-size:14px;white-space:nowrap;color:var(--ink)}
+.cases h2+ul,.cases h2+p{margin-bottom:16px}
+
+.inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px 14px;margin-bottom:12px}
+.in{display:flex;flex-direction:column;gap:3px}
+.in input{width:100%;font:700 16px var(--f-display)}
+.in em{font-style:normal}
+.out{display:grid;grid-template-columns:repeat(2,1fr);margin:0 0 8px;border-top:1px solid var(--rule)}
+.out div{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:7px 16px 7px 0;border-bottom:1px solid var(--rule-2)}
+.out dt{color:var(--ink-2);font-size:13px}
+.out dd{margin:0;text-align:right;display:flex;flex-direction:column}
+.out dd b{font:700 17px var(--f-display);white-space:nowrap}
+.out dd span{font-size:12px;color:var(--ink-2)}
+
+.reps{list-style:none;padding:0;gap:0}
+.reps li{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--rule-2)}
+.reps .d{flex:none;width:92px;font-weight:600;color:var(--ink-2)}
+.foot{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.foot p{margin:0;flex:1;min-width:240px}
+@media (max-width:760px){
+  .grid,.out{grid-template-columns:1fr}
+  .dims{grid-template-columns:1fr 40px}
+  .axis{display:none}
+  .dk{grid-column:1 / -1}
+  .track{border-top:0;padding-top:4px}
+  .ds{border-top:0;padding-top:0}
+}
+</style>

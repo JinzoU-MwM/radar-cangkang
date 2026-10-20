@@ -1,0 +1,604 @@
+{
+ "_info": "Relasi pihak dalam kasus backdoor per emiten: node (posisi awal diagram), garis [dari, ke, jenis, label] dengan jenis own=kepemilikan, role=jabatan, plan=transaksi rencana, void=batal, dan info per node. Hanya fakta bersumber; yang belum ada sumbernya masuk open.",
+ "NAYZ": {
+  "asOf": "2026-10-20",
+  "nodes": [
+   {
+    "id": "mark",
+    "x": 200,
+    "y": 164,
+    "t": "Mark Leong Kei Wei",
+    "s": "Singapura · direktur Saiko"
+   },
+   {
+    "id": "nus",
+    "x": 520,
+    "y": 164,
+    "t": "Nusttanakit Sasiarnon",
+    "s": "UBO Saiko · CEO BTL · Direktur NAYZ"
+   },
+   {
+    "id": "saw",
+    "x": 840,
+    "y": 164,
+    "t": "Sawin Laosethakul",
+    "s": "UBO ±35% · Komisaris NAYZ"
+   },
+   {
+    "id": "spre",
+    "x": 200,
+    "y": 374,
+    "t": "SPRE",
+    "s": "ambil alih 27,83% · disuspensi 20 Jan",
+    "k": "void"
+   },
+   {
+    "id": "saiko",
+    "x": 680,
+    "y": 374,
+    "t": "Saiko Consultancy",
+    "s": "SPV Singapura · berdiri 8 Jan 2026",
+    "k": "key"
+   },
+   {
+    "id": "btl",
+    "x": 1160,
+    "y": 374,
+    "t": "Bangkok Tellink",
+    "s": "MVNO Thailand · kinerja belum dibuka"
+   },
+   {
+    "id": "ai",
+    "x": 200,
+    "y": 604,
+    "t": "PT Asia Intrainvesta",
+    "s": "pengendali lama · 66,90% → 19,27%"
+   },
+   {
+    "id": "nayz",
+    "x": 680,
+    "y": 616,
+    "t": "NAYZ",
+    "s": "ekuitas Rp63 M · harga Rp83",
+    "k": "main"
+   },
+   {
+    "id": "food",
+    "x": 200,
+    "y": 844,
+    "t": "Bisnis makanan bayi",
+    "s": "aset ±Rp58,51 M"
+   },
+   {
+    "id": "pub",
+    "x": 680,
+    "y": 844,
+    "t": "Masyarakat",
+    "s": "±3,42% bila tak tebus HMETD"
+   },
+   {
+    "id": "grand",
+    "x": 1000,
+    "y": 844,
+    "t": "Saiko Consultancy Grand",
+    "s": "anak usaha Saiko · pelaksana PTW"
+   }
+  ],
+  "edges": [
+   [
+    "nus",
+    "saiko",
+    "own",
+    "UBO"
+   ],
+   [
+    "saw",
+    "saiko",
+    "own",
+    "UBO ±35%"
+   ],
+   [
+    "mark",
+    "saiko",
+    "role",
+    "direktur"
+   ],
+   [
+    "nus",
+    "btl",
+    "role",
+    "pendiri & CEO"
+   ],
+   [
+    "saiko",
+    "spre",
+    "void",
+    "batal 28 Jan"
+   ],
+   [
+    "saiko",
+    "btl",
+    "own",
+    "≥75%"
+   ],
+   [
+    "saiko",
+    "nayz",
+    "own",
+    "29,41% · @Rp23,5"
+   ],
+   [
+    "btl",
+    "nayz",
+    "plan",
+    "inbreng maks. USD125 jt"
+   ],
+   [
+    "ai",
+    "nayz",
+    "own",
+    "19,27%"
+   ],
+   [
+    "pub",
+    "nayz",
+    "own",
+    "32,89%"
+   ],
+   [
+    "grand",
+    "nayz",
+    "plan",
+    "PTW Rp75 · s.d. 3 Nov"
+   ],
+   [
+    "nayz",
+    "food",
+    "plan",
+    "dialihkan"
+   ],
+   [
+    "food",
+    "ai",
+    "plan",
+    "ke Asia Intrainvesta"
+   ]
+  ],
+  "info": {
+   "mark": {
+    "kind": "Orang · Singapura",
+    "who": "Chartered Accountant (ISCA), Fellow ACCA, anggota Singapore Institute of Directors.",
+    "role": "Direktur Saiko Consultancy. Juru bicara Saiko saat rencana ambil alih SPRE (Jan 2026). Tidak tercatat sebagai pemegang saham Saiko.",
+    "trackTitle": "Rekam jejak",
+    "track": [
+     [
+      "2017",
+      "Direktur independen non-eksekutif mDR Limited (SGX); saat itu CEO perusahaan tambang emas"
+     ],
+     [
+      "Jul 2020",
+      "Independent Director Lippo Malls Indonesia Retail Trust, ketua Komite Audit & Risiko"
+     ],
+     [
+      "—",
+      "Pernah COO SBI Offshore Limited"
+     ],
+     [
+      "—",
+      "Anggota dewan independen Apeiron Bioenergy (Tracxn)"
+     ]
+    ],
+    "open": [
+     "Kepemilikan pribadi di Saiko",
+     "Hubungan dengan Nusttanakit atau Sawin di luar Saiko"
+    ],
+    "src": "LMIRT, SGX, MarketScreener, keterbukaan IDX 20 Agu 2026"
+   },
+   "nus": {
+    "kind": "Orang · Thailand",
+    "who": "Ejaan di SEC: Nusttanakit Sasianon.",
+    "role": "UBO Saiko, pengendali NAYZ. Direktur NAYZ sejak RUPSLB 2 Okt 2026. Pendiri dan CEO Bangkok Tellink, aset yang dijual Saiko ke NAYZ.",
+    "flag": "Duduk di sisi penjual (BTL, Saiko) dan sisi pembeli (NAYZ) transaksi BTL senilai maks. USD125 jt.",
+    "trackTitle": "Rekam jejak",
+    "track": [
+     [
+      "2019",
+      "Mendirikan Bangkok Tellink: MVNO/MVNA, merek INFINITE"
+     ],
+     [
+      "Des 2024",
+      "LOI merger BTL dengan SPAC Arogo Capital"
+     ],
+     [
+      "Feb 2025",
+      "Perjanjian merger BTL–Arogo USD350 jt untuk Nasdaq; dijadwalkan tetap CEO"
+     ],
+     [
+      "2 Okt 2026",
+      "Diangkat Direktur NAYZ; CSPA 75% BTL diteken hari yang sama"
+     ]
+    ],
+    "open": [
+     "Riwayat karier sebelum 2019",
+     "Porsi kepemilikannya di Saiko",
+     "Status merger Arogo"
+    ],
+    "src": "SEC 8-K Arogo, Katadata 6 Okt 2026"
+   },
+   "saw": {
+    "kind": "Orang · Thailand",
+    "who": "Pemegang saham dan direktur Saiko.",
+    "role": "Direktur dan pemegang ±35% saham Saiko (keterbukaan IDX 20 Agu 2026). UBO bersama Nusttanakit. Komisaris NAYZ sejak RUPSLB 2 Okt 2026.",
+    "trackTitle": "Jejak lain (cocok nama)",
+    "track": [
+     [
+      "—",
+      "Starasia Capital (Thailand) Co., Ltd."
+     ],
+     [
+      "—",
+      "Direktur S1WIN Consultant Co., Ltd."
+     ],
+     [
+      "—",
+      "Direktur Thanamitr Infrastructure Co., Ltd."
+     ],
+     [
+      "2024",
+      "Calon direksi Cho Thavee PCL (SET: CHO) di RUPS"
+     ],
+     [
+      "—",
+      "Pernah pemegang saham GCAP (SET)"
+     ]
+    ],
+    "note": "Jejak di atas dicocokkan dari nama, belum dipastikan orang yang sama.",
+    "open": [
+     "Data DBD Thailand untuk perusahaan-perusahaan di atas",
+     "Hubungan bisnis dengan Nusttanakit di luar Saiko dan NAYZ"
+    ],
+    "src": "Keterbukaan IDX, LinkedIn, D&B, undangan RUPS CHO 2024"
+   },
+   "saiko": {
+    "kind": "Badan hukum · Singapura",
+    "who": "Saiko Consultancy Pte. Ltd., UEN 202601181N, konsultasi manajemen.",
+    "role": "Pengendali NAYZ (29,41%). Penjual 75% BTL ke NAYZ. Induk PT Saiko Consultancy Grand, pelaksana PTW.",
+    "flag": "SPV berumur 11 hari saat mengumumkan rencana ambil alih SPRE, lalu membatalkannya 9 hari kemudian.",
+    "trackTitle": "Kronologi",
+    "track": [
+     [
+      "8 Jan 2026",
+      "Didirikan"
+     ],
+     [
+      "19 Jan 2026",
+      "Rencana ambil alih 27,83% SPRE"
+     ],
+     [
+      "28 Jan 2026",
+      "Rencana SPRE dibatalkan"
+     ],
+     [
+      "24 Apr 2026",
+      "Rencana ambil alih 41,18% NAYZ"
+     ],
+     [
+      "19 Agu 2026",
+      "Beli 750 jt saham NAYZ @Rp23,5"
+     ],
+     [
+      "2 Okt 2026",
+      "CSPA jual 75% BTL ke NAYZ"
+     ]
+    ],
+    "open": [
+     "Profil ACRA resmi: modal disetor, pemegang saham",
+     "Sumber dana pembelian"
+    ],
+    "src": "companieshouse.sg, IDX Channel, Kontan, CNBC Indonesia"
+   },
+   "btl": {
+    "kind": "Badan hukum · Thailand",
+    "who": "Bangkok Tellink Co., Ltd., berdiri 2019. MVNO dan MVNA berlisensi, merek INFINITE: paket seluler, IoT SIM, eSIM, SMPP, SIP trunk.",
+    "role": "Aset yang disuntik ke NAYZ: 75% (5.692.500 saham), maks. USD125 jt, 20% tunai dan 80% inbreng lewat HMETD.",
+    "flag": "Dihargai USD350 jt di SPAC Arogo (Feb 2025) vs tersirat USD166,7 jt di NAYZ. Pendapatan dan laba belum pernah dibuka.",
+    "trackTitle": "Kronologi",
+    "track": [
+     [
+      "2019",
+      "Didirikan"
+     ],
+     [
+      "Feb 2025",
+      "Merger SPAC Arogo USD350 jt"
+     ],
+     [
+      "2 Okt 2026",
+      "CSPA 75% ke NAYZ"
+     ]
+    ],
+    "open": [
+     "LK audit",
+     "Nilai KJPP",
+     "Data DBD Thailand"
+    ],
+    "src": "SEC 8-K Arogo, Kontan, Tracxn"
+   },
+   "spre": {
+    "kind": "Emiten BEI",
+    "who": "PT Soraya Berjaya Indonesia Tbk.",
+    "role": "Target pertama Saiko sebelum NAYZ. Rencana ambil alih 222,6 jt saham (27,83%) dari Rizet Ramawi.",
+    "trackTitle": "Kronologi",
+    "track": [
+     [
+      "19 Jan 2026",
+      "Rencana diumumkan"
+     ],
+     [
+      "20 Jan 2026",
+      "Saham disuspensi BEI setelah harga melonjak"
+     ],
+     [
+      "28 Jan 2026",
+      "Saiko membatalkan"
+     ]
+    ],
+    "open": [
+     "Alasan pembatalan"
+    ],
+    "src": "IDX Channel, Fortune IDN, Kontan"
+   },
+   "ai": {
+    "kind": "Badan hukum · Indonesia",
+    "who": "PT Asia Intrainvesta, pengendali lama NAYZ.",
+    "role": "Menjual 750 jt saham ke Saiko @Rp23,5. Menerima kembali bisnis makanan bayi.",
+    "trackTitle": "Pergerakan",
+    "track": [
+     [
+      "19 Agu 2026",
+      "Jual 750 jt saham ke Saiko"
+     ],
+     [
+      "s.d. 13 Okt",
+      "66,90% → 19,27% lewat 25 transaksi jual, harga terakhir ±Rp103"
+     ]
+    ],
+    "open": [
+     "Pemilik akhir Asia Intrainvesta"
+    ],
+    "src": "pengendali-verified.json, pandangan-analis.json"
+   },
+   "nayz": {
+    "kind": "Emiten BEI",
+    "who": "PT Hassana Boga Sejahtera Tbk. Ekuitas Rp63 M, kas Rp6 M (Jun 2026). H1 2026: pendapatan Rp3,64 M, rugi Rp2,97 M.",
+    "role": "Cangkang. Bisnis makanan bayi keluar, Bangkok Tellink masuk.",
+    "trackTitle": "Tahap",
+    "track": [
+     [
+      "19 Agu 2026",
+      "Pengendali berganti"
+     ],
+     [
+      "2 Okt 2026",
+      "RUPSLB, pengurus baru"
+     ],
+     [
+      "5 Okt–3 Nov",
+      "PTW Rp75"
+     ],
+     [
+      "s.d. Jul 2027",
+      "RUPS Independen, KJPP, PMHMETD"
+     ]
+    ],
+    "open": [
+     "Sumber dana porsi tunai ±Rp412,5 M"
+    ],
+    "src": "Katadata, story-verified.json"
+   },
+   "food": {
+    "kind": "Aset",
+    "who": "Bisnis makanan bayi NAYZ, aset ±Rp58,51 M.",
+    "role": "Dialihkan ke Asia Intrainvesta sebagai bagian transaksi.",
+    "trackTitle": "Kronologi",
+    "track": [
+     [
+      "Okt 2026",
+      "Rencana pengalihan diumumkan"
+     ]
+    ],
+    "open": [
+     "Harga pengalihan"
+    ],
+    "src": "pengendali-verified.json"
+   },
+   "pub": {
+    "kind": "Pemegang saham",
+    "who": "Pemegang saham publik NAYZ.",
+    "role": "Porsi 32,89% turun ke ±3,42% bila inbreng terjadi di Rp75 dan publik tidak menebus HMETD.",
+    "trackTitle": "Kesempatan keluar",
+    "track": [
+     [
+      "5 Okt–3 Nov",
+      "PTW Rp75 (harga kini Rp83)"
+     ],
+     [
+      "s.d. Jul 2027",
+      "Suara di RUPS Independen"
+     ]
+    ],
+    "open": [
+     "Harga pelaksanaan HMETD"
+    ],
+    "src": "pandangan-analis.json"
+   },
+   "grand": {
+    "kind": "Badan hukum · Indonesia",
+    "who": "PT Saiko Consultancy Grand, anak usaha Saiko.",
+    "role": "Pelaksana PTW Rp75 untuk maks. 45,84%, dana maks. Rp87,68 M.",
+    "trackTitle": "Kronologi",
+    "track": [
+     [
+      "5 Okt–3 Nov",
+      "Masa PTW"
+     ],
+     [
+      "10 Nov 2026",
+      "Pembayaran PTW"
+     ]
+    ],
+    "open": [
+     "Data AHU: akta, modal, pengurus"
+    ],
+    "src": "Stockbit Reports 2 Okt 2026"
+   }
+  },
+  "injeksi": {
+   "asOf": "2026-10-15",
+   "judul": "Bangkok Tellink Co., Ltd. (BTL), 75%",
+   "sub": "Telekomunikasi Thailand · penjual: Saiko (afiliasi pengendali) · CSPA 2 Okt 2026, diumumkan 5 Okt",
+   "nilai": [
+    {
+     "l": "Nilai maks. 75%",
+     "v": "USD125 jt",
+     "s": "±Rp2,06 T (kurs 16.500)"
+    },
+    {
+     "l": "Tunai 20%",
+     "v": "±Rp412,5 M",
+     "s": "dibayar NAYZ · kas NAYZ Jun 2026: Rp6 M"
+    },
+    {
+     "l": "Inbreng 80%",
+     "v": "±Rp1,65 T",
+     "s": "jadi saham baru Saiko lewat HMETD"
+    },
+    {
+     "l": "Objek",
+     "v": "5.692.500",
+     "s": "saham BTL = 75% modal disetor"
+    }
+   ],
+   "nilaiCatatan": "Bila nilai penilai independen (KJPP terdaftar OJK) lebih rendah, nilai penilai yang dipakai. USD125 jt adalah plafon.",
+   "valuasi": {
+    "judul": "Valuasi BTL (100%) dari dua transaksi",
+    "baris": [
+     {
+      "l": "SPAC Arogo Capital, Feb 2025 (Nasdaq, belum tuntas)",
+      "v": 350,
+      "teks": "USD350 jt"
+     },
+     {
+      "l": "Injeksi ke NAYZ, Okt 2026 (tersirat dari USD125 jt ÷ 75%)",
+      "v": 166.7,
+      "teks": "USD166,7 jt",
+      "utama": true
+     }
+    ],
+    "catatan": "Angka SPAC adalah nilai ekuitas pro-forma gabungan, jadi tidak setara satu-satu dengan nilai BTL sendiri."
+   },
+   "kinerja": {
+    "judul": "Kinerja keuangan BTL",
+    "peringatanTegas": "Pendapatan, laba, aset, dan ekuitas BTL belum pernah dibuka",
+    "peringatan": ", baik di keterbukaan informasi NAYZ (5 Okt 2026) maupun siaran pers SEC Arogo. Nilai Rp2,06 T belum didukung satu pun angka kinerja.",
+    "baris": [
+     {
+      "data": "Pendapatan FY2021-22",
+      "isi": "rentang USD1–10 jt",
+      "andal": "rendah · agregator Tracxn, satuan tidak jelas",
+      "level": "rendah"
+     },
+     {
+      "data": "Pertumbuhan penjualan 2025",
+      "isi": "+671% (THB)",
+      "andal": "sangat rendah · profil EMIS memuat tanggal berdiri yang salah",
+      "level": "sangat-rendah"
+     },
+     {
+      "data": "Laba bersih, aset, ekuitas",
+      "isi": null,
+      "andal": "tunggu LK audit BTL",
+      "level": "kosong"
+     },
+     {
+      "data": "Jumlah pelanggan",
+      "isi": null,
+      "andal": "tidak disebut di sumber mana pun",
+      "level": "kosong"
+     }
+    ]
+   },
+   "operasional": [
+    {
+     "l": "Lisensi",
+     "t": "MVNO dan MVNA berlisensi di Thailand, merek INFINITE. Berdiri 2019."
+    },
+    {
+     "l": "Produk",
+     "t": "Paket seluler (700/850/2100/2300 MHz, 26 GHz), IoT SIM, eSIM, SMS virtual (SMPP), SIP trunk, smart solutions, pengembangan perangkat lunak."
+    },
+    {
+     "l": "Pimpinan",
+     "t": "Nusttanakit Sasiarnon (pendiri, CEO), juga UBO Saiko dan Direktur NAYZ. Pembeli dan penjual dikendalikan orang yang sama."
+    }
+   ],
+   "dampak": [
+    {
+     "l": "Ekuitas NAYZ",
+     "v": "Rp63 M",
+     "s": "Jun 2026 · injeksi ±33× ekuitas"
+    },
+    {
+     "l": "Bisnis lama H1 2026",
+     "v": "Rp3,64 M",
+     "s": "pendapatan (H1 2025: Rp17,80 M) · rugi Rp2,97 M"
+    },
+    {
+     "l": "Porsi publik",
+     "v": "32,89% ke ±3,42%",
+     "s": "asumsi harga HMETD Rp75"
+    },
+    {
+     "l": "Nilai per saham",
+     "v": "±Rp70",
+     "s": "pasca-inbreng, vs harga Rp83"
+    }
+   ],
+   "dampakCatatan": "Bisnis makanan bayi dan asetnya (±Rp58,51 M) dialihkan ke Asia Intrainvesta. Setelah transaksi, BTL jadi satu-satunya bisnis NAYZ.",
+   "dokumen": [
+    "Laporan penilai independen (KJPP) atas BTL: nilai acuan final",
+    "Laporan keuangan BTL yang diaudit: pendapatan, laba, utang",
+    "Prospektus PMHMETD: harga pelaksanaan, rasio, jumlah saham baru",
+    "Keterbukaan RUPS Independen: hasil suara pemegang saham independen",
+    "Filing SEC Arogo terbaru: apakah merger USD350 jt batal"
+   ],
+   "sumber": [
+    {
+     "t": "Kontan",
+     "url": "https://investasi.kontan.co.id/news/hassana-boga-nayz-bakal-akuisisi-75-bangkok-tellink-nilai-maksimal-us-125-juta",
+     "ket": "objek, nilai maks., mekanisme penilai"
+    },
+    {
+     "t": "Katadata, 6 Okt 2026",
+     "url": "https://katadata.co.id/finansial/bursa/6ac4777d668c2/bisnis-nayz-berbelok-ke-telekomunikasi-seusai-saiko-masuk-backdoor-listing",
+     "ket": "kinerja NAYZ H1 2026"
+    },
+    {
+     "t": "GlobeNewswire / SEC 8-K Arogo, Feb 2025",
+     "url": "https://www.globenewswire.com/news-release/2025/02/18/3028211/0/en/Arogo-Capital-Acquisition-Corp-Executes-Business-Combination-Agreement-with-Bangkok-Tellink-Co-Ltd.html",
+     "ket": "profil BTL, USD350 jt"
+    },
+    {
+     "t": "Tracxn",
+     "url": "https://tracxn.com/d/legal-entities/thailand/bangkok-tellink-co.ltd./__P9QCHyGlvcADmdTLtV7Rgct7Dxt4aZgW3WcFp0-GA2Q",
+     "ket": "rentang pendapatan 2022 (tidak andal)"
+    },
+    {
+     "t": "pandangan-analis.json (15 Okt 2026)",
+     "url": null,
+     "ket": "dilusi, nilai per saham"
+    }
+   ]
+  }
+ }
+}
