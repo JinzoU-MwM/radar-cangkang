@@ -115,8 +115,24 @@ def main() -> int:
         print(f"Token masih {sisa / 3600:.1f} jam, tidak perlu refresh.")
         return 0
     if not ref:
-        notify(f"Refresh token belum ada di {REFRESH_FILE}; access token sisa {max(sisa, 0) / 3600:.1f} jam.")
-        return 1
+        # Kondisi "menunggu diisi manusia", bukan kegagalan eksekusi: keluar 0 agar jurnal systemd
+        # tidak menumpuk FAILURE tiap jam. Notifikasi desktop dibatasi sekali per hari.
+        msg = (f"Refresh token belum ada di {REFRESH_FILE}; access token sisa {max(sisa, 0) / 3600:.1f} jam.")
+        stamp = WEB / ".stockbit-notify-stamp"
+        now = time.time()
+        try:
+            last = stamp.stat().st_mtime
+        except OSError:
+            last = 0.0
+        if now - last > 86400 or "--force" in sys.argv:
+            notify(msg)
+            try:
+                stamp.touch()
+            except OSError:
+                pass
+        else:
+            print(msg, file=sys.stderr)
+        return 0
     try:
         refresh(ref)
     except Exception as e:

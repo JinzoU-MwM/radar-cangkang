@@ -24,9 +24,50 @@
   },
   "backdoor": {
     "_petunjuk": "include: emiten backdoor yang pasti dimasukkan ke Progress walau tidak ada di daftar penawaran tender. exclude: pengambilalihan yang bukan backdoor (emiten besar / go-private) dan disembunyikan. corpactionUrl: riwayat aksi korporasi per emiten untuk mencari tender lama.",
-    "include": ["ASPI","AGAR","AYLS","BIKE","BLUE","DOOH","EPAC","ELIT","FITT","FORU","FUTR","GPSO","IDEA","KDTN","LOPI","MBSS","MEJA","MGLV","MKNT","NAYZ","NINE","OLIV","PACK","PGJO","PIPA","SOFA","STAR","TRUK","TGUK","ULTJ","VISI","SMKM",
-                "DPUM","PNGO","KOKA","PTMR"],
-    "exclude": ["MAPI","TCID","SGRO","SUPR"],
+    "include": [
+      "ASPI",
+      "AGAR",
+      "AYLS",
+      "BIKE",
+      "BLUE",
+      "DOOH",
+      "EPAC",
+      "ELIT",
+      "FITT",
+      "FORU",
+      "FUTR",
+      "GPSO",
+      "IDEA",
+      "KDTN",
+      "LOPI",
+      "MBSS",
+      "MEJA",
+      "MGLV",
+      "MKNT",
+      "NAYZ",
+      "NINE",
+      "OLIV",
+      "PACK",
+      "PGJO",
+      "PIPA",
+      "SOFA",
+      "STAR",
+      "TRUK",
+      "TGUK",
+      "ULTJ",
+      "VISI",
+      "SMKM",
+      "DPUM",
+      "PNGO",
+      "KOKA",
+      "PTMR"
+    ],
+    "exclude": [
+      "MAPI",
+      "TCID",
+      "SGRO",
+      "SUPR"
+    ],
     "corpactionUrl": "https://exodus.stockbit.com/corpaction/{ticker}?limit=40"
   },
   "tenders": {
@@ -39,16 +80,68 @@
     "_petunjuk": "Berita masuk bila judul/ringkasan cocok 'keywords' (regex, tidak peka huruf besar) atau menyebut kode saham yang ada di radar. type rss = feed RSS; html = halaman daftar artikel + 'pattern' (regex URL artikel).",
     "keywords": "backdoor|ganti pengendali|pengendali baru|pemegang saham pengendali|pengambilalihan|akuisisi|caplok|tender offer|penawaran tender|\\bMTO\\b|inbreng|rights issue|HMETD|private placement|PMTHMETD|RUPSLB|ganti nama|reverse takeover|divestasi|borong saham|aksi korporasi",
     "sources": [
-      { "name": "IDX Channel",       "type": "rss",  "url": "https://sindikasi.idxchannel.com/rss/market-news" },
-      { "name": "Bloomberg Technoz", "type": "html", "url": "https://www.bloombergtechnoz.com/kanal/market", "pattern": "bloombergtechnoz\\.com/detail-news/\\d+" },
-      { "name": "Investor.id",       "type": "html", "url": "https://investor.id/market", "pattern": "investor\\.id/market/\\d+/" },
-      { "name": "CNBC Indonesia",    "type": "rss",  "url": "https://www.cnbcindonesia.com/market/rss" },
-      { "name": "CNN Indonesia",     "type": "rss",  "url": "https://www.cnnindonesia.com/ekonomi/rss" },
-      { "name": "Kontan",            "type": "html", "url": "https://investasi.kontan.co.id/", "pattern": "investasi\\.kontan\\.co\\.id/news/" },
-      { "name": "Katadata",          "type": "html", "url": "https://katadata.co.id/finansial", "pattern": "katadata\\.co\\.id/finansial/(bursa|korporasi)/" },
-      { "name": "EmitenNews",        "type": "html", "url": "https://www.emitennews.com/category/emiten", "pattern": "emitennews\\.com/news/" },
-      { "name": "Bisnis.com",        "type": "html", "url": "https://market.bisnis.com/bursa-saham", "pattern": "bisnis\\.com/read/" },
-      { "name": "detikFinance",      "type": "rss",  "url": "https://finance.detik.com/rss" }
+      {
+        "name": "IDX Channel",
+        "type": "rss",
+        "url": "https://sindikasi.idxchannel.com/rss/market-news"
+      },
+      {
+        "name": "Bloomberg Technoz",
+        "type": "html",
+        "url": "https://www.bloombergtechnoz.com/kanal/market",
+        "pattern": "bloombergtechnoz\\.com/detail-news/\\d+"
+      },
+      {
+        "name": "Investor.id",
+        "type": "html",
+        "url": "https://investor.id/market",
+        "pattern": "investor\\.id/market/\\d+/"
+      },
+      {
+        "name": "CNBC Indonesia",
+        "type": "rss",
+        "url": "https://www.cnbcindonesia.com/market/rss"
+      },
+      {
+        "name": "CNN Indonesia",
+        "type": "rss",
+        "url": "https://www.cnnindonesia.com/ekonomi/rss"
+      },
+      {
+        "name": "Kontan",
+        "type": "html",
+        "url": "https://investasi.kontan.co.id/",
+        "pattern": "investasi\\.kontan\\.co\\.id/news/"
+      },
+      {
+        "name": "Katadata",
+        "type": "html",
+        "url": "https://katadata.co.id/finansial",
+        "pattern": "katadata\\.co\\.id/finansial/(bursa|korporasi)/"
+      },
+      {
+        "name": "EmitenNews",
+        "type": "html",
+        "url": "https://www.emitennews.com/category/emiten",
+        "pattern": "emitennews\\.com/news/"
+      },
+      {
+        "name": "Bisnis.com",
+        "type": "html",
+        "url": "https://market.bisnis.com/bursa-saham",
+        "pattern": "bisnis\\.com/read/"
+      },
+      {
+        "name": "detikFinance",
+        "type": "rss",
+        "url": "https://finance.detik.com/rss"
+      }
     ]
+  },
+  "features": {
+    "_petunjuk": "Sakelar fitur frontend. true = tampil, false = sembunyi. Frontend baca lewat /api/status atau /api/features.",
+    "viz": true,
+    "news": true,
+    "updates": true
   }
 }

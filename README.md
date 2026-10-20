@@ -10,9 +10,12 @@ radar-cangkang/
 ├── stockbit-token-watcher.py    Perbarui token Stockbit otomatis (systemd timer)
 ├── README.md
 ├── .gitignore                   Mencegah token ikut terunggah
-├── website/                     Website mandiri (tanpa Claude)
-│   ├── index.html               Halaman utama
-│   ├── serve.ps1                Server lokal + proxy Stockbit (port 8765)
+├── website/                     Website mandiri (frontend + backend Python)
+│   ├── index.html               Markup halaman utama
+│   ├── styles.css               Seluruh gaya (dipecah dari index.html)
+│   ├── js/app.js                Logika UI (entry ES module)
+│   ├── js/lib/domain.js         Modul domain murni: konstanta, skor, util
+│   ├── server.py                Server lokal + proxy Stockbit (port 8765, Python stdlib)
 │   ├── stockbit.config.json     URL endpoint & pemetaan field Stockbit
 │   ├── .stockbit-token          token Bearer Stockbit, JANGAN dibagikan
 │   └── .stockbit-refresh        refresh token Stockbit, JANGAN dibagikan
@@ -22,7 +25,7 @@ radar-cangkang/
 
 ## Menjalankan
 
-Butuh PowerShell 7 (`pwsh`).
+Butuh Python 3 (stdlib murni, tanpa pip install).
 
 ```
 ./jalankan-radar.sh            # terbuka ke jaringan lokal (LAN/Tailscale)
@@ -72,7 +75,7 @@ Mengisi refresh token (sekali, atau tiap kali rantainya putus):
 
 ## Cache SQLite
 
-Server menyimpan respons Stockbit dan sumber berita di `website/.cache.sqlite` (butuh CLI `sqlite3`; tanpa itu server tetap jalan tanpa cache). Semua perangkat memakai salinan yang sama; Stockbit hanya dipanggil saat salinan kedaluwarsa:
+Server menyimpan respons Stockbit dan sumber berita di `website/.cache.sqlite` (modul sqlite3 bawaan Python; selalu tersedia). Semua perangkat memakai salinan yang sama; Stockbit hanya dipanggil saat salinan kedaluwarsa:
 
 | Data | Umur salinan |
 |---|---|
@@ -81,4 +84,4 @@ Server menyimpan respons Stockbit dan sumber berita di `website/.cache.sqlite` (
 | Berita media | 15 menit |
 | Tender, pemegang saham, profil, keuangan | 6 jam |
 
-Tombol **Perbarui** manual mengambil data segar (`?fresh=1`); pembaruan otomatis memakai cache. Bila Stockbit gagal/limit, salinan lama dipakai. Hapus cache: `rm website/.cache.sqlite*`. Tes: `pwsh -NoProfile -File test-cache.ps1`.
+Tombol **Perbarui** manual mengambil data segar (`?fresh=1`); pembaruan otomatis memakai cache. Bila Stockbit gagal/limit, salinan lama dipakai. Hapus cache: `rm website/.cache.sqlite*`. 
