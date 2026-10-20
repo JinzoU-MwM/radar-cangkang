@@ -1,0 +1,1640 @@
+{
+    "_info":  {
+                  "tanggal":  "2026-10-20",
+                  "catatan":  "Status KJPP \u0027terbit\u0027 hanya bila laporan penilaian atas aset target terkonfirmasi (nama KJPP + nilai). Inferensi \u0026 studi kelayakan ditandai di field dasar dan tidak dihitung sebagai tahapan."
+              },
+    "AYLS":  {
+                 "kjpp":  {
+                              "status":  "belum",
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  null,
+                              "sumber":  "Tidak ada penyebutan KJPP dalam keterbukaan Stockbit (Pembelian 4.900 lembar Saham PT Global Pacific Indonesia, 2026-10-07) maupun Pasardana/Bisnis 2026-10-07"
+                          },
+                 "aset":  {
+                              "nama":  "PT Global Pacific Indonesia (GPI)",
+                              "jenis":  "Saham perusahaan tertutup (4.900 lembar), dibeli dari PT Gunung Daya Permata",
+                              "sektor":  "lainnya",
+                              "porsi":  "4.900 lembar saham; persentase kepemilikan tidak diungkap",
+                              "deskripsi":  "Pembelian diselesaikan 6 Oktober 2026 melalui akta jual beli notaris. Menurut Dirut Yang Chuan, tujuannya memperkuat struktur kepemilikan dan sinergi usaha dengan entitas terkait. AYLS (dahulu Agro Yasa Lestari, kini Arkayana Lestari Grup) berencana menjadi holding pertambangan, perdagangan mineral, dan logistik (Public Expose 25 Juni 2026). Bidang usaha GPI tidak diungkap.",
+                              "lokasi":  null,
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  null,
+                                              "sumberDaya":  null,
+                                              "kalori":  null,
+                                              "produksi":  null,
+                                              "iup":  null
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Tidak diungkap",
+                                   "nilaiRp":  null,
+                                   "caraBayar":  "Tidak diungkap (opex emiten selama 2026 ditalangi pengendali PT Bintang Cahaya Investment lewat transaksi afiliasi)"
+                               },
+                 "pembanding":  [
+                                    "INDY",
+                                    "TOBA"
+                                ],
+                 "sumber":  [
+                                "Pembelian 4.900 lembar Saham PT Global Pacific Indonesia milik PT Gunung Daya Permata — Stockbit Reports, 2026-10-07",
+                                "AYLS Akuisisi Saham Global Pacific, Bidik Penguatan Aset dan Sinergi Usaha — Pasardana, 2026-10-07",
+                                "Arkayana (AYLS) Akuisisi 4.900 Saham GPI, Bidik Sinergi Operasional — Bisnis.com, 2026-10-07",
+                                "Penyampaian Materi Public Expose - Tahunan — Stockbit Reports, 2026-06-25",
+                                "Transaksi Afiliasi (Opex Agustus Rp280,63 juta) — Stockbit Reports, 2026-09-29"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp: tidak ada laporan penilaian/pendapat kewajaran yang diumumkan",
+                                        "aset.porsi: jumlah saham GPI seluruhnya tidak diungkap sehingga persentase tidak dapat dihitung",
+                                        "aset.keuangan: laporan keuangan GPI tidak dipublikasikan",
+                                        "aset.sektor: bidang usaha GPI tidak diungkap; diisi \u0027lainnya\u0027",
+                                        "transaksi.nilai: nilai pembelian tidak disebut di keterbukaan maupun media",
+                                        "pembanding: bersifat sementara (holding tambang-logistik) karena bisnis GPI belum diketahui"
+                                    ]
+             },
+    "BIKE":  {
+                 "kjpp":  {
+                              "status":  "belum",
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  null,
+                              "sumber":  "Laporan Hasil Public Expose - Insidentil — Stockbit Reports, 2026-09-25 (kajian KJPP yang disebut hanya untuk rencana penguatan modal kerja/pinjaman dari pengendali, bukan atas SBA/BUM)"
+                          },
+                 "aset":  {
+                              "nama":  "PT Sumber Bara Abadi (SBA) 45% dan PT Berau Usaha Mandiri (BUM) 72%",
+                              "jenis":  "Saham perusahaan tambang batu bara, diambil melalui anak usaha PT Prambanan Nusantara Energi (PNE)",
+                              "sektor":  "batu bara",
+                              "porsi":  "SBA 45% (8 Okt 2026); BUM 72% (7 Okt 2026)",
+                              "deskripsi":  "SBA pemegang IUP Operasi Produksi di Kutai Kartanegara; transaksi mencakup fasilitas pelabuhan, conveyor belt, kantor dan peralatan; proyeksi pendapatan manajemen USD84 juta per tahun (proyeksi, bukan historis). BUM memiliki area ±500 ha di Tanjung Redeb, Berau, dengan ±400 ha telah dieksplorasi.",
+                              "lokasi":  "SBA: Kec. Sebulu \u0026 Muara Kaman, Kab. Kutai Kartanegara, Kaltim; BUM: Tanjung Redeb, Berau, Kaltim",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  "BUM: cadangan terbukti ±22 juta MT (dari ±400 ha dieksplorasi)",
+                                              "sumberDaya":  "SBA: kandungan batu bara ±86 juta MT (klasifikasi cadangan/sumber daya tidak disebut)",
+                                              "kalori":  null,
+                                              "produksi":  "SBA: rata-rata 2 juta MT/tahun, target 4 juta MT/tahun mulai 2029; BUM: target 1,5–2,5 juta MT/tahun",
+                                              "iup":  "SBA: IUP OP SK 64/1/IUP/PMA/2017, luas 4.909 ha; BUM: konsesi ±500 ha (nomor IUP tidak disebut)"
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Tidak diungkap",
+                                   "nilaiRp":  null,
+                                   "caraBayar":  "Tidak diungkap; transformasi BIKE didanai fasilitas pinjaman Rp1 T dari pengendali PT Penajam Makmur Jaya"
+                               },
+                 "pembanding":  [
+                                    "BSSR",
+                                    "TOBA",
+                                    "MCOL"
+                                ],
+                 "sumber":  [
+                                "Pemberitahuan Akuisisi PT Sumber Bara Abadi oleh PT Prambanan Nusantara Energi (KOREKSI) — Stockbit Reports, 2026-10-12",
+                                "Pemberitahuan PT Bhineka Inovasi Ketahanan Energi Tbk Resmi Akuisisi 72% Saham Perusahaan Tambang Batu Bara — Stockbit Reports, 2026-10-09",
+                                "BIKE Akuisisi 45% Saham Tambang Batu Bara, Bidik Produksi 4 Juta Ton per Tahun pada 2029 — Pasardana, 2026-10-12",
+                                "BIKE Akuisisi 45 Persen Saham Sumber Bara Abadi, Bidik Pendapatan USD84 Juta — Kabarbursa, 2026-10-12",
+                                "Bhineka Inovasi (BIKE) Akuisisi 72% Saham Berau Usaha Mandiri — Kontan, 2026-10-09",
+                                "Laporan Hasil Public Expose - Insidentil — Stockbit Reports, 2026-09-25",
+                                "Penjelasan atas Permintaan Penjelasan Bursa (pinjaman Rp1 T dari PMJ) — Stockbit Reports, 2026-08-19"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp: tidak ada KJPP/penilaian yang diumumkan atas SBA maupun BUM",
+                                        "aset.keuangan: laporan keuangan SBA dan BUM tidak dipublikasikan",
+                                        "tambang.kalori: kualitas batu bara tidak disebut",
+                                        "transaksi.nilai: nilai akuisisi, penjual, dan sumber dana spesifik tidak diungkap",
+                                        "catatan: Pasardana menyebut \u0027saham mayoritas\u0027 untuk SBA padahal porsinya 45% (inkonsisten)"
+                                    ]
+             },
+    "BLUE":  {
+                 "kjpp":  {
+                              "status":  "belum",
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  null,
+                              "sumber":  "Tidak ditemukan di Stockbit Reports (Rencana Transaksi Material, 2026-04-28) maupun EmitenNews 2026-04-29; RUPS Independen ditunda atas arahan OJK (2026-06-03)"
+                          },
+                 "aset":  {
+                              "nama":  "PT Huaan Mining Engineering (HME)",
+                              "jenis":  "Saham perusahaan jasa penunjang pertambangan, dibeli dari Huating Investment Singapore Pte. Ltd.",
+                              "sektor":  "jasa tambang",
+                              "porsi":  "99%",
+                              "deskripsi":  "Bagian dari restrukturisasi setelah rencana pengambilalihan 80% BLUE oleh Dragonmine Mining (Hong Kong) Ltd (milik Huayou Hongkong Ltd; CSPA 18 Feb 2026). Aset dan usaha lama didivestasi Rp115,1 miliar ke pihak terafiliasi pengendali lama (unit usaha Rp96,1 miliar ke PT Bintang Lintas Usaha dan 2 bidang tanah PIK 2 Rp19 miliar ke PT Artha Integra Indonesia).",
+                              "lokasi":  null,
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  null,
+                                              "sumberDaya":  null,
+                                              "kalori":  null,
+                                              "produksi":  null,
+                                              "iup":  null
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Rp111,4 miliar (99% saham HME)",
+                                   "nilaiRp":  111400000000,
+                                   "caraBayar":  "Tidak diungkap"
+                               },
+                 "pembanding":  [
+                                    "PTRO",
+                                    "DOID",
+                                    "UNTR"
+                                ],
+                 "sumber":  [
+                                "Penyampaian Informasi rencana Transaksi material - Rencana Transaksi Material Dengan Persetujuan RUPS — Stockbit Reports, 2026-04-28",
+                                "Bersiap Jadi Holding Tambang, BLUE Mau Akuisisi Perusahaan Singapura — EmitenNews, 2026-04-29",
+                                "PENUNDAAN RAPAT UMUM PEMEGANG SAHAM INDEPENDEN — Stockbit Reports, 2026-06-03",
+                                "Penyampaian Informasi Mengenai Perkembangan Negosiasi Rencana Pengambilalihan — Stockbit Reports, 2026-07-30",
+                                "Ganti Pengendali, Berkah Prima (BLUE) Bersiap Masuk Ekosistem EV — Kontan, 2026-02-23"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp: nama KJPP dan hasil penilaian/pendapat kewajaran tidak ditemukan di sumber publik yang dapat diakses",
+                                        "aset.lokasi: wilayah operasi dan klien HME tidak diungkap",
+                                        "aset.keuangan: data keuangan HME tidak ditemukan",
+                                        "transaksi.caraBayar: tidak disebut",
+                                        "status: transaksi belum terlaksana; RUPS Independen ditunda sejak 2 Jun 2026, per 8 Okt 2026 tidak ada informasi baru"
+                                    ]
+             },
+    "DOOH":  {
+                 "kjpp":  {
+                              "status":  "belum",
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  null,
+                              "sumber":  "Tidak disebut dalam Rencana Transaksi Material (Stockbit, 2026-10-01), Kabarbursa 2026-10-03, maupun Bisnis.com 2026-10-09; persetujuan RUPSLB 9 Nov 2026"
+                          },
+                 "aset":  {
+                              "nama":  "PT Sinergi Inti Andalan Prima Tbk (INET)",
+                              "jenis":  "Saham emiten tercatat (6,685 miliar saham) dari PT Abadi Kreasi Unggul Nusantara (AKUN), dibeli melalui anak usaha PT Cakrawala Nexus Investama (CNI)",
+                              "sektor":  "telekomunikasi",
+                              "porsi":  "29,88%",
+                              "deskripsi":  "INET bergerak di infrastruktur jaringan/internet; sejak 17 Sep 2026 memiliki 60% PT Sarana Global Indonesia (konstruksi kabel bawah laut, 2 kapal) senilai Rp280,4 miliar. Saham beredar ±22,38 miliar (Okt 2026). Harga Rp300/saham mengimplikasikan nilai ekuitas 100% INET ±Rp6,7 T (Mirae Asset via Bisnis.com). Transaksi afiliasi dan material (647,90% ekuitas DOOH per 30 Jun 2026).",
+                              "lokasi":  null,
+                              "keuangan":  {
+                                               "periode":  "1H 2026 (6 bulan s.d. 30 Juni 2026, konsolidasi INET)",
+                                               "pendapatan":  926450000000,
+                                               "ebitda":  null,
+                                               "labaBersih":  34210000000,
+                                               "totalAset":  6110000000000,
+                                               "ekuitas":  3810000000000,
+                                               "utang":  2300000000000,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  null,
+                                              "sumberDaya":  null,
+                                              "kalori":  null,
+                                              "produksi":  null,
+                                              "iup":  null
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Rp2,005 triliun (6,685 miliar saham INET @Rp300)",
+                                   "nilaiRp":  2005000000000,
+                                   "caraBayar":  "Tunai; didanai pinjaman pemegang saham SII (plafon s.d. Rp5 T, tenor 10 tahun, bunga 7,5%; tahap awal Rp2 T) dan pengalihan sisa dana IPO Rp120 miliar sebagai setoran modal ke CNI; rencana PMHMETD I maks. 154,78 miliar saham untuk melunasi pinjaman"
+                               },
+                 "pembanding":  [
+                                    "LINK",
+                                    "MTEL",
+                                    "CENT"
+                                ],
+                 "sumber":  [
+                                "Rencana Transaksi Material Dengan Persetujuan RUPS — Stockbit Reports, 2026-10-01",
+                                "Keterbukan Informasi Terkait Perubahan Penggunaan Dana Hasil IPO — Stockbit Reports, 2026-10-01",
+                                "Aksi DOOH Caplok 29 Persen Saham INET Rp2 Triliun, Bidik Ekosistem AI — Kabarbursa, 2026-10-03",
+                                "Prospek Saham DOOH ketika Akuisisi INET — Bisnis.com, 2026-10-09",
+                                "INET Bukukan Pendapatan Neto Rp926,45 Miliar pada Semester I 2026 — Pasardana, 2026-09-14",
+                                "Penyelesaian penyertaan modal Perseroan pada PT Sarana Global Indonesia — Stockbit Reports (INET), 2026-09-17",
+                                "Pencatatan Saham (total 22,38 miliar saham) — Stockbit Reports (INET), 2026-10-19"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp: laporan penilaian/pendapat kewajaran atas saham INET belum ditemukan (transaksi afiliasi, menunggu RUPSLB 9 Nov 2026)",
+                                        "aset.keuangan.ebitda: tidak dipublikasikan; laba usaha 1H26 Rp71,36 miliar",
+                                        "aset.keuangan.utang: tidak disebut eksplisit; Rp2,30 T adalah turunan total aset dikurangi ekuitas (Pasardana)",
+                                        "aset.keuangan.labaBersih: Rp34,21 miliar adalah laba periode berjalan total; atribusi ke induk Rp33,67 miliar",
+                                        "aset.keuangan: catatan—ringkasan AI Stockbit 2026-05-12 menyebut total aset 31 Mar 2026 Rp5,69 T sementara Pasardana menyebut aset 31 Des 2025 Rp760,37 miliar; perlu verifikasi ke LK resmi"
+                                    ]
+             },
+    "EPAC":  {
+                 "kjpp":  {
+                              "status":  "belum",
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  null,
+                              "sumber":  "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-08-05 (skema, nilai, struktur share swap belum final; due diligence tertunda)"
+                          },
+                 "aset":  {
+                              "nama":  "PT Media Telekomunikasi Mandiri (MTM)",
+                              "jenis":  "Saham perusahaan ICT, rencana RTO via share swap (UBO MTM: PT Sirkah Akselerasi Jaya)",
+                              "sektor":  "telekomunikasi",
+                              "porsi":  "Belum final (direncanakan menjadi anak usaha EPAC)",
+                              "deskripsi":  "Pengendali baru PT Triple Berkah Bersama (34,56% @Rp12) berencana menginjeksi MTM; MTM sedang restrukturisasi utang sehingga due diligence tertunda. EPAC juga menutup segmen kemasan konvensional 31 Des 2026 dan merencanakan PMHMETD I maks. 2 miliar saham (RUPSLB 3 Nov 2026).",
+                              "lokasi":  null,
+                              "keuangan":  {
+                                               "periode":  "Estimasi (tidak disebut periodenya)",
+                                               "pendapatan":  400000000000,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  500000000000,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  null,
+                                              "sumberDaya":  null,
+                                              "kalori":  null,
+                                              "produksi":  null,
+                                              "iup":  null
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Belum final",
+                                   "nilaiRp":  null,
+                                   "caraBayar":  "Share swap (penerbitan saham EPAC untuk pemegang saham MTM); rasio belum ditetapkan"
+                               },
+                 "pembanding":  [
+                                    "MLPT",
+                                    "ATIC",
+                                    "MTDL"
+                                ],
+                 "sumber":  [
+                                "Perkembangan Negosiasi Pengambilalihan (aset MTM ±Rp500 miliar, omzet ±Rp400 miliar) — Stockbit Reports, 2026-06-19",
+                                "Penjelasan atas Permintaan Penjelasan Bursa (KOREKSI) — Stockbit Reports, 2026-07-20",
+                                "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-08-05",
+                                "Rencana PMHMETD I dan buyback — Stockbit Reports, 2026-09-28",
+                                "EPAC Diambil Alih Triple B, Bidik Jadi Holding Investasi — Kabarbursa, 2026-05"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp: belum ada penunjukan/laporan KJPP yang diumumkan",
+                                        "aset.keuangan: angka aset Rp500 miliar dan omzet Rp400 miliar adalah perkiraan (\"sekitar\"), tanpa periode; laba, ekuitas, utang MTM tidak diungkap (MTM dalam restrukturisasi utang)",
+                                        "transaksi.nilai: belum final",
+                                        "aset.lokasi: tidak diungkap"
+                                    ]
+             },
+    "FITT":  {
+                 "kjpp":  {
+                              "status":  "belum",
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  null,
+                              "sumber":  "Tidak ditemukan nama/nilai KJPP; hanya studi kelayakan (IRR 40,05%, NPV Rp234,4 miliar) di Laporan Hasil Public Expose - Tahunan — Stockbit Reports, 2026-06-30"
+                          },
+                 "aset":  {
+                              "nama":  "PT Venturi Tambang Perkasa (VTP)",
+                              "jenis":  "Saham kontraktor jasa penambangan nikel, dibeli dari PT Sheng Yue Hengli",
+                              "sektor":  "jasa tambang",
+                              "porsi":  "50% (efektif 29 Juni 2026; VTP menjadi entitas anak)",
+                              "deskripsi":  "Jasa penunjang pertambangan dan penggalian nikel. Pendapatan 2025 Rp128,7 miliar, laba operasional ±Rp36 miliar, volume produksi nikel 742.321 ton. Capex 2026: 10 dump truck ±Rp13 miliar. Studi kelayakan: IRR 40,05%, NPV Rp234,4 miliar. Proforma FITT: laba operasional berulang Rp13,2 miliar, aset Rp215,4 miliar.",
+                              "lokasi":  "Luwuk, Sulawesi",
+                              "keuangan":  {
+                                               "periode":  "FY2025",
+                                               "pendapatan":  128700000000,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  169000000000,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  null,
+                                              "sumberDaya":  null,
+                                              "kalori":  null,
+                                              "produksi":  "742.321 ton nikel (volume jasa penambangan 2025)",
+                                              "iup":  null
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Rp46,5 miliar (50% saham VTP)",
+                                   "nilaiRp":  46500000000,
+                                   "caraBayar":  "Tunai, didanai hasil divestasi anak usaha hotel BMP dan FAW (Rp67,91 miliar); sisa Rp21,41 miliar untuk bayar utang"
+                               },
+                 "pembanding":  [
+                                    "PTRO",
+                                    "DOID",
+                                    "UNTR"
+                                ],
+                 "sumber":  [
+                                "Rencana Transaksi Material Dengan Persetujuan RUPS — Stockbit Reports, 2026-06-24",
+                                "Laporan Hasil Public Expose - Tahunan — Stockbit Reports, 2026-06-30",
+                                "Penyampaian Materi Public Expose - Tahunan — Stockbit Reports, 2026-06-23",
+                                "Informasi atau Fakta Material lainnya — Stockbit Reports, 2026-06-30",
+                                "Akuisisi Perusahaan Tambang, Hotel Fitra (FITT) Bidik Pembalikan Kinerja Keuangan — Investortrust, 2026-06-27",
+                                "FITT Berencana Divestasi Bisnis Pariwisata untuk Ekspansi ke Sektor Jasa Pertambangan Nikel — Stockbit Snips, 2026-06-22"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp: nama KJPP, nilai pasar 50% VTP, metode dan kesimpulan kewajaran tidak ditemukan di media/Stockbit",
+                                        "aset.keuangan: laba bersih, EBITDA, ekuitas, utang VTP tidak dipublikasikan; laba operasional 2025 ±Rp36 miliar",
+                                        "transaksi.nilai: satu laporan Stockbit 2026-06-19 menyebut Rp56,83 miliar; angka Rp46,5 miliar konsisten di laporan lain",
+                                        "aset.lokasi: hanya \u0027Luwuk, Sulawesi\u0027 (provinsi tidak disebut eksplisit)"
+                                    ]
+             },
+    "FORU":  {
+                 "kjpp":  {
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  "Rp20,81 triliun untuk 49% saham Seri A PT Borneo Prima (±USD1,3 miliar)",
+                              "nilaiRp":  20810000000000,
+                              "metode":  null,
+                              "kesimpulan":  null,
+                              "sumber":  "Prospektus Ringkas PMHMETD I — Stockbit Reports, 2026-07-28; Laporan Hasil Public Expose - Insidentil — Stockbit Reports, 2026-06-19 (BP dinilai USD1,3 miliar)",
+                              "status":  "ditunjuk",
+                              "dasar":  "Inferensi: inbreng sudah terlaksana dengan nilai Rp20,81–20,82 T, tetapi nama KJPP \u0026 laporannya tidak terlacak."
+                          },
+                 "aset":  {
+                              "nama":  "PT Borneo Prima (BP)",
+                              "jenis":  "Saham perusahaan tambang batu bara kokas (10.780 saham Seri A bersuara), diinbrengkan IMR Asia Holding Pte Ltd",
+                              "sektor":  "batu bara",
+                              "porsi":  "49% (saham Seri A bersuara; 51% sisanya saham tanpa hak suara milik pihak lain)",
+                              "deskripsi":  "Tambang batu bara kokas (metalurgi) di Tumbang Olong, Murung Raya, beroperasi sejak 2019. Proforma FORU pasca-transaksi: pendapatan Rp195,66 miliar, laba bersih Rp11,94 miliar, total aset Rp8,71 T, ekuitas Rp7,15 T, liabilitas Rp1,56 T (angka proforma konsolidasi, bukan BP mandiri). Dana tunai publik dipinjamkan ke BP sebagai modal kerja.",
+                              "lokasi":  "Kab. Murung Raya, Kalimantan Tengah (konsesi ±15.000 ha)",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  "87,7 juta ton (terbukti 42,4 juta ton + terkira 45,3 juta ton; JORC 2012, estimator SMG Consultant)",
+                                              "sumberDaya":  null,
+                                              "kalori":  "7.850 kkal/kg (CV adb), batu bara kokas",
+                                              "produksi":  null,
+                                              "iup":  "Konsesi ±15.000 ha (jenis izin IUP/PKP2B tidak disebut)"
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Rp20,82 triliun (inbreng; 165,22 miliar HMETD @Rp126)",
+                                   "nilaiRp":  20820000000000,
+                                   "caraBayar":  "Inbreng saham (setoran non-tunai) dalam PMHMETD I; terlaksana 25 Sep–6 Okt 2026"
+                               },
+                 "pembanding":  [
+                                    "ADMR",
+                                    "ITMG",
+                                    "PTBA"
+                                ],
+                 "sumber":  [
+                                "Rencana Transaksi Material Dengan Persetujuan RUPS — Stockbit Reports, 2026-07-20",
+                                "Penyampaian Prospektus Ringkas PMHMETD I — Stockbit Reports, 2026-07-28",
+                                "Penyampaian Perbaikan dan/atau Tambahan Informasi PMHMETD I — Stockbit Reports, 2026-09-14",
+                                "Laporan Hasil Public Expose - Insidentil — Stockbit Reports, 2026-06-19",
+                                "Fortune Indonesia plans to acquire Borneo Prima via a rights issue for Rp27 trillion — Indonesia Business Post, 2026-07-24",
+                                "Gelar Rights Issue, FORU Bertransformasi Masuk ke Pertambangan Batu Bara Kokas — BCA Sekuritas, 2026-07-21",
+                                "Rencana Transaksi Material (Rp21,24 T) — Stockbit Reports, 2026-06-09"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp.nama/tanggalLaporan/cutOff/metode/kesimpulan: tidak disebut di media/Stockbit; status \u0027terbit\u0027 karena nilai penilaian inbreng sudah diumumkan dan transaksi telah dilaksanakan",
+                                        "kjpp.nilai: berubah antarlaporan — Rp21,24 T (9 Jun 2026), Rp20,81 T (Jul 2026), Rp20,82 T (Sep 2026)",
+                                        "aset.keuangan: LK audit BP 31 Des 2025 dilampirkan di keterbukaan tetapi angkanya tidak dipublikasikan media",
+                                        "tambang.produksi dan sumberDaya: tidak ditemukan"
+                                    ]
+             },
+    "FUTR":  {
+                 "kjpp":  {
+                              "status":  "belum",
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  null,
+                              "sumber":  "Tidak disebut dalam Penandatanganan perjanjian jual beli saham bersyarat — Stockbit Reports, 2026-10-01 maupun EmitenNews 2026-10-02"
+                          },
+                 "aset":  {
+                              "nama":  "PT Dumai Tirta Persada (DTP)",
+                              "jenis":  "Saham badan usaha pelaksana KPBU SPAM (74.353 saham), dibeli dari PT Adhi Karya (Persero) Tbk melalui lelang",
+                              "sektor":  "air bersih",
+                              "porsi":  "51%",
+                              "deskripsi":  "Pengelola sistem penyediaan air minum (WTP) Kota Dumai, Riau, skema KPBU dengan PDAM Tirta Dumai Bersemai (perjanjian 2019; JV awal ADHI dan PT Adaro Tirta Mandiri). Desain proyek 2019: kapasitas total 450 lpd (Tahap I.A 50 lpd, I.B 200 lpd, II 200 lpd), investasi ±Rp489 miliar, konsesi 25 tahun, tarif curah Rp5.535/m3. Pengalihan efektif setelah persyaratan CSPA terpenuhi (target paling lambat 30 Nov 2026).",
+                              "lokasi":  "Kota Dumai, Riau",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  null,
+                                              "sumberDaya":  null,
+                                              "kalori":  null,
+                                              "produksi":  null,
+                                              "iup":  null
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Rp141 miliar (51% saham DTP)",
+                                   "nilaiRp":  141000000000,
+                                   "caraBayar":  "Tidak diungkap (sumber pendanaan belum disebut)"
+                               },
+                 "pembanding":  [
+                                    "META",
+                                    "CMNP",
+                                    "KEEN"
+                                ],
+                 "sumber":  [
+                                "Penandatanganan perjanjian jual beli saham bersyarat — Stockbit Reports, 2026-10-01",
+                                "Ekspansi ke Bisnis Air Bersih, FUTR Bidik Pendapatan Stabil \u0026 Berulang — EmitenNews, 2026-10-02",
+                                "ADHI Lepas DTP Rp141 Miliar, FUTR Kuasai Mayoritas Air Minum Dumai — Fortune IDN, 2026-10-02",
+                                "Futura (FUTR) Masuk Bisnis Air, Akuisisi Entitas ADHI — Bisnis.com, 2026-10-02",
+                                "ADHI Mulai Konstruksi SPAM Dumai, Tahap Awal Kapasitas 50 Liter per Detik — Bisnis.com, 2019-08-21",
+                                "Proyek Air Minum Dumai Senilai Rp489 Miliar Segera Dibangun — Okezone, 2019-04-15"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp: belum ada laporan penilaian/pendapat kewajaran yang diumumkan",
+                                        "aset.keuangan: laporan keuangan DTP tidak dipublikasikan",
+                                        "aset.deskripsi: kapasitas terpasang/beroperasi saat ini tidak diketahui; angka 450 lpd adalah desain proyek 2019",
+                                        "transaksi.caraBayar: sumber dana Rp141 miliar belum diungkap",
+                                        "pembanding: BEI tidak memiliki emiten air minum murni; dipakai emiten infrastruktur berbasis konsesi"
+                                    ]
+             },
+    "GPSO":  {
+                 "kjpp":  {
+                              "nama":  "KJPP Andesta (disebut juga KJPP Edi Andesta \u0026 Rekan)",
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  "Nilai wajar aset Rp83,86 miliar",
+                              "nilaiRp":  83860000000,
+                              "metode":  null,
+                              "kesimpulan":  null,
+                              "sumber":  "Stockwatch.id, 2026-05-14 (mengacu keterbukaan 13 Mei 2026); RCTI+/IDX Channel, 2026-06-22 (studi kelayakan KJPP Edi Andesta \u0026 Rekan: IRR 38,29%, payback 5 tahun 10 bulan)",
+                              "status":  "terbit",
+                              "dasar":  "Terkonfirmasi: KJPP Andesta menilai aset Rp83,86 M."
+                          },
+                 "aset":  {
+                              "nama":  "Aset tetap PT Jaya Indah Casting (JIC; sebagian media menulis Jakarta Indah Casting)",
+                              "jenis":  "Tanah ±15.400 m2, bangunan pabrik, serta mesin dan peralatan produksi besi tuang (ferro casting); disewakan kembali ke JIC",
+                              "sektor":  "properti",
+                              "porsi":  "100% aset (pembelian aset, bukan saham)",
+                              "deskripsi":  "Aset afiliasi Tjokro Group; setelah dibeli disewakan kembali ke JIC Rp9,3 miliar per tahun (yield ±11,8% atas harga beli). Disetujui RUPSLB 22 Juni 2026. Nilai transaksi 183,95% ekuitas GPSO per Des 2025. Bagian awal rencana restrukturisasi Tjokro Group ±Rp700 miliar.",
+                              "lokasi":  "Kawasan EJIP, Kabupaten Bekasi, Jawa Barat",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  null,
+                                              "sumberDaya":  null,
+                                              "kalori":  null,
+                                              "produksi":  null,
+                                              "iup":  null
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Rp78,5 miliar",
+                                   "nilaiRp":  78500000000,
+                                   "caraBayar":  "Tunai, didanai private placement 66,67 juta saham @Rp427 (Rp28,47 miliar, diserap PT PIMSF Pulogadung, selesai Juli 2026) dan pinjaman bank Rp50 miliar"
+                               },
+                 "pembanding":  [
+                                    "SMSM",
+                                    "DRMA",
+                                    "AUTO"
+                                ],
+                 "sumber":  [
+                                "Emiten Tjokro Group GPSO Siapkan Transformasi Besar, Akuisisi Aset JIC Rp78,5 Miliar untuk Masuk Industri Otomotif — Stockwatch.id, 2026-05-14",
+                                "GPSO Kantongi Restu Perubahan Kegiatan Usaha dan Private Placement — IDX Channel/RCTI+, 2026-06-22",
+                                "Perubahan dan/atau Tambahan Informasi atas Perubahan Kegiatan Usaha, Transaksi Material dan PMTHMETD — Stockbit Reports, 2026-06-18",
+                                "Pemanggilan RUPS Tahunan dan Luar Biasa (tanah 15.400 m2) — Stockbit Reports, 2026-05-11",
+                                "Pengumuman Hasil PMTHMETD — Stockbit Reports, 2026-07-07"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp.tanggalLaporan/cutOff/metode: tidak disebut di media",
+                                        "kjpp.kesimpulan: tidak dinyatakan eksplisit; harga transaksi Rp78,5 miliar berada ±6,4% di bawah nilai wajar KJPP Rp83,86 miliar",
+                                        "aset.keuangan: tidak relevan untuk aset tetap; data keuangan JIC tidak dipublikasikan",
+                                        "kjpp.nama: ejaan bervariasi antara \u0027KJPP Andesta\u0027 dan \u0027KJPP Edi Andesta \u0026 Rekan\u0027",
+                                        "pembanding: dipakai emiten komponen otomotif (penyewa/operasi pengecoran); untuk pendekatan pasar tanah industri dapat dipertimbangkan DMAS/SSIA"
+                                    ]
+             },
+    "KDTN":  {
+                 "kjpp":  {
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  "2025-12-31",
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  "Keterbukaan transaksi material 13 Mei 2026 memuat hasil penilaian independen untuk aset hotel yang dilepas (nilai pasar Rp113,21 miliar per 31 Desember 2025) serta studi kelayakan usaha baru (IRR 17,72%, tingkat diskonto 11,14%, NPV ±Rp27,94 miliar, payback 8 tahun 5 bulan). Nilai pasar 99% saham PT Sherman Mineral Indonesia dan nama KJPP tidak ditemukan di sumber publik. RUPS Independen ditunda atas arahan OJK (surat 5 Juni 2026) dan per 9 Oktober 2026 Ruby Mining menunda penyelesaian transaksi.",
+                              "sumber":  "KDTN Jual Aset Rp113,5 Miliar Usai Diakuisisi Investor Hong Kong — Stockwatch.id, 2026-05-14; Rencana Akuisisi dan Perubahan Kegiatan Usaha KDTN 2026 — PintarSaham.id, 2026-05-15",
+                              "status":  "ditunjuk",
+                              "dasar":  "Perlu konfirmasi: yang terungkap penilaian aset hotel \u0026 studi kelayakan, bukan penilaian SMI."
+                          },
+                 "aset":  {
+                              "nama":  "PT Sherman Mineral Indonesia (SMI)",
+                              "jenis":  "Perdagangan besar bahan kimia dan jasa penunjang pertambangan/penggalian (disebut \u0027perusahaan tambang nikel\u0027 dalam paparan publik)",
+                              "sektor":  "jasa tambang",
+                              "porsi":  "99% (15.840 saham)",
+                              "deskripsi":  "SMI berkedudukan di Jakarta Selatan; kegiatan usaha menurut keterbukaan: perdagangan besar bahan kimia serta aktivitas penunjang pertambangan dan penggalian (PintarSaham juga mencantumkan reparasi dan perawatan kendaraan bermotor). Paparan publik 22 Juni 2026 menyebut SMI sebagai perusahaan tambang nikel. Akuisisi menyelaraskan usaha KDTN dengan calon pengendali Ruby Mining (Hongkong) Limited (86%). Bisnis hotel dilepas ke PT Citra Nusantara Perkasa senilai Rp113,5 miliar.",
+                              "lokasi":  "Jakarta Selatan (kedudukan); lokasi operasional tidak diungkap",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  null,
+                                              "sumberDaya":  null,
+                                              "kalori":  null,
+                                              "produksi":  null,
+                                              "iup":  null
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Rp93,061 miliar untuk 99% saham SMI (setara 136,52% ekuitas KDTN per Desember 2025)",
+                                   "nilaiRp":  93061000000,
+                                   "caraBayar":  "Tunai; sumber pendanaan utama dari hasil pengalihan aset hotel ke PT Citra Nusantara Perkasa (Rp113,5 miliar)"
+                               },
+                 "pembanding":  [
+                                    "PTRO",
+                                    "DOID",
+                                    "NICL",
+                                    "MBMA"
+                                ],
+                 "sumber":  [
+                                "Persetujuan Transaksi Material dengan RUPS Independen (KOREKSI) — Stockbit Reports, 2026-05-22",
+                                "Penyampaian Informasi rencana Transaksi material - Rencana Transaksi Perubahan Kegiatan Usaha — Stockbit Reports, 2026-05-13",
+                                "Laporan Hasil Public Expose - Tahunan — Stockbit Reports, 2026-06-24",
+                                "Keterbukaan atas Informasi atau Fakta Material PT Puri Sentul Permai Tbk (KOREKSI) — Stockbit Reports, 2026-10-09",
+                                "KDTN Jual Aset Rp113,5 Miliar Usai Diakuisisi Investor Hong Kong, Tinggalkan Bisnis Hotel dan Masuk ke Tambang — Stockwatch.id, 2026-05-14",
+                                "Rencana Akuisisi dan Perubahan Kegiatan Usaha KDTN 2026 — PintarSaham.id, 2026-05-15"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp.nama/nilai/metode: nama KJPP dan nilai pasar saham SMI tidak dimuat di media maupun ringkasan Stockbit; status \u0027terbit\u0027 didasarkan pada pengungkapan penilaian independen aset hotel dan studi kelayakan dalam keterbukaan 13 Mei 2026",
+                                        "aset.keuangan: laporan keuangan SMI tidak diungkap di sumber publik",
+                                        "aset.tambang: tidak ada data IUP/cadangan; sumber menyebut SMI sebagai perusahaan perdagangan dan jasa penunjang tambang, bukan pemegang IUP"
+                                    ]
+             },
+    "MEJA":  {
+                 "kjpp":  {
+                              "status":  "ditunjuk",
+                              "nama":  "KJPP DAZ \u0026 Rekan",
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  "Penugasan ditandatangani 29 September 2026; ruang lingkup penilaian nilai wajar dan opini kewajaran akuisisi TCP serta studi kelayakan penambahan bidang usaha holding. Laporan belum diumumkan. Sebagai acuan non-KJPP: konsultan Faan Grobelaar \u0026 Associates (DCF) mengestimasi firm value TCP Rp2.494.699.285.403 (PV FCF Rp924,88 miliar + terminal value Rp1,56 triliun).",
+                              "sumber":  "Keterbukaan Informasi mengenai Penunjukan KJPP dalam Rangka Persiapan Rencana Akuisisi PT Trimata Coal Perkasa — Stockbit Reports, 2026-10-01"
+                          },
+                 "aset":  {
+                              "nama":  "PT Trimata Coal Perkasa (TCP)",
+                              "jenis":  "Tambang batu bara (IUP Operasi Produksi)",
+                              "sektor":  "batu bara",
+                              "porsi":  "45% (saham pengendali)",
+                              "deskripsi":  "Konsesi batu bara ±11.640 ha di Sumatera Selatan. Laporan JORC Faan Grobelaar \u0026 Associates: mineable coal resources ±693,7 juta ton, hampir seluruhnya GCV di atas 5.000 kkal/kg. Keterbukaan Juni 2026 menyebut cadangan tertambang ±400 juta ton. RKAB IUP OP 2024–2026 sebesar 2,6 juta ton; target produksi 2026 1,5 juta ton, jangka panjang 4 juta ton/tahun. Proyeksi EBITDA Rp175,35 miliar (2026) hingga Rp481,62 miliar (2031); laba sebelum pajak diperkirakan USD7–10 per ton.",
+                              "lokasi":  "Sumatera Selatan",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  "±400 juta ton (cadangan tertambang, keterbukaan 24 Juni 2026)",
+                                              "sumberDaya":  "±693,7 juta ton mineable coal resources (JORC, Faan Grobelaar \u0026 Associates)",
+                                              "kalori":  "Hampir seluruhnya GCV \u003e 5.000 kkal/kg",
+                                              "produksi":  "RKAB 2024–2026: 2,6 juta ton; target 2026: 1,5 juta ton; jangka panjang 4 juta ton/tahun",
+                                              "iup":  "IUP Operasi Produksi, ±11.640 ha"
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Indikatif Rp1,6 triliun (±USD100 juta) untuk 45% TCP; nilai final mengikuti penilaian KJPP; uang muka Rp12 miliar telah dibayar dan menjadi pengurang",
+                                   "nilaiRp":  1600000000000,
+                                   "caraBayar":  "Tukar saham (inbreng) melalui penambahan modal/rights issue pada harga indikatif Rp450–550 per saham, bertahap, tanpa kas internal"
+                               },
+                 "pembanding":  [
+                                    "PTBA",
+                                    "GEMS",
+                                    "BSSR",
+                                    "HRUM"
+                                ],
+                 "sumber":  [
+                                "Keterbukaan Informasi mengenai Penunjukan KJPP dalam Rangka Persiapan Rencana Akuisisi PT Trimata Coal Perkasa — Stockbit Reports, 2026-10-01",
+                                "Tindak Lanjut Hasil RUPSLB dan Rencana Aksi Korporasi — Stockbit Reports, 2026-08-26",
+                                "Keterbukaan Informasi atas Perkembangan Rencana Akuisisi PT Trimata Coal Perkasa — Stockbit Reports, 2026-06-24",
+                                "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-05-03",
+                                "Keterbukaan Informasi atas Pembayaran Uang Muka kepada PT Trimata Coal Perkasa — Stockbit Reports, 2026-02-20",
+                                "PT Harta Djaya Karya Tbk (MEJA) Perkuat Rencana Akuisisi 45% Saham PT Trimata Coal Perkasa — PintarSaham.id, 2026-02-09",
+                                "Triple B Dorong Pengembangan MEJA lewat Akuisisi Trimata Coal — BCA Sekuritas (IQPlus), 2026-01-05",
+                                "MEJA Berniat Akuisisi Perusahaan Tambang Batubara — BCA Sekuritas (IQPlus), 2025-12-24",
+                                "MEJA Rancang Akuisisi Perusahan Batu Bara, Cadangan 693 Juta Ton — Bisnis.com, 2026-02-09"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp.cutOff/tanggalLaporan/nilai/metode: laporan KJPP DAZ \u0026 Rekan belum diumumkan",
+                                        "aset.keuangan: laporan keuangan historis TCP (pendapatan, laba, aset, ekuitas, utang) tidak diungkap; hanya proyeksi EBITDA",
+                                        "transaksi.caraBayar: rasio tukar dan jumlah saham final belum ditetapkan"
+                                    ]
+             },
+    "MGLV":  {
+                 "kjpp":  {
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  "Keterbukaan Rencana Transaksi Perubahan Kegiatan Usaha (28 Juli 2026) memuat indikator kelayakan IRR 13,64% dan payback 8 tahun 8 bulan; transaksi afiliasi disetujui RUPS Independen 7 September 2026 dan akta pengambilalihan ditandatangani 7 September 2026. Nama KJPP, nilai pasar saham NAC/NGC, dan opini kewajaran tidak ditemukan di sumber publik. Valuasi pihak ketiga non-KJPP (BRI Danareksa, DCF 2031): ekuitas Rp4,9 triliun (102 MW) hingga Rp106 triliun (900 MW).",
+                              "sumber":  "Rencana Transaksi Perubahan Kegiatan Usaha — Stockbit Reports, 2026-07-28; Boy Thohir Masuk NextAI MGLV di Tengah Geliat Data Center — Katadata, 2026-09-29",
+                              "status":  "ditunjuk",
+                              "dasar":  "Perlu konfirmasi: yang terungkap studi kelayakan \u0026 persetujuan RUPS Independen; nilai saham NAC/NGC tidak diungkap."
+                          },
+                 "aset":  {
+                              "nama":  "PT Nextier Askara Center (NAC) \u0026 PT Nextier GenAi Center (NGC)",
+                              "jenis":  "Pusat data (data center) untuk AI/hyperscale",
+                              "sektor":  "data center",
+                              "porsi":  "100% (999 saham NAC dan 999 saham NGC dari PT Nextier Datamate Center); setelah penyertaan modal Rp49 miliar per entitas, kepemilikan 99,99%",
+                              "deskripsi":  "NAC mengembangkan JababekaDC (tambahan 36 MW, total 42 MW); NGC menargetkan BatangDC 60 MW. Fasilitas pinjaman BNI: NAC maks. Rp4,125 triliun (6 tahun), NGC maks. Rp6,629 triliun (7 tahun), bunga Compounded IndONIA 90 hari +1,9%. Pinjaman afiliasi dari perseroan: NAC Rp1,5 triliun, NGC Rp2,5 triliun (bunga 7%, s.d. 31 Desember 2028). Proforma: kas naik menjadi Rp6,66 triliun pascatransaksi.",
+                              "lokasi":  "NAC: Kawasan Industri Jababeka, Cikarang, Bekasi; NGC: Kawasan Industri Terpadu Batang, Jawa Tengah",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  null,
+                                              "sumberDaya":  null,
+                                              "kalori":  null,
+                                              "produksi":  null,
+                                              "iup":  null
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Harga saham NAC/NGC tidak diungkap; pengambilalihan piutang NDC atas NAC dan NGC Rp668,61 miliar dibiayai dari PMHMETD I (maks. Rp2,54 triliun, harga Rp8.880 per saham); ±Rp1,6 triliun untuk penyertaan modal ke NAC dan NGC",
+                                   "nilaiRp":  null,
+                                   "caraBayar":  "Tunai dari hasil PMHMETD I dan pinjaman pemegang saham PT Nextier Datamate Center (maks. Rp4 triliun)"
+                               },
+                 "pembanding":  [
+                                    "DCII",
+                                    "EDGE"
+                                ],
+                 "sumber":  [
+                                "Penandatanganan Akta Pengambilalihan Saham — Stockbit Reports, 2026-09-08",
+                                "Rencana Transaksi Perubahan Kegiatan Usaha — Stockbit Reports, 2026-07-28",
+                                "Keterbukaan Informasi terkait Aksi Korporasi - Rencana Penambahan Modal dengan HMETD - 10092026 — Stockbit Reports, 2026-09-10",
+                                "Transaksi Afiliasi (fasilitas BNI) — Stockbit Reports, 2026-09-23",
+                                "Transaksi Material Tanpa Persetujuan RUPS (pinjaman afiliasi Rp4 T) — Stockbit Reports, 2026-10-05",
+                                "Boy Thohir Masuk NextAI MGLV di Tengah Geliat Data Center, Bagaimana Prospeknya? — Katadata, 2026-09-29",
+                                "Boy Thohir-affiliated MGLV Sets Rights Issue Price 42% Below Market — IDNFinancials, 2026-09 (tanggal tepat tidak tercantum di hasil)",
+                                "Penyertaan Modal MGLV 2026: NexAI Kucurkan Rp98 Miliar — PintarSaham.id, 2026-09-24"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp.nama/nilai/kesimpulan: dokumen KJPP atas transaksi afiliasi NAC/NGC tidak ditemukan di media; status \u0027terbit\u0027 didasarkan pada keterbukaan studi kelayakan 28 Juli 2026 dan persetujuan RUPS Independen",
+                                        "aset.keuangan: laporan keuangan NAC dan NGC tidak diungkap",
+                                        "transaksi.nilaiRp: harga pengambilalihan saham NAC/NGC tidak diungkap (hanya pengalihan piutang Rp668,61 miliar)"
+                                    ]
+             },
+    "MKNT":  {
+                 "kjpp":  {
+                              "nama":  "KJPP Sih Wiryadi \u0026 Rekan (CBS); KJPP Syarif, Endang dan Rekan (RUM)",
+                              "tanggalLaporan":  "2026-05-29",
+                              "cutOff":  null,
+                              "nilai":  "Nilai pasar 100% ekuitas: CBS Rp646.256.432.000; RUM Rp151.279.000.000 (total Rp797.535.432.000)",
+                              "nilaiRp":  797535432000,
+                              "metode":  null,
+                              "kesimpulan":  "Harga beli mempertimbangkan hasil penilaian KJPP; harga CBS (Rp668,01 miliar) ±3,4% di atas nilai pasar KJPP, harga RUM (Rp156,49 miliar) ±3,4% di atas nilai pasar KJPP (perhitungan). Karena ekuitas perseroan negatif, transaksi dikecualikan dari kewajiban penilai independen dan RUPS (Pasal 11 huruf g POJK 17/2020); tidak ada pendapat kewajaran yang diungkap.",
+                              "sumber":  "Mitra Komunikasi Nusantara Tbk All Out! Kuasai Bisnis Baja dan Udang Lewat Akuisisi Jumbo Senilai Ratusan Miliar — Pasardana, 2026-06-09",
+                              "status":  "terbit",
+                              "dasar":  "Terkonfirmasi: KJPP Sih Wiryadi \u0026 Rekan (CBS Rp646,26 M) dan KJPP Syarif, Endang dan Rekan (RUM Rp151,28 M), 29 Mei 2026."
+                          },
+                 "aset":  {
+                              "nama":  "PT Citra Baru Steel (CBS) \u0026 PT Radja Udang Malingping (RUM)",
+                              "jenis":  "Manufaktur baja (CBS) dan budidaya tambak udang (RUM)",
+                              "sektor":  "baja",
+                              "porsi":  "99,99% masing-masing (CBS 49.999.999 saham; RUM 152.990 saham)",
+                              "deskripsi":  "CBS: produsen baja, kapasitas terpasang 300.000 ton per tahun; dibeli dari Headwell Investment Limited; goodwill akuisisi Rp31.527.345.191 (nilai wajar aset neto teridentifikasi tersirat ±Rp636,48 miliar, perhitungan). Fasilitas Bank Mandiri KMK Tranche A limit Rp92,38 miliar. RUM: tambak udang, dibeli dari PT Mazon Bumi Mining. Akuisisi selesai 29 Mei 2026; nama perseroan menjadi PT Remitra Global International Tbk (efektif 1 Oktober 2026).",
+                              "lokasi":  "RUM: Malingping, Lebak, Banten (sesuai nama perusahaan; lokasi tambak tidak dirinci); CBS: tidak diungkap",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  null,
+                                              "sumberDaya":  null,
+                                              "kalori":  null,
+                                              "produksi":  null,
+                                              "iup":  null
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "CBS Rp668.006.058.612 + RUM Rp156.490.000.000 = Rp824.496.058.612",
+                                   "nilaiRp":  824496058612,
+                                   "caraBayar":  "Tunai, didanai pinjaman tanpa bunga dari PT Headwell Bintang Energi Hijau dan PT Mantra Capital Persada (Rp822,93 miliar) yang dikonversi menjadi saham melalui PMTHMETD 1,02 triliun saham @Rp1 (dicatatkan 1 Oktober 2026)"
+                               },
+                 "pembanding":  [
+                                    "GDST",
+                                    "ISSP",
+                                    "KRAS",
+                                    "CPRO"
+                                ],
+                 "sumber":  [
+                                "Pengambilalihan Mayoritas Saham PT Citra Baru Steel dan PT Radja Udang Malingping — Stockbit Reports, 2026-06-09",
+                                "Mitra Komunikasi Nusantara Tbk All Out! Kuasai Bisnis Baja dan Udang Lewat Akuisisi Jumbo Senilai Ratusan Miliar — Pasardana, 2026-06-09",
+                                "Penjelasan atas Permintaan Penjelasan Bursa (goodwill CBS) — Stockbit Reports, 2026-07-03",
+                                "Penjelasan atas Permintaan Penjelasan Bursa (KOREKSI) (fasilitas Bank Mandiri) — Stockbit Reports, 2026-07-02",
+                                "Laporan Hasil Public Expose - Insidentil (kapasitas CBS) — Stockbit Reports, 2026-10-13",
+                                "Pengumuman Hasil Pelaksanaan Penambahan Modal Tanpa HMETD — Stockbit Reports, 2026-10-02"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp.metode/cutOff: metode penilaian dan tanggal penilaian tidak disebut di sumber (hanya tanggal laporan 29 Mei 2026)",
+                                        "aset.keuangan: laporan keuangan CBS dan RUM (pendapatan, laba, aset, ekuitas, utang) tidak diungkap",
+                                        "aset.lokasi: lokasi pabrik CBS dan luas tambak RUM tidak diungkap"
+                                    ]
+             },
+    "NAYZ":  {
+                 "kjpp":  {
+                              "status":  "belum",
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  "Perjanjian bersyarat (2 Oktober 2026) mensyaratkan penilaian oleh Penilai Independen terdaftar OJK yang disepakati para pihak; bila nilai acuan lebih rendah dari USD125 juta, nilai penilai yang dipakai, bila lebih tinggi tetap USD125 juta. Nama penilai belum diumumkan.",
+                              "sumber":  "Saiko Suntik Bangkok Tellink ke NAYZ Senilai Rp2,2 Triliun — IDX Channel (RCTI+), 2026-10-05"
+                          },
+                 "aset":  {
+                              "nama":  "Bangkok Tellink Co., Ltd. (BTL)",
+                              "jenis":  "Teknologi telekomunikasi dan solusi digital terintegrasi (MVNO, platform IoT, pembayaran digital, smart kiosk \u0026 vending, infrastruktur cloud)",
+                              "sektor":  "telekomunikasi",
+                              "porsi":  "75% (5.692.500 saham) dari Saiko Consultancy Pte. Ltd.",
+                              "deskripsi":  "Perusahaan berbasis di Thailand dengan model pendapatan berulang (recurring income). Valuasi implisit 100% BTL USD166,7 juta (USD125 juta ÷ 75%). Harga per saham tersirat ±USD21,96.",
+                              "lokasi":  "Thailand",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "USD"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  null,
+                                              "sumberDaya":  null,
+                                              "kalori":  null,
+                                              "produksi":  null,
+                                              "iup":  null
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Maksimal USD125 juta (media: ±Rp2,2–2,23 triliun); konversi kurs Rp16.500 = Rp2.062.500.000.000",
+                                   "nilaiRp":  2062500000000,
+                                   "caraBayar":  "20% saham dibayar tunai oleh NAYZ (±USD25 juta, perhitungan); 80% (±USD100 juta) diinbrengkan Saiko sebagai setoran dalam PMHMETD; butuh persetujuan RUPS Independen"
+                               },
+                 "pembanding":  [
+                                    "EXCL",
+                                    "ISAT",
+                                    "MORA",
+                                    "LINK"
+                                ],
+                 "sumber":  [
+                                "Penandatanganan Perjanjian Pengalihan Saham Bersyarat — Stockbit Reports, 2026-10-05",
+                                "Saiko Suntik Bangkok Tellink ke NAYZ Senilai Rp2,2 Triliun — IDX Channel (RCTI+), 2026-10-05",
+                                "Bisnis NAYZ Berbelok ke Telekomunikasi seusai Saiko Masuk, Backdoor Listing? — Katadata, 2026-10-06",
+                                "NAYZ Akuisisi Bangkok Tellink, Bisnis Makanan Bayi Dilepas Bertahap — EmitenNews, 2026-10-05",
+                                "Keterbukaan Informasi Tentang Penawaran Tender Wajib — Stockbit Reports, 2026-10-02"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp.nama: penilai independen belum diumumkan",
+                                        "aset.keuangan: pendapatan, laba, aset, ekuitas, utang BTL tidak diungkap di sumber publik",
+                                        "aset.kapasitas: jumlah pelanggan MVNO/IoT BTL tidak diungkap"
+                                    ]
+             },
+    "NINE":  {
+                 "kjpp":  {
+                              "status":  "belum",
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  "Harga final = rata-rata hasil dua penilai independen (satu berbasis di Indonesia, satu di Australia) yang disetujui para pihak; per Oktober 2026 nilai final masih menunggu penilaian dan nama penilai belum diumumkan. Opsi berlaku 9 bulan sejak 28 Desember 2025; tidak ditemukan pengumuman perpanjangan.",
+                              "sumber":  "Techno9 Indonesia secures option to acquire mining assets in Mongolia — Indonesia Business Post, 2025-12-29; Techno9 (NINE) Umumkan Rights Issue, Berencana Terbitkan 2,44 Miliar Saham Baru — IDX Channel (RCTI+), 2026-10-12"
+                          },
+                 "aset":  {
+                              "nama":  "Aset tambang Poh Golden Ger Resources Pte Ltd (PGGR), milik Poh Kay Ping",
+                              "jenis":  "Dua konsesi tambang batu bara termal dan semi-soft coking coal",
+                              "sektor":  "batu bara",
+                              "porsi":  "Opsi beli aset (porsi belum ditetapkan)",
+                              "deskripsi":  "PGGR memiliki dua konsesi batu bara di Mongolia dan telah meneken framework agreement dengan kontraktor EPC+F berskala besar yang berencana berinvestasi lebih dari USD100 juta; proyeksi kapasitas produksi di atas 20 juta ton per tahun (bergantung uji tuntas dan persetujuan ODI Tiongkok). Transaksi afiliasi (pemegang saham sama, Poh Kay Ping). PMHMETD I (maks. 2,44 miliar saham, RUPSLB 18 November 2026) untuk modal kerja dan utang; injeksi tambang melalui rights issue tahap kedua.",
+                              "lokasi":  "Mongolia (provinsi/aimag tidak diungkap)",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "USD"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  null,
+                                              "sumberDaya":  null,
+                                              "kalori":  null,
+                                              "produksi":  "Proyeksi \u003e20 juta ton per tahun (kapasitas proyek EPC+F, belum beroperasi penuh)",
+                                              "iup":  "Dua konsesi tambang batu bara di Mongolia (luas tidak diungkap)"
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Indikatif USD150 juta (Rp2,51 triliun) menurut pengumuman Desember 2025; IDX Channel Oktober 2026 menyebut indikatif USD100 juta (Rp1,8 triliun). Konversi Rp16.500: USD150 juta = Rp2.475.000.000.000",
+                                   "nilaiRp":  2475000000000,
+                                   "caraBayar":  "Inbreng/integrasi aset melalui rights issue (PMHMETD) tahap kedua; tidak ada biaya akuisisi tunai"
+                               },
+                 "pembanding":  [
+                                    "ADMR",
+                                    "BUMI",
+                                    "HRUM",
+                                    "PTBA"
+                                ],
+                 "sumber":  [
+                                "Opsi untuk Pembelian Aset Pertambangan — Stockbit Reports, 2025-12-28",
+                                "Perkembangan Proses Akuisisi Tambang Poh Group di Mongolia dan Kontraktor EPC+F — Stockbit Reports, 2026-01-05",
+                                "Keterbukaan Informasi sehubungan dengan Rencana PMHMETD I — Stockbit Reports, 2026-10-12",
+                                "Techno9 Indonesia secures option to acquire mining assets in Mongolia — Indonesia Business Post, 2025-12-29",
+                                "Poh Group Dorong Investasi Berkelanjutan NINE Sektor Tambang — EmitenNews, 2026-01-09",
+                                "NINE Siapkan Rights Issue untuk Integrasi Aset Tambang Mongolia Milik Poh Group — Investortrust, 2026-01-09",
+                                "Techno9 (NINE) Umumkan Rights Issue, Berencana Terbitkan 2,44 Miliar Saham Baru — IDX Channel (RCTI+), 2026-10-12"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp: dua penilai independen belum diumumkan",
+                                        "aset.tambang.cadangan/sumberDaya/kalori: data cadangan, sumber daya, dan kualitas batu bara PGGR tidak diungkap",
+                                        "aset.keuangan: tidak ada laporan keuangan PGGR di sumber publik",
+                                        "transaksi.nilai: angka indikatif tidak konsisten antar sumber (USD150 juta vs USD100 juta); status opsi setelah 9 bulan (±28 September 2026) tidak diumumkan"
+                                    ]
+             },
+    "PACK":  {
+                 "kjpp":  {
+                              "status":  "belum",
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  "Investortrust (20 Mei 2026) menyatakan perseroan wajib memperoleh penilaian independen atas transaksi afiliasi (pinjaman perpetual dari pengendali EEP), namun nama KJPP, nilai pasar saham KKU/KS, dan pendapat kewajaran tidak ditemukan di sumber publik. Status tidak dapat diverifikasi.",
+                              "sumber":  "Usai Haji Isam Masuk, Abadi Nusantara (PACK) Akuisisi Dua Perusahaan Tambang Nikel — Investortrust, 2026-05-20"
+                          },
+                 "aset":  {
+                              "nama":  "PT Karyatama Konawe Utara (KKU) \u0026 PT Konutara Sejati (KS)",
+                              "jenis":  "Tambang bijih nikel (IUP Operasi Produksi)",
+                              "sektor":  "nikel",
+                              "porsi":  "Tahap Mei 2026: 14,625% masing-masing (Investortrust: 15,62% KKU dan 14,62% KS) dari WPK; kepemilikan total per September 2026: 34,5% KKU (via PT Adhi Prakarsa Raya) dan 30% KS (via PT Sumber Cahaya Raya)",
+                              "deskripsi":  "RKAB 2026: KKU 6 juta ton, KS 4 juta ton (total ±10 juta ton, bukan porsi ekonomi PACK). IUP OP KKU berlaku hingga 2035, KS hingga 2049 (dapat diperpanjang). Tahap sebelumnya dari Denway Development Limited (USD168,78 juta) dilunasi 28 Januari 2026, didanai rights issue OWK (hasil bersih Rp3,25 triliun). Konsolidasi PACK 1H2026: penjualan Rp213 miliar, laba bersih Rp190,7 miliar, total aset Rp5.268,5 miliar, ekuitas Rp5.194,5 miliar (data emiten, bukan target).",
+                              "lokasi":  "Kabupaten Konawe Utara, Sulawesi Tenggara",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  null,
+                                              "sumberDaya":  null,
+                                              "kalori":  null,
+                                              "produksi":  "RKAB 2026: KKU 6 juta ton, KS 4 juta ton bijih nikel",
+                                              "iup":  "IUP OP KKU s.d. 2035; IUP OP KS s.d. 2049 (luas tidak diungkap)"
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Tahap Mei 2026: KKU Rp742,98 miliar + KS Rp586,55 miliar = Rp1.329,53 miliar (Investortrust: USD42,42 juta + USD33,49 juta = USD75,91 juta); tahap Januari 2026 dari Denway USD168,78 juta",
+                                   "nilaiRp":  1329530000000,
+                                   "caraBayar":  "Tunai melalui anak usaha APR dan SCR, didanai pinjaman perpetual dari pengendali PT Eco Energi Perkasa (USD93,14 juta/±Rp1,63 triliun, bunga 8%) yang diteruskan sebagai pinjaman tanpa bunga Rp1,34 triliun ke APR (Rp749,60 miliar) dan SCR (Rp591,78 miliar)"
+                               },
+                 "pembanding":  [
+                                    "NCKL",
+                                    "MBMA",
+                                    "INCO",
+                                    "NICL"
+                                ],
+                 "sumber":  [
+                                "Pemberian Pinjaman serta Pembelian Saham Perusahaan — Stockbit Reports, 2026-05-19",
+                                "Keterbukaan Informasi sehubungan dengan Pemberian Pinjaman dari ANHI kepada PT APR dan PT SCR — Stockbit Reports, 2026-05-26",
+                                "Penyampaian Materi Public Expose - Insidentil — Stockbit Reports, 2026-09-10",
+                                "Usai Haji Isam Masuk, Abadi Nusantara (PACK) Akuisisi Dua Perusahaan Tambang Nikel — Investortrust, 2026-05-20",
+                                "Manuver PACK Siapkan Ekspansi Nikel Terintegrasi, Jadi Saingan Baru ANTM-INCO? — Katadata, 2026-09-14",
+                                "Tuntaskan Akuisisi Strategis, PACK Siap Perkuat Lini Bisnis di Sektor Nikel — BCA Sekuritas, 2026-01-30"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp: nama KJPP, nilai pasar, dan pendapat kewajaran atas saham KKU/KS tidak ditemukan",
+                                        "aset.keuangan: laporan keuangan KKU dan KS tidak diungkap",
+                                        "aset.tambang.cadangan/sumberDaya/kadar/luas IUP: tidak ditemukan di sumber publik",
+                                        "transaksi: porsi tahap Mei tidak konsisten antar sumber (14,625% vs 15,62%/14,62%); selisih nilai Rupiah (Rp1,33 triliun) vs USD75,91 juta tidak dijelaskan sumber"
+                                    ]
+             },
+    "PGJO":  {
+                 "kjpp":  {
+                              "status":  "belum",
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  "Tidak diperlukan/tidak ada penilaian: penyertaan modal ke anak usaha internal (kepemilikan 99,9996%) dikecualikan dari RUPS; tidak ada aset pihak luar yang diinjeksikan.",
+                              "sumber":  "Transaksi Material Tanpa Persetujuan RUPS — Stockbit Reports, 2026-08-11"
+                          },
+                 "aset":  {
+                              "nama":  "PT Panca Pertiwi Tambang (PPT)",
+                              "jenis":  "Anak usaha baru di bidang pertambangan (komoditas dan IUP belum diungkap)",
+                              "sektor":  "lainnya",
+                              "porsi":  "99,9996% (4.999.999 saham; 1 saham milik Willius Wijaya)",
+                              "deskripsi":  "Didirikan dengan Akta No. 203 tanggal 27 Oktober 2025 (modal dasar awal Rp100 juta, berkedudukan di Jakarta). Setoran modal Rp2,4 miliar (6 Mei 2026) dan Rp47,5 miliar (11 Agustus 2026, 4.750.000 saham) sehingga modal disetor Rp50 miliar dan modal dasar Rp200 miliar. Nilai setoran Agustus setara 156,3% total aset PGJO per 31 Desember 2025. Grup juga memiliki PT Niaga Nikel Raya (perdagangan bijih) dan PT Samudera Sejahtera Shipping (pelayaran).",
+                              "lokasi":  "Jakarta (kedudukan); lokasi tambang tidak diungkap",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  50000000000,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  null,
+                                              "sumberDaya":  null,
+                                              "kalori":  null,
+                                              "produksi":  null,
+                                              "iup":  null
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Penyertaan modal Rp47,5 miliar (11 Agustus 2026); kumulatif modal disetor PPT Rp50 miliar",
+                                   "nilaiRp":  47500000000,
+                                   "caraBayar":  "Tunai (setoran modal oleh perseroan)"
+                               },
+                 "pembanding":  [
+                                    "NICL",
+                                    "CNKO"
+                                ],
+                 "sumber":  [
+                                "Transaksi Material Tanpa Persetujuan RUPS — Stockbit Reports, 2026-08-11",
+                                "Transaksi Afiliasi (setoran Rp2,4 miliar ke PPT) — Stockbit Reports, 2026-05-07",
+                                "PGJO Tingkatkan Modal di Anak Perseroan — BCA Sekuritas, 2026-08 (tanggal tepat tidak tercantum di hasil)",
+                                "PGJO Dirikan Anak Usaha Baru, Perkuat Ekspansi di Sektor Tambang — BCA Sekuritas, 2025 (tanggal tepat tidak tercantum di hasil)"
+                            ],
+                 "tidakDitemukan":  [
+                                        "aset.tambang: PPT belum diungkap memiliki IUP, komoditas, cadangan, maupun produksi",
+                                        "aset.keuangan: hanya modal disetor Rp50 miliar (dicatat sebagai ekuitas nominal, bukan ekuitas buku audit); laporan keuangan PPT tidak tersedia",
+                                        "kjpp: tidak ada penunjukan KJPP karena transaksi intra-grup"
+                                    ]
+             },
+    "PIPA":  {
+                 "kjpp":  {
+                              "status":  "ditunjuk",
+                              "nama":  "KJPP Toto Suharto \u0026 Rekan",
+                              "tanggalLaporan":  null,
+                              "cutOff":  "2026-09-30",
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  "Penunjukan diumumkan 1 Oktober 2026 untuk penilaian rencana akuisisi 75% saham PT Aztech Pandu Persada (menindaklanjuti CSPA 7 September 2026); laporan belum diumumkan.",
+                              "sumber":  "Penunjukan Kantor Jasa Penilai Publik (KJPP) Independen Rencana Transaksi Akuisisi Saham PT Aztech Pandu Persada — Stockbit Reports, 2026-10-01"
+                          },
+                 "aset":  {
+                              "nama":  "PT Aztech Pandu Persada (APP)",
+                              "jenis":  "Pengolahan gas bumi; kontraktor engineering dan pengadaan (EPC migas/energi: sistem pendingin, cooling tower, piping, electrical ducting \u0026 control, maintenance)",
+                              "sektor":  "gas",
+                              "porsi":  "75% dari Riki Rinaldi Idham",
+                              "deskripsi":  "Target tidak terafiliasi. Total aset Rp476 miliar per akhir 2025; proyeksi pendapatan tahunan Rp250 miliar dengan margin EBITDA 60% (proyeksi manajemen, bukan realisasi). Konsolidasi diproyeksikan mulai tahun buku 2027. Bisnis PVC eksisting dipertahankan. Unggahan Stockbit menyebut konsorsium Aztech–Petroflexx Prima Daya mengerjakan fasilitas SKN New Train 30 MMSCFD di Jambi Merang (belum terverifikasi dari keterbukaan resmi).",
+                              "lokasi":  null,
+                              "keuangan":  {
+                                               "periode":  "2025 (akhir tahun)",
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  476000000000,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  {
+                                              "cadangan":  null,
+                                              "sumberDaya":  null,
+                                              "kalori":  null,
+                                              "produksi":  null,
+                                              "iup":  null
+                                          }
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Belum diungkap (indikatif; final setelah uji tuntas dan penilaian KJPP)",
+                                   "nilaiRp":  null,
+                                   "caraBayar":  "Penerbitan saham baru (rights issue/PMHMETD) dan/atau surat utang; target penyelesaian 6 bulan sejak CSPA, RUPSLB paling lambat Maret 2027"
+                               },
+                 "pembanding":  [
+                                    "ELSA",
+                                    "RUIS",
+                                    "PGAS"
+                                ],
+                 "sumber":  [
+                                "Penunjukan Kantor Jasa Penilai Publik (KJPP) Independen Rencana Transaksi Akuisisi Saham PT Aztech Pandu Persada — Stockbit Reports, 2026-10-01",
+                                "Penandatanganan Perjanjian Jual Beli Bersyarat atas Saham (CSPA) — Stockbit Reports, 2026-09-08",
+                                "Rencana Transaksi Akuisisi Perusahaan Target di Bidang Pengolahan Gas Bumi — Stockbit Reports, 2026-08-19",
+                                "Informasi Lebih Lanjut Mengenai Perkembangan Rencana Transaksi Akuisisi — Stockbit Reports, 2026-08-26",
+                                "Oxalá Energy (PIPA) Teken CSPA, Siap Akuisisi 75% Saham Aztech Pandu Persada — Investortrust, 2026-09-09",
+                                "Bakal Akuisisi Perusahaan Migas, Saham PIPA Masih Menarik untuk Dikoleksi? — Kontan Insight, 2026-09-10"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp.tanggalLaporan/nilai/metode: laporan KJPP Toto Suharto \u0026 Rekan belum diumumkan",
+                                        "aset.keuangan: pendapatan, EBITDA, laba, ekuitas, utang historis APP tidak diungkap (hanya total aset 2025 dan proyeksi)",
+                                        "aset.lokasi/kapasitas: lokasi fasilitas dan kapasitas pengolahan (MMSCFD) tidak dimuat di keterbukaan resmi",
+                                        "transaksi.nilai: belum diungkap"
+                                    ]
+             },
+    "SOFA":  {
+                 "kjpp":  {
+                              "nama":  "KJPP Ferdinand, Danar, Ichsan \u0026 Rekan",
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  "Studi kelayakan penambahan kegiatan usaha (bukan laporan penilaian aset)",
+                              "kesimpulan":  "Penambahan kegiatan usaha (KBLI 64210 dan 64220) dinyatakan layak; studi kelayakan dipublikasikan 28 September 2026 dan disetujui RUPSLB 30 September 2026",
+                              "sumber":  "Penyampaian Informasi rencana Transaksi material - Rencana Transaksi Perubahan Kegiatan Usaha — Stockbit Reports, 2026-09-29; Perubahan Anggaran Dasar Perseroan — Stockbit Reports, 2026-10-14",
+                              "status":  "belum",
+                              "dasar":  "Yang terbit studi kelayakan (KJPP Ferdinand, Danar, Ichsan \u0026 Rekan: layak), bukan laporan penilaian."
+                          },
+                 "aset":  {
+                              "nama":  "Kepemilikan 10% pada konsorsium/BUPP PSEL Denpasar Raya (PT Weiming Nusantara Bali New Energy) dan PSEL Bogor Raya (PT Weiming Nusantara Bogor New Energy) melalui PT Ananta Energi Asia",
+                              "jenis":  "Penyertaan minoritas pada proyek pengolahan sampah menjadi energi listrik (waste-to-energy) mitra Zhejiang Weiming Environment Protection Co., Ltd.",
+                              "sektor":  "energi",
+                              "porsi":  "10% pada masing-masing perusahaan konsorsium (akta jual beli saham 8 Juni 2026)",
+                              "deskripsi":  "Proyek PSEL tahap pertama Danantara. Skema perjanjian jual beli listrik 30 tahun dengan PLN, tarif tetap US$0,2 per kWh. Peran AEA: koordinasi perizinan, hubungan pemerintah daerah, transfer teknologi. PSEL Denpasar Raya: kapasitas olah 1.200–1.650 ton sampah per hari, listrik hingga 30 MW, groundbreaking 8 Juli 2026. Kapasitas PSEL Bogor Raya (TPA Galuga) belum ditemukan dari sumber yang dapat diverifikasi. Proyek masih tahap konstruksi, belum beroperasi.",
+                              "lokasi":  "Denpasar Selatan (Bali) dan Bogor Raya/TPA Galuga (Jawa Barat)",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  null
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Investasi konsorsium Rp131,02 M (total kebutuhan dana Rp238,22 M termasuk modal kerja Rp107,2 M)",
+                                   "nilaiRp":  131020000000,
+                                   "caraBayar":  "Tunai melalui anak usaha; didanai PMHMETD (pendaftaran ditargetkan awal kuartal IV 2026) dan pinjaman afiliasi Rp16,3 M dari PT Asia Investment Capital (bunga 1%, 5 tahun) untuk setoran modal USD900.000"
+                               },
+                 "pembanding":  [
+                                    "KEEN",
+                                    "ARKO",
+                                    "PGEO",
+                                    "BREN"
+                                ],
+                 "sumber":  [
+                                "Penyampaian Informasi rencana Transaksi material - Rencana Transaksi Perubahan Kegiatan Usaha (KOREKSI) — Stockbit Reports, 2026-09-29",
+                                "TRANSAKSI MATERIAL DAN TRANSAKSI AFILIASI TANPA PERSETUJUAN RUPS — Stockbit Reports, 2026-10-07",
+                                "Penandatanganan Jual Beli Saham antara Anak Usaha Perseroan dengan Mitra Asing di dalam Konsorsium Proyek PSEL Danantara — Stockbit Reports, 2026-06-09",
+                                "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-09-18",
+                                "SOFA Resmi Masuk Proyek PSEL Danantara, Kantongi 10% Saham Konsorsium — Bisnis.com, 2026-06-09",
+                                "SOFA Garap Proyek Sampah dari Danantara Selama 30 Tahun Bareng Perusahaan China — Kontan, 2026-05-26",
+                                "PLN Dukung Pembangunan PSEL Bali, Siap Serap Listrik 30 MW — Investortrust, 2026-07-09"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp.nilai/metode penilaian: KJPP hanya menyusun studi kelayakan; tidak ditemukan laporan penilaian atas 10% saham konsorsium",
+                                        "aset.keuangan: konsorsium masih tahap konstruksi; laporan keuangan tidak dipublikasikan",
+                                        "aset kapasitas Bogor Raya: hanya kisaran perkiraan dari ringkasan hasil pencarian, tidak terverifikasi",
+                                        "nilai investasi proyek total: angka Rp3 T untuk PSEL Bali hanya muncul pada judul berita terkait, tidak di isi artikel"
+                                    ]
+             },
+    "ULTJ":  {
+                 "kjpp":  {
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  "Rp14,57 T (nilai inbreng 100% saham FFI)",
+                              "nilaiRp":  14570000000000,
+                              "metode":  null,
+                              "kesimpulan":  null,
+                              "sumber":  "Rencana Transaksi Material Dengan Persetujuan RUPS — Stockbit Reports, 2026-09-18 (status terbit disimpulkan dari keterbukaan transaksi material yang memuat nilai inbreng; nama penilai tidak terverifikasi)",
+                              "status":  "ditunjuk",
+                              "dasar":  "Perlu konfirmasi: transaksi material dengan RUPS biasanya memuat ringkasan penilai; nama KJPP belum terverifikasi."
+                          },
+                 "aset":  {
+                              "nama":  "PT Frisian Flag Indonesia (FFI)",
+                              "jenis":  "Produsen susu dan produk olahan susu",
+                              "sektor":  "makanan",
+                              "porsi":  "100% (24.440 saham FFI; pemegang saham FFI: FrieslandCampina International Holding B.V. 78,09%, Blue Waves Group Ventures Pte. Ltd. 16,91%, PT Bahtera Wiraniaga Internusa 5%)",
+                              "deskripsi":  "FFI masuk Grup Ultrajaya; kedua entitas tetap beroperasi terpisah dengan merek dan organisasi masing-masing. Fasilitas di Jakarta, Padalarang, dan Cikarang (Mikirduit). Valuasi transaksi menurut Mikirduit: PE sekitar 19,3x, PBV sekitar 3,49x, P/S sekitar 1,09x (berbasis kinerja disetahunkan: pendapatan Rp13,36 T, laba Rp753 M). Margin bersih 7 bulan 2026 sekitar 5,6%.",
+                              "lokasi":  "Jakarta, Padalarang, dan Cikarang (Jawa Barat)",
+                              "keuangan":  {
+                                               "periode":  "7 bulan 2026 (Januari–Juli 2026)",
+                                               "pendapatan":  7790000000000,
+                                               "ebitda":  null,
+                                               "labaBersih":  439520000000,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  null
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Rp14,57 T (setara 178,24% ekuitas ULTJ per 31 Juli 2026)",
+                                   "nilaiRp":  14570000000000,
+                                   "caraBayar":  "Saham: inbreng 100% saham FFI dalam PMHMETD IV (maksimal 7.878.669.985 saham baru, harga pelaksanaan Rp2.150; sekitar 6,78 miliar saham untuk inbreng). FCIH menjadi pengendali baru dengan porsi sekitar 28,95%–30,81%"
+                               },
+                 "pembanding":  [
+                                    "CMRY",
+                                    "ICBP",
+                                    "MYOR"
+                                ],
+                 "sumber":  [
+                                "Rencana Transaksi Material Dengan Persetujuan RUPS — Stockbit Reports, 2026-09-18",
+                                "Pemanggilan Rapat Umum Pemegang Saham Luar Biasa — Stockbit Reports, 2026-10-05",
+                                "ULTJ Beli Frisian Flag Rp14,6 T, FrieslandCampina Jadi Pengendali Baru — CNBC Indonesia, 2026-09-18",
+                                "Aksi Korporasi Rights Issue ULTJ 2026: Akuisisi Frisian Flag Rp14,56 Triliun — PintarSaham, 2026-09-21",
+                                "FrieslandCampina Siap Jadi Pengendali — Receh.in, 2026-09-20",
+                                "5 Fakta Aksi FrieslandCampina Akuisisi ULTJ senilai Rp14 triliun — Mikirduit, 2026-09-19",
+                                "Menakar Valuasi ULTJ Pasca Transaksi Frisian Flag — Kontan, 2026-09-23"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp.nama/metode/cutOff/kesimpulan: ringkasan mesin pencari menyebut KJPP Rengganis, Hamid \u0026 Rekan (DCF dan pembanding, per 31 Juli 2026, nilai Rp14,570 T, wajar) bersumber artikel Ajaib, tetapi halaman tidak dapat diakses (403) sehingga tidak terverifikasi",
+                                        "aset.keuangan EBITDA/total aset/ekuitas/utang FFI: tidak disebut di sumber yang dapat diakses; ekuitas implisit dari PBV sekitar Rp4,17 T hanya hitungan media",
+                                        "kapasitas produksi FFI: tidak ditemukan"
+                                    ]
+             },
+    "VISI":  {
+                 "kjpp":  {
+                              "nama":  "KJPP Ferdinand, Danar, Ichsan \u0026 Rekan (studi kelayakan)",
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  "Studi kelayakan (analisis pasar: pangsa pasar 8,1% penderita penyakit jantung di provinsi operasi; penetrasi area tangkapan langsung 35,9%)",
+                              "kesimpulan":  null,
+                              "sumber":  "Profil Hasna Medika, RS Jantung yang Diincar Savitra (VISI) Milik Nagita-Raffi — IDX Channel, 2026-08-27",
+                              "status":  "belum",
+                              "dasar":  "Yang terbit studi kelayakan (FDI\u0026R), bukan laporan penilaian saham HMBC."
+                          },
+                 "aset":  {
+                              "nama":  "PT Hasna Medika Bakti Cirebon (HMBC)",
+                              "jenis":  "Operator rumah sakit khusus jantung dan klinik",
+                              "sektor":  "rumah sakit",
+                              "porsi":  "72,91% (142.393 saham baru senilai Rp255 M + 17.325 saham dari PT Hasna Medika Utama Group senilai Rp31 M)",
+                              "deskripsi":  "Mengoperasikan 2 rumah sakit khusus jantung dengan layanan cath lab aktif (sistem hub-and-spoke) dan 11 klinik. Volume kunjungan 2025 setara sekitar 137 ribu pasien. RUPSLB dan RUPS Independen 30 September 2026 menyetujui transaksi.",
+                              "lokasi":  "Kantor di Kabupaten Cirebon (Jawa Barat); jaringan di Jawa Barat, Jawa Timur, Banten, dan Bali",
+                              "keuangan":  {
+                                               "periode":  "Kuartal I 2026",
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  -12300000000,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  null
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Rp286 M (Rp255 M saham baru + Rp31 M pembelian); ringkasan Stockbit 28 September 2026 menyebut total Rp319,45 M (178,3% ekuitas VISI per 30 April 2026)",
+                                   "nilaiRp":  286000000000,
+                                   "caraBayar":  "Tunai: setoran modal saham baru HMBC dan pembelian saham dari pemegang lama, didanai PMTHMETD maksimal 307,5 juta saham (10%)"
+                               },
+                 "pembanding":  [
+                                    "MIKA",
+                                    "HEAL",
+                                    "SILO",
+                                    "SRAJ"
+                                ],
+                 "sumber":  [
+                                "Rencana Transaksi Perubahan Kegiatan Usaha — Stockbit Reports, 2026-08-25",
+                                "Rencana Transaksi Material Dengan Persetujuan RUPS — Stockbit Reports, 2026-09-28",
+                                "Ringkasan Risalah RUPSLB dan RUPS Independen — Stockbit Reports, 2026-10-02",
+                                "Profil Hasna Medika, RS Jantung yang Diincar Savitra (VISI) Milik Nagita-Raffi — IDX Channel, 2026-08-27",
+                                "VISI Milik Nagita-Raffi Siapkan Rp286 M untuk Akuisisi RS Hasna Medika — Fortune IDN, 2026-08 (ringkasan hasil pencarian; halaman tidak dapat diakses)",
+                                "VISI Akuisisi Hasna Medika Rp286 Miliar, Kuasai 72,91 Persen — Fortune IDN, 2026-08-26"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp penilai saham HMBC/pendapat kewajaran: nama, nilai, metode, dan cut-off tidak ditemukan; yang terverifikasi hanya studi kelayakan FDI\u0026R",
+                                        "aset.keuangan pendapatan/EBITDA/aset/ekuitas/utang HMBC: tidak ditemukan; rugi Q1 2026 Rp12,3 M dari ringkasan hasil pencarian Fortune IDN (halaman tidak dapat diakses)",
+                                        "jumlah tempat tidur: tidak disebut di sumber mana pun",
+                                        "selisih nilai transaksi Rp286 M vs Rp319,45 M: perlu verifikasi ke dokumen keterbukaan"
+                                    ]
+             },
+    "SMKM":  {
+                 "kjpp":  {
+                              "status":  "ditunjuk",
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  null,
+                              "sumber":  "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-07-10 (laporan valuasi independen ditargetkan selesai semester II 2026); Penyampaian Press Rilis Perseroan — Stockbit Reports, 2026-10-06"
+                          },
+                 "aset":  {
+                              "nama":  "PanAsia Aquaculture Pte. Ltd. Group of Companies (PAA) dan LSO Organization Holdings Pte. Ltd. (LOH)",
+                              "jenis":  "Budidaya udang (akuakultur) terintegrasi",
+                              "sektor":  "akuakultur",
+                              "porsi":  "Pengendalian tidak langsung 75%–100% atas grup sasaran",
+                              "deskripsi":  "PAA dibeli dari Lim Shrimp Org Pte. Ltd. (CSPA 22 Desember 2025, long stop date diperpanjang ke 30 Juni 2027, target selesai paling lambat 31 Maret 2027). LOH dibeli dari Advanced Systems Automation Limited (CSPA 30 Januari 2026). Syarat pendahuluan: restrukturisasi internal PAA, audit, dan penilaian independen. Aset: tambak udang Sumbawa 37 ha dengan 40 kolam (beroperasi sejak 2018) dan aset Sabah, Malaysia Timur sekitar 49 ha (sejak 1998). LOH dan anak usahanya sudah diaudit hingga tahun buku 2025.",
+                              "lokasi":  "Sumbawa (NTB, Indonesia) dan Sabah (Malaysia Timur); entitas induk di Singapura",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "USD"
+                                           },
+                              "tambang":  null
+                          },
+                 "transaksi":  {
+                                   "nilai":  "PAA sekitar USD100 juta (estimasi, final menunggu penilai independen) + LOH Rp172,25 M (Katadata menyebut SGD13 juta)",
+                                   "nilaiRp":  1822250000000,
+                                   "caraBayar":  "Belum dirinci; direncanakan didanai rights issue (PMHMETD) semester II 2026–kuartal I 2027"
+                               },
+                 "pembanding":  [
+                                    "CPRO",
+                                    "DSFI",
+                                    "PMMP"
+                                ],
+                 "sumber":  [
+                                "Penyampaian Press Rilis Perseroan — Stockbit Reports, 2026-10-06",
+                                "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-07-10",
+                                "Penyampaian Materi Public Expose - Tahunan — Stockbit Reports, 2026-06-19",
+                                "Wajah Baru SMKM Usai Akuisisi Dua Perusahaan Singapura Senilai Rp 1,76 Triliun — Katadata, 2026-05-19",
+                                "SMKM Kebut Akuisisi PanAsia dan LSO Holdings Kuartal I 2027 — EmitenNews, 2026-10-07",
+                                "Sumber Mas Konstruksi (SMKM) Kejar Akuisisi Bisnis Udang, Ini Prospeknya — Kontan, 2026-10-07",
+                                "Lim Shrimp Konsolidasikan Anak Usaha ke SMKM Senilai US$100 Juta — Bisnis.com, 2025-12-23"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp.nama: penilaian independen sedang berjalan, nama KJPP belum diungkap",
+                                        "aset.keuangan PAA/LOH: tidak dipublikasikan; audit hingga cut-off 2026 masih berjalan",
+                                        "produksi (ton udang per tahun): tidak ditemukan",
+                                        "transaksi.nilaiRp: USD100 juta dikonversi kurs Rp16.500 (Rp1,65 T) ditambah LOH Rp172,25 M; nilai PAA masih estimasi"
+                                    ]
+             },
+    "PTMR":  {
+                 "kjpp":  {
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  "Rp88,05 M untuk 49% saham SLN (nilai transaksi setelah penyesuaian dari Rp89,52 M di CSPA)",
+                              "nilaiRp":  88045859000,
+                              "metode":  null,
+                              "kesimpulan":  null,
+                              "sumber":  "Rencana Transaksi Material Dengan Persetujuan RUPS (KOREKSI) — Stockbit Reports, 2026-05-19; Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-05-29 (status terbit disimpulkan dari keterbukaan transaksi material; nama penilai tidak ditemukan)",
+                              "status":  "ditunjuk",
+                              "dasar":  "Perlu konfirmasi: nama KJPP dan laporan penilaian SLN tidak ditemukan."
+                          },
+                 "aset":  {
+                              "nama":  "PT Samudera Layar Nusantara (SLN)",
+                              "jenis":  "Angkutan laut kargo dan penyewaan kapal",
+                              "sektor":  "logistik",
+                              "porsi":  "49% (dengan hak pengendalian efektif), dibeli dari Darmawan Wangsa",
+                              "deskripsi":  "PTMR akan menjadi perusahaan holding dengan SLN sebagai motor pendapatan, sekaligus mengalihkan bisnis bersih percetakan ke PT Mitra Pack Tbk (Rp61,35 M) dan 99% PT Global Putra Kusuma (Rp26,90 M). RUPS 19 Juni 2026 dibatalkan atas arahan OJK; per 28 September 2026 RUPSLB menunggu selesainya pemeriksaan OJK. Proforma konsolidasian PTMR pasca-transaksi per 31 Desember 2025 (bukan SLN mandiri): pendapatan Rp215,62 M, laba neto Rp8,32 M, total aset Rp182,52 M.",
+                              "lokasi":  null,
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  null
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Rp88,05 M (Rp88.045.859.000) untuk 49% SLN",
+                                   "nilaiRp":  88045859000,
+                                   "caraBayar":  "Belum dirinci di sumber yang ditemukan"
+                               },
+                 "pembanding":  [
+                                    "TMAS",
+                                    "SMDR",
+                                    "HAIS",
+                                    "BULL"
+                                ],
+                 "sumber":  [
+                                "Rencana Transaksi Material Dengan Persetujuan RUPS (KOREKSI) — Stockbit Reports, 2026-05-19",
+                                "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-05-29",
+                                "Pembatalan RUPSLB dan Independen — Stockbit Reports, 2026-06-17",
+                                "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-09-28",
+                                "Rencana Perubahan Kegiatan Usaha PTMR 2026 — PintarSaham, 2026-05-12",
+                                "Master Print (PTMR) Akuisisi Samudera Layar Nusantara, Banting Setir ke Angkutan Laut — Bisnis.com, 2026-01-26"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp.nama/metode/cutOff/kesimpulan: tidak disebut di media maupun ringkasan Stockbit",
+                                        "aset.keuangan SLN mandiri: tidak ditemukan; hanya tersedia proforma konsolidasian PTMR",
+                                        "armada kapal SLN (jumlah/DWT): tidak ditemukan",
+                                        "lokasi SLN: tidak disebut",
+                                        "transaksi.caraBayar: tidak dirinci"
+                                    ]
+             },
+    "MORA":  {
+                 "kjpp":  {
+                              "nama":  "KJPP SRR (penilai EMR); KJPP KR menilai MORA",
+                              "tanggalLaporan":  null,
+                              "cutOff":  "2025-09-30",
+                              "nilai":  "Rp10,42 T (nilai pasar 100% ekuitas EMR; sekitar Rp3.327.118 per saham EMR); MORA dinilai Rp10,21 T atau Rp432 per saham",
+                              "nilaiRp":  10420000000000,
+                              "metode":  null,
+                              "kesimpulan":  "Menjadi dasar rasio konversi 1 saham EMR = 7.703,807548 saham MORA; merger disetujui RUPSLB 26 Maret 2026 dan efektif 22 April 2026",
+                              "sumber":  "Perkuat Layanan Industri Telekomunikasi, Moratelindo (MORA) dan Eka Mas Republic Siap Merger — Stockwatch, 2025-12-18",
+                              "status":  "terbit",
+                              "dasar":  "Terkonfirmasi: KJPP SRR (EMR Rp10,42 T, cut-off 30 Sep 2025)."
+                          },
+                 "aset":  {
+                              "nama":  "PT Eka Mas Republik (MyRepublic Indonesia)",
+                              "jenis":  "Operator internet fiber-to-the-home (FTTH) ritel",
+                              "sektor":  "telekomunikasi",
+                              "porsi":  "100% (melebur ke MORA; EMR bubar tanpa likuidasi)",
+                              "deskripsi":  "Per September 2025: kabel serat optik 58.455 km, homepass 8,79 juta, pelanggan ritel 1,52 juta. Entitas hasil merger bernama PT Ekamas Mora Republik Tbk; PT Innovate Mas Utama (Grup Sinar Mas/DSSA) menjadi pengendali dengan sekitar 48,4%.",
+                              "lokasi":  "Indonesia (nasional)",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  null
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Rp10,42 T (nilai pasar ekuitas EMR menurut KJPP SRR per 30 September 2025)",
+                                   "nilaiRp":  10420000000000,
+                                   "caraBayar":  "Saham: penerbitan 24.127.524.041 saham baru MORA (50,50% modal pasca-merger); buyback bagi pemegang saham tidak setuju di Rp432 per saham"
+                               },
+                 "pembanding":  [
+                                    "LINK",
+                                    "EXCL",
+                                    "ISAT",
+                                    "INET"
+                                ],
+                 "sumber":  [
+                                "Perkuat Layanan Industri Telekomunikasi, Moratelindo (MORA) dan Eka Mas Republic Siap Merger — Stockwatch, 2025-12-18",
+                                "Merger MORA dan MyRepublic Ditargetkan Rampung Semester I 2026, Ini Catatan Analis — Kontan, 2025-12-18",
+                                "Dampak Merger dengan MyRepublic, Pemegang Saham MORA Terdilusi 50,5% — CNBC Indonesia, 2026-03-17",
+                                "RUPSLB Moratelindo (MORA) Setujui Merger dengan MyRepublic Indonesia — Bisnis.com, 2026-03-27",
+                                "Pencatatan Saham (24,12 miliar saham baru hasil penggabungan) — Stockbit Reports, 2026-04-22"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp.nama lengkap SRR: hanya singkatan yang disebut media",
+                                        "kjpp.tanggalLaporan: ringkasan hasil pencarian menyebut laporan penilaian per 15 Desember 2025, tidak terverifikasi di halaman sumber",
+                                        "kjpp.metode: tidak disebut di sumber yang ditemukan",
+                                        "aset.keuangan EMR: tidak ditemukan; laporan DSSA hanya menyajikan segmen infrastruktur digital dan teknologi secara gabungan (7,6% pendapatan DSSA 2025)"
+                                    ]
+             },
+    "NATO":  {
+                 "kjpp":  {
+                              "status":  "belum",
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  null,
+                              "sumber":  "Akuisisi Saham ORBIT MARKETING PTE.LTD — Stockbit Reports, 2026-05-12 (transaksi dinyatakan tidak material; tidak ada penilai yang disebut)"
+                          },
+                 "aset":  {
+                              "nama":  "ORBIT MARKETING PTE. LTD.",
+                              "jenis":  "Perusahaan investasi di Singapura",
+                              "sektor":  "investasi",
+                              "porsi":  "100%",
+                              "deskripsi":  "Akuisisi rampung 16 Januari 2026 untuk tujuan jangka panjang (public expose 25 Juni 2026). Isi portofolio dan rencana pemanfaatan belum dirinci. Manajemen menyatakan tidak ada aksi korporasi dalam 3 bulan (2 September 2026); penerbitan obligasi masih kajian internal.",
+                              "lokasi":  "Singapura",
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  null
+                          },
+                 "transaksi":  {
+                                   "nilai":  "SGD10.000",
+                                   "nilaiRp":  null,
+                                   "caraBayar":  "Belum dirinci (nilai sangat kecil, kemungkinan setara modal disetor)"
+                               },
+                 "pembanding":  [
+                                    "SRTG",
+                                    "PNLF"
+                                ],
+                 "sumber":  [
+                                "Akuisisi Saham ORBIT MARKETING PTE.LTD — Stockbit Reports, 2026-05-12",
+                                "Penyampaian Materi Public Expose - Tahunan — Stockbit Reports, 2026-06-17",
+                                "Laporan Hasil Public Expose - Tahunan — Stockbit Reports, 2026-06-28",
+                                "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-09-02",
+                                "Olympus Strategic Indonesia Tbk Umumkan Akuisisi 100% Saham Orbit Marketing Pte Ltd — Pasardana, 2026-05-12"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp: transaksi tidak material, tidak ada laporan penilai",
+                                        "aset.keuangan Orbit Marketing: tidak dipublikasikan",
+                                        "transaksi.nilaiRp: nilai dalam SGD; kurs konversi SGD tidak ditetapkan dalam instruksi (hanya USD), sehingga dibiarkan null"
+                                    ]
+             },
+    "KRYA":  {
+                 "kjpp":  {
+                              "status":  "belum",
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  null,
+                              "sumber":  "Garap Sektor EV, Bangun Karya (KRYA) Caplok Saham Sepeda Motor Listrik ECGO — IDX Channel, 2025-08-09 (transaksi 9,8% ekuitas, tidak material menurut POJK 17/2020; tidak ada penilai yang disebut)"
+                          },
+                 "aset":  {
+                              "nama":  "PT Green City Traffic (GCT), pemilik merek ECGO",
+                              "jenis":  "Produsen dan distributor sepeda motor listrik beserta ekosistem baterai (sewa dan tukar baterai)",
+                              "sektor":  "otomotif",
+                              "porsi":  "50,99% (10.418.000 saham baru nominal Rp1.000); pemegang lain Green City SG Pte Ltd 48,51%, William Teng 0,49%",
+                              "deskripsi":  "Berdiri 2018; TKDN hingga 56%; penjualan lebih dari 10.000 unit di dalam negeri selama tujuh tahun; dua model masuk daftar penerima subsidi 2023 dan 2024. Entitas anak KRYA sejak 30 September 2025. Target penjualan 55.000 unit pada 2026 dan minimal 1 juta unit dalam lima tahun. Rencana rights issue Rp200–300 M untuk kapasitas produksi masih indikatif.",
+                              "lokasi":  null,
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  null
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Rp10,42 M (setara 9,8% ekuitas KRYA per 31 Desember 2024)",
+                                   "nilaiRp":  10418000000,
+                                   "caraBayar":  "Penyetoran modal atas saham baru GCT (bentuk tunai tidak dirinci secara eksplisit)"
+                               },
+                 "pembanding":  [
+                                    "VKTR",
+                                    "ASII",
+                                    "IMAS"
+                                ],
+                 "sumber":  [
+                                "Garap Sektor EV, Bangun Karya (KRYA) Caplok Saham Sepeda Motor Listrik ECGO — IDX Channel, 2025-08-09",
+                                "KRYA Kuasai 51% Saham GCT, Masuk Bisnis Motor Listrik — Warta Ekonomi, 2025-08-11",
+                                "Penjelasan atas Perubahan Aset dan Liabilitas Perseroan Lebih dari 20% — Stockbit Reports, 2026-06-15",
+                                "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-09-03"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp: transaksi tidak material, tidak ada laporan penilaian",
+                                        "aset.keuangan GCT: tidak dipublikasikan terpisah; data KRYA konsolidasi 2025 (aset Rp119,37 M, liabilitas Rp98,98 M) bukan data GCT",
+                                        "kapasitas pabrik dan lokasi produksi: tidak ditemukan"
+                                    ]
+             },
+    "TGUK":  {
+                 "kjpp":  {
+                              "status":  "belum",
+                              "nama":  null,
+                              "tanggalLaporan":  null,
+                              "cutOff":  null,
+                              "nilai":  null,
+                              "nilaiRp":  null,
+                              "metode":  null,
+                              "kesimpulan":  null,
+                              "sumber":  "Teguk (TGUK) Ungkap Rencana Rights Issue, Dana untuk Akuisisi Perusahaan Daging — IDX Channel, 2026-06-15 (rencana masih bersyarat; tidak ada penilai yang disebut)"
+                          },
+                 "aset":  {
+                              "nama":  "PT Sumber Prima Anugrah Abadi",
+                              "jenis":  "Pengolahan daging",
+                              "sektor":  "makanan",
+                              "porsi":  "Belum diungkap",
+                              "deskripsi":  "Rencana akuisisi didanai PMHMETD yang ditargetkan akhir 2026, bersyarat pencabutan suspensi, kondisi pasar, dan persetujuan regulator; termasuk kerja sama strategis dengan Bakso Sumber Seleras. TGUK sendiri sudah beralih ke perdagangan daging beku (99,6% pendapatan Q1 2026 atau Rp200,7 M). Visionary Capital Global mengambil alih 56,84% TGUK pada 2 Oktober 2026 (Rp40,6 M, harga pengendali, bukan nilai aset).",
+                              "lokasi":  null,
+                              "keuangan":  {
+                                               "periode":  null,
+                                               "pendapatan":  null,
+                                               "ebitda":  null,
+                                               "labaBersih":  null,
+                                               "totalAset":  null,
+                                               "ekuitas":  null,
+                                               "utang":  null,
+                                               "mataUang":  "IDR"
+                                           },
+                              "tambang":  null
+                          },
+                 "transaksi":  {
+                                   "nilai":  "Belum diungkap",
+                                   "nilaiRp":  null,
+                                   "caraBayar":  "Tunai dari dana rights issue (PMHMETD) yang direncanakan akhir 2026"
+                               },
+                 "pembanding":  [
+                                    "BEEF",
+                                    "CPIN",
+                                    "JPFA"
+                                ],
+                 "sumber":  [
+                                "Teguk (TGUK) Ungkap Rencana Rights Issue, Dana untuk Akuisisi Perusahaan Daging — IDX Channel, 2026-06-15",
+                                "Tanggapan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-07-23",
+                                "Keterbukaan Informasi atas Informasi atau Fakta Material — Stockbit Reports, 2026-10-05",
+                                "Sah! Minuman Teguk (TGUK) Dicaplok Investor Singapura Rp40,6 Miliar — Bisnis.com, 2026-10-05",
+                                "Pengendali Baru Caplok 56,84 Persen Saham TGUK, Bakal Gelar MTO dan Rights Issue — Kontan, 2026-10"
+                            ],
+                 "tidakDitemukan":  [
+                                        "kjpp: belum ada rencana transaksi formal, penilai belum disebut",
+                                        "aset.porsi/keuangan/kapasitas/lokasi PT Sumber Prima Anugrah Abadi: tidak diungkap di sumber mana pun",
+                                        "transaksi.nilai: jumlah saham, harga, dan nilai rights issue belum diumumkan"
+                                    ]
+             }
+}

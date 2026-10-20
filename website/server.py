@@ -759,8 +759,19 @@ def get_benchmark(deals: list[str], fresh: bool = False) -> dict:
             p0, last = after[0]["v"], after[-1]["v"]
             if base <= 0 or p0 <= 0:
                 continue
+            peak_date = next((x["d"] for x in pr if base_date <= x["d"] <= run_to and x["v"] == peak), None)
+
+            def day_of(s: str) -> int:
+                return (datetime.strptime(s, "%Y-%m-%d") - d0).days
+
+            # Deret siklus: harga ÷ harga saat PTW dimulai, per hari dari awal PTW
+            # (tiap 3 bar bursa supaya respons ringan).
+            win = [x for x in pr if x["d"] >= pre_from]
+            series = [[day_of(win[i]["d"]), round(win[i]["v"] / p0, 4)] for i in range(0, len(win), 3)]
             rows.append({"ticker": sym, "start": start, "base": base, "peak": peak, "p0": p0,
-                         "last": last, "runupX": round(peak / base, 2), "postX": round(last / p0, 2)})
+                         "last": last, "runupX": round(peak / base, 2), "postX": round(last / p0, 2),
+                         "baseDay": day_of(base_date), "peakDay": day_of(peak_date) if peak_date else None,
+                         "lastDay": day_of(after[-1]["d"]), "series": series})
         except Exception:
             continue
         time.sleep(0.2)

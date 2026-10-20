@@ -36,6 +36,10 @@ export const store = reactive({
   analisa: {},
   pengendali: {},
   relasi: {},
+  aset: {},        // aset-verified.json: aset injeksi, KJPP, mekanisme transaksi per emiten
+  profil: {},      // profil-pengendali.json: orang di balik pengendali per emiten
+  hsc: { kode: [] }, // hsc.json: saham konsentrasi kepemilikan tinggi (dikeluarkan dari IHSG)
+  changelog: {},   // changelog.json: panel Pembaruan
   status: null,
   features: {},
   // Waktu kunjungan terakhir browser ini: penanda "baru" di Monitor dan Berita.
@@ -113,9 +117,10 @@ async function loadStatus() {
 }
 
 export async function init() {
-  const [verified, pandangan, analisa, pengendali, relasi] = await Promise.all(
-    ['story-verified.json', 'pandangan-analis.json', 'analisa.json', 'pengendali-verified.json', 'relasi-verified.json'].map(loadJson))
-  Object.assign(store, { verified, pandangan, analisa, pengendali, relasi })
+  const [verified, pandangan, analisa, pengendali, relasi, aset, profil, hsc, changelog] = await Promise.all(
+    ['story-verified.json', 'pandangan-analis.json', 'analisa.json', 'pengendali-verified.json', 'relasi-verified.json',
+      'aset-verified.json', 'profil-pengendali.json', 'hsc.json', 'changelog.json'].map(loadJson))
+  Object.assign(store, { verified, pandangan, analisa, pengendali, relasi, aset, profil, hsc: hsc.kode ? hsc : { kode: [] }, changelog })
   try { await loadData() } catch (e) { toast('Gagal memuat data dari server: ' + e.message, true) }
   await loadStatus()
   try { store.features = await api.get('/api/features') } catch {}
