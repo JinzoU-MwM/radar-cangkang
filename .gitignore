@@ -14,3 +14,6 @@ __pycache__/
 # runtime watcher
 .stockbit-notify-stamp
 **/.stockbit-notify-stamp
+
+# brainstorm companion
+.superpowers/
