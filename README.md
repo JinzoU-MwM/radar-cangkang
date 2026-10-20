@@ -6,73 +6,58 @@ Pemantauan emiten BEI calon backdoor listing (pengambilalihan & perubahan pengen
 
 ```
 radar-cangkang/
-├── jalankan-radar.sh            Jalankan server + buka browser
-├── stockbit-token-watcher.py    Perbarui token Stockbit otomatis (systemd timer)
+├── Jalankan-Radar.bat           Windows: server lokal + buka browser (hanya komputer ini)
+├── Jalankan-Radar-LAN.bat       Windows: bisa dibuka perangkat lain di jaringan yang sama (pakai kunci)
+├── Izinkan-LAN.bat / Cabut-LAN.bat   Windows (Run as administrator): izin/cabut port 8765 + firewall
+├── jalankan-radar.sh            Linux: jalankan server (PowerShell 7 / pwsh)
+├── test-cache.ps1               Tes cache SQLite
+├── DESIGN.md / PRODUCT.md       Catatan desain & produk
 ├── README.md
-├── .gitignore                   Mencegah token ikut terunggah
+├── .gitignore                   Mencegah token, kunci, dan cache ikut terunggah
 ├── website/                     Website mandiri (tanpa Claude)
 │   ├── index.html               Halaman utama
 │   ├── serve.ps1                Server lokal + proxy Stockbit (port 8765)
 │   ├── stockbit.config.json     URL endpoint & pemetaan field Stockbit
+│   ├── story-verified.json      Story emiten terverifikasi
+│   ├── pengendali-verified.json Profil pengendali baru
+│   ├── pandangan-analis.json    Pandangan analis per emiten
+│   ├── analisa.json             Catatan analis
 │   ├── .stockbit-token          token Bearer Stockbit, JANGAN dibagikan
-│   └── .stockbit-refresh        refresh token Stockbit, JANGAN dibagikan
+│   └── .lan-key                 kunci akses mode LAN, JANGAN dibagikan selain lewat link
 └── versi-claude/
     └── radar-cangkang.html      Sumber versi artifact Claude (database tim)
 ```
 
-## Menjalankan
+## Menjalankan (Windows)
+
+Klik dua kali `Jalankan-Radar.bat`, lalu buka http://localhost:8765
+
+## Membuka dari perangkat lain (jaringan lokal)
+
+1. Sekali saja: klik kanan `Izinkan-LAN.bat` > **Run as administrator** (izin port 8765 + aturan firewall jaringan *Public* & *Private*, hanya dari subnet yang sama).
+2. Jalankan `Jalankan-Radar-LAN.bat`. Jendelanya menampilkan **link berkunci**, mis. `http://192.168.18.109:8765/?key=...`.
+3. Bagikan link lengkap itu. Tanpa `?key=...` akses dari perangkat lain ditolak (401); komputer ini sendiri tidak perlu kunci. Ganti kunci: hapus `website\.lan-key` lalu jalankan ulang.
+
+Jangan jalankan `Jalankan-Radar.bat` dan `Jalankan-Radar-LAN.bat` bersamaan (port sama). Data radar tersimpan di browser masing-masing perangkat; semua perangkat memakai token Stockbit di komputer ini.
+
+## Menjalankan (Linux)
 
 Butuh PowerShell 7 (`pwsh`).
 
 ```
-./jalankan-radar.sh            # terbuka ke jaringan lokal (LAN/Tailscale)
+./jalankan-radar.sh            # terbuka ke jaringan lokal, tetap pakai kunci akses
 ./jalankan-radar.sh --local    # hanya komputer ini
 ```
 
-Buka http://localhost:8765, atau dari perangkat lain `http://<ip-host>:8765/` (alamat tercetak di terminal). Kalau ufw aktif, sekali saja: `sudo ufw allow from 192.168.0.0/16 to any port 8765 proto tcp`.
+## Token Stockbit
 
-Tanpa kunci akses: siapa pun di jaringan lokal (IP privat 10/8, 172.16/12, 192.168/16, Tailscale 100.64/10) bisa membuka radar dan memakai proxy Stockbit dengan token komputer ini. Permintaan dari IP publik ditolak (403). Di Wi-Fi publik pakai `--local`. Data radar tersimpan di browser masing-masing perangkat.
+Simpan token Bearer di `website/.stockbit-token`. Token berlaku 24 jam; sisa masa berlakunya tampil di sidebar kiri (kuning < 2 jam, merah bila habis). Token baru langsung terbaca tanpa menjalankan ulang server.
 
-## Story Emiten terverifikasi
+`stockbit-token-watcher.py` (Linux/systemd, opsional) dapat memperpanjang token otomatis memakai *refresh token* di `website/.stockbit-refresh`. Tidak dipakai di Windows; pertimbangkan risikonya: refresh token memberi akses akun yang jauh lebih luas daripada token harian, jadi simpan hanya di komputer pribadi.
 
-`website/story-verified.json` berisi bisnis baru, injeksi aset, target, nominal, dan target penyelesaian tiap emiten yang sudah dicek dengan Stockbit Reports (15 Okt 2026), lengkap dengan tanggal laporan dan catatan.
-Prioritas tampilan: koreksi manual (tombol *Ubah story*) > file ini > data otomatis. Field kosong = memang belum disebut di laporan.
+## Cache SQLite (opsional)
 
-## Menyambungkan Stockbit
-
-1. Simpan token Bearer di `website/.stockbit-token`.
-2. Isi `url` di `website/stockbit.config.json` dari DevTools (F12 > Network) stockbit.com; ganti kode saham dengan `{ticker}`.
-3. Jalankan ulang server, buka http://localhost:8765/api/raw?ticker=NAYZ, lalu isi `fields` (mis. `data.lastprice`).
-4. Klik **Perbarui dari Stockbit** di menu Progress emiten / Potensi emiten.
-
-## Berita (menu Update Emiten)
-
-Tombol **Perbarui berita** mengambil:
-- **Stockbit Reports**: keterbukaan informasi BEI + ringkasan AI Stockbit, untuk tiap emiten di radar (butuh token).
-- **Berita media** dari IDX Channel, Bloomberg Technoz, Investor.id, CNBC Indonesia, CNN Indonesia, Kontan, Katadata, EmitenNews, Bisnis.com, detikFinance. Hanya judul yang cocok kata kunci backdoor (`news.keywords`) atau menyebut emiten di radar.
-
-Sumber, kata kunci, dan pola URL diatur di `website/stockbit.config.json` bagian `news`.
-
-## Versi Claude
-
-Versi dengan database bersama: https://claude.ai/artifact/G3idsMaViH1CKpKyory3mE
-Sumbernya `versi-claude/radar-cangkang.html`.
-
-Data di versi `website/` tersimpan di browser (localStorage), terpisah dari versi Claude.
-
-## Token Stockbit otomatis (Linux)
-
-`stockbit-token-watcher.py` jalan tiap jam (systemd user timer `stockbit-token-watcher.timer`) dan memperbarui `website/.stockbit-token` bila sisa umurnya < 3 jam, memakai refresh token di `website/.stockbit-refresh`. Gagal = notifikasi desktop.
-
-Mengisi refresh token (sekali, atau tiap kali rantainya putus):
-1. Buka jendela **incognito**, login stockbit.com, F12 > Network sebelum halaman dimuat ulang.
-2. Muat ulang halaman, cari request `login/refresh`; dari tab **Response** salin nilai refresh token (JWT `eyJ...`, di field yang namanya mengandung `refresh`).
-3. Simpan ke `website/.stockbit-refresh`, **tutup jendela incognito tanpa logout** (refresh token berotasi; browser yang masih terbuka akan menghanguskannya).
-4. Uji: `python3 stockbit-token-watcher.py --force`.
-
-## Cache SQLite
-
-Server menyimpan respons Stockbit dan sumber berita di `website/.cache.sqlite` (butuh CLI `sqlite3`; tanpa itu server tetap jalan tanpa cache). Semua perangkat memakai salinan yang sama; Stockbit hanya dipanggil saat salinan kedaluwarsa:
+Bila CLI `sqlite3` terpasang, server menyimpan respons Stockbit dan sumber berita di `website/.cache.sqlite` sehingga Stockbit hanya dipanggil saat salinan kedaluwarsa. Tanpa `sqlite3`, server tetap berjalan normal tanpa cache.
 
 | Data | Umur salinan |
 |---|---|
@@ -81,4 +66,20 @@ Server menyimpan respons Stockbit dan sumber berita di `website/.cache.sqlite` (
 | Berita media | 15 menit |
 | Tender, pemegang saham, profil, keuangan | 6 jam |
 
-Tombol **Perbarui** manual mengambil data segar (`?fresh=1`); pembaruan otomatis memakai cache. Bila Stockbit gagal/limit, salinan lama dipakai. Hapus cache: `rm website/.cache.sqlite*`. Tes: `pwsh -NoProfile -File test-cache.ps1`.
+Tombol **Perbarui** manual mengambil data segar (`?fresh=1`); pembaruan otomatis saat membuka menu memakai cache. Hapus cache: hapus `website\.cache.sqlite*`.
+
+## Pembaruan otomatis
+
+Membuka menu memperbarui datanya dari Stockbit (paling sering sekali per 15 menit per jenis data): Update → laporan & berita; Story → laporan, profil & pengendali; Progress/Potensi → tender, harga & kepemilikan. Tombol **Perbarui** tetap tersedia.
+
+## Data terverifikasi
+
+`story-verified.json`, `pengendali-verified.json`, dan `pandangan-analis.json` berisi hasil pengecekan Stockbit Reports dan media (sumber dicatat per emiten). Website tidak menyediakan input manual; koreksi dilakukan dengan memperbarui file ini. Field kosong berarti memang belum diungkap.
+
+## Berita (menu Update Emiten)
+
+**Perbarui berita** mengambil Stockbit Reports (butuh token) dan berita media dari IDX Channel, Bloomberg Technoz, Investor.id, CNBC Indonesia, CNN Indonesia, Kontan, Katadata, EmitenNews, Bisnis.com, detikFinance. Sumber dan kata kunci diatur di `website/stockbit.config.json` bagian `news`.
+
+## Versi Claude
+
+Versi dengan database bersama: https://claude.ai/artifact/G3idsMaViH1CKpKyory3mE (sumber `versi-claude/radar-cangkang.html`). Data versi `website/` tersimpan di browser (localStorage), terpisah dari versi Claude.

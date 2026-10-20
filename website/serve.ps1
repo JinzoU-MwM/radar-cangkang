@@ -770,7 +770,18 @@ try { $listener.Start() } catch {
   exit 1
 }
 Write-Host "Radar Backdoor berjalan di http://localhost:$Port"
+# Kunci akses untuk perangkat lain (mode LAN). Disimpan di .lan-key (dotfile, tidak pernah disajikan).
+# Wajib dipertahankan: tanpa kunci, siapa pun di jaringan yang sama bisa memakai proxy dengan token Stockbit pribadi.
+$lanKey = $null
 if ($Lan) {
+  $keyPath = Join-Path $root ".lan-key"
+  if (Test-Path $keyPath) { $lanKey = (Get-Content $keyPath -Raw).Trim() }
+  if (-not $lanKey) {
+    $chars = 'abcdefghjkmnpqrstuvwxyz23456789'.ToCharArray()
+    $rng = [Security.Cryptography.RandomNumberGenerator]::Create(); $b = New-Object byte[] 10; $rng.GetBytes($b)
+    $lanKey = -join ($b | ForEach-Object { $chars[$_ % $chars.Length] })
+    Set-Content -Path $keyPath -Value $lanKey -NoNewline
+  }
   # Alamat IPv4 semua antarmuka aktif (bukan loopback), untuk dibuka dari perangkat lain.
   $ips = @([Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces() |
     Where-Object { $_.OperationalStatus -eq 'Up' } |
@@ -778,10 +789,23 @@ if ($Lan) {
     Where-Object { $_.Address.AddressFamily -eq 'InterNetwork' -and "$($_.Address)" -notmatch '^127\.' } |
     ForEach-Object { "$($_.Address)" })
   Write-Host ""
-  Write-Host "Buka dari perangkat lain di jaringan lokal:"
-  foreach ($ip in $ips) { Write-Host "  http://$($ip):$Port/" }
+  Write-Host "LINK UNTUK DIBAGIKAN (perangkat di jaringan yang sama):"
+  foreach ($ip in $ips) { Write-Host "  http://$($ip):$Port/?key=$lanKey" }
+  Write-Host "Tanpa ?key=... akses dari perangkat lain ditolak. Ganti kunci: hapus file website\.lan-key lalu jalankan ulang."
 }
 
+# Perangkat lain wajib membawa kunci (di link atau cookie); komputer ini sendiri tidak perlu.
+function Test-Access($ctx) {
+  if (-not $lanKey) { return $true }
+  $ip = $ctx.Request.RemoteEndPoint.Address
+  if ([Net.IPAddress]::IsLoopback($ip)) { return $true }
+  if ("" + $ctx.Request.QueryString["key"] -eq $lanKey) {
+    $ctx.Response.AppendHeader("Set-Cookie", "rbkey=$lanKey; Path=/; HttpOnly; SameSite=Strict; Max-Age=2592000")
+    return $true
+  }
+  $c = $ctx.Request.Cookies["rbkey"]
+  return ($c -and $c.Value -eq $lanKey)
+}
 # Mode LAN: tolak permintaan dari luar jaringan lokal, karena proxy memakai token Stockbit pribadi.
 function Test-LocalClient($ctx) {
   $ip = $ctx.Request.RemoteEndPoint.Address
@@ -796,6 +820,11 @@ while ($listener.IsListening) {
   $ctx = $listener.GetContext()
   try {
     if (-not (Test-LocalClient $ctx)) { $ctx.Response.StatusCode = 403; continue }
+    if (-not (Test-Access $ctx)) {
+      $msg = [Text.Encoding]::UTF8.GetBytes("<!doctype html><meta charset=utf-8><title>Radar Backdoor</title><p style='font-family:system-ui;padding:40px'>Akses ditolak. Buka link lengkap yang dibagikan (berisi <code>?key=...</code>).</p>")
+      $ctx.Response.StatusCode = 401; $ctx.Response.ContentType = "text/html; charset=utf-8"
+      $ctx.Response.OutputStream.Write($msg, 0, $msg.Length); continue
+    }
     $path = [Uri]::UnescapeDataString($ctx.Request.Url.AbsolutePath.TrimStart('/'))
     $script:Fresh = ("" + $ctx.Request.QueryString["fresh"]) -eq "1"
     if ($path.StartsWith("api/")) { Handle-Api $ctx $path; continue }

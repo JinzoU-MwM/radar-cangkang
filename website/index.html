@@ -518,10 +518,10 @@ dialog::backdrop{animation:fade .18s ease-out}
   <aside class="side">
     <div class="brand"><b>Radar Backdoor</b><span>Pengambilalihan emiten · BEI</span><span class="trial">Versi percobaan</span></div>
     <nav class="nav" aria-label="Menu utama">
-      <button type="button" data-view="potensi" id="nav-potensi">Potensi Emiten <span class="cnt" id="nPot"></span></button>
-      <button type="button" data-view="story" id="nav-story">Story Emiten <span class="cnt" id="nStory"></span></button>
-      <button type="button" data-view="progress" id="nav-progress">Progress Emiten <span class="cnt" id="nProg"></span></button>
       <button type="button" data-view="update" id="nav-update">Update Emiten <span class="cnt" id="nUpd"></span></button>
+      <button type="button" data-view="progress" id="nav-progress">Progress Emiten <span class="cnt" id="nProg"></span></button>
+      <button type="button" data-view="story" id="nav-story">Story Emiten <span class="cnt" id="nStory"></span></button>
+      <button type="button" data-view="potensi" id="nav-potensi">Potensi Emiten <span class="cnt" id="nPot"></span></button>
     </nav>
     <div class="side-foot">
       <button type="button" class="theme-btn" id="themeBtn" aria-label="Ganti tema">Tema gelap</button>
@@ -768,9 +768,9 @@ dialog::backdrop{animation:fade .18s ease-out}
   }
 
   // ---- Navigasi ----
-  const VIEWS = ["potensi", "story", "progress", "update"];
+  const VIEWS = ["update", "progress", "story", "potensi"];
   function show(view) {
-    if (!VIEWS.includes(view)) view = "potensi";   // tautan lama #analisa → Potensi
+    if (!VIEWS.includes(view)) view = view === "analisa" ? "potensi" : "update";   // tautan lama #analisa → Potensi
     for (const v of VIEWS) {
       $("view-" + v).hidden = v !== view;
       $("nav-" + v).toggleAttribute("aria-current", v === view);
@@ -2207,13 +2207,21 @@ dialog::backdrop{animation:fade .18s ease-out}
 
   $("storyQ").addEventListener("input", render);
   // Perbarui semua: tarik ulang Stockbit Reports (sumber bisnis baru, injeksi, nominal, target), lalu profil & pengendali lama.
-  $("storyRefresh").onclick = async () => {
+  // Dipakai tombol dan pembaruan otomatis.
+  let storyRefreshing = false;
+  async function refreshStories() {
+    if (storyRefreshing) return;
+    storyRefreshing = true;
     const b = $("storyRefresh"); b.disabled = true; b.textContent = "Menarik Stockbit Reports…";
     try { await syncReports(); } catch {}
     b.textContent = "Memuat data pengendali…";
+    // Tunggu pemuatan story yang sedang berjalan (mis. saat menu dibuka) agar pembaruan penuh tidak terlewat.
+    while (storyLoading) await new Promise(r => setTimeout(r, 500));
     try { await loadStories(true); } catch {}
     b.disabled = false; b.textContent = "Perbarui semua dari Stockbit Reports";
-  };
+    storyRefreshing = false;
+  }
+  $("storyRefresh").onclick = refreshStories;
   $("nav-story").addEventListener("click", () => loadStories());
 
   // ---- Potensi harga saham backdoor ----
@@ -2648,7 +2656,7 @@ dialog::backdrop{animation:fade .18s ease-out}
   document.addEventListener("keydown", e => {
     if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName) || document.querySelector("dialog[open]")) return;
     if (e.key === "/") { e.preventDefault(); show("potensi"); $("q").focus(); }
-    const v = { 1: "potensi", 2: "story", 3: "progress", 4: "update" }[e.key];
+    const v = { 1: "update", 2: "progress", 3: "story", 4: "potensi" }[e.key];
     if (v) show(v);
   });
   $("fSort").addEventListener("input", () => { potSort = { key: "", dir: -1 }; });
@@ -2855,15 +2863,18 @@ dialog::backdrop{animation:fade .18s ease-out}
   const AUTO_KEY = "radar-cangkang.autoSync", AUTO_GAP = 15 * 60e3;
   function autoRefresh(view) {
     if (!sbStatus.configured || (sbStatus.needsToken && !sbStatus.tokenLoaded)) return;
-    const kind = view === "update" || view === "story" ? "reports" : view === "progress" || view === "potensi" ? "stockbit" : null;
+    // Story punya jatah sendiri (laporan + profil & pengendali), terpisah dari Update (laporan + berita).
+    const kind = view === "update" ? "reports" : view === "story" ? "story" : view === "progress" || view === "potensi" ? "stockbit" : null;
     if (!kind) return;
     const last = lsGet(AUTO_KEY, {});
     if (Date.now() - (last[kind] || 0) < AUTO_GAP) return;
     if (kind === "reports" && (repBusy || !(sbStatus.reports || sbStatus.news))) return;
+    if (kind === "story" && storyRefreshing) return;
     if (kind === "stockbit" && sbBusy) return;
     // Catat waktu percobaan lebih dulu: bila gagal (mis. token kedaluwarsa), tidak diulang terus-menerus.
     lsSet(AUTO_KEY, { ...last, [kind]: Date.now() });
-    if (kind === "reports") syncReports().then(() => { if (view === "story") loadStories(); }).catch(() => {});
+    if (kind === "reports") syncReports().catch(() => {});
+    else if (kind === "story") refreshStories().catch(() => {});
     else syncStockbit().catch(() => {});
   }
 
@@ -2926,7 +2937,7 @@ dialog::backdrop{animation:fade .18s ease-out}
   // Hanya berita otomatis (Stockbit Reports dan media); catatan manual tidak dipakai lagi.
   updates = lsGet(LS_UPD, []).filter(u => !OLD_MEDIA_IDS.includes(u.id) && /^(sb-report-|news-)/.test(u.id));
   render();
-  show(location.hash.slice(1) || lsGet(LS_VIEW, "potensi"));
+  show(location.hash.slice(1) || lsGet(LS_VIEW, "update"));
   setSync("Mode percobaan · data tersimpan di browser ini");
 
   // Upgrade ke penyimpanan bersama bila tersedia.

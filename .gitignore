@@ -2,6 +2,7 @@
 .stockbit-token
 **/.stockbit-token
 .env
+**/.lan-key
 **/.stockbit-refresh
 **/.stockbit-refresh-last.json
 **/.cache.sqlite*
