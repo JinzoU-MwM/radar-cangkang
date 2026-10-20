@@ -1,9 +1,11 @@
 <script setup>
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { store } from '../../store.js'
 import { buildPlan, moneyMgmt, MM_DEF, ceilTick } from '../../lib/ta.js'
 import { fmt, fmtDate, rp, pctTxt } from '../../lib/domain.js'
 import { useOhlc } from './ta/useOhlc.js'
+import ProCon from './ta/ProCon.vue'
+import { analyzePatterns, bestBullPattern, polaPlan, structureChecks, verdictOf, spProsCons } from '../../lib/patterns.js'
 
 const props = defineProps({ ticker: String })
 const emit = defineEmits(['goto'])
@@ -25,11 +27,28 @@ const INPUTS = [
 ]
 
 const pa = computed(() => store.pandangan[props.ticker] || null)
-const pl = computed(() => buildPlan(bars.value, ind.value, sig.value))
-const res = computed(() => moneyMgmt(pl.value, mm, { valDay: sig.value.valDay, sikap: pa.value?.sikap || null }))
+// Dasar rencana: indikator teknikal (buildPlan) atau pola bullish terbaik bila ada.
+const basis = ref('indikator')
+watch(() => props.ticker, () => { basis.value = 'indikator' })
+const adv = computed(() => {
+  if (!bars.value) return null
+  try { return analyzePatterns(bars.value, ind.value) } catch (e) { console.error('analyzePatterns', e); return null }
+})
+const bp = computed(() => bestBullPattern(adv.value))
+const pl = computed(() => {
+  const base = buildPlan(bars.value, ind.value, sig.value)
+  return basis.value === 'pola' && bp.value ? polaPlan(base, bp.value) : base
+})
+const res = computed(() => {
+  const r = moneyMgmt(pl.value, mm, { valDay: sig.value.valDay, sikap: pa.value?.sikap || null })
+  // Kelayakan juga memeriksa pola dan divergensi bearish.
+  const checklist = [...r.checklist, ...structureChecks(adv.value)]
+  return { ...r, checklist, verdict: verdictOf(pl.value, checklist) }
+})
+const pc = computed(() => spProsCons(pl.value, pa.value))
 const stopPct = computed(() => pl.value.entry ? (pl.value.entry - pl.value.stop) / pl.value.entry : null)
 const pctModal = (v, d) => (v / (+mm.modal || 1) * 100).toFixed(d).replace('.', ',') + '% modal'
-const setupTone = computed(() => pl.value.entry ? (sig.value.score >= 2 ? 'good' : 'warn') : 'strong')
+const setupTone = computed(() => pl.value.entry ? (sig.value.score >= 2 || pl.value.usePola ? 'good' : 'warn') : 'strong')
 const zone = p => rp(p.entryLo) + (p.entryHi !== p.entryLo ? ' – ' + rp(p.entryHi) : '')
 const signed = v => (v < 0 ? '−' : '+') + rp(Math.abs(v))
 </script>
@@ -47,6 +66,13 @@ const signed = v => (v < 0 ? '−' : '+') + rp(Math.abs(v))
     </div>
     <p v-if="pl.frozen" class="warn"><b>Tidak dapat diperdagangkan:</b> harga tidak bergerak/tanpa volume (kemungkinan suspensi atau harga lantai). Rencana di bawah hanya ilustrasi.</p>
 
+    <div class="basis" role="group" aria-label="Dasar rencana">
+      <span class="small muted">Dasar rencana</span>
+      <button type="button" class="pill" :aria-pressed="!pl.usePola" @click="basis = 'indikator'">Indikator teknikal</button>
+      <button v-if="bp" type="button" class="pill" :aria-pressed="!!pl.usePola" @click="basis = 'pola'">Pola {{ bp.name }} ({{ bp.conf }}%)</button>
+      <span v-else class="small muted">belum ada pola bullish yang layak (siap/breakout, keyakinan ≥ 45%)</span>
+    </div>
+
     <section class="setup" :class="'s-' + setupTone">
       <span class="lbl">Setup</span>
       <p class="type">{{ pl.type }}</p>
@@ -59,15 +85,15 @@ const signed = v => (v < 0 ? '−' : '+') + rp(Math.abs(v))
         <table class="ledger">
           <tbody>
             <template v-if="pl.entry">
-              <tr><td><b>Zona entry</b><div class="small muted">{{ sig.score >= 2 ? 'beli bertahap, limit order' : 'aktif bila ditutup di atas resistance' }}</div></td><td class="r num">{{ zone(pl) }}</td><td class="r muted">{{ pctTxt(pl.entry, pl.c) }}</td></tr>
+              <tr><td><b>Zona entry</b><div class="small muted">{{ pl.usePola ? (pl.bp.status === 'breakout' ? 'retest level breakout pola, limit order' : 'aktif bila ditutup di atas level breakout pola') : sig.score >= 2 ? 'beli bertahap, limit order' : 'aktif bila ditutup di atas resistance' }}</div></td><td class="r num">{{ zone(pl) }}</td><td class="r muted">{{ pctTxt(pl.entry, pl.c) }}</td></tr>
               <tr><td><b>Harga entry acuan</b></td><td class="r num">{{ rp(pl.entry) }}</td><td></td></tr>
             </template>
-            <tr><td><b>Stop loss</b><div class="small muted">{{ pl.entry ? (pl.sUp && pl.stop <= pl.sar ? 'di bawah Parabolic SAR' : 'di bawah support/terendah 20 hari') + ', ≥1× ATR dari entry' : 'batas keluar penuh bagi pemegang' }}</div></td><td class="r num c-strong">{{ rp(pl.stop) }}</td><td class="r muted">{{ pctTxt(pl.stop, pl.entry || pl.c) }}</td></tr>
+            <tr><td><b>Stop loss</b><div class="small muted">{{ pl.usePola ? `di bawah level invalidasi pola ${rp(pl.bp.inv)}` : pl.entry ? (pl.sUp && pl.stop <= pl.sar ? 'di bawah Parabolic SAR' : 'di bawah support/terendah 20 hari') + ', ≥1× ATR dari entry' : 'batas keluar penuh bagi pemegang' }}</div></td><td class="r num c-strong">{{ rp(pl.stop) }}</td><td class="r muted">{{ pctTxt(pl.stop, pl.entry || pl.c) }}</td></tr>
             <template v-if="pl.entry">
-              <tr><td><b>Target 1</b><div class="small muted">1,5R — jual 50%, naikkan stop ke titik impas</div></td><td class="r num c-good">{{ rp(pl.tp1) }}</td><td class="r muted">{{ pctTxt(pl.tp1, pl.entry) }}</td></tr>
-              <tr><td><b>Target 2</b><div class="small muted">3R — sisa posisi, trailing stop Parabolic SAR</div></td><td class="r num c-good">{{ rp(pl.tp2) }}</td><td class="r muted">{{ pctTxt(pl.tp2, pl.entry) }}</td></tr>
+              <tr><td><b>Target 1</b><div class="small muted">{{ pl.usePola ? 'maks. 1,5R dan separuh jalan ke target pola' : '1,5R' }}; jual 50%, naikkan stop ke titik impas</div></td><td class="r num c-good">{{ rp(pl.tp1) }}</td><td class="r muted">{{ pctTxt(pl.tp1, pl.entry) }}</td></tr>
+              <tr><td><b>Target 2</b><div class="small muted">{{ pl.usePola ? 'target pola' : '3R' }}; sisa posisi, trailing stop Parabolic SAR</div></td><td class="r num c-good">{{ rp(pl.tp2) }}</td><td class="r muted">{{ pctTxt(pl.tp2, pl.entry) }}</td></tr>
               <tr><td><b>Risiko per saham (R)</b><div class="small muted">entry − stop</div></td><td class="r num">{{ rp(pl.R) }}</td><td class="r muted">{{ pctTxt(pl.stop, pl.entry) }}</td></tr>
-              <tr><td><b>Imbal-risiko</b><div class="small muted">Target 1 / Target 2 terhadap R</div></td><td class="r num">1,5 : 1 · 3 : 1</td><td></td></tr>
+              <tr><td><b>Imbal-risiko</b><div class="small muted">Target 1 / Target 2 terhadap R</div></td><td class="r num">{{ pl.usePola ? `${((pl.tp1 - pl.entry) / pl.R).toFixed(1).replace('.', ',')} : 1 · ${((pl.tp2 - pl.entry) / pl.R).toFixed(1).replace('.', ',')} : 1` : '1,5 : 1 · 3 : 1' }}</td><td></td></tr>
             </template>
             <tr v-else><td><b>Area jual saat pantulan</b><div class="small muted">resistance terdekat</div></td><td class="r num">{{ rp(sig.res) }}</td><td class="r muted">{{ pctTxt(sig.res, pl.c) }}</td></tr>
           </tbody>
@@ -129,6 +155,7 @@ const signed = v => (v < 0 ? '−' : '+') + rp(Math.abs(v))
         <p class="verdict" :class="'v-' + res.verdict.cls">{{ res.verdict.text }}</p>
       </section>
     </div>
+    <ProCon :pros="pc[0]" :cons="pc[1]" title="Kelebihan vs kekurangan rencana transaksi" />
     <p class="small muted">Rencana dihitung otomatis dari indikator teknikal dan parameter yang Anda isi; bersifat umum, bukan saran investasi personal dan bukan dari penasihat berlisensi. Saham tipis rawan gap melewati stop loss — kerugian nyata bisa lebih besar dari perhitungan.</p>
   </div>
 </template>
@@ -142,6 +169,8 @@ const signed = v => (v < 0 ? '−' : '+') + rp(Math.abs(v))
 .head p{margin:0}
 .head b.cond{font-size:20px}
 .warn{margin:0;padding:8px 12px;background:var(--warn-bg);color:var(--warn);border-left:3px solid var(--warn)}
+.basis{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.basis .small:first-child{margin-right:4px}
 .setup{padding:10px 14px;border-left:4px solid var(--calm);background:var(--sheet)}
 .setup.s-good{border-color:var(--good);background:var(--good-bg)}
 .setup.s-warn{border-color:var(--warn);background:var(--warn-bg)}

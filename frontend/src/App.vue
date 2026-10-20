@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { store } from './store.js'
 import { stageOf } from './lib/domain.js'
+import ChangelogPanel from './components/ChangelogPanel.vue'
 
 const router = useRouter()
 const now = ref(Date.now())
@@ -63,6 +64,7 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
       <RouterLink class="nav" to="/" :class="{ on: $route.name === 'monitor' || $route.name === 'emiten' }">Monitor <span class="cnt">{{ nMonitor }}</span></RouterLink>
       <RouterLink class="nav" to="/kandidat" active-class="on">Kandidat <span class="cnt">{{ nKandidat }}</span></RouterLink>
       <RouterLink class="nav" to="/berita" active-class="on">Berita <span class="cnt">{{ nBaru || '' }}</span></RouterLink>
+      <ChangelogPanel />
       <div class="foot">
         <span v-if="token" class="tok" :class="token.cls">{{ token.text }}</span>
         <span v-else-if="store.status && !store.status.configured">Stockbit: config belum diisi</span>

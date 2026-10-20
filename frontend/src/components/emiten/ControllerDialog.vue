@@ -3,7 +3,9 @@ import { computed, onMounted, ref } from 'vue'
 import { api } from '../../api.js'
 import { store, itemOf, storyOf } from '../../store.js'
 import { fmtDate, rp, stageOf } from '../../lib/domain.js'
+import { ctrlProsCons, relationTone } from '../../lib/emitenExtra.js'
 import Modal from './Modal.vue'
+import ProsCons from './ProsCons.vue'
 
 // Profil pengendali baru: data Stockbit (/api/controller) + profil terverifikasi + orang di baliknya (relasi-verified.json).
 const props = defineProps({ ticker: { type: String, required: true } })
@@ -12,7 +14,7 @@ const emit = defineEmits(['close', 'flow'])
 const item = computed(() => itemOf(props.ticker))
 const story = computed(() => storyOf(props.ticker))
 const pg = computed(() => store.pengendali[props.ticker] || null)
-const rel = computed(() => store.relasi[props.ticker] || null)
+const rs = computed(() => store.relasi[props.ticker] || null)
 
 // Bila pengendali lebih dari satu ("A, B"), pakai nama pertama untuk pencarian.
 const name = computed(() => String(item.value?.ctrlName || item.value?.acquirer || '')
@@ -30,20 +32,20 @@ onMounted(async () => {
 })
 
 // Node pengendali di diagram relasi: node kunci (k = "key").
-const ctrlNode = computed(() => rel.value?.nodes?.find(n => n.k === 'key') || null)
-const nodeOf = id => rel.value?.nodes?.find(n => n.id === id)
-const ctrlInfo = computed(() => ctrlNode.value ? rel.value.info?.[ctrlNode.value.id] || null : null)
+const ctrlNode = computed(() => rs.value?.nodes?.find(n => n.k === 'key') || null)
+const nodeOf = id => rs.value?.nodes?.find(n => n.id === id)
+const ctrlInfo = computed(() => ctrlNode.value ? rs.value.info?.[ctrlNode.value.id] || null : null)
 const people = computed(() => {
   const id = ctrlNode.value?.id
   if (!id) return []
-  return (rel.value.edges || []).filter(e => e[1] === id && (e[2] === 'own' || e[2] === 'role'))
-    .map(([from, , kind, label]) => ({ id: from, node: nodeOf(from), info: rel.value.info?.[from] || {}, kind, label }))
+  return (rs.value.edges || []).filter(e => e[1] === id && (e[2] === 'own' || e[2] === 'role'))
+    .map(([from, , kind, label]) => ({ id: from, node: nodeOf(from), info: rs.value.info?.[from] || {}, kind, label }))
     .filter(p => p.node)
 })
 const outEdges = computed(() => {
   const id = ctrlNode.value?.id
   if (!id) return []
-  return (rel.value.edges || []).filter(e => e[0] === id).map(([, to, kind, label]) => ({ to: nodeOf(to)?.t || to, kind, label }))
+  return (rs.value.edges || []).filter(e => e[0] === id).map(([, to, kind, label]) => ({ to: nodeOf(to)?.t || to, kind, label }))
 })
 
 const title = computed(() => c.value?.name || ctrlNode.value?.t || name.value || 'Pengendali ' + props.ticker)
@@ -62,6 +64,19 @@ const group = computed(() => {
   const key = normName(c.value?.name || name.value)
   return key ? store.items.filter(x => x.ticker !== props.ticker && normName(x.ctrlName).includes(key)) : []
 })
+// Profil per orang, pengurus, dan afiliasi pihak lawan (profil-pengendali.json).
+const pf = computed(() => store.profil[props.ticker] || null)
+const pengurus = computed(() => [
+  ...(pf.value?.pengurus?.direksi || []).map(x => ({ ...x, grp: 'Direksi' })),
+  ...(pf.value?.pengurus?.komisaris || []).map(x => ({ ...x, grp: 'Komisaris' })),
+])
+const af = computed(() => pf.value?.afiliasi || null)
+const rel = computed(() => relationTone(af.value?.hubungan))
+const VER = /terverifikasi/i
+const noRisk = r => !r || /^tidak (ditemukan|ada)\b/i.test(r.trim())
+const pc = computed(() => ctrlProsCons({ profil: pf.value, pv: pg.value, c: c.value, active: active.value, exited: exited.value,
+  radarTickers: active.value.map(h => h.symbol).filter(inRadar), group: group.value.map(x => x.ticker) }))
+
 const srcs = computed(() => [ctrlInfo.value?.src, ...people.value.map(p => p.info.src)].filter(Boolean))
 </script>
 
@@ -87,6 +102,39 @@ const srcs = computed(() => [ctrlInfo.value?.src, ...people.value.map(p => p.inf
       <p>{{ pg.siapa }}</p>
       <p v-if="pg.grup">{{ pg.grup }}</p>
       <p v-if="pg.sumberJudul" class="small muted">Sumber: {{ pg.sumberJudul }}<template v-if="pg.sumberTanggal"> · {{ fmtDate(pg.sumberTanggal) }}</template></p>
+    </section>
+
+    <section v-if="pf?.ringkas" class="sec">
+      <h3 class="lbl">Ringkasan</h3>
+      <p>{{ pf.ringkas }}</p>
+    </section>
+
+    <section v-if="pf || pg || c" class="sec">
+      <h3 class="lbl">Kekuatan vs kelemahan pengendali</h3>
+      <ProsCons :pros="pc.pros" :cons="pc.cons" pro-label="Kekuatan" con-label="Kelemahan & red flag" />
+    </section>
+
+    <section v-if="pf?.pengendali?.length" class="sec">
+      <h3 class="lbl">Profil pengendali per orang ({{ pf.pengendali.length }})</h3>
+      <article v-for="o in pf.pengendali" :key="o.nama" class="pp">
+        <header><b class="pn">{{ o.nama }}</b><span class="small muted">{{ [o.peran, o.entitas].filter(Boolean).join(' · ') }}</span></header>
+        <dl class="kv">
+          <div><dt>Porsi</dt><dd>{{ o.porsi || 'belum ada' }}</dd></div>
+          <div><dt>Latar</dt><dd>{{ o.latar || 'belum ada' }}</dd></div>
+          <div><dt>Pengalaman</dt><dd>{{ o.pengalaman || 'belum ada' }}</dd></div>
+          <div v-if="o.karakteristik"><dt>Karakter</dt><dd>{{ o.karakteristik }}</dd></div>
+          <div v-if="o.jaringan?.length"><dt>Jaringan</dt><dd>
+            <ul class="net">
+              <li v-for="j in o.jaringan" :key="j.dengan">
+                <b>{{ j.dengan }}</b> <span class="tag" :class="VER.test(j.keyakinan || '') ? 't-good' : 't-warn'">{{ VER.test(j.keyakinan || '') ? 'terverifikasi' : 'disebut media' }}</span>
+                <span v-if="j.hubungan" class="small muted"> {{ j.hubungan }}</span>
+              </li>
+            </ul>
+          </dd></div>
+          <div><dt>Risiko</dt><dd :class="{ flag: !noRisk(o.risiko) }">{{ o.risiko || 'belum ada' }}</dd></div>
+        </dl>
+        <details v-if="o.sumber?.length" class="more"><summary>Sumber ({{ o.sumber.length }})</summary><ul class="small"><li v-for="x in o.sumber" :key="x">{{ x }}</li></ul></details>
+      </article>
     </section>
 
     <section v-if="ctrlInfo" class="sec">
@@ -123,6 +171,38 @@ const srcs = computed(() => [ctrlInfo.value?.src, ...people.value.map(p => p.inf
       <p v-if="ctrlInfo.open?.length" class="small muted">Belum terverifikasi: {{ ctrlInfo.open.join('; ') }}</p>
     </section>
 
+    <section v-if="pengurus.length" class="sec">
+      <h3 class="lbl">Struktur direksi & komisaris</h3>
+      <div class="scroll">
+        <table class="ledger">
+          <thead><tr><th class="lbl">Nama</th><th class="lbl">Jabatan</th><th class="lbl">Asal</th><th class="lbl">Latar</th></tr></thead>
+          <tbody>
+            <tr v-for="x in pengurus" :key="x.grp + x.nama">
+              <td><b>{{ x.nama }}</b><div class="small muted">{{ x.grp }}</div></td>
+              <td>{{ x.jabatan || 'belum ada' }}<template v-if="x.independen"> <span class="tag t-calm">independen</span></template></td>
+              <td><span class="tag" :class="x.orangPengendaliBaru ? 't-good' : 't-calm'">{{ x.orangPengendaliBaru ? 'orang pengendali baru' : 'pengurus lama' }}</span></td>
+              <td class="small">{{ x.latar || 'belum ada' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section v-if="af" class="sec">
+      <h3 class="lbl">Afiliasi pihak lawan transaksi</h3>
+      <dl class="kv">
+        <div><dt>Pihak lawan</dt><dd>{{ af.pihakLawan || 'belum ada' }}</dd></div>
+        <div><dt>Pemilik aset</dt><dd>{{ af.pemilikAset || 'belum ada' }}</dd></div>
+        <div><dt>Pengendali/UBO</dt><dd>{{ af.pengendaliPihakLawan || 'belum ada' }}</dd></div>
+        <div v-if="af.karakteristik"><dt>Karakteristik</dt><dd>{{ af.karakteristik }}</dd></div>
+        <div :class="{ hot: rel }"><dt>Hubungan</dt><dd>
+          <span v-if="rel" class="tag t-strong">{{ rel === 'afiliasi' ? 'terafiliasi' : 'perlu dicermati' }}</span>
+          {{ af.hubungan || 'belum ada' }}
+        </dd></div>
+      </dl>
+      <details v-if="af.sumber?.length" class="more"><summary>Sumber ({{ af.sumber.length }})</summary><ul class="small"><li v-for="x in af.sumber" :key="x">{{ x }}</li></ul></details>
+    </section>
+
     <p v-if="loading" class="muted">Memuat data pengendali {{ name }} dari Stockbit…</p>
     <p v-else-if="err" class="muted">Data Stockbit untuk pengendali tidak bisa dimuat: {{ err }}.</p>
     <p v-else-if="!name" class="muted">Nama pengendali di data radar belum ada, jadi data Stockbit tidak dicari.</p>
@@ -132,9 +212,9 @@ const srcs = computed(() => [ctrlInfo.value?.src, ...people.value.map(p => p.inf
         <section class="sec">
           <h3 class="lbl">Pemilik manfaat (UBO)</h3>
           <p>{{ c.beneficiary?.join(', ') || 'Tidak tercatat di Stockbit' }}</p>
-          <h3 class="lbl">Pengurus {{ ticker }}</h3>
+          <template v-if="!pengurus.length"><h3 class="lbl">Pengurus {{ ticker }}</h3>
           <p><b>Direksi:</b> {{ c.directors?.join(', ') || 'belum ada' }}</p>
-          <p><b>Komisaris:</b> {{ c.commissioners?.join(', ') || 'belum ada' }}</p>
+          <p><b>Komisaris:</b> {{ c.commissioners?.join(', ') || 'belum ada' }}</p></template>
         </section>
         <section class="sec">
           <h3 class="lbl">Grup yang sama di radar</h3>
@@ -181,6 +261,11 @@ const srcs = computed(() => [ctrlInfo.value?.src, ...people.value.map(p => p.inf
       </section>
     </template>
 
+    <details v-if="pf?.tidakDitemukan?.length" class="more">
+      <summary>Belum ditemukan di sumber publik ({{ pf.tidakDitemukan.length }})</summary>
+      <ul class="small"><li v-for="x in pf.tidakDitemukan" :key="x">{{ x }}</li></ul>
+    </details>
+
     <section v-if="srcs.length" class="sec">
       <h3 class="lbl">Sumber relasi</h3>
       <ul class="small"><li v-for="s in srcs" :key="s">{{ s }}</li></ul>
@@ -213,5 +298,17 @@ ul{margin:0;padding-left:18px}
 .ledger{font-size:13px}
 .r{text-align:right}
 .more{margin-top:8px}
+.pp{border-top:1px solid var(--rule);padding:8px 0 4px}
+.pp+.pp{margin-top:8px}
+.pp header{display:flex;flex-direction:column;margin-bottom:4px}
+/* Baris label-isi bergaris, label sempit di kiri. */
+.kv{margin:0;font-size:13.5px}
+.kv>div{display:grid;grid-template-columns:120px 1fr;gap:12px;padding:6px 0;border-bottom:1px solid var(--rule-2)}
+.kv dt{font:600 12.5px var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+.kv dd{margin:0;max-width:80ch}
+.kv>div.hot{background:var(--strong-bg);padding-left:8px;padding-right:8px}
+.net{list-style:none;padding:0;margin:0}
+.net li{margin:2px 0 4px}
+@media (max-width:760px){.kv>div{grid-template-columns:1fr;gap:2px}}
 .more summary{cursor:pointer;font-weight:600;min-height:28px}
 </style>

@@ -18,7 +18,9 @@ async function getBenchmark() {
 import { computed, reactive, shallowRef, ref, watch } from 'vue'
 import { buildAnalysis, KURS } from '../../lib/analysis.js'
 import { fmt, fmtDate, rp, big, x2, pctTxt } from '../../lib/domain.js'
+import { analysisProsCons, deepView, dilusi, radarGeom } from '../../lib/emitenExtra.js'
 import SikapTag from '../SikapTag.vue'
+import ProsCons from './ProsCons.vue'
 import { errText } from './ta/useOhlc.js'
 
 const props = defineProps({ ticker: String })
@@ -86,14 +88,8 @@ const calcMode = computed(() => {
   return 'on'
 })
 // Model sederhana: hak tebus proporsional, nilai per saham = (ekuitas + aset diakui + kas) ÷ total saham.
-const calc = computed(() => {
-  const a = A.value, S0 = a.shares, E0 = a.equity || 0, f = (a.flt ?? 0) / 100
-  const V = (+kc.V || 0) * 1e9, C = (+kc.C || 0) * 1e9, P = +kc.P || 0
-  const tk = Math.min(100, +kc.T || 0) / 100, h = (+kc.H || 0) / 100
-  if (!P) return null
-  const N = (V + C) / P, S1 = S0 + N
-  return { N, S0, S1, f, pubAfter: (S0 * f + tk * f * N) / S1, vps: (E0 + V * h + C) / S1 }
-})
+const calc = computed(() => dilusi({ S0: A.value.shares, E0: A.value.equity || 0, f: (A.value.flt ?? 0) / 100,
+  V: (+kc.V || 0) * 1e9, C: (+kc.C || 0) * 1e9, P: +kc.P || 0, tk: (+kc.T || 0) / 100, h: (+kc.H || 0) / 100 }))
 const KC = [
   ['V', 'Nilai dibayar dengan saham baru (Rp miliar)', 0.1, 'inbreng / konversi utang'],
   ['C', 'Kas segar masuk (Rp miliar)', 0.1, 'setoran tunai HMETD'],
@@ -102,6 +98,12 @@ const KC = [
   ['H', 'Nilai aset diakui (%)', 5, 'uji skeptis atas penilaian'],
 ]
 const holders = computed(() => (A.value?.holders || []).filter(h => Math.abs(h.change) >= 0.1 || A.value.isCtrlH(h)).slice(0, 8))
+// Infografis: radar enam dimensi, kelebihan vs kekurangan, sudut pandang mendalam.
+const extra = computed(() => ({ profil: store.profil[props.ticker], aset: store.aset[props.ticker], hsc: store.hsc?.kode || [] }))
+const pc = computed(() => A.value ? analysisProsCons(A.value, extra.value) : null)
+const deep = computed(() => A.value ? deepView(A.value, extra.value) : [])
+const radar = computed(() => A.value?.dims?.length ? radarGeom(A.value.dims) : null)
+const radarLabel = computed(() => 'Radar skor enam dimensi, skala 0 sampai 10: ' + (A.value?.dims || []).map(d => `${d.k} ${fmt(d.s, 1)}`).join(', '))
 const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
 </script>
 
@@ -166,6 +168,33 @@ const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
     <section class="rule-top">
       <h2>{{ A.pa ? 'Ringkasan otomatis' : 'Tesis' }}</h2>
       <p class="thesis">{{ A.thesis }}</p>
+    </section>
+
+    <!-- Peta skor (radar) dan kelebihan vs kekurangan. -->
+    <section class="rule-top">
+      <h2>Kelebihan vs kekurangan</h2>
+      <div class="ig">
+        <figure v-if="radar" class="radar">
+          <svg viewBox="-56 -14 372 256" role="img" :aria-label="radarLabel">
+            <polygon v-for="(ring, i) in radar.rings" :key="i" class="ring" :points="ring" />
+            <line v-for="([x, y], i) in radar.axes" :key="'x' + i" class="ax" :x1="radar.cx" :y1="radar.cy" :x2="x" :y2="y" />
+            <polygon class="area" :points="radar.area" />
+            <g v-for="d in radar.dots" :key="d.k">
+              <circle :class="'d-' + tone(d.s)" :cx="d.x" :cy="d.y" r="4.5" />
+              <text class="rl" :x="d.lx" :y="d.ly" :text-anchor="d.anchor">{{ d.k.split(' ')[0] }} <tspan class="rv">{{ fmt(d.s, 1) }}</tspan></text>
+            </g>
+          </svg>
+          <figcaption class="small muted">Peta skor enam dimensi, 0 di tengah sampai 10 di tepi.</figcaption>
+        </figure>
+        <ProsCons v-if="pc" :pros="pc.pros" :cons="pc.cons" />
+      </div>
+    </section>
+
+    <section v-if="deep.length" class="rule-top">
+      <h2>Sudut pandang mendalam</h2>
+      <ol class="deep">
+        <li v-for="[h, t] in deep" :key="h"><b>{{ h }}</b><p>{{ t }}</p></li>
+      </ol>
     </section>
 
     <!-- Enam dimensi pada satu skala 0–10. -->
@@ -353,13 +382,28 @@ ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
 .out dd b{font:700 17px var(--f-display);white-space:nowrap}
 .out dd span{font-size:12px;color:var(--ink-2)}
 
+.ig{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:24px;align-items:start}
+.radar{margin:0}
+.radar svg{display:block;width:100%;height:auto}
+.ring{fill:none;stroke:var(--rule-2);stroke-width:1}
+.ax{stroke:var(--rule);stroke-width:1}
+.area{fill:color-mix(in oklab,var(--accent) 18%,transparent);stroke:var(--accent);stroke-width:2;stroke-linejoin:round}
+.radar circle{stroke:var(--sheet);stroke-width:2}
+.d-good{fill:var(--good)} .d-warn{fill:var(--warn)} .d-strong{fill:var(--strong)}
+.rl{font:600 12.5px var(--f-display);fill:var(--ink-2);letter-spacing:.02em}
+.rv{font-weight:700;fill:var(--ink)}
+.deep{list-style:none;counter-reset:dv;margin:0;padding:0;gap:0;max-width:96ch}
+.deep li{counter-increment:dv;display:grid;grid-template-columns:28px 1fr;column-gap:8px;padding:8px 0;border-bottom:1px solid var(--rule-2)}
+.deep li::before{content:counter(dv);grid-row:span 2;font:700 20px/1 var(--f-display);color:var(--ink-2)}
+.deep p{margin:2px 0 0;font-size:13.5px}
 .reps{list-style:none;padding:0;gap:0}
 .reps li{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--rule-2)}
 .reps .d{flex:none;width:92px;font-weight:600;color:var(--ink-2)}
 .foot{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .foot p{margin:0;flex:1;min-width:240px}
 @media (max-width:760px){
-  .grid,.out{grid-template-columns:1fr}
+  .grid,.out,.ig{grid-template-columns:1fr}
+  .radar{max-width:360px}
   .dims{grid-template-columns:1fr 40px}
   .axis{display:none}
   .dk{grid-column:1 / -1}

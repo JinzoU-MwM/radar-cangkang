@@ -1,7 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { store, storyOf, itemOf } from '../../store.js'
-import { fmtDate } from '../../lib/domain.js'
+import { big, fmtDate, num, x2 } from '../../lib/domain.js'
+import { storyValuation } from '../../lib/emitenExtra.js'
 import ControllerDialog from './ControllerDialog.vue'
 import InjeksiDialog from './InjeksiDialog.vue'
 
@@ -11,7 +12,12 @@ const emit = defineEmits(['flow'])
 const story = computed(() => storyOf(props.ticker))
 const pg = computed(() => store.pengendali[props.ticker] || null)
 const v = computed(() => store.verified[props.ticker] || null)
-const inj = computed(() => store.relasi[props.ticker]?.injeksi || null)
+// Kartu injeksi bisa diklik bila ada data aset (aset-verified.json) atau relasi injeksi.
+const inj = computed(() => !!(store.aset[props.ticker] || store.relasi[props.ticker]?.injeksi))
+const sval = computed(() => {
+  const mc = num(itemOf(props.ticker)?.mcap)
+  return storyValuation(store.aset[props.ticker], { sv: v.value, mcapRp: mc != null ? mc * 1e9 : null })
+})
 
 const lama = computed(() => story.value?.lama || '')
 const baru = computed(() => story.value?.baru || v.value?.baru || '')
@@ -56,8 +62,13 @@ function toFlow(node) { dlg.value = ''; emit('flow', node) }
       :aria-haspopup="inj ? 'dialog' : undefined" @click="inj && (dlg = 'inj')">
       <h2 class="lbl">Injeksi</h2>
       <p>{{ injText || 'belum ada' }}<template v-if="nominal"> · {{ nominal }}</template></p>
+      <p v-if="sval" class="val">
+        <span v-if="sval.sektor" class="tag t-calm">{{ sval.sektor }}</span>
+        <span v-if="sval.val" class="small"><b>{{ big(sval.val) }}</b><template v-if="sval.ratio"> · {{ x2(sval.ratio) }} kapitalisasi</template></span>
+        <span class="tag" :class="'t-' + sval.kjpp.tone">{{ sval.kjpp.label }}</span>
+      </p>
       <p v-if="v?.note" class="small muted">{{ v.note }}</p>
-      <span v-if="inj" class="go">Lihat data aset</span>
+      <span v-if="inj" class="go">Lihat aset, KJPP, dan simulasi</span>
     </component>
 
     <section class="card rule-top">
@@ -101,6 +112,7 @@ function toFlow(node) { dlg.value = ''; emit('flow', node) }
 .chip{padding:6px 10px;border-radius:3px}
 .chip.old{background:var(--calm-bg)}
 .chip.new{background:var(--accent-soft);border:1px solid var(--accent);font-weight:600}
+.val{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
 .judge{background:var(--sheet-2);padding:12px 14px}
 .wide{grid-column:1/-1}
 ul{margin:0;padding-left:18px}

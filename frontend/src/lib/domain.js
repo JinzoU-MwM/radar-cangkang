@@ -30,12 +30,15 @@ export const MILESTONES = [
   { id: 'spa',       label: 'Penandatanganan PPJB bersyarat', w: 10 },
   { id: 'akuisisi',  label: 'Penyelesaian transaksi: perubahan pengendalian efektif', w: 15 },
   { id: 'to_umum',   label: 'Pernyataan penawaran tender wajib diumumkan', w: 10 },
-  { id: 'to_selesai',label: 'Penawaran tender wajib selesai dan dibayar', w: 15 },
+  { id: 'to_selesai',label: 'Penawaran tender wajib selesai dan dibayar', w: 10 },
   { id: 'rupslb',    label: 'RUPSLB menyetujui perubahan usaha, nama, dan pengurus', w: 15 },
-  { id: 'rights',    label: 'PMHMETD/PMTHMETD disetujui', w: 15 },
+  { id: 'rights',    label: 'PMHMETD/PMTHMETD berjalan (prospektus, pernyataan efektif, atau hasil pelaksanaan)', w: 10 },
+  // Nilai injeksi baru pasti setelah penilai independen (KJPP) menerbitkan laporan.
+  { id: 'kjpp',      label: 'Laporan penilaian KJPP atas aset injeksi terbit', w: 10 },
   { id: 'inbreng',   label: 'Injeksi aset efektif (inbreng/akuisisi entitas anak)', w: 10 },
   { id: 'bisnis',    label: 'Usaha baru terkonsolidasi dalam laporan keuangan', w: 10 },
 ]
+const TAKEOVER_MS = ['spa', 'akuisisi', 'to_umum', 'to_selesai']
 // Perkiraan bila milestone belum diisi: posisi awal tiap tahap.
 export const STAGE_PCT = { radar: 0, spa: 10, tender: 35, rupslb: 50, injeksi: 65, selesai: 100 }
 
@@ -50,25 +53,65 @@ export const UTYPES = [
 ]
 
 // Tahap = tahap dari tonggak terjauh yang sudah tercapai. Tanpa tonggak, pakai tahap yang dipilih manual.
-export const MS_STAGE = [['bisnis', 'selesai'], ['inbreng', 'injeksi'], ['rights', 'injeksi'], ['rupslb', 'rupslb'],
+export const MS_STAGE = [['bisnis', 'selesai'], ['inbreng', 'injeksi'], ['kjpp', 'injeksi'], ['rights', 'injeksi'], ['rupslb', 'rupslb'],
   ['to_selesai', 'tender'], ['to_umum', 'tender'], ['akuisisi', 'tender'], ['spa', 'spa']]
 export const stageFromMs = ms => (MS_STAGE.find(([m]) => (ms || {})[m]) || [])[1]
 export const stageOf = d => stageFromMs(d.ms) || d.stage || 'radar'
 
-export function progressOf(d) {
-  const ms = d.ms || {}
-  const done = MILESTONES.filter(m => ms[m.id])
-  const next = MILESTONES.find(m => !ms[m.id])
-  if (!done.length) return { pct: STAGE_PCT[stageOf(d)] ?? 0, est: true, next: null }
-  return { pct: done.reduce((s, m) => s + m.w, 0), est: false, next }
+// Akuisisi strategis tanpa rencana injeksi (story terverifikasi: tanpa injectType, usaha "Tetap ...").
+const noInjectOf = v => !!v && !v.injectType && /^Tetap/i.test(v.baru || '')
+
+// Data terverifikasi opsional: aset = aset-verified.json, verified = story-verified.json (peta per kode).
+// - KJPP dihitung bila laporan penilaian berstatus "terbit" (bukan sekadar ditunjuk);
+// - injeksi yang terverifikasi tereksekusi sudah pasti lewat KJPP dan inbreng;
+// - tanpa rencana injeksi, persen dihitung dari tahapan pengambilalihan saja (PPJB s.d. PTW selesai).
+export function progressOf(d, { aset = {}, verified = {} } = {}) {
+  const ms = { ...(d.ms || {}) }, v = verified[d.ticker]
+  if (!ms.kjpp && aset[d.ticker]?.kjpp?.status === 'terbit') ms.kjpp = true
+  if (v?.executed) { ms.kjpp = true; ms.inbreng = true }
+  const noInject = noInjectOf(v)
+  const applicable = noInject ? MILESTONES.filter(m => TAKEOVER_MS.includes(m.id)) : MILESTONES
+  const done = applicable.filter(m => ms[m.id])
+  const next = applicable.find(m => !ms[m.id]) || null
+  if (!done.length) return { pct: STAGE_PCT[stageOf(d)] ?? 0, est: true, next: null, ms, noInject }
+  const total = applicable.reduce((s, m) => s + m.w, 0)
+  return { pct: Math.round(done.reduce((s, m) => s + m.w, 0) / total * 100), est: false, next, ms, noInject }
 }
 
 export const scoreOf = d => SIGNALS.reduce((s, sig) => s + ((sig.auto ? sig.auto(d) : (d.flags || {})[sig.id]) ? sig.w : 0), 0)
 export const statusOf = s => s >= 65 ? 'strong' : s >= 35 ? 'warn' : 'calm'
 export const STATUS_LABEL = { strong: 'Keyakinan tinggi', warn: 'Daftar pantau', calm: 'Pemantauan' }
 
-// Status transaksi: "selesai" bila PTW sudah dibayar, seluruh tonggak tercapai, atau tahap pascatransaksi.
-export const dealOf = (d, p = progressOf(d)) => ((d.ms || {}).to_selesai || p.pct === 100 || stageOf(d) === 'selesai') ? 'selesai' : 'proses'
+// Status transaksi. "Selesai" hanya bila tujuan akhirnya tercapai:
+// injeksi tereksekusi (terverifikasi, atau inbreng + RUPSLB + PTW tuntas), usaha baru terkonsolidasi,
+// atau akuisisi strategis tanpa rencana injeksi dengan PTW tuntas. PTW dibayar saja belum selesai.
+export function dealOf(d, p, { verified = {} } = {}) {
+  p = p || progressOf(d, { verified })
+  const ms = p.ms || d.ms || {}, v = verified[d.ticker]
+  if (p.pct === 100 || ms.bisnis || stageOf(d) === 'selesai') return 'selesai'
+  if (v?.executed || (ms.inbreng && ms.rupslb && ms.to_selesai)) return 'selesai'
+  if (noInjectOf(v) && ms.to_selesai) return 'selesai'
+  return 'proses'
+}
+
+// Kolom Posisi & Selanjutnya: tahapan terakhir yang tercapai dan langkah berikutnya (+ target bila ada).
+export function posisiOf(d, p, { verified = {} } = {}) {
+  p = p || progressOf(d, { verified })
+  const ms = p.ms || d.ms || {}, v = verified[d.ticker]
+  const last = MILESTONES.filter(m => ms[m.id]).pop()
+  const now = !last ? 'Belum ada tahapan terverifikasi'
+    : noInjectOf(v) && ms.to_selesai ? 'Akuisisi strategis tuntas, tanpa rencana injeksi'
+    : `${MS_SHORT[last.id]} tercapai`
+  let next = ''
+  if (dealOf(d, p, { verified }) !== 'selesai') {
+    // KJPP hanya relevan bila ada rencana injeksi aset.
+    const nm = MILESTONES.find(m => !ms[m.id] && !(m.id === 'kjpp' && !v?.injectType))
+    if (nm) next = nm.label
+    const tgt = v?.target || (d.tender?.end && !ms.to_selesai ? 'PTW s.d. ' + fmtDate(d.tender.end.slice(0, 10)) : '')
+    if (tgt) next += (next ? ' · target: ' : '') + String(tgt).split(/[.;]/)[0].slice(0, 90)
+  }
+  return { now, next }
+}
 
 // Trek 5 ruas (tanpa "radar"); radar → -1.
 export const STAGE_TRACK = ['spa', 'tender', 'rupslb', 'injeksi', 'selesai']
@@ -108,7 +151,7 @@ export function sessionLabel(now = new Date()) {
 
 // Jadwal: sumbu 120 hari ke belakang s.d. 60 hari ke depan; tlX → posisi persen atau null bila di luar sumbu.
 export const TL_PAST = 120, TL_FUT = 60, TL_TODAY = (TL_PAST / (TL_PAST + TL_FUT) * 100).toFixed(2)
-export const MS_SHORT = { spa: 'PPJB', akuisisi: 'Kendali', to_umum: 'PTW', to_selesai: 'PTW selesai', rupslb: 'RUPSLB', rights: 'HMETD', inbreng: 'Inbreng', bisnis: 'Usaha baru' }
+export const MS_SHORT = { spa: 'PPJB', akuisisi: 'Kendali', to_umum: 'PTW', to_selesai: 'PTW selesai', rupslb: 'RUPSLB', rights: 'HMETD', kjpp: 'KJPP', inbreng: 'Inbreng', bisnis: 'Usaha baru' }
 export const tlX = iso => {
   const days = (new Date(iso + 'T00:00:00') - new Date(new Date().toDateString())) / 864e5
   return days < -TL_PAST || days > TL_FUT ? null : ((days + TL_PAST) / (TL_PAST + TL_FUT) * 100).toFixed(2)

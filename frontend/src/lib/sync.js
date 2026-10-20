@@ -83,8 +83,12 @@ export async function syncStockbit(items, api, { errors = [], ownership = true, 
 // Hanya laporan yang terbit SETELAH PTW dibayar, agar aksi pengendali lama tidak terhitung.
 const MS_RULES = [
   ['rupslb',  /risalah.*(luar biasa|RUPSLB)|hasil.*RUPSLB/i],
-  ['rights',  /HMETD|hak memesan efek|private placement|penambahan modal tanpa/i],
-  ['inbreng', /inbreng|penyetoran.*selain uang|akuisisi|akusisi|pengambilalihan saham/i],
+  // HMETD hanya bila ada bukti persetujuan/pelaksanaan, bukan sekadar rencana atau penjelasan bursa.
+  ['rights',  /^(?!.*(rencana|penjelasan|permintaan)).*((HMETD|hak memesan efek|private placement|penambahan modal).*(disetujui|persetujuan|pernyataan efektif|prospektus|hasil pelaksanaan|pencatatan)|(prospektus|pernyataan efektif|hasil pelaksanaan|pencatatan saham).*(HMETD|hak memesan|penambahan modal))/i],
+  // Laporan penilai terbit (bukan sekadar penunjukan KJPP).
+  ['kjpp',    /^(?!.*penunjukan).*(laporan penilai|hasil penilaian|pendapat kewajaran|fairness opinion|ringkasan laporan penilai)/i],
+  // Injeksi efektif: laporan pelaksanaan akuisisi/inbreng, bukan rencana, penunjukan penilai, atau negosiasi.
+  ['inbreng', /^(?!.*(rencana|penunjukan|persiapan|penjelasan|permintaan|perkembangan|negosiasi|uang muka)).*(inbreng|penyetoran.*selain uang|akuisisi|akusisi|pengambilalihan.{0,40}saham)/i],
 ]
 // Untuk emiten tanpa data tender di Stockbit: tahap tender dibaca dari judul laporan.
 const TENDER_RULES = [
@@ -109,6 +113,10 @@ export function inferMilestones(d, reports) {
     base = first
   }
   if (!base) return { ...d, ms, msAuto: auto }
+  // Aturan diperketat: deteksi otomatis lama yang masih tercakup laporan kali ini dihitung ulang,
+  // agar tahapan dari judul "rencana"/"penjelasan" tidak menggelembungkan progress.
+  const oldest = reports.map(r => r.date).filter(Boolean).sort()[0]
+  for (const k of ['rights', 'inbreng', 'kjpp']) if (oldest && auto[k] && auto[k] >= oldest) { delete ms[k]; delete auto[k] }
   for (const r of reports) {
     if (!r.date || r.date <= base) continue
     // Tanpa data tender, laporan lanjutan pengambilalihan itu sendiri jangan dihitung sebagai injeksi aset.

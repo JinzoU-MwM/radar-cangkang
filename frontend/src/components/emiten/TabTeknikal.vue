@@ -1,14 +1,43 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { store, itemOf } from '../../store.js'
 import { taVerdict, rpx } from '../../lib/ta.js'
 import { fmt, fmtDate, rp, big, pctTxt } from '../../lib/domain.js'
 import { useOhlc } from './ta/useOhlc.js'
 import TaChart from './ta/TaChart.vue'
+import PolaPanel from './ta/PolaPanel.vue'
+import ProCon from './ta/ProCon.vue'
+import { analyzePatterns, levels, taProsCons } from '../../lib/patterns.js'
 
 const props = defineProps({ ticker: String })
 const { loading, error, bars, ind, sig: s } = useOhlc(() => props.ticker)
 const range = ref(120)
+const sel = ref(null)
+
+// Struktur harga dihitung sekali per data; Fibonacci & volume profile mengikuti rentang chart.
+const adv = computed(() => {
+  if (!bars.value) return null
+  try { return analyzePatterns(bars.value, ind.value) } catch (e) { console.error('analyzePatterns', e); return null }
+})
+const lv = computed(() => bars.value && levels(bars.value, range.value))
+watch(() => props.ticker, () => { sel.value = null })
+
+// Lapisan chart yang bisa dinyalakan/dimatikan (kunci localStorage sama dengan versi lama).
+const LAYERS_KEY = 'radar-cangkang.taLayers'
+const LAYERS = [['pola', 'Pola chart'], ['candle', 'Candlestick'], ['div', 'Divergensi'], ['fib', 'Fibonacci'], ['vp', 'Volume profile'], ['zona', 'Zona volume']]
+let savedLy = {}
+try { savedLy = JSON.parse(localStorage.getItem(LAYERS_KEY) || '{}') } catch {}
+const layers = reactive({ pola: true, candle: true, div: true, fib: false, vp: true, zona: true, ...savedLy })
+watch(layers, v => { try { localStorage.setItem(LAYERS_KEY, JSON.stringify(v)) } catch {} })
+// Menyorot satu pola otomatis menyalakan lapisan pola.
+const chartRef = ref()
+function pick(id) {
+  sel.value = id
+  if (!id) return
+  layers.pola = true
+  chartRef.value?.$el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+const pc = computed(() => taProsCons(bars.value, ind.value, s.value, pa.value, adv.value))
 
 const last = computed(() => bars.value[bars.value.length - 1])
 const prev = computed(() => bars.value[bars.value.length - 2])
@@ -50,7 +79,13 @@ const GAUGE = ['Jual kuat', 'Jual', 'Netral', 'Beli', 'Beli kuat']
         <span><i class="dot"></i>Parabolic SAR</span><span v-if="lines.length"><i class="sw k"></i>PTW / nilai wajar</span>
       </span>
     </div>
-    <TaChart :bars="bars" :ind="ind" :lines="lines" :range="range" />
+    <div v-if="adv" class="layers" role="group" aria-label="Lapisan analisa di chart">
+      <span class="small muted">Tampilkan di chart</span>
+      <button v-for="[k, l] in LAYERS" :key="k" type="button" class="pill" :aria-pressed="!!layers[k]" @click="layers[k] = !layers[k]">{{ l }}</button>
+      <button v-if="sel" type="button" class="pill" @click="sel = null">Tampilkan semua pola</button>
+    </div>
+    <TaChart ref="chartRef" :bars="bars" :ind="ind" :lines="lines" :range="range" :adv="adv" :lv="lv" :layers="layers" :sel="sel" />
+    <p v-if="!adv" class="small muted">Analisa pola chart tidak tersedia untuk saham ini.</p>
 
     <div class="grid">
       <section class="rule-top">
@@ -91,6 +126,8 @@ const GAUGE = ['Jual kuat', 'Jual', 'Netral', 'Beli', 'Beli kuat']
           {{ conflict ? 'sinyal teknikal bertentangan dengan pandangan fundamental — perlakukan sebagai momentum jangka pendek, bukan perubahan tesis.' : 'sinyal teknikal sejalan atau tidak bertentangan dengan pandangan fundamental.' }}</p>
       </section>
     </div>
+    <PolaPanel v-if="adv && lv" :bars="bars" :adv="adv" :lv="lv" :sel="sel" @sel="pick" />
+    <ProCon :pros="pc[0]" :cons="pc[1]" title="Kelebihan vs kekurangan setup teknikal" />
     <p class="disc small muted">Sinyal dihitung otomatis dari 6 indikator (tren MA, Parabolic SAR, RSI, MACD, Bollinger, volume) atas candle harian Stockbit. Bersifat umum, bukan saran investasi personal; bukan dari penasihat berlisensi.</p>
   </div>
 </template>
@@ -105,6 +142,8 @@ const GAUGE = ['Jual kuat', 'Jual', 'Netral', 'Beli', 'Beli kuat']
 .warn{margin:0;padding:8px 12px;background:var(--warn-bg);color:var(--warn);border-left:3px solid var(--warn)}
 .bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
 .rng{display:flex;gap:6px}
+.layers{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.layers .small{margin-right:4px}
 .leg{display:flex;flex-wrap:wrap;gap:12px}
 .leg span{display:inline-flex;align-items:center;gap:5px}
 .sw{display:inline-block;width:16px;height:2px}

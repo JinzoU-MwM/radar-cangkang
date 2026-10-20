@@ -50,6 +50,14 @@ export const NEWS_RULES = [
   [/volatilitas|permintaan penjelasan bursa|\bUMA\b|unusual market/i, 0, "Penjelasan volatilitas/permintaan bursa: harga sudah bergerak lebih dulu — bukan informasi nilai, sering pertanda spekulasi."],
 ];
 export const NEWS_LEVEL = [["Derau", "bad"], ["Rutin", "calm"], ["Sinyal sedang", "warn"], ["Sinyal tinggi", "good"]];
+// Arah dampak tiap aturan NEWS_RULES (urutan sama): 1 positif bagi publik, -1 negatif/risiko, 0 perlu dicermati.
+const NEWS_TONE = [1, 0, 1, 1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 0, 0, 0, 1, 0, 0, 0, -1]
+const KINERJA = NEWS_RULES.findIndex(r => /kinerja/.test(r[0].source))
+function toneOf(rule, text) {
+  // Kinerja: arah dari isi berita (laba/naik vs rugi/turun).
+  if (NEWS_RULES.indexOf(rule) === KINERJA) return /rugi|turun|merosot|anjlok/i.test(text) ? -1 : /laba (bersih )?(naik|tumbuh|melonjak)|berbalik laba|naik \d/i.test(text) ? 1 : 0
+  return NEWS_TONE[NEWS_RULES.indexOf(rule)] ?? 0
+}
 
 // Nominal terbesar dalam teks (Rp/USD) → rupiah.
 export function maxAmountRp(s) {
@@ -61,12 +69,14 @@ export function maxAmountRp(s) {
   return best
 }
 
-// Analisa singkat satu berita → { level, label, cls, points (maks. 3), nominalText, sikapLine, canAnalyze }.
+// Analisa singkat satu berita → { level, label, cls, points (maks. 3), tones (arah tiap poin: 1/0/-1),
+// arah { label, cls, pos, neg }, nominalText, sikapLine, canAnalyze }.
 export function newsTake(u, { items = [], pandangan = {} } = {}) {
   const text = `${u.title || ''} ${u.summary || ''}`
   const hits = NEWS_RULES.filter(r => r[0].test(text))
   const level = hits.length ? Math.max(...hits.map(r => r[1])) : 1
   const pts = hits.slice(0, 2).map(r => r[2])
+  const tones = hits.slice(0, 2).map(r => toneOf(r, text))
   // Nominal transaksi dibanding kapitalisasi pasar emiten (item.mcap dalam Rp miliar → × 1e9).
   const d = u.ticker ? items.find(x => x.ticker === u.ticker) : null
   const amt = maxAmountRp(text), mcap = num(d?.mcap) != null ? num(d.mcap) * 1e9 : null
@@ -76,8 +86,13 @@ export function newsTake(u, { items = [], pandangan = {} } = {}) {
     const rTxt = r >= 0.1 ? x2(r) : r < 0.001 ? '<0,1%' : (r * 100).toFixed(1).replace('.', ',') + '%'
     nominalText = `Nominal ${big(amt)} ≈ ${rTxt} kapitalisasi ${u.ticker} (${big(mcap)}) — ${r >= 1 ? 'mengubah skala perusahaan' : r >= 0.2 ? 'material' : 'kecil terhadap nilai pasar'}.`
     pts.unshift(nominalText)
+    tones.unshift(r >= 0.2 ? 1 : 0)
   }
-  if (!pts.length) pts.push('Tidak ada aksi korporasi yang mengubah nilai; perlakukan sebagai informasi rutin.')
+  if (!pts.length) { pts.push('Tidak ada aksi korporasi yang mengubah nilai; perlakukan sebagai informasi rutin.'); tones.push(0) }
+  // Ringkasan arah: jumlah poin positif vs negatif dari poin yang tampil.
+  const t3 = tones.slice(0, 3), pos = t3.filter(t => t > 0).length, neg = t3.filter(t => t < 0).length
+  const arah = pos > neg ? { label: 'Cenderung positif', cls: 'good', pos, neg }
+    : neg > pos ? { label: 'Cenderung negatif', cls: 'bad', pos, neg } : { label: 'Berimbang', cls: 'warn', pos, neg }
   const pa = u.ticker ? pandangan[u.ticker] : null
   const ringkas = String(pa?.ringkas || '')
   const sikapLine = pa ? {
@@ -85,5 +100,5 @@ export function newsTake(u, { items = [], pandangan = {} } = {}) {
     cls: /asimetri/i.test(pa.sikap) ? 'good' : /netral/i.test(pa.sikap) ? 'warn' : 'bad',
     ringkas: ringkas.slice(0, 140) + (ringkas.length > 140 ? '…' : ''),
   } : null
-  return { level, label: NEWS_LEVEL[level][0], cls: NEWS_LEVEL[level][1], points: pts.slice(0, 3), nominalText, sikapLine, canAnalyze: !!d }
+  return { level, label: NEWS_LEVEL[level][0], cls: NEWS_LEVEL[level][1], points: pts.slice(0, 3), tones: t3, arah, nominalText, sikapLine, canAnalyze: !!d }
 }

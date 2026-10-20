@@ -44,6 +44,16 @@ describe('inferMilestones & syncReports', () => {
     expect(d.ms).toEqual({ akuisisi: true, to_umum: true, rupslb: true })
     expect(d.msAuto.rupslb).toBe('2026-03-01')
   })
+  it('HMETD, KJPP, inbreng hanya dengan bukti pelaksanaan; deteksi lama dihitung ulang', () => {
+    const base = { id: 'A', tender: { paydate: '2026-01-01' }, ms: { to_selesai: true, rights: true }, msAuto: { rights: '2026-02-01' } }
+    const d = inferMilestones(base, [
+      { date: '2026-02-01', title: 'Rencana PMHMETD I' },
+      { date: '2026-02-02', title: 'Penunjukan KJPP untuk laporan penilai' },
+      { date: '2026-02-03', title: 'Prospektus PMHMETD I' },
+      { date: '2026-02-04', title: 'Perkembangan negosiasi akuisisi' }])
+    expect(d.ms).toEqual({ to_selesai: true, rights: true })
+    expect(d.msAuto.rights).toBe('2026-02-03')
+  })
   it('menggabung laporan berdasarkan id dan mengumpulkan error', async () => {
     const items = [{ id: 'ABCD', ticker: 'ABCD', stage: 'tender' }]
     const updates = [{ id: 'sb-report-1', ticker: 'ABCD', title: 'lama' }]
