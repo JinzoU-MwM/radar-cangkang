@@ -6,7 +6,7 @@ import { fmt, fmtDate, rp, big, pctTxt } from '../../lib/domain.js'
 import { useOhlc } from './ta/useOhlc.js'
 import TaChart from './ta/TaChart.vue'
 import PolaPanel from './ta/PolaPanel.vue'
-import ProCon from './ta/ProCon.vue'
+import ProsCons from './ProsCons.vue'
 import { analyzePatterns, levels, taProsCons } from '../../lib/patterns.js'
 
 const props = defineProps({ ticker: String })
@@ -127,7 +127,7 @@ const GAUGE = ['Jual kuat', 'Jual', 'Netral', 'Beli', 'Beli kuat']
       </section>
     </div>
     <PolaPanel v-if="adv && lv" :bars="bars" :adv="adv" :lv="lv" :sel="sel" @sel="pick" />
-    <ProCon :pros="pc[0]" :cons="pc[1]" title="Kelebihan vs kekurangan setup teknikal" />
+    <ProsCons :pros="pc[0]" :cons="pc[1]" title="Kelebihan vs kekurangan setup teknikal" />
     <p class="disc small muted">Sinyal dihitung otomatis dari 6 indikator (tren MA, Parabolic SAR, RSI, MACD, Bollinger, volume) atas candle harian Stockbit. Bersifat umum, bukan saran investasi personal; bukan dari penasihat berlisensi.</p>
   </div>
 </template>

@@ -4,6 +4,7 @@ import { reactive } from 'vue'
 import { api, loadJson } from './api.js'
 import { deriveStory } from './lib/story.js'
 import { syncReports, syncStockbit, syncTenders } from './lib/sync.js'
+import { stageOf } from './lib/domain.js'
 
 const LS_ITEMS = 'radar-cangkang.v1'
 const LS_UPD = 'radar-cangkang.updates.v1'
@@ -167,6 +168,7 @@ export async function runSyncReports() {
     await saveUpdates(res.updates)
     for (const e of res.errors || []) toast(`${e.source}: ${e.error}`, true)
     toast('Laporan dan berita diperbarui.')
+    loadStories().catch(() => {})
   } catch (e) {
     toast('Gagal memperbarui berita: ' + e.message, true)
   } finally {
@@ -187,4 +189,31 @@ export function autoRefresh(kind) {
 export function userRefresh(kind) {
   api.freshFor(120e3)
   return kind === 'reports' ? runSyncReports() : runSyncStockbit()
+}
+
+// Data otomatis story (profil + riwayat pemegang saham) dari /api/story, disimpan 7 hari di item.
+// Dimuat ulang bila belum ada, sudah basi, atau patokannya (nama pengendali/tanggal PTW) berubah.
+let storyLoading = false
+const storyKey = d => `${(d.ctrlGuess ? '' : d.ctrlName) || d.acquirer || ''}|${d.tender?.start || ''}`
+export async function loadStories(tickers = null, force = false) {
+  if (storyLoading || !canSync()) return
+  const todo = store.items.filter(d => (tickers ? tickers.includes(d.ticker) : stageOf(d) !== 'radar') &&
+    (force || !d.storyAuto || d.storyAuto.key !== storyKey(d) || Date.now() - (d.storyAuto.at || 0) > 7 * 864e5))
+  if (!todo.length) return
+  storyLoading = true
+  try {
+    for (const d of todo) {
+      try {
+        const s = await api.get('/api/story', { ticker: d.ticker,
+          controller: (d.ctrlGuess ? '' : d.ctrlName) || (d.acquirer || '').replace(/\s*\(.*\)$/, ''), near: d.tender?.start || '' })
+        const cur = itemOf(d.ticker)
+        if (cur) await saveItem({ ...cur, storyAuto: { ...s, at: Date.now(), key: storyKey(d) } })
+      } catch (e) {
+        if (e.status === 401) { toast('Token Stockbit ditolak; story tidak bisa dimuat', true); break }
+      }
+      if (todo.length > 1) await new Promise(r => setTimeout(r, 300))
+    }
+  } finally {
+    storyLoading = false
+  }
 }

@@ -56,3 +56,11 @@ describe('domain', () => {
     expect(pctTxt(1, 0)).toBe('–')
   })
 })
+
+describe('trackIndex dengan konteks', () => {
+  it('transaksi executed masuk ruas Selesai', () => {
+    const it0 = { ticker: 'FORU', ms: { spa: true, akuisisi: true }, stage: 'tender' }
+    expect(trackIndex(it0)).toBe(1)
+    expect(trackIndex(it0, { aset: {}, verified: { FORU: { executed: true } } })).toBe(4)
+  })
+})

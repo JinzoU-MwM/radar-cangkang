@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { itemOf, pandanganOf } from '../../store.js'
+import { itemOf, pandanganOf, store } from '../../store.js'
 import { STAGE_TRACK, fairGap, fmtDate, rp, trackIndex } from '../../lib/domain.js'
 
 const props = defineProps({ ticker: { type: String, required: true } })
@@ -51,7 +51,7 @@ const clampX = x => Math.min(96, Math.max(4, x)) + '%'
 const steps = computed(() => {
   const it = item.value
   if (!it) return []
-  const idx = trackIndex(it), ma = it.msAuto || {}, t = it.tender || {}
+  const idx = trackIndex(it, { aset: store.aset, verified: store.verified }), ma = it.msAuto || {}, t = it.tender || {}
   const d = v => /^\d{4}-\d\d-\d\d/.test(v || '') ? fmtDate(v.slice(0, 10)) : ''
   const NAME = { spa: 'PPJB', tender: 'PTW', rupslb: 'RUPSLB', injeksi: 'Injeksi', selesai: 'Selesai' }
   return STAGE_TRACK.map((id, i) => {

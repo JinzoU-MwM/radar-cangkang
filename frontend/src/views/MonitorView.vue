@@ -79,7 +79,7 @@ const all = computed(() => store.items.filter(i => stageOf(i) !== 'radar').map(i
   const price = num(item.price) ?? pa?.hargaAcuan ?? null
   const lo = pa?.nilaiWajar?.bawah ?? null, hi = pa?.nilaiWajar?.atas ?? null
   const rep = lastReport(t)
-  return { item, t, prog, deal: dealOf(item, prog, ctx), pos: posisiOf(item, prog, ctx), ptw: ptwOf(item, prog.ms), sikap: pa?.sikap || '', price, lo, hi, gap: fairGap(price, lo, hi), ti: trackIndex(item), rep,
+  return { item, t, prog, deal: dealOf(item, prog, ctx), pos: posisiOf(item, prog, ctx), ptw: ptwOf(item, prog.ms), sikap: pa?.sikap || '', price, lo, hi, gap: fairGap(price, lo, hi), ti: trackIndex(item, ctx), rep,
     isNew: !!(rep && store.seenAt && rep.stamp > store.seenAt) }
 }))
 
@@ -277,15 +277,16 @@ onMounted(() => autoRefresh('stockbit'))
 .cyc summary h2{display:inline;font-size:19px}
 .cyc[open] summary{border-bottom:1px solid var(--rule-2);margin-bottom:12px}
 @media (max-width:1199px){.c-opt{display:none}}
-@media (max-width:760px){.c-next{display:none}.pos{min-width:130px}}
+@media (max-width:1399px){.c-next{display:none}}
+@media (max-width:760px){.pos{min-width:130px}}
 .price{font:700 16px var(--f-display)}
 .sortb[aria-pressed="true"]::after{content:"";display:inline-block;width:8px;height:10px;margin-left:5px;background:currentColor;-webkit-mask:var(--ic-down) center/contain no-repeat;mask:var(--ic-down) center/contain no-repeat}
 .rep{display:flex;gap:10px;align-items:baseline}
 .dd{flex:none;width:46px;font:700 15px var(--f-display);color:var(--ink-2)}
 .dd.now{color:var(--now-ink)}
-.rp{max-width:0}   /* sel mengisi sisa lebar; judul laporan dipotong elipsis */
+.rp{min-width:240px}  /* judul laporan maks. 2 baris, sama dengan kolom Selanjutnya */
 .rep{min-width:0}
-.ev{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ev{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;min-width:0}
 .empty{padding:14px}
 .foot{margin:0;font-size:12px}
 </style>

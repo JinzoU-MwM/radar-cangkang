@@ -1,11 +1,12 @@
 <script setup>
 import { computed } from 'vue'
 import { STAGES, trackIndex } from '../lib/domain.js'
+import { store } from '../store.js'
 
 // Trek 5 ruas (PPJB, PTW, RUPSLB, Injeksi, Selesai) dengan skala sama di tiap baris.
 const props = defineProps({ item: Object })
 const NAMES = ['PPJB', 'PTW', 'RUPSLB', 'Injeksi', 'Selesai']
-const idx = computed(() => trackIndex(props.item))
+const idx = computed(() => trackIndex(props.item, { aset: store.aset, verified: store.verified }))
 const label = computed(() => idx.value < 0 ? (STAGES[0].name) : NAMES[idx.value])
 </script>
 

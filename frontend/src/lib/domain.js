@@ -115,7 +115,12 @@ export function posisiOf(d, p, { verified = {} } = {}) {
 
 // Trek 5 ruas (tanpa "radar"); radar → -1.
 export const STAGE_TRACK = ['spa', 'tender', 'rupslb', 'injeksi', 'selesai']
-export const trackIndex = d => STAGE_TRACK.indexOf(stageOf(d))
+// Posisi di trek 5 ruas. Dengan `ctx` (aset, verified), transaksi yang sudah tuntas
+// (mis. executed di story-verified) masuk ruas Selesai walau tonggak item belum lengkap.
+export function trackIndex(d, ctx) {
+  if (ctx && dealOf(d, progressOf(d, ctx), ctx) === 'selesai') return STAGE_TRACK.length - 1
+  return STAGE_TRACK.indexOf(stageOf(d))
+}
 
 // Selisih harga terhadap rentang nilai wajar, persen bulat: >0 di atas hi, <0 di bawah lo, 0 di dalam.
 export function fairGap(price, lo, hi) {

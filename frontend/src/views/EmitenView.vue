@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { store, itemOf, pandanganOf, storyOf, autoRefresh } from '../store.js'
+import { store, itemOf, pandanganOf, storyOf, autoRefresh, loadStories } from '../store.js'
 import { fmtDate, rp } from '../lib/domain.js'
 import SikapTag from '../components/SikapTag.vue'
 import StageTrack from '../components/StageTrack.vue'
@@ -74,7 +74,8 @@ function openFlow(focus = null) { flowFocus.value = focus; flow.value = true }
 // Panel ditutup saat pindah emiten atau tab (lewat URL), supaya tidak menutupi konten baru.
 watch(() => [route.params.ticker, route.query.tab], () => { flow.value = false })
 
-onMounted(() => autoRefresh('reports'))
+onMounted(() => { autoRefresh('reports'); loadStories([props.ticker]).catch(() => {}) })
+watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
 </script>
 
 <template>

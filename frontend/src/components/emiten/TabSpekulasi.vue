@@ -4,7 +4,7 @@ import { store } from '../../store.js'
 import { buildPlan, moneyMgmt, MM_DEF, ceilTick } from '../../lib/ta.js'
 import { fmt, fmtDate, rp, pctTxt } from '../../lib/domain.js'
 import { useOhlc } from './ta/useOhlc.js'
-import ProCon from './ta/ProCon.vue'
+import ProsCons from './ProsCons.vue'
 import { analyzePatterns, bestBullPattern, polaPlan, structureChecks, verdictOf, spProsCons } from '../../lib/patterns.js'
 
 const props = defineProps({ ticker: String })
@@ -155,7 +155,7 @@ const signed = v => (v < 0 ? '−' : '+') + rp(Math.abs(v))
         <p class="verdict" :class="'v-' + res.verdict.cls">{{ res.verdict.text }}</p>
       </section>
     </div>
-    <ProCon :pros="pc[0]" :cons="pc[1]" title="Kelebihan vs kekurangan rencana transaksi" />
+    <ProsCons :pros="pc[0]" :cons="pc[1]" title="Kelebihan vs kekurangan rencana transaksi" />
     <p class="small muted">Rencana dihitung otomatis dari indikator teknikal dan parameter yang Anda isi; bersifat umum, bukan saran investasi personal dan bukan dari penasihat berlisensi. Saham tipis rawan gap melewati stop loss — kerugian nyata bisa lebih besar dari perhitungan.</p>
   </div>
 </template>
