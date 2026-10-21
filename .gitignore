@@ -29,3 +29,8 @@ frontend/node_modules/
 
 # Data intel pasar tradersaham: ditulis ulang tiap jam oleh tsa_refresh.py, bukan bagian kode.
 website/tsa-*.json
+
+# CD lokal: status & log deploy di server
+.ci/
+# Semua berkas rahasia tradersaham, termasuk cadangan (.tsa-creds.json.backup-*)
+**/.tsa-*

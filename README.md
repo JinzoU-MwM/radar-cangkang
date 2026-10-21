@@ -1,4 +1,4 @@
-﻿# Radar Backdoor
+# Radar Backdoor
 
 Pemantauan emiten BEI calon backdoor listing (pengambilalihan & perubahan pengendalian). Pemakaian pribadi.
 
@@ -46,6 +46,8 @@ Data radar tim tersimpan di `website/.radar.sqlite` dan sama untuk semua perangk
 
 Uji: `python3 website/test_server.py` dan `cd frontend && npm test`.
 
+Alur kerja tim, deploy otomatis ke jni-server, dan aturan rahasia/data: lihat **AGENTS.md**.
+
 ## Story Emiten terverifikasi
 
 `website/story-verified.json` berisi bisnis baru, injeksi aset, target, nominal, dan target penyelesaian tiap emiten yang sudah dicek dengan Stockbit Reports (15 Okt 2026), lengkap dengan tanggal laporan dan catatan.
@@ -62,7 +64,7 @@ Prioritas tampilan: koreksi manual (field `story` pada item) > file ini > data o
 
 Tombol **Perbarui berita** mengambil:
 - **Stockbit Reports**: keterbukaan informasi BEI + ringkasan AI Stockbit, untuk tiap emiten di radar (butuh token).
-- **Berita media** dari IDX Channel, Bloomberg Technoz, Investor.id, CNBC Indonesia, CNN Indonesia, Kontan, Katadata, EmitenNews, Bisnis.com, detikFinance. Hanya judul yang cocok kata kunci backdoor (`news.keywords`) atau menyebut emiten di radar.
+- **Berita media** dari IDX Channel, Bloomberg Technoz, Investor.id, CNBC Indonesia, CNN Indonesia, Kontan, Katadata, EmitenNews, detikFinance. Hanya judul yang cocok kata kunci backdoor (`news.keywords`) atau menyebut emiten di radar.
 
 Sumber, kata kunci, dan pola URL diatur di `website/stockbit.config.json` bagian `news`.
 
