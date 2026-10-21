@@ -50,7 +50,8 @@ def read_token(path: Path) -> str | None:
     if not path.exists():
         return None
     try:
-        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        # utf-8-sig: file token dari aplikasi lain (mis. trade-platform) bisa diawali BOM.
+        for line in path.read_text(encoding="utf-8-sig", errors="replace").splitlines():
             s = line.strip()
             if s and not s.startswith("#"):
                 return re.sub(r"(?i)^bearer\s+", "", s)
