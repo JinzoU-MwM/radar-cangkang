@@ -125,3 +125,10 @@ a.ticker:hover{text-decoration:underline}
 .pill:disabled{opacity:.4;cursor:default}
 .pill:disabled:hover{border-color:var(--rule)}
 .ledger a.ticker{display:inline-block;min-height:24px;line-height:24px}
+
+/* Ikon urut di judul kolom (dipakai Monitor dan Intel Pasar). */
+.sortb::after{content:"";display:inline-block;width:8px;height:10px;margin-left:5px;background:currentColor;opacity:.35;-webkit-mask:var(--ic-sort) center/contain no-repeat;mask:var(--ic-sort) center/contain no-repeat}
+.sortb.asc,.sortb.desc{color:var(--ink)}
+.sortb.asc::after,.sortb.desc::after{opacity:1}
+.sortb.desc::after{-webkit-mask-image:var(--ic-down);mask-image:var(--ic-down)}
+.sortb.asc::after{-webkit-mask-image:var(--ic-up);mask-image:var(--ic-up)}
