@@ -31,6 +31,8 @@ const SEED_ITEMS = [
 
 export const store = reactive({
   ready: false,
+  // Kandidat otomatis dari /api/kandidat (pemindaian seluruh BEI di server).
+  kandidat: { items: [], asOf: '', loading: true, error: '' },
   items: [],
   updates: [],
   verified: {},
@@ -318,4 +320,20 @@ let entIdx = null, entSrc = null
 export function alsoIn(title, ticker) {
   if (entSrc !== store.relasi) { entIdx = buildEntityIndex(store.relasi); entSrc = store.relasi }
   return [...(entIdx.get(entityKey(title)) || [])].filter(t => t !== ticker).sort()
+}
+
+let kandidatReq = null
+export function loadKandidat() {
+  kandidatReq ||= api.get('/api/kandidat')
+    .then(r => Object.assign(store.kandidat, { items: r.items || [], asOf: r.asOf || '' }))
+    .catch(e => { store.kandidat.error = e.message; kandidatReq = null })
+    .finally(() => { store.kandidat.loading = false })
+  return kandidatReq
+}
+
+// Kandidat otomatis yang belum dilacak, dalam bentuk item radar.
+export function autoKandidat() {
+  const known = new Set(store.items.map(i => i.ticker))
+  return store.kandidat.items.filter(k => !known.has(k.ticker))
+    .map(k => ({ id: k.ticker, ticker: k.ticker, name: k.name || '', price: k.price, stage: 'radar', flags: k.flags || {}, ms: {}, signals: k.signals || {}, auto: true }))
 }
