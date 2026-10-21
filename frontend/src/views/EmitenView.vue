@@ -97,9 +97,13 @@ const flow = ref(false)
 const flowFocus = ref(null)
 function openFlow(focus = null) { flowFocus.value = focus; flow.value = true }
 // Panel ditutup saat pindah emiten atau tab (lewat URL), supaya tidak menutupi konten baru.
-watch(() => [route.params.ticker, route.query.tab], () => { flow.value = false })
+watch(() => [route.params.ticker, route.query.tab, route.query.flow], () => { flow.value = !!route.query.flow })
 
-onMounted(() => { autoRefresh('reports'); loadStories([props.ticker]).catch(() => {}) })
+onMounted(() => {
+  autoRefresh('reports'); loadStories([props.ticker]).catch(() => {})
+  // ?flow=1 (mis. dari panel Pembaruan) langsung membuka panel Alur saham.
+  if (route.query.flow) openFlow()
+})
 watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
 </script>
 
