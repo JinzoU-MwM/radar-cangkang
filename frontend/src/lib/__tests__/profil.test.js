@@ -125,3 +125,18 @@ describe('sanitizeMilestones', () => {
     expect(sanitizeMilestones([it0], []).items[0]).toBe(it0)
   })
 })
+
+describe('rapikan peta jaringan', () => {
+  it('kalimat, jabatan, dan daftar banyak orang bukan simpul', async () => {
+    const { isEntityLabel } = await import('../netGraph.js')
+    for (const ok of ['Noprian Fadli', 'PT Triple Berkah Bersama', 'Poh Holdings Pte. Ltd.']) expect(isEntityLabel(ok)).toBe(true)
+    for (const bad of ['KSEI mencantumkan MCI sendiri', 'calon pengendali baru', 'Komisaris Utama KRYA', 'Direktur GIGP',
+      'Chen Pei Ling Catherine, Lim Yu Victoria, Chong Chee Hoong (UBO bersama)']) expect(isEntityLabel(bad)).toBe(false)
+  })
+  it('dua kolom: emiten diurutkan mengikuti penghubungnya', async () => {
+    const { layoutBipartite } = await import('../netGraph.js')
+    const L = layoutBipartite([{ id: 'a', label: 'A', em: new Set(['ZZZZ']) }, { id: 'b', label: 'B', em: new Set(['AAAA']) }])
+    expect(L.right.map(r => r.t)).toEqual(['ZZZZ', 'AAAA'])   // ikut urutan penghubung, bukan abjad
+    expect(L.links).toHaveLength(2)
+  })
+})
