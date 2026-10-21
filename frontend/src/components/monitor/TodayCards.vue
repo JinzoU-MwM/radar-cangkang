@@ -31,7 +31,7 @@ const quiet = computed(() => props.rows.length - cards.value.length)
 
 <template>
   <section aria-label="Hari ini" class="today">
-    <p v-if="!cards.length" class="muted empty">Tidak ada laporan baru, jatuh tempo, atau pergerakan besar di emiten yang tersaring hari ini.</p>
+    <p v-if="!cards.length" class="muted empty">Tidak ada laporan baru, jatuh tempo, atau pergerakan besar di emiten hasil filter hari ini.</p>
     <article v-for="{ r, why } in cards" :key="r.t" class="card">
       <header class="top">
         <RouterLink class="ticker" :to="'/emiten/' + r.t">{{ r.t }}</RouterLink>

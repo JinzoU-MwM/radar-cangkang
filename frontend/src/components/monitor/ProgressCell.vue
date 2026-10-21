@@ -7,6 +7,8 @@ const props = defineProps({ prog: Object, kjpp: Object })
 function srcOf(m, ok) {
   const k = props.kjpp
   if (m.id === 'kjpp' && k) {
+    // Dicentang karena injeksi sudah dieksekusi (inbreng wajib berdasar laporan KJPP) walau dokumennya tidak ditemukan.
+    if (ok && k.status !== 'terbit') return 'dianggap terbit: injeksi sudah dieksekusi, dokumen laporan tidak ditemukan'
     if (k.status === 'terbit') return `terbit${k.tanggalLaporan ? ' ' + fmtDate(k.tanggalLaporan) : ''}${k.nama ? ' · ' + k.nama : ''}`
     return k.status === 'ditunjuk' ? `KJPP${k.nama ? ' ' + k.nama : ''} ditunjuk, laporan belum terbit` : 'belum ada penunjukan KJPP'
   }

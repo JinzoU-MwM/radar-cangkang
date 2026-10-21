@@ -90,24 +90,24 @@ onMounted(() => autoRefresh('reports'))
       <div class="fbar">
         <button type="button" class="btn" :aria-expanded="String(fOpen)" aria-haspopup="dialog" @click="fOpen = true">
           <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 2.5h12M3.5 7h7M5.5 11.5h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
-          Saring<b v-if="chips.length" class="fcount">{{ chips.length }}</b>
+          Filter<b v-if="chips.length" class="fcount">{{ chips.length }}</b>
         </button>
-        <button v-for="c in chips" :key="c.key" type="button" class="pill chip" :aria-label="'Hapus saringan ' + c.label" @click="c.clear()">{{ c.label }} <span aria-hidden="true">×</span></button>
+        <button v-for="c in chips" :key="c.key" type="button" class="pill chip" :aria-label="'Hapus filter ' + c.label" @click="c.clear()">{{ c.label }} <span aria-hidden="true">×</span></button>
         <button v-if="chips.length > 1" type="button" class="linkbtn small" @click="clearFilters">Hapus semua</button>
       </div>
       <span v-if="feed.length" class="muted small" aria-live="polite">{{ list.length }} pengumuman<template v-if="nFresh"> · {{ nFresh }} baru
         <button type="button" class="linkbtn small" @click="markSeen">Tandai sudah dilihat</button></template></span>
     </div>
 
-    <Modal v-if="fOpen" labelledby="nfT" close-label="Tutup saringan" @close="fOpen = false">
-      <template #title><h2 id="nfT" class="ftitle">Saring berita</h2></template>
-      <p class="small muted fnote">Angka di tiap pilihan = jumlah pengumuman bila pilihan itu dipakai, dengan saringan lain tetap.</p>
+    <Modal v-if="fOpen" labelledby="nfT" close-label="Tutup filter" @close="fOpen = false">
+      <template #title><h2 id="nfT" class="ftitle">Filter berita</h2></template>
+      <p class="small muted fnote">Angka di tiap pilihan = jumlah pengumuman bila pilihan itu dipakai, dengan filter lain tetap.</p>
       <div class="fgroups">
-        <div role="group" aria-label="Saring jenis" class="grp">
+        <div role="group" aria-label="Filter jenis" class="grp">
           <span class="lbl">Jenis</span>
           <button v-for="t in types" :key="t.id" type="button" class="pill" :aria-pressed="String(type === t.id)" @click="type = t.id">{{ t.name }}<b>{{ t.n }}</b></button>
         </div>
-        <div role="group" aria-label="Saring sumber" class="grp">
+        <div role="group" aria-label="Filter sumber" class="grp">
           <span class="lbl">Sumber</span>
           <button v-for="o in srcs" :key="o.id" type="button" class="pill" :aria-pressed="String(src === o.id)" :disabled="!o.n && src !== o.id" @click="src = o.id">{{ o.name }}<b>{{ o.n }}</b></button>
         </div>
@@ -120,7 +120,7 @@ onMounted(() => autoRefresh('reports'))
 
     <section aria-label="Daftar berita" class="sheet list">
       <p v-if="!feed.length" class="muted empty">Belum ada berita. Tekan Perbarui berita untuk menarik laporan Stockbit dan media.</p>
-      <p v-else-if="!list.length" class="muted empty">Tidak ada berita yang cocok<template v-if="q.trim()"> dengan “{{ q.trim() }}”</template>. Ubah kata kunci atau saringan.</p>
+      <p v-else-if="!list.length" class="muted empty">Tidak ada berita yang cocok<template v-if="q.trim()"> dengan “{{ q.trim() }}”</template>. Ubah kata kunci atau filter.</p>
       <div v-for="g in groups" :key="g.d">
         <h2 class="lbl gd">{{ g.label }}</h2>
         <article v-for="r in g.rows" :key="r.u.id" class="item" :class="{ fresh: r.fresh }">

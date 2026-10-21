@@ -113,7 +113,7 @@ async function go(i) {
       <p v-if="!allItems.length" class="muted">Belum ada catatan pembaruan.</p>
       <template v-else>
         <div class="bar">
-          <div role="group" aria-label="Saring jenis" class="chips">
+          <div role="group" aria-label="Filter jenis" class="chips">
             <button v-for="c in chips" :key="c.id" type="button" class="pill" :aria-pressed="String(jenis === c.id)" @click="jenis = c.id">{{ c.name }}<b>{{ c.n }}</b></button>
           </div>
           <button type="button" class="link small" :disabled="!nNew" @click="mark(allItems.map(i => i.id))">Tandai semua dibaca</button>
