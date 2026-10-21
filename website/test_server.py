@@ -99,6 +99,19 @@ class DataApiTest(unittest.TestCase):
         req("DELETE")
         self.assertEqual(server.data_rows("SELECT ticker FROM kandidat_hidden"), [])
 
+    def test_09_diff_since_snapshot(self):
+        server.item_put({"id": "DIFX", "ticker": "DIFX", "stage": "tender", "price": 100, "ctrlPct": 50,
+                         "ms": {"spa": True}, "flags": {}})
+        server.snapshot_today(force=True)
+        server.item_put({"id": "DIFX", "ticker": "DIFX", "stage": "tender", "price": 120, "ctrlPct": 75,
+                         "ms": {"spa": True, "akuisisi": True}, "flags": {}})
+        d = {x["ticker"]: x["changes"] for x in server.get_diff(1)["items"]}
+        kinds = {c["k"]: c for c in d["DIFX"]}
+        self.assertEqual(kinds["price"]["pct"], 20.0)
+        self.assertEqual((kinds["ctrl"]["from"], kinds["ctrl"]["to"]), (50, 75))
+        self.assertEqual(kinds["ms"]["added"], ["akuisisi"])
+        server.data_exec("DELETE FROM items WHERE ticker=?", [("DIFX",)])
+
     def test_06_static_traversal_blocked(self):
         st, _ = self.call("GET", "/..%2fserver.py", ctype=None)
         self.assertEqual(st, 404)

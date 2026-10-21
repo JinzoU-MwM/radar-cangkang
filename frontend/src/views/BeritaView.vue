@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { store, autoRefresh, userRefresh } from '../store.js'
-import { UTYPES, fmtDate } from '../lib/domain.js'
+import { store, autoRefresh, userRefresh, markSeen } from '../store.js'
+import { UTYPES, fmtDate, isNewSince, SIKAP_CLS } from '../lib/domain.js'
 import { isBackdoorNews, newsTake } from '../lib/news.js'
 import Modal from '../components/emiten/Modal.vue'
 
@@ -58,12 +58,13 @@ const groups = computed(() => {
     if (!g || g.d !== d) out.push(g = { d, label: d ? fmtDate(d) : 'Tanpa tanggal', rows: [] })
     const take = newsTake(u, { items: store.items, pandangan: store.pandangan })
     g.rows.push({ u, take, points: take.points.map((text, i) => ({ text, tone: TONE[take.tones[i]] })),
-      fresh: !!store.seenAt && (u.updatedAt || u.date || '') > store.seenAt,
+      fresh: isNewSince(u, store.seenAt),
       url: /^https?:\/\//.test(u.url || '') ? u.url : '' })
   }
   return out
 })
 
+const nFresh = computed(() => feed.value.filter(u => isNewSince(u, store.seenAt)).length)
 const canRefresh = computed(() => !!(store.status?.reports || store.status?.news))
 onMounted(() => autoRefresh('reports'))
 </script>
@@ -94,7 +95,8 @@ onMounted(() => autoRefresh('reports'))
         <button v-for="c in chips" :key="c.key" type="button" class="pill chip" :aria-label="'Hapus saringan ' + c.label" @click="c.clear()">{{ c.label }} <span aria-hidden="true">×</span></button>
         <button v-if="chips.length > 1" type="button" class="linkbtn small" @click="clearFilters">Hapus semua</button>
       </div>
-      <span v-if="feed.length" class="muted small" aria-live="polite">{{ list.length }} pengumuman</span>
+      <span v-if="feed.length" class="muted small" aria-live="polite">{{ list.length }} pengumuman<template v-if="nFresh"> · {{ nFresh }} baru
+        <button type="button" class="linkbtn small" @click="markSeen">Tandai sudah dilihat</button></template></span>
     </div>
 
     <Modal v-if="fOpen" labelledby="nfT" close-label="Tutup saringan" @close="fOpen = false">
@@ -142,7 +144,7 @@ onMounted(() => autoRefresh('reports'))
                   <span>{{ p.text }}</span>
                 </li>
               </ul>
-              <p v-if="r.take.sikapLine" class="sk"><span class="tag" :class="TAG[r.take.sikapLine.cls]">{{ r.take.sikapLine.ticker }} · {{ r.take.sikapLine.sikap }}</span> <span class="muted">{{ r.take.sikapLine.ringkas }}</span></p>
+              <p v-if="r.take.sikapLine" class="sk"><span class="tag" :class="SIKAP_CLS[r.take.sikapLine.sikap] || TAG[r.take.sikapLine.cls]">{{ r.take.sikapLine.ticker }} · {{ r.take.sikapLine.sikap }}</span> <span class="muted">{{ r.take.sikapLine.ringkas }}</span></p>
             </div>
           </div>
           <span class="tag t-calm ty">{{ typeName(r.u.type) }}</span>
@@ -168,7 +170,7 @@ onMounted(() => autoRefresh('reports'))
 .title{font-weight:600;color:var(--ink)}
 a.title{text-decoration:none}
 a.title:hover{text-decoration:underline}
-.sum{margin:2px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-clamp:2;overflow:hidden}
+.sum{max-width:78ch;margin:2px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-clamp:2;overflow:hidden}
 .take{margin-top:6px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
 .tags{display:flex;flex-wrap:wrap;gap:6px}
 .pts{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}

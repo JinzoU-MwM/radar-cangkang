@@ -2,8 +2,9 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { store, toast, loadKandidat, autoKandidat } from './store.js'
-import { stageOf } from './lib/domain.js'
+import { stageOf, isNewSince } from './lib/domain.js'
 import ChangelogPanel from './components/ChangelogPanel.vue'
+import TickerJump from './components/TickerJump.vue'
 
 const router = useRouter()
 const now = ref(Date.now())
@@ -12,7 +13,7 @@ let timer
 const nRadar = computed(() => store.items.filter(i => stageOf(i) === 'radar').length)
 const nKandidat = computed(() => nRadar.value + autoKandidat().length)
 const nMonitor = computed(() => store.items.length - nRadar.value)
-const nBaru = computed(() => store.updates.filter(u => (u.updatedAt || u.date || '') > store.seenAt).length)
+const nBaru = computed(() => store.updates.filter(u => isNewSince(u, store.seenAt)).length)
 
 // Status token Stockbit (masa berlaku ±24 jam) di kaki rail.
 const token = computed(() => {
@@ -21,7 +22,7 @@ const token = computed(() => {
   const left = exp * 1000 - now.value
   const until = new Date(exp * 1000).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
   const h = Math.floor(left / 3600e3), m = Math.max(0, Math.floor(left % 3600e3 / 60e3))
-  if (left <= 0) return { cls: 'bad', text: 'Token kedaluwarsa. Simpan token baru di .stockbit-token' }
+  if (left <= 0) return { cls: 'bad', text: 'Token Stockbit kedaluwarsa: harga dan laporan bisa basi sampai token diperbarui' }
   if (left < 2 * 3600e3) return { cls: 'warn', text: `Token habis dalam ${h ? h + ' jam ' : ''}${m} menit (${until})` }
   return { cls: 'ok', text: `Token berlaku s.d. ${until}` }
 })
@@ -46,8 +47,11 @@ function toggleTheme() {
   try { localStorage.setItem('radar-cangkang.theme', theme.value) } catch {}
 }
 
-// Pintasan: / cari, 1–3 pindah menu. Tidak aktif saat mengetik atau dialog terbuka.
+// Pintasan: Ctrl/⌘ K buka emiten, / cari, 1–3 pindah menu. Tidak aktif saat mengetik atau dialog terbuka.
+const jump = ref(false)
 function onKey(e) {
+  // Ctrl/⌘ K: lompat ke emiten dari halaman mana pun.
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); jump.value = true; return }
   if (e.ctrlKey || e.metaKey || e.altKey) return
   if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName) || document.querySelector('[role="dialog"]')) return
   const to = { 1: '/', 2: '/kandidat', 3: '/berita' }[e.key]
@@ -77,6 +81,7 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
         <b>Radar Backdoor</b>
         <span>Pengambilalihan emiten · BEI</span>
       </div>
+      <button type="button" class="jump" @click="jump = true">Buka emiten<kbd>Ctrl K</kbd></button>
       <RouterLink class="nav" to="/" :class="{ on: $route.name === 'monitor' || $route.name === 'emiten' }">Monitor <span class="cnt">{{ nMonitor }}</span></RouterLink>
       <RouterLink class="nav" to="/kandidat" active-class="on">Kandidat <span class="cnt">{{ nKandidat }}</span></RouterLink>
       <RouterLink class="nav" to="/berita" active-class="on">Berita <span class="cnt">{{ nBaru || '' }}</span></RouterLink>
@@ -84,8 +89,10 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
       <div class="foot">
         <span v-if="store.status?.readOnly" class="tok">Versi publik · hanya baca</span>
         <span v-else-if="token" class="tok" :class="token.cls">{{ token.text }}</span>
-        <span v-else-if="store.status && !store.status.configured" class="tok">Stockbit: config belum diisi</span>
-        <span>/ cari · 1–3 pindah menu</span>
+        <span v-else-if="store.status && !store.status.configured" class="tok bad">Data Stockbit belum diatur di server</span>
+        <span v-else-if="store.status && !store.status.tokenLoaded" class="tok bad">Data Stockbit tidak aktif: harga dan laporan bisa basi</span>
+        <span v-else-if="store.ready && !store.status" class="tok bad">Server tidak terhubung</span>
+        <span>Ctrl K buka emiten · / cari · 1–3 menu</span>
         <button type="button" class="theme" @click="toggleTheme">{{ theme === 'dark' ? 'Tema terang' : 'Tema gelap' }}</button>
       </div>
     </nav>
@@ -93,6 +100,7 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
       <p v-if="!store.ready" class="muted">Memuat data…</p>
       <RouterView v-else />
     </main>
+    <TickerJump v-if="jump" @close="jump = false" />
     <div class="toasts" aria-live="polite">
       <div v-for="t in store.toasts" :key="t.id" class="toast" :class="{ warn: t.warn }">{{ t.text }}</div>
     </div>
@@ -105,10 +113,13 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
 .brand{padding:0 12px 18px;display:grid;gap:2px}
 .brand b{font-family:var(--f-display);font-size:24px;line-height:1;color:#fff}
 .brand span{font-size:12px;color:var(--rail-mute)}
-.nav{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:3px;color:var(--rail-mute);text-decoration:none;font-weight:600;min-height:24px;box-shadow:inset 3px 0 0 transparent}
+.nav{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;border-radius:3px;color:var(--rail-mute);text-decoration:none;font-weight:600;min-height:24px;box-shadow:inset 3px 0 0 transparent}
 .nav:hover{color:var(--rail-ink);background:var(--rail-2)}
 .nav.on{color:#fff;background:var(--rail-2);box-shadow:inset 3px 0 0 var(--now)}
 .cnt{font-family:var(--f-display);font-weight:700}
+.jump{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 10px;padding:8px 12px;border:1px solid var(--rail-rule);border-radius:3px;background:none;color:var(--rail-mute);font:inherit;font-size:13px;cursor:pointer;text-align:left}
+.jump:hover{color:var(--rail-ink);border-color:var(--rail-mute)}
+.jump kbd{font:600 11px var(--f-data);padding:1px 5px;border:1px solid var(--rail-rule);border-radius:3px}
 .foot{margin-top:auto;padding:12px;border-top:1px solid var(--rail-rule);display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--rail-mute)}
 .tok{font-weight:600}
 .tok.ok{color:#bfe6d1}.tok.warn{color:#ffd28a}.tok.bad{color:#ffb4a9}
@@ -117,5 +128,5 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
 .toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:50;max-width:380px}
 .toast{background:var(--ink);color:var(--paper);padding:10px 14px;border-radius:3px;box-shadow:var(--shadow)}
 .toast.warn{background:var(--strong)}
-@media (max-width:760px){.rail{position:static;height:auto;max-width:none;flex-basis:100%;flex-direction:row;flex-wrap:wrap;align-items:center}.brand{padding:0 12px 0 0}.foot{flex-basis:100%;margin:6px 0 0;padding:6px 12px 0}.foot>:not(.tok){display:none}.foot:not(:has(.tok)){display:none}.content{padding:16px}}
+@media (max-width:760px){.rail{position:static;height:auto;max-width:none;flex-basis:100%;flex-direction:row;flex-wrap:wrap;align-items:center;padding:10px 8px;gap:2px 4px}.brand{padding:0 8px 0 4px}.brand span{display:none}.brand b{font-size:20px}.nav{padding:8px 10px}.jump{order:9;margin:0;padding:6px 10px}.jump kbd{display:none}.foot{flex-basis:100%;margin:6px 0 0;padding:6px 12px 0}.foot>:not(.tok){display:none}.foot:not(:has(.tok)){display:none}.content{padding:16px}}
 </style>

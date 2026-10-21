@@ -141,7 +141,7 @@ async function go(i) {
 <style scoped>
 .cl-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:10px 12px;min-height:24px;border:0;border-radius:3px;background:none;font:inherit;font-weight:600;color:var(--rail-mute);cursor:pointer;text-align:left}
 .cl-btn:hover{color:var(--rail-ink);background:var(--rail-2)}
-.cl-btn .cnt{font-family:var(--f-display);font-weight:700;color:var(--now)}
+.cl-btn .cnt{font-family:var(--f-display);font-weight:700;color:#ffa36b}  /* oranye terang: kontras ≥ 4,5:1 di rail hijau */
 @media (max-width:760px){.cl-btn{width:auto}}
 .cl-scrim{position:fixed;inset:0;z-index:40;background:rgb(15 32 25 / .45);display:flex;justify-content:flex-end}
 .cl-panel{background:var(--sheet);color:var(--ink);width:min(440px,100%);height:100%;overflow:auto;padding:18px 20px 32px;box-shadow:var(--shadow);outline:none;box-sizing:border-box}

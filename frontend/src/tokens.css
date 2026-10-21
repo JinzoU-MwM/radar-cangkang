@@ -92,7 +92,7 @@ a.ticker:hover{text-decoration:underline}
 .ledger td{padding:7px 10px;border-bottom:1px solid var(--rule-2);vertical-align:middle}
 .ledger tbody tr:nth-child(even) td{background:var(--zebra)}
 .ledger tbody tr:hover td{background:var(--accent-soft)}
-.sortb{border:0;background:none;padding:0;font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit;cursor:pointer}
+.sortb{border:0;background:none;padding:0;min-height:24px;font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit;cursor:pointer}
 .sortb[aria-pressed="true"]{color:var(--ink)}
 
 /* ---- tab ---- */
@@ -117,9 +117,10 @@ a.ticker:hover{text-decoration:underline}
 .ffoot{display:flex;justify-content:space-between;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--rule-2)}
 .fbar{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
 .fbar .btn{display:inline-flex;gap:6px;align-items:center}
-.fcount{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--now);color:#fff;font:700 12px var(--f-display)}
+.fcount{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--now-ink);color:#fff;font:700 12px var(--f-display)}
 .chip{background:var(--accent-soft);border-color:transparent}
 .chip span{margin-left:4px;font-weight:700}
 .linkbtn{background:none;border:0;padding:4px;color:var(--accent);text-decoration:underline;cursor:pointer}
 .pill:disabled{opacity:.4;cursor:default}
 .pill:disabled:hover{border-color:var(--rule)}
+.ledger a.ticker{display:inline-block;min-height:24px;line-height:24px}

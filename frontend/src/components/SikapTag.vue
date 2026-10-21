@@ -1,7 +1,7 @@
 <script setup>
+import { SIKAP_CLS as CLS } from '../lib/domain.js'
 // Sikap analis dari pandangan-analis.json: Hindari / Spekulatif tinggi / Netral / Asimetri positif.
 const props = defineProps({ sikap: String, short: Boolean })
-const CLS = { 'Hindari': 't-strong', 'Spekulatif tinggi': 't-warn', 'Netral': 't-calm', 'Asimetri positif': 't-good' }
 const SHORT = { 'Spekulatif tinggi': 'Spekulatif', 'Asimetri positif': 'Asimetri+' }
 </script>
 

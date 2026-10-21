@@ -62,6 +62,8 @@ export async function syncStockbit(items, api, { errors = [], ownership = true, 
     if (q.price != null) next.price = q.price
     if (q.mcap != null) next.mcap = Math.round(q.mcap * 10) / 10
     if (q.float != null) next.float = q.float
+    if (q.pctChange != null) next.chgPct = q.pctChange
+    next.volRatio = q.volume && q.avgVolume ? Math.round(q.volume / q.avgVolume * 10) / 10 : null
     if (!next.name && q.name) next.name = q.name
     // Sinyal dari data pasar hanya dinyalakan, tidak dimatikan; keputusan mematikan tetap di analis.
     next.flags = { ...(next.flags || {}) }
@@ -143,8 +145,10 @@ export async function syncReports(items, updates, api, { news = false, reports =
       const j = await api.get('/api/reports', { ticker: t })
       for (const it of j.items || []) {
         const i = upd.findIndex(u => u.id === it.id)
-        const row = { ...it, updatedAt: nowIso() }
-        if (i >= 0) upd[i] = { ...upd[i], ...row }; else { upd.push(row); added++ }
+        // updatedAt = waktu laporan pertama kali masuk radar (dasar penanda "baru" dan diff harian):
+        // laporan yang sudah ada hanya diperbarui isinya, stempelnya tidak ikut diganti.
+        if (i >= 0) upd[i] = { ...upd[i], ...it, updatedAt: upd[i].updatedAt || nowIso() }
+        else { upd.push({ ...it, updatedAt: nowIso() }); added++ }
       }
       list = list.map(d => d.id === t ? inferMilestones(d, j.items || []) : d)
     } catch (e) {
