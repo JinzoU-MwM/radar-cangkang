@@ -75,7 +75,7 @@
         { "id": "2026-10-15-analisa", "jenis": "fitur", "judul": "Analisa per emiten", "detail": "Skor enam dimensi, pandangan analis 48 emiten, kalkulator dilusi, pergerakan pemegang saham, dan likuiditas.", "buka": { "view": "potensi", "analisa": "NAYZ" } },
         { "id": "2026-10-15-berita", "jenis": "fitur", "judul": "Analisa singkat di setiap berita", "detail": "Tingkat sinyal, poin penting, nominal vs kapitalisasi, dan sikap analis per berita.", "buka": { "view": "update" } },
         { "id": "2026-10-15-pengendali", "jenis": "data", "judul": "Profil pengendali & afiliasi 48 emiten", "detail": "Siapa pengendali, latar grup, rencana, catatan investor, dan kepemilikan di emiten lain.", "buka": { "view": "story" } },
-        { "id": "2026-10-15-manual", "jenis": "perbaikan", "judul": "Input manual dihapus", "detail": "Semua data otomatis dari Stockbit dan file terverifikasi; tidak ada form tambah/ubah data." }
+        {"id": "2026-10-21-unduh-presentasi", "jenis": "fitur", "judul": "Unduh presentasi analisa (.pptx)", "detail": "Tab Download di samping Berita: seluruh hasil analisa emiten (skor, kepemilikan, pengendali, aset injeksi, KJPP, progres, valuasi, harga, skenario, teknikal, rencana transaksi, red flag & katalis) dalam 20+ slide visual. Tema mengikuti bisnis emiten (30 varian di 10 sektor) dan berganti tiap unduhan.", "buka": {"route": "/emiten/MEJA", "query": {"tab": "download"}}}, { "id": "2026-10-15-manual", "jenis": "perbaikan", "judul": "Input manual dihapus", "detail": "Semua data otomatis dari Stockbit dan file terverifikasi; tidak ada form tambah/ubah data." }
       ]
     }
   ]
