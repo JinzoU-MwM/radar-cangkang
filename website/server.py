@@ -290,6 +290,44 @@ def radar_tickers() -> set[str]:
     return t
 
 
+# ---- Data intel pasar dari tradersaham.com (snapshot JSON statis) ----------------
+_TSA_MEMO: dict[str, tuple[float, dict]] = {}
+
+
+def tsa_load(name: str) -> dict:
+    """Muat tsa-<name>.json dengan memo 5 menit; bila file hilang, kembalikan {}."""
+    now = time.time()
+    hit = _TSA_MEMO.get(name)
+    if hit and now - hit[0] < 300:
+        return hit[1]
+    try:
+        data = json.loads((ROOT / f"tsa-{name}.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        data = {}
+    _TSA_MEMO[name] = (now, data)
+    return data
+
+
+def tsa_summary(ticker: str) -> dict:
+    """Gabungkan seluruh data tradersaham untuk satu emiten: teknikal+broker (signals),
+    skor gems, arus asing list, dan net broker scanner bila tersedia."""
+    ticker = ticker.upper()
+    sig = tsa_load("signals").get(ticker)
+    gm = tsa_load("gems").get(ticker)
+    ff = next((x for x in tsa_load("foreign-flow") if x.get("stock_code") == ticker), None)
+    bs = next((x for x in tsa_load("broker-scanner").get("stocks", [])
+               if x.get("stockCode") == ticker), None)
+    return {
+        "ticker": ticker,
+        "meta": tsa_load("meta"),
+        "ada": bool(sig or gm or ff or bs),
+        "signals": sig,
+        "gems": gm,
+        "foreignFlow": ff,
+        "brokerScanner": bs,
+    }
+
+
 def cached_text(url: str, fetch, fresh: bool = False) -> str:
     """Ambil dari cache bila segar; bila tidak, jalankan fetch lalu simpan.
     Bila fetch gagal, salinan lama dipakai daripada error."""
@@ -1470,6 +1508,10 @@ class Handler(BaseHTTPRequestHandler):
                 ],
                 "generated": int(time.time()),
             })
+        elif path == "api/tsa/summary":
+            # Data intel pasar dari tradersaham.com (snapshot tsa-*.json) untuk emiten radar.
+            if not self.guard_ticker(ticker):
+                self.reply_json(tsa_summary(ticker))
         elif path == "api/raw":
             if self.guard_ticker(ticker):
                 return

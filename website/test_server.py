@@ -80,6 +80,14 @@ class DataApiTest(unittest.TestCase):
         st, _ = self.call("GET", "/api/ohlc?ticker=xx&tf=3m", ctype=None)
         self.assertIn(st, (400, 401))
 
+    def test_06_tsa_summary_endpoint(self):
+        st, res = self.call("GET", "/api/tsa/summary?ticker=ASPI", ctype=None)
+        self.assertEqual(st, 200)
+        self.assertEqual(res["ticker"], "ASPI")
+        self.assertTrue(res["ada"])
+        st, _ = self.call("GET", "/api/tsa/summary?ticker=bad", ctype=None)
+        self.assertEqual(st, 400)
+
     def test_07_public_is_read_only(self):
         st, res = self.call("PUT", "/api/items/NAYZ", {"ticker": "NAYZ"}, public=True)
         self.assertEqual(st, 403)
@@ -188,6 +196,17 @@ class KandidatTest(unittest.TestCase):
         self.assertEqual(f("Perubahan Susunan Anggota Direksi"), ["direksi"])
         self.assertEqual(f("Penghentian Sementara Perdagangan Efek"), ["uma"])
         self.assertEqual(f("Laporan Keuangan Interim"), [])
+
+
+class TsaSummaryTest(unittest.TestCase):
+    """Data intel pasar tradersaham: helper tsa_summary (tanpa HTTP)."""
+
+    def test_10_helper_known_and_unknown(self):
+        s = server.tsa_summary("ASPI")
+        self.assertTrue(s["ada"])
+        self.assertEqual(s["ticker"], "ASPI")
+        self.assertIn("regime", s["signals"])
+        self.assertFalse(server.tsa_summary("ZZZZ")["ada"])
 
 
 if __name__ == "__main__":

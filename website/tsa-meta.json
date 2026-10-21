@@ -1,0 +1,6 @@
+{
+ "sumber": "tradersaham.com apiv2 (IDX backend read-only)",
+ "tarik": "2026-10-21",
+ "tanggal_data": "2026-10-20",
+ "catatan": "Snapshot manual; refresh ulang via /api/tsa/refresh (server) bila perlu"
+}
