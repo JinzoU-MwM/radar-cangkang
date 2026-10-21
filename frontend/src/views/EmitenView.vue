@@ -13,6 +13,7 @@ import TabTeknikal from '../components/emiten/TabTeknikal.vue'
 import TabSpekulasi from '../components/emiten/TabSpekulasi.vue'
 import TabProfil from '../components/emiten/TabProfil.vue'
 import TabBerita from '../components/emiten/TabBerita.vue'
+import { api } from '../api.js'
 
 const props = defineProps({ ticker: { type: String, required: true } })
 const route = useRoute()
@@ -61,9 +62,21 @@ const tenderUntil = computed(() => {
 const lama = computed(() => story.value?.lama || '')
 const baru = computed(() => story.value?.baru || store.verified[T.value]?.baru || '')
 
-const price = computed(() => item.value?.price ?? pv.value?.hargaAcuan ?? null)
+// Emiten tanpa harga tersimpan (kandidat baru, kode bebas, atau versi publik yang tidak menyinkronkan):
+// ambil harga terakhir langsung dari Stockbit untuk ditampilkan saja, tanpa menyimpan.
+const live = ref(null)
+watch(T, async t => {
+  live.value = null
+  if (item.value?.price != null) return
+  try { const q = await api.get('/api/quote', { ticker: t }); if (t === T.value && q?.price != null) live.value = q } catch {}
+}, { immediate: true })
+const price = computed(() => item.value?.price ?? live.value?.price ?? pv.value?.hargaAcuan ?? null)
 const priceNote = computed(() => {
   const it = item.value, p = pv.value
+  if (it?.price == null && live.value?.price != null) {
+    const c = live.value.pctChange
+    return 'harga terakhir Stockbit' + (c != null ? ` · ${c > 0 ? '+' : ''}${String(c).replace('.', ',')}%` : '')
+  }
   if (it?.price != null) {
     const at = it.updatedAt ? new Date(it.updatedAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''
     const ref = p?.hargaAcuan != null && p.hargaAcuan !== it.price ? ` · acuan analisa ${rp(p.hargaAcuan)} (${fmtDate(p.asOf)})` : ''
