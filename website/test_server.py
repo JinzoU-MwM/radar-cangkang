@@ -189,6 +189,26 @@ class CacheTest(unittest.TestCase):
             server.PUBLIC_BUDGET = old
             server._req.public, server._req.public_fetch = False, False
 
+    def test_prune_and_memo_cap(self):
+        server.cache_write("https://x/lama", "a")
+        server.cache_write("https://x/baru", "b")
+        con = server.db()
+        con.execute("UPDATE http_cache SET fetched_at=0 WHERE url='https://x/lama'")
+        con.commit()
+        self.assertEqual(server.cache_prune(), 1)
+        self.assertIsNone(server.cache_read("https://x/lama", 0))
+        self.assertEqual(server.cache_read("https://x/baru", 0), "b")
+        old = server._benchmark
+        server._benchmark = lambda deals, fresh=False: {"n": len(deals)}
+        try:
+            server._bm_memo.clear()
+            for i in range(server.BM_MEMO_MAX + 10):
+                server.get_benchmark([f"ABCD:2026-01-{i:02d}"])
+            self.assertEqual(len(server._bm_memo), server.BM_MEMO_MAX)
+        finally:
+            server._benchmark = old
+            server._bm_memo.clear()
+
     def test_failure_backoff_uses_stale(self):
         url = "https://exodus.stockbit.com/stream/v3/symbol/NAYZ"
         server.cache_write(url, "lama")
