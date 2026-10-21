@@ -293,6 +293,7 @@ def radar_tickers() -> set[str]:
 
 # ---- Data intel pasar dari tradersaham.com (snapshot JSON statis) ----------------
 _TSA_MEMO: dict[str, tuple[float, dict]] = {}
+TSA_DIR = ROOT  # tempat tsa-*.json (ditulis tsa_refresh.py)
 
 
 def tsa_load(name: str) -> dict:
@@ -302,7 +303,7 @@ def tsa_load(name: str) -> dict:
     if hit and now - hit[0] < 300:
         return hit[1]
     try:
-        data = json.loads((ROOT / f"tsa-{name}.json").read_text(encoding="utf-8"))
+        data = json.loads((TSA_DIR / f"tsa-{name}.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         data = {}
     _TSA_MEMO[name] = (now, data)
