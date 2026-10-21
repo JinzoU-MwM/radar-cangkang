@@ -56,24 +56,28 @@ const rpFmt = v => v == null ? '–' : big(Math.abs(v)) + (v >= 0 ? '' : ' (kelu
       <!-- Teknikal + broker (signals-v2) -->
       <section v-if="sig" class="ledger">
         <h3>Teknikal &amp; Broker</h3>
-        <div class="row"><span>Harga / perubahan</span><b>{{ fmt(sig.close) }} <span :class="sig.chg >= 0 ? 'c-good' : 'c-strong'">{{ sig.chg == null ? '' : (sig.chg >= 0 ? '+' : '') + fmt(sig.chg, 2) + '%' }}</span></b></div>
+        <div class="row"><span>Harga / perubahan</span><b>{{ fmt(sig.closePrice) }} <span :class="sig.priceChangePct >= 0 ? 'c-good' : 'c-strong'">{{ sig.priceChangePct == null ? '' : (sig.priceChangePct >= 0 ? '+' : '') + fmt(sig.priceChangePct, 2) + '%' }}</span></b></div>
         <div class="row"><span>RSI(14)</span><b :class="sig.rsi14 >= 70 ? 'c-strong' : sig.rsi14 <= 30 ? 'c-good' : ''">{{ fmt(sig.rsi14, 1) }}</b></div>
+        <div class="row"><span>Stokastik K/D</span><b>{{ fmt(sig.stochasticK, 1) }} / {{ fmt(sig.stochasticD, 1) }}</b></div>
         <div class="row"><span>Tren EMA</span><b>{{ sig.emaTrend || '–' }}</b></div>
-        <div class="row"><span>Regime broker</span><b :class="regimeW(sig.regime)[1]">{{ regimeW(sig.regime)[0] }}<template v-if="sig.regimeConf != null"> ({{ fmt(sig.regimeConf, 0) }}%)</template></b></div>
-        <div class="row"><span>Skor akumulasi bersih</span><b>{{ fmt(sig.netAccum, 0) }}</b></div>
-        <div class="row" v-if="sig.domBroker"><span>Broker dominan</span><b>{{ sig.domBroker }} <span class="muted" v-if="sig.domShare != null">({{ fmt(sig.domShare, 1) }}%)</span></b></div>
-        <div class="row" v-if="sig.assocBroker"><span>Broker afiliasi</span><b>{{ sig.assocBroker }} <span class="muted">{{ sig.assocRegime || '' }}</span></b></div>
-        <div class="row"><span>Spike volume / nilai</span><b>{{ sig.volSpike == null ? '–' : fmt(sig.volSpike, 1) + '×' }} / {{ sig.valSpike == null ? '–' : fmt(sig.valSpike, 1) + '×' }}</b></div>
-        <div class="row"><span>Likuaditas</span><b>{{ sig.liqTier || '–' }}</b><template v-if="sig.negoVal != null"><span class="lbl-inline">negosiasi</span> <b>{{ big(sig.negoVal) }}</b></template></div>
+        <div class="row"><span>Regime broker</span><b :class="regimeW(sig.regimeSignal)[1]">{{ regimeW(sig.regimeSignal)[0] }}<template v-if="sig.regimeConfidence != null"> ({{ fmt(sig.regimeConfidence, 0) }}%)</template></b></div>
+        <div class="row"><span>Skor akumulasi bersih</span><b>{{ fmt(sig.netAccumulationScore, 0) }}</b></div>
+        <div class="row" v-if="sig.dominantAccumBroker"><span>Broker dominan</span><b>{{ sig.dominantAccumBroker }} <span class="muted" v-if="sig.dominantAccumShare != null">({{ fmt(sig.dominantAccumShare, 1) }}%)</span></b></div>
+        <div class="row" v-if="sig.assocBrokerCode"><span>Broker afiliasi</span><b>{{ sig.assocBrokerCode }} <span class="muted">{{ sig.assocBrokerRegime || '' }}</span></b></div>
+        <div class="row" v-if="sig.foreignNetVal != null"><span>Arus asing</span><b :class="sig.foreignNetVal >= 0 ? 'c-good' : 'c-strong'">{{ rpFmt(sig.foreignNetVal) }}</b></div>
+        <div class="row"><span>Spike volume / nilai</span><b>{{ sig.volumeSpikeRatio == null ? '–' : fmt(sig.volumeSpikeRatio, 1) + '×' }} / {{ sig.valueSpikeRatio == null ? '–' : fmt(sig.valueSpikeRatio, 1) + '×' }}</b></div>
+        <div class="row"><span>Likuiditas</span><b>{{ sig.liquidityTier || '–' }}</b><template v-if="sig.negoTotalVal != null"><span class="lbl-inline">negosiasi</span> <b>{{ big(sig.negoTotalVal) }}</b></template></div>
       </section>
 
       <!-- Skor gems -->
       <section v-if="gems" class="ledger">
         <h3>Skor Gems</h3>
         <div class="row"><span>Skor komposit</span><b class="c-good">{{ fmt(gems.gemScore, 0) }} <span class="muted small">({{ gems.gemTier || '–' }})</span></b></div>
-        <div class="row" v-if="gems.accum7d != null"><span>Rata-rata akumulasi 7 hari</span><b>{{ fmt(gems.accum7d, 1) }}</b></div>
-        <div class="row" v-if="gems.regimeStreak != null"><span>Regime bertahan</span><b>{{ fmt(gems.regimeStreak, 0) }} hari</b></div>
-        <div class="row" v-if="gems.priceVs20dHigh != null"><span>Jarak dari puncak 20 hari</span><b>{{ fmt(gems.priceVs20dHigh, 1) }}%</b></div>
+        <div class="row" v-if="gems.accumScore7dAvg != null"><span>Rata-rata akumulasi 7 hari</span><b>{{ fmt(gems.accumScore7dAvg, 1) }}</b></div>
+        <div class="row" v-if="gems.regimeStreakDays != null"><span>Regime bertahan</span><b>{{ fmt(gems.regimeStreakDays, 0) }} hari</b></div>
+        <div class="row" v-if="gems.priceVs20dHighPct != null"><span>Jarak dari puncak 20 hari</span><b>{{ fmt(gems.priceVs20dHighPct, 1) }}%</b></div>
+        <div class="row" v-if="gems.marketCap != null"><span>Kapitalisasi pasar</span><b>{{ big(gems.marketCap) }}</b></div>
+        <div class="row" v-if="gems.daysSinceListing != null"><span>Umur listing</span><b>{{ fmt(gems.daysSinceListing, 0) }} hari</b></div>
         <p v-if="gems.evidence" class="small muted">{{ gems.evidence }}</p>
         <ul v-if="gems.breakdown && gems.breakdown.length" class="small muted">
           <li v-for="(b, i) in gems.breakdown" :key="i">{{ b }}</li>
@@ -98,6 +102,7 @@ const rpFmt = v => v == null ? '–' : big(Math.abs(v)) + (v >= 0 ? '' : ' (kelu
         <div class="row" v-if="bs.bandarNet != null"><span>Bandar (net)</span><b :class="(bs.bandarNet || 0) >= 0 ? 'c-good' : 'c-strong'">{{ rpFmt(bs.bandarNet) }}</b></div>
         <div class="row" v-if="bs.whaleNet != null"><span>Whale (net)</span><b :class="(bs.whaleNet || 0) >= 0 ? 'c-good' : 'c-strong'">{{ rpFmt(bs.whaleNet) }}</b></div>
         <div class="row" v-if="bs.retailNet != null"><span>Retail (net)</span><b :class="(bs.retailNet || 0) >= 0 ? 'c-good' : 'c-strong'">{{ rpFmt(bs.retailNet) }}</b></div>
+        <div class="row" v-if="bs.mixedNet != null"><span>Campuran (net)</span><b :class="(bs.mixedNet || 0) >= 0 ? 'c-good' : 'c-strong'">{{ rpFmt(bs.mixedNet) }}</b></div>
       </section>
     </template>
   </div>

@@ -23,6 +23,7 @@ import json
 import os
 import re
 import sqlite3
+import subprocess
 import sys
 import threading
 import time
@@ -1085,6 +1086,32 @@ def snapshot_loop() -> None:
         time.sleep(max(60, (nxt - datetime.now()).total_seconds()))
 
 
+def tsa_loop(interval: int = 3600) -> None:
+    """Segarkan data intel pasar tradersaham tiap `interval` detik (default 1 jam).
+
+    Menjalankan tsa_refresh.py sebagai proses anak; kegagalan jaringan/auth
+    tidak mematikan loop — dicatat ke stderr dan dicoba lagi pada siklus
+    berikutnya. File tsa-*.json ditimpa di tempat oleh script, dan pembacaan
+    di sisi server pakai memo 5 menit, jadi tidak perlu restart.
+    """
+    script = ROOT / "tsa_refresh.py"
+    if not script.exists():
+        print("[tsa] tsa_refresh.py tidak ada — loop dimatikan", file=sys.stderr)
+        return
+    while True:
+        try:
+            r = subprocess.run([sys.executable, str(script)], capture_output=True, text=True,
+                               timeout=600)
+            if r.returncode == 0:
+                print(f"[tsa] refresh OK: {r.stdout.strip().splitlines()[-1] if r.stdout.strip() else ''}")
+            else:
+                print(f"[tsa] refresh gagal ({r.returncode}): {(r.stderr or r.stdout).strip()[-300:]}",
+                      file=sys.stderr)
+        except Exception as e:
+            print(f"[tsa] refresh error: {e}", file=sys.stderr)
+        time.sleep(interval)
+
+
 def get_diff(days: int = 1) -> dict:
     """Perubahan tiap emiten dibanding snapshot `days` hari lalu (1 = snapshot dini hari ini = tutup kemarin)."""
     target = (datetime.now() - timedelta(days=max(0, days - 1))).strftime("%Y-%m-%d")
@@ -1752,6 +1779,7 @@ def main() -> int:
     daemon.start()
     threading.Thread(target=kandidat_loop, daemon=True).start()
     threading.Thread(target=snapshot_loop, daemon=True).start()
+    threading.Thread(target=tsa_loop, daemon=True).start()
     print(f"Radar Backdoor berjalan di http://localhost:{args.port}")
     print(f"Token Stockbit: {'terbaca' if get_token() else 'belum ada (tidak wajib untuk mode page)'}")
     if args.lan:

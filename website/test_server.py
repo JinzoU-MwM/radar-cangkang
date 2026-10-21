@@ -205,7 +205,7 @@ class TsaSummaryTest(unittest.TestCase):
         s = server.tsa_summary("ASPI")
         self.assertTrue(s["ada"])
         self.assertEqual(s["ticker"], "ASPI")
-        self.assertIn("regime", s["signals"])
+        self.assertIn("regimeSignal", s["signals"])
         self.assertFalse(server.tsa_summary("ZZZZ")["ada"])
 
 
