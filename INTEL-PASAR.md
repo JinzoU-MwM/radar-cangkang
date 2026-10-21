@@ -107,6 +107,29 @@ itu 403. Bearer + X-RQ tetap perlu.
 | `GET /one-percent/monthly-changes-summary` | ringkasan bulanan | — |
 | `GET /shareholders/changes` | perubahan pemegang ≥5% | — |
 
+### IPO & pengumuman bursa (baru 2026-10-21)
+| Endpoint | Ket | Parameter utama |
+|---|---|---|
+| `GET /ipo/listings` | daftar emiten IPO (ticker, company_name, …) | `page`, `limit` |
+| `GET /ipo/stats` | agregat IPO: total (212), dana terhimpun, avg perf | — |
+| `GET /ipo/underwriters` | daftar underwriter sekuritas | — |
+| `GET /disclosures/dividends` | jadwal dividen (ticker, title, published_date, pdf_url, summary, key_points, impact) | `limit` (efektif) |
+| `GET /disclosures/rups` | pengumuman RUPS/RIUPS — dengan ringkasan otomatis sebagian | `limit` |
+| `GET /disclosures/ownership-changes` | perubahan kepemilikan (shareholder_name, transaction_type) | `limit` |
+| `GET /disclosures/others` | pengumuman lain (kategori Shareholders/Volatility/Other) | `limit` |
+
+Catatan disclosures: `?page=`/`?offset=` diabaikan (hanya `?limit=` memengaruhi
+ukuran halaman); `?ticker=` tidak memfilter sisi server — filter didapat di
+sisi klien. Path benar `/disclosures/...` (bukan `/analytics/disclosures/...`).
+
+### Pratinjau (akun tanpa akses berbayar)
+
+`/analytics/screener/foreign-flow` mengirim `is_preview: true`: `?page=` diabaikan,
+`limit` di-clamp ke 5 — hanya sebagian kecil emiten dari total 444. Field
+`is_preview` ini yang dipakai `tsa_refresh.py` untuk berhenti dan mencatat
+cakupan; UI menampilkan catatan "Pratinjau N dari M" bila berlaku. Sumber lain
+(signals 963, gems 926, broker-scanner aktif harian) tetap penuh.
+
 ### Contoh minimal (Python, tanpa dependensi)
 
 ```python
