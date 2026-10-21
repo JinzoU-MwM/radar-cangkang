@@ -256,20 +256,45 @@ class PublicNoCache(Exception):
     """Pengunjung publik meminta data yang belum ada di cache."""
 
 
-# Pengunjung lewat domain publik (Cloudflare Tunnel) hanya boleh membaca cache:
-# tidak memanggil Stockbit/sumber berita dan tidak menulis data tim.
+# Pengunjung lewat domain publik (Cloudflare Tunnel) tidak boleh menulis data tim. Membaca data
+# Stockbit/berita boleh, tetapi dibatasi: hanya untuk emiten di radar (atau permintaan tanpa kode),
+# memakai TTL cache biasa (tanpa "fresh"), dan dalam jatah panggilan sumber per jendela waktu.
+# Di luar itu (kode di luar radar, jatah habis) pengunjung hanya mendapat salinan cache.
 _req = threading.local()
+PUBLIC_BUDGET = 150          # panggilan sumber dari pengunjung publik per jendela
+PUBLIC_WINDOW = 600          # detik
+_pub_calls: list[float] = []
+_pub_lock = threading.Lock()
 
 
 def is_public_request() -> bool:
     return getattr(_req, "public", False)
 
 
+def public_budget_ok() -> bool:
+    now = time.time()
+    with _pub_lock:
+        while _pub_calls and _pub_calls[0] < now - PUBLIC_WINDOW:
+            _pub_calls.pop(0)
+        if len(_pub_calls) >= PUBLIC_BUDGET:
+            return False
+        _pub_calls.append(now)
+        return True
+
+
+def radar_tickers() -> set[str]:
+    """Emiten yang boleh diambil datanya oleh pengunjung publik: data tim + kandidat otomatis."""
+    t = {i["ticker"] for i in items_all()}
+    if _kd_memo:
+        t |= {k["ticker"] for k in _kd_memo[1].get("items", [])}
+    return t
+
+
 def cached_text(url: str, fetch, fresh: bool = False) -> str:
     """Ambil dari cache bila segar; bila tidak, jalankan fetch lalu simpan.
     Bila fetch gagal, salinan lama dipakai daripada error."""
     now = int(time.time())
-    if is_public_request():
+    if is_public_request() and not getattr(_req, "public_fetch", False):
         hit = cache_read(url, 0)
         if hit is None:
             raise PublicNoCache("Data ini belum tersedia di versi publik.")
@@ -283,6 +308,11 @@ def cached_text(url: str, fetch, fresh: bool = False) -> str:
         hit = cache_read(url, 0)
     if hit is not None:
         _stat(_hits)
+        return hit
+    if is_public_request() and not public_budget_ok():
+        hit = cache_read(url, 0)
+        if hit is None:
+            raise PublicNoCache("Versi publik sedang ramai; coba lagi beberapa menit lagi.")
         return hit
     global _upstream_n
     try:
@@ -1199,18 +1229,25 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802
         _req.public = self.is_public()
+        _req.public_fetch = False
         try:
             if not self.is_local():
                 self.reply(b"", 403)
                 return
             path = urllib.parse.unquote(urllib.parse.urlparse(self.path).path.lstrip("/"))
             fresh = self.qs("fresh") == "1" and not _req.public
+            if _req.public and path.startswith("api/"):
+                # Pengunjung publik boleh memicu ambil data untuk emiten di radar (lihat cached_text).
+                t = self.qs("ticker").upper()
+                deals = [d.split(":")[0] for d in self.qs("deals").upper().split(",") if d]
+                wanted = ([t] if t else []) + deals
+                _req.public_fetch = all(x in radar_tickers() for x in wanted)
             if path.startswith("api/"):
                 self.handle_api(path, fresh)
                 return
             self.serve_static(path)
-        except PublicNoCache:
-            self.reply_json({"error": "Data ini belum tersedia di versi publik."}, 503)
+        except PublicNoCache as e:
+            self.reply_json({"error": str(e) or "Data ini belum tersedia di versi publik."}, 503)
         except Exception as e:
             print(f"[error] {self.path}: {e}", file=sys.stderr)
             try:

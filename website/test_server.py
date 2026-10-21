@@ -147,6 +147,22 @@ class CacheTest(unittest.TestCase):
         finally:
             server._req.public = False
 
+    def test_public_fetch_radar_with_budget(self):
+        url = "https://exodus.stockbit.com/emitten/APEX/profile"
+        server._req.public, server._req.public_fetch = True, True
+        old = server.PUBLIC_BUDGET
+        try:
+            calls = []
+            self.assertEqual(server.cached_text(url, lambda: calls.append(1) or "baru"), "baru")
+            self.assertEqual(server.cached_text(url, lambda: calls.append(1) or "lagi"), "baru")  # TTL biasa
+            self.assertEqual(len(calls), 1)
+            server.PUBLIC_BUDGET = 0  # jatah habis: tanpa cache = PublicNoCache
+            with self.assertRaises(server.PublicNoCache):
+                server.cached_text(url + "x", lambda: self.fail("jatah habis, tidak boleh memanggil"))
+        finally:
+            server.PUBLIC_BUDGET = old
+            server._req.public, server._req.public_fetch = False, False
+
     def test_failure_backoff_uses_stale(self):
         url = "https://exodus.stockbit.com/stream/v3/symbol/NAYZ"
         server.cache_write(url, "lama")
