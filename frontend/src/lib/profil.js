@@ -46,9 +46,58 @@ export function chainLayers(struktur) {
   return [...by.entries()].sort((a, b) => a[0] - b[0]).map(([lapis, items]) => ({ lapis, items }))
 }
 
-// Jumlah pengurus dan berapa yang orang pengendali baru.
+// Gabungkan pengurus hasil riset dengan daftar pengurus terkini Stockbit (KSEI). sb: { directors, commissioners },
+// nama berlabel jabatan khusus, mis. "BUDI (Direktur Utama)" atau "SITI (independen)".
+// - cocok di kedua sumber → jabatan utama dari Stockbit dipakai bila riset tidak menyebutnya;
+// - hanya di Stockbit → ditambahkan (fromStockbit) agar Direktur/Komisaris Utama tidak terlewat;
+// - hanya di riset padahal Stockbit punya daftar → ditandai notListed (kemungkinan sudah diganti).
+const boardKey = s => String(s || '').toUpperCase().replace(/\(.*?\)/g, ' ')
+  .replace(/\b(DR|IR|DRS|PROF|HJ|SE|MM|AK|MAK|SKOM)\b\.?|[.,]/g, ' ').replace(/\s+/g, ' ').trim()
+const sameBoard = (a, b) => {
+  const x = boardKey(a), y = boardKey(b)
+  if (!x || !y) return false
+  if (x === y || x.includes(y) || y.includes(x)) return true
+  const tx = x.split(' '), ty = y.split(' ')
+  return tx.filter(w => ty.includes(w)).length >= Math.min(2, tx.length, ty.length)
+}
+const titleCase = s => String(s || '').toLowerCase().replace(/(^|[\s'-])(\p{L})/gu, (m, a, c) => a + c.toUpperCase())
+function sbRows(list, grp) {
+  return (list || []).map(s => {
+    const m = String(s).match(/^(.*?)\s*\(([^)]*)\)\s*$/)
+    const name = (m ? m[1] : String(s)).trim(), label = m ? m[2] : ''
+    const independen = /independen/i.test(label)
+    const base = label.replace(/,?\s*independen/i, '').trim()
+    const jabatan = base || (grp === 'direksi' ? 'Direktur' : independen ? 'Komisaris Independen' : 'Komisaris')
+    return { name, jabatan, independen, utama: /utama/i.test(label) }
+  })
+}
+export function mergeBoard(pengurus, sb) {
+  const out = { direksi: [...(pengurus?.direksi || [])], komisaris: [...(pengurus?.komisaris || [])] }
+  if (!sb) return out
+  for (const [grp, list] of [['direksi', sb.directors], ['komisaris', sb.commissioners]]) {
+    const rows = sbRows(list, grp)
+    if (!rows.length) continue
+    const ours = out[grp].map(x => ({ ...x }))
+    for (const x of ours) {
+      const hit = rows.find(r => !r.used && sameBoard(r.name, x.nama))
+      if (!hit) { x.notListed = true; continue }
+      hit.used = true
+      if (hit.utama && !/utama|presiden/i.test(x.jabatan || '')) x.jabatan = hit.jabatan
+    }
+    const added = rows.filter(r => !r.used).map(r => ({
+      nama: titleCase(r.name), jabatan: r.jabatan, independen: r.independen, fromStockbit: true,
+      latar: 'Tercantum di profil emiten (data KSEI via Stockbit); profil orang ini belum diriset.',
+    }))
+    // Jabatan utama di atas; yang tidak lagi tercantum di bawah.
+    const rank = x => (/utama|presiden/i.test(x.jabatan || '') ? 0 : 1) + (x.notListed ? 2 : 0)
+    out[grp] = [...added, ...ours].sort((a, b) => rank(a) - rank(b))
+  }
+  return out
+}
+
+// Jumlah pengurus dan berapa yang orang pengendali baru (yang tidak lagi tercantum tidak dihitung).
 export function boardStats(pengurus) {
-  const all = [...(pengurus?.direksi || []), ...(pengurus?.komisaris || [])]
+  const all = [...(pengurus?.direksi || []), ...(pengurus?.komisaris || [])].filter(x => !x.notListed)
   return { n: all.length, baru: all.filter(x => x.orangPengendaliBaru).length }
 }
 

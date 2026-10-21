@@ -15,6 +15,7 @@ import TabProfil from '../components/emiten/TabProfil.vue'
 import TabBerita from '../components/emiten/TabBerita.vue'
 import TabIntel from '../components/emiten/TabIntel.vue'
 import TabDownload from '../components/emiten/TabDownload.vue'
+import TabInsider from '../components/emiten/TabInsider.vue'
 import { api } from '../api.js'
 
 const props = defineProps({ ticker: { type: String, required: true } })
@@ -24,6 +25,7 @@ const router = useRouter()
 const TABS = [
   { id: 'ringkasan', name: 'Ringkasan' },
   { id: 'story', name: 'Story & Pengendali' },
+  { id: 'insider', name: 'Insider Activity' },
   { id: 'analisa', name: 'Analisa' },
   { id: 'teknikal', name: 'Teknikal' },
   { id: 'spekulasi', name: 'Spekulasi' },
@@ -175,6 +177,7 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
         <p v-if="!known && RADAR_ONLY.includes(tab)" class="muted none">{{ T }} belum ada di radar, jadi {{ tab === 'story' ? 'story dan pengendali' : 'ringkasan transaksi' }} belum ada. Tab Analisa, Teknikal, Spekulasi, Profil, dan Berita tetap memakai data Stockbit.</p>
         <TabRingkasan v-else-if="tab === 'ringkasan'" :ticker="T" />
         <TabStory v-else-if="tab === 'story'" :ticker="T" @flow="openFlow" />
+        <TabInsider v-else-if="tab === 'insider'" :ticker="T" />
         <TabAnalisa v-else-if="tab === 'analisa'" :ticker="T" />
         <TabTeknikal v-else-if="tab === 'teknikal'" :ticker="T" />
         <TabSpekulasi v-else-if="tab === 'spekulasi'" :ticker="T" @goto="pick" />

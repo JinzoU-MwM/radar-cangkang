@@ -28,7 +28,7 @@
                                     "atas":  75,
                                     "metode":  "Bawah: median radar 0,78× harga PTW Rp75 (SPV luar negeri/injeksi ≥Rp1 T baru diumumkan); atas: harga PTW Rp75 sebagai lantai pengendali, sejalan dengan nilai buku pasca-inbreng sekitar Rp70."
                                 },
-                 "pengendaliBergerak":  "PT Asia Intrainvesta (pengendali lama) terus melepas: 66,90% → 19,27% lewat 25 transaksi jual hingga 13 Okt 2026 (harga terakhir sekitar Rp103); Saiko diam di 29,41% sejak pembelian 19 Agu 2026 di Rp23,5.",
+                 "pengendaliBergerak":  "PT Asia Intrainvesta (pengendali lama) terus melepas: 66,90% → 19,27% lewat 27 transaksi jual hingga 15 Okt 2026 (harga terakhir sekitar Rp103; KSEI bulanan masih mencatat 24,74%); Saiko diam di 29,41% sejak pembelian 19 Agu 2026 di Rp23,5.",
                  "likuiditas":  "Nilai transaksi rata-rata sekitar Rp4,94 M/hari; keluar Rp100 juta dengan 20% volume butuh sekitar 0,1 hari.",
                  "variabelKunci":  [
                                        "Nilai BTL menurut penilai independen dan laporan keuangan audit BTL",
@@ -150,7 +150,7 @@
     "INPS":  {
                  "sikap":  "Hindari",
                  "ringkas":  "Private placement 1,25 miliar saham di Rp100 (diskon 91% dari Rp1.065) menyiratkan nilai per saham pasca-transaksi sekitar Rp43, sementara pengendali sudah melepas saham sejak PTW.",
-                 "tesis":  "GIGP membeli 87,48% senilai Rp50,5 M (sekitar Rp89/saham), PTW Rp552 hampir tak terserap, lalu pengendali turun ke 65,86% lewat 22 transaksi jual. Kini emiten akan menerbitkan hingga 1,25 miliar saham baru di Rp100 kepada pemodal yang belum diungkap; saham beredar naik dari 650 juta menjadi 1,9 miliar. Ekuitas saat ini negatif Rp43 M, sehingga nilai buku pasca-placement hanya sekitar (−Rp43 M + Rp125 M) ÷ 1,9 miliar ≈ Rp43. Harga Rp1.065 adalah 1,93× PTW dan sekitar 25× nilai buku pasca-transaksi; injeksi \u003cRp300 M di radar bermedian 0,68× harga PTW (sekitar Rp375). Yang diuntungkan adalah penerima placement di Rp100 dan pengendali yang sudah merealisasi.",
+                 "tesis":  "GIGP membeli 87,48% senilai Rp50,5 M (sekitar Rp89/saham), PTW Rp552 hampir tak terserap, lalu pengendali turun ke 65,86% lewat 22 transaksi jual. Kini emiten akan menerbitkan hingga 1,25 miliar saham baru di Rp100 kepada pemodal tunggal PT Graha Inti Guna Persada (pengendali); saham beredar naik dari 650 juta menjadi 1,9 miliar. Ekuitas saat ini negatif Rp43 M, sehingga nilai buku pasca-placement hanya sekitar (−Rp43 M + Rp125 M) ÷ 1,9 miliar ≈ Rp43. Harga Rp1.065 adalah 1,93× PTW dan sekitar 25× nilai buku pasca-transaksi; injeksi \u003cRp300 M di radar bermedian 0,68× harga PTW (sekitar Rp375). Yang diuntungkan adalah penerima placement di Rp100 dan pengendali yang sudah merealisasi.",
                  "dilusi":  {
                                 "berlaku":  true,
                                 "asumsi":  "Placement penuh 1,25 miliar saham di Rp100 (angka resmi), publik tidak ikut.",
@@ -244,7 +244,7 @@
                                     "atas":  261,
                                     "metode":  "PER 10–15× atas EPS tahunan Rp17,41."
                                 },
-                 "pengendaliBergerak":  "Praktis diam: hanya Hendra Suryakusuma menjual tipis 2,03% → 1,98% (Jan 2026 di Rp428); pengendali menyatakan tidak berencana mengubah porsi.",
+                 "pengendaliBergerak":  "Praktis diam: hanya Hendra Suryakusuma menjual tipis 2,03% → 1,98% (Jan 2026 di Rp428), kini 1,90% per KSEI Okt 2026; pengendali menyatakan tidak berencana mengubah porsi.",
                  "likuiditas":  "Nilai transaksi rata-rata sekitar Rp8,13 M/hari; keluar Rp100 juta dengan 20% volume butuh sekitar 0,06 hari.",
                  "variabelKunci":  [
                                        "Pemulihan pendapatan (−18,8% YoY) dan target margin 25%",
@@ -277,7 +277,7 @@
                                     "atas":  156,
                                     "metode":  "Bawah: nilai buku per saham Rp57,1; atas: harga PTW Rp156 sebagai lantai pengendali."
                                 },
-                 "pengendaliBergerak":  "PT Mandara Mas Semesta (pengendali lama) turun 77,54% → 24,10% (4 transaksi, Des 2025–Mar 2026) dan Hartono Limmantoro keluar; Radiant Ruby naik ke 51% lalu diam sejak Mar 2026.",
+                 "pengendaliBergerak":  "PT Mandara Mas Semesta (pengendali lama) turun 77,54% → 24,10% (2 transaksi: blok 24 Des 2025 dan penjualan 17 Mar 2026) dan Hartono Limmantoro keluar; Radiant Ruby naik ke 51% lalu diam sejak Mar 2026.",
                  "likuiditas":  "Nilai transaksi rata-rata sekitar Rp220 juta/hari; keluar Rp100 juta dengan 20% volume butuh sekitar 2,3 hari.",
                  "variabelKunci":  [
                                        "Perubahan KBLI dan rencana PMHMETD/inbreng aset digital",
@@ -376,7 +376,7 @@
                                     "atas":  740,
                                     "metode":  "Bawah: nilai buku per saham Rp84,71; atas: harga tender sukarela Rp740 sebagai harga kendali."
                                 },
-                 "pengendaliBergerak":  "Guna Makmur Raya (pengendali lama) menjual 64,15% → 25,17% (Nov 2025–Apr 2026); PRK masuk 15% dan Hakimson 5,01% (18–21 Sep 2026); empat pihak masing-masing 5% masuk April 2026 di sekitar Rp198.",
+                 "pengendaliBergerak":  "Guna Makmur Raya (pengendali lama) menjual 64,15% → 25,17% (Nov 2025–Apr 2026); PRK masuk 15% dan Hakimson 5,01% (18–21 Sep 2026); tiga pengurus CBRE (Suganto Gunawan, Suwito, Suminto Husin Giman) masing-masing 5% masuk April 2026 di sekitar Rp198 (keterbukaan juga menyebut Republik Capital Indonesia, yang tidak tercatat di daftar KSEI ≥1% terkini).",
                  "likuiditas":  "Nilai transaksi rata-rata sekitar Rp3,45 M/hari (≈0,14 hari untuk Rp100 juta pada 20% volume), tetapi volume hari ini nol dan harga diam di Rp2.580 sejak 30 Sep 2026, indikasi penghentian perdagangan sehingga keluar praktis tertahan.",
                  "variabelKunci":  [
                                        "Pernyataan efektif OJK dan hasil tender sukarela",
@@ -416,7 +416,7 @@
                                     "atas":  1,
                                     "metode":  "Nilai buku per saham pasca-konversi ≈ Rp0,99, dibulatkan ke harga minimum bursa Rp1."
                                 },
-                 "pengendaliBergerak":  "HBEH masuk 64,85% dan Mantra Capital 15,19% sekaligus via PMTHMETD (30 Sep 2026); Sun International Capital tetap 6,25%. Tidak ada transaksi pasar.",
+                 "pengendaliBergerak":  "HBEH masuk 64,85% dan Mantra Capital 15,19% sekaligus via PMTHMETD (30 Sep 2026); Sun International Capital (6,25% per keterbukaan Mei 2026) ikut terdilusi dan tidak lagi tercatat ≥1% di KSEI Okt 2026. Tidak ada transaksi pasar.",
                  "likuiditas":  "Rata-rata volume nol (harga Rp1, status suspensi); posisi Rp100 juta praktis tidak dapat dilepas.",
                  "variabelKunci":  [
                                        "Pembukaan suspensi dan rencana reverse split",
@@ -456,7 +456,7 @@
                                     "atas":  150,
                                     "metode":  "Nilai buku: BVPS tercatat Rp70 (bawah) hingga NAV pasca-PP Rp108 × PBV maks 1,4× untuk aset sewa berkontrak (atas)."
                                 },
-                 "pengendaliBergerak":  "PIMSF naik 25,5%→42,4% (10 beli/3 jual), termasuk menjual 80 jt saham @Rp360 pada 6 Mei 2026 lalu menyerap PP @Rp427; pengendali lama Karnadi Margaka keluar penuh (27%→0) Okt 2025. Pemegang baru ≥5% (Elisa Wenardjo 5,63%, Wicahyo Ratomo 5,05%, Triple Berkah Bersama 5,17%) masuk bertahap Mei–Agu 2026.",
+                 "pengendaliBergerak":  "PIMSF masuk 14–17 Okt 2025 lewat pembelian 45,45% dari Karnadi Margaka @±Rp66, menambah hingga ±48,95%, menjual 80 jt saham @Rp360 pada 6 Mei 2026 (→36,95%), lalu menyerap seluruh PMTHMETD 66,67 jt @Rp427 (Jul 2026) sehingga kini 42,40% (310,98 jt saham). Pengendali lama Karnadi Margaka keluar penuh (52,49%→0) 14–16 Okt 2025; sebagian sisanya ke Triple Berkah Bersama (5,17%, 16 Okt 2025). Elisa Wenardjo (sempat 5,63%, Mei–Jul 2026) dan Wicahyo Ratomo (sempat 5,05%, Agu 2026) tidak lagi tercantum di daftar ≥5% KSEI; per Sep 2026 Triple Berkah Bersama tercatat 1,90% dan Berlian Tambang Indonesia 1,77% (keduanya masuk bulan itu).",
                  "likuiditas":  "Nilai transaksi harian ±Rp6,55 M (27,3 jt lembar × Rp240); posisi Rp100 juta keluar \u003c 1 hari pada 20% volume.",
                  "variabelKunci":  [
                                        "Kewajaran nilai aset JIC Rp78,5 M dan kemampuan JIC membayar sewa Rp9,3 M/tahun",
@@ -744,7 +744,7 @@
                                     "atas":  8880,
                                     "metode":  "NAV pasca-rights Rp1.213 (bawah) hingga harga pelaksanaan rights Rp8.880 sebagai harga yang disetor pengendali untuk modal segar (atas)."
                                 },
-                 "pengendaliBergerak":  "NDC 0%→78,75% (9 Feb 2026) lalu turun ke 62,71% dengan 2 beli/27 jual hingga 22 Sep 2026; entri \u0027Putra Batee\u0027 71,28%→67,66% (3 jual @±Rp7.250, Agu 2026) menegaskan distribusi pengendali ke pasar.",
+                 "pengendaliBergerak":  "NDC 0%→78,75% (9 Feb 2026) lalu turun ke 62,71% dengan 2 beli/27 jual hingga 22 Sep 2026; entri keterbukaan atas nama \u0027Putra Batee\u0027 (Direktur; indikasi pelapor untuk NDC, bukan pemegang ≥5% tersendiri) 71,28%→67,66% (3 jual @±Rp7.250, Agu 2026) menegaskan distribusi pengendali ke pasar.",
                  "likuiditas":  "Nilai transaksi harian ±Rp17,8 M (1,39 jt lembar × Rp12.775); keluar Rp100 juta \u003c 1 hari pada 20% volume.",
                  "variabelKunci":  [
                                        "Serapan rights issue oleh NDC dan sumber dananya",
@@ -783,7 +783,7 @@
                                     "atas":  160,
                                     "metode":  "NAV pasca-transaksi dilusi penuh di Rp91 (bawah) hingga BVPS kini Rp160 bila akuisisi batal dan pinjaman Rp30 M kembali (atas)."
                                 },
-                 "pengendaliBergerak":  "Vina Nauli Jordania keluar 44,98%→0 (13 jual Okt 2025–Apr 2026, sebagian ke LSO @Rp37); LSO diam di 25%; direktur Lim Wee Beng Eddie masuk 5,00% (Apr 2026) dan Bondra Uji Pratama menambah ke 5,01% @Rp95 (13 Okt 2026).",
+                 "pengendaliBergerak":  "Vina Nauli Jordania keluar 44,98%→0 (13 jual Okt 2025–Apr 2026, sebagian ke LSO @Rp37); LSO diam di 25%; direktur Lim Wee Beng Eddie masuk 5,00% (Apr 2026; kini tidak tercatat di daftar KSEI ≥1% atas nama sendiri) dan Bondra Uji Pratama menambah ke 5,03% (keterbukaan 13–16 Okt 2026; KSEI bulanan sebelumnya 4,99%).",
                  "likuiditas":  "Nilai transaksi harian ±Rp542 juta (5,96 jt lembar × Rp91); keluar Rp100 juta ±1 hari pada 20% volume.",
                  "variabelKunci":  [
                                        "Valuasi independen PAA vs estimasi USD100 jt",
@@ -855,7 +855,7 @@
                                     "atas":  300,
                                     "metode":  "PBV 1,0× atas BVPS Rp152 (bawah) hingga ±2,0× BV untuk holding nikel dengan porsi minoritas tambang (asumsi analis), dicek silang dengan PER ±27× atas EPS tahunan Rp11,2 (atas)."
                                 },
-                 "pengendaliBergerak":  "EEP turun 47,16%→38,57% (5 beli/2 jual, s.d. 2 Okt 2026); Haji Isam (H Samsudin Andi Arsyad) mengakumulasi 0→20,04% (Mei–Sep 2026); DBS SG-PB Clients masuk 5,66% lalu bertransaksi keluar-masuk Mar 2026.",
+                 "pengendaliBergerak":  "EEP turun 47,16%→38,57% (5 beli/2 jual, s.d. 2 Okt 2026); Haji Isam (H Samsudin Andi Arsyad) mengakumulasi 0→20,04% (Mei–Sep 2026); DBS SG-PB Clients masuk 5,66% lalu bertransaksi keluar-masuk Mar 2026 (KSEI Okt 2026: DBS Bank 1,74%); Providentia tidak lagi tercatat ≥1%.",
                  "likuiditas":  "Nilai transaksi harian ±Rp90,7 M (224,6 jt lembar × Rp404); keluar Rp100 juta \u003c 1 hari pada 20% volume.",
                  "variabelKunci":  [
                                        "Kualitas laba: kontribusi kas/dividen dari 14,625% KKU dan Konutara vs laba non-kas",
@@ -1166,8 +1166,8 @@
              },
     "KRYA":  {
                  "sikap":  "Hindari",
-                 "ringkas":  "Red flag tata kelola berlapis (komisaris dideportasi, pengendali menyusut dari sekitar 62% menjadi 22,70%, RUPS gagal kuorum), ditambah rencana rights Rp300 M yang di harga pasar menyisakan publik sekitar 14%.",
-                 "tesis":  "Green City SG masuk sekitar Rp33 per saham (sekitar 62%), tetapi kini hanya tercatat 22,70%. Grup Green City dan Green Power melepas puluhan kali sepanjang November 2025–April 2026, sehingga pengendali adalah penjual utama. Komisaris Utama An Shaohong dideportasi, RUPS gagal kuorum pada Juli dan Agustus 2026, serta komisaris independen dan direktur mundur. Pendapatan TTM Rp53 M dengan rugi Rp21 M, aset turun 33%, dan liabilitas naik 37% karena konsolidasi Green City Traffic (ECGO). Rights issue sekitar Rp300 M, hampir 4 kali kapitalisasi Rp80 M, untuk menebalkan porsi GCSG berarti publik harus menyetor besar atau terdilusi masif. PBV 3,04 kali tidak didukung arus kas.",
+                 "ringkas":  "Red flag tata kelola berlapis (komisaris dideportasi, pengendali menyusut dari 41% menjadi 22,70% (sempat 9,75%), RUPS gagal kuorum), ditambah rencana rights Rp300 M yang di harga pasar menyisakan publik sekitar 14%.",
+                 "tesis":  "Green City SG masuk sekitar Rp33 per saham (41%, ditambah LABA 17%), tetapi kini hanya tercatat 22,70%. Grup Green City dan Green Power melepas puluhan kali sepanjang November 2025–April 2026, sehingga pengendali adalah penjual utama. Komisaris Utama An Shaohong dideportasi, RUPS gagal kuorum pada Juli dan Agustus 2026, serta komisaris independen dan direktur mundur. Pendapatan TTM Rp53 M dengan rugi Rp21 M, aset turun 33%, dan liabilitas naik 37% karena konsolidasi Green City Traffic (ECGO). Rights issue sekitar Rp300 M, hampir 4 kali kapitalisasi Rp80 M, untuk menebalkan porsi GCSG berarti publik harus menyetor besar atau terdilusi masif. PBV 3,04 kali tidak didukung arus kas.",
                  "dilusi":  {
                                 "berlaku":  true,
                                 "asumsi":  "Rights issue Rp300 M (rencana, belum resmi) pada harga pasar Rp48, dan publik tidak menebus.",
@@ -1189,7 +1189,7 @@
                                     "atas":  33,
                                     "metode":  "Bawah: BVPS Rp15,77. Atas: harga akuisisi pengendali sekitar Rp33 (media), referensi lantai yang dibayar pihak terinformasi."
                                 },
-                 "pengendaliBergerak":  "Green City SG (PTE LTD) turun dari 28,98% menjadi 9,75% (6 penjualan), dan Green Power Group dari 17% menjadi 5,28% (27 penjualan hingga April 2026). Entri Green City SG lain tercatat 10,68%, dan data kepemilikan tidak konsisten. Satu-satunya pembeli adalah Hok Gwan (Dharmo Budiono), dari 9,52% menjadi 10,02%.",
+                 "pengendaliBergerak":  "Green City SG (PTE LTD) turun dari 28,98% menjadi 9,75% (6 penjualan), dan Green Power Group dari 17% menjadi 5,28% (27 penjualan hingga April 2026) dan per KSEI Okt 2026 tinggal 1,57%. Per KSEI Okt 2026 Green City SG tercatat 22,70% (377,79 juta saham), tidak sejalan dengan keterbukaan terakhir (10,68%). Satu-satunya pembeli adalah Hok Gwan (Dharmo Budiono), dari 9,52% menjadi 10,02%.",
                  "likuiditas":  "Nilai transaksi harian sekitar Rp2,04 M (42,4 juta lembar × Rp48); posisi Rp100 juta keluar dalam sekitar 0,25 hari pada 20% volume.",
                  "variabelKunci":  [
                                        "Realisasi rights Rp300 M: harga, pembeli siaga, dan apakah GCSG benar-benar menyetor",
@@ -1267,7 +1267,7 @@
                                     "atas":  83,
                                     "metode":  "PBV 1,0–1,5 kali atas BVPS Rp55,52; batas atas mengasumsikan target pendapatan 2026 sebagian tercapai dengan margin positif."
                                 },
-                 "pengendaliBergerak":  "SAV turun dari 66,83% menjadi 54,54% (33 beli, 23 jual; terakhir September 2026). Tjeuw Heryanto mengakumulasi dari 0 menjadi 5,07% (16 beli, 8 jual hingga 8 Oktober 2026; profil 7,07%), dan Wahyu Dwi Jatmiko kecil membeli. Pendiri bersih menjual, sementara investor individu besar menampung.",
+                 "pengendaliBergerak":  "SAV turun dari 66,83% menjadi 54,54% (33 beli, 23 jual; terakhir September 2026). Tjeuw Heryanto mengakumulasi dari 0 menjadi 5,59% menurut keterbukaan terakhir (15 Oktober 2026; KSEI 7,07%), dan Wahyu Dwi Jatmiko kecil membeli. Pendiri bersih menjual, sementara investor individu besar menampung.",
                  "likuiditas":  "Nilai transaksi harian sekitar Rp1,22 M (19,06 juta lembar × Rp64); posisi Rp100 juta keluar dalam sekitar 0,4 hari pada 20% volume.",
                  "variabelKunci":  [
                                        "Identitas pembeli PMTHMETD dan kuorum RUPSLB 19 Oktober 2026",
@@ -1300,7 +1300,7 @@
                                     "atas":  3520,
                                     "metode":  "Bawah: harga tender wajib dan akuisisi Rp2.915. Atas: PBV 1,5 kali atas BVPS Rp2.347 (sekitar Rp3.520), sejalan dengan PER sekitar 15 kali atas EPS Rp232,9 (sekitar Rp3.494)."
                                 },
-                 "pengendaliBergerak":  "Wibowo Group Capital naik dari 0 menjadi 82,50% (3 pembelian, 31 Juli 2026, di Rp2.914). Tidak ada penjualan sesudahnya, dan porsi publik masih 17,50% (hasil tender belum tercermin sebagai penambahan).",
+                 "pengendaliBergerak":  "Wibowo Group Capital naik dari 0 menjadi 82,50% (31 Juli 2026, di Rp2.914,25), lalu 90,09% setelah tender wajib selesai 15 Oktober 2026 (132,84 juta saham, Rp2.915). Tidak ada penjualan sesudahnya; porsi publik tinggal sekitar 9,91% (data KSEI bulanan masih 82,50% karena belum memuat hasil tender).",
                  "likuiditas":  "Nilai transaksi harian sekitar Rp11,4 M (3,12 juta lembar × Rp3.660); posisi Rp100 juta keluar dalam kurang dari 0,1 hari.",
                  "variabelKunci":  [
                                        "Penggunaan kas Rp2,14 T: dividen versus transaksi afiliasi dengan Gandasari",
@@ -1367,7 +1367,7 @@
                                     "atas":  523,
                                     "metode":  "PBV 1–2× atas BVPS Rp261,59 untuk perusahaan investasi yang merugi tanpa portofolio terungkap; harga MTO Rp183 sebagai lantai historis pengendali."
                                 },
-                 "pengendaliBergerak":  "Blok 26,87% masuk 16 Des 2025 (di data insider tercatat atas nama berbeda dari daftar pemegang saham, kemungkinan alias/perantara); sejak itu pengendali diam, sementara pemegang lama Bhinneka Life (10,44% → 6,69%) dan Sukses Makmur Jayapratama (10,67% → 7,54%, Mar 2026) terus melepas.",
+                 "pengendaliBergerak":  "Blok 26,87% masuk 16 Des 2025 (di data insider tercatat atas nama berbeda dari daftar pemegang saham, kemungkinan alias/perantara); sejak itu pengendali diam, sementara pemegang lama Bhinneka Life (10,44% → 6,69%, kini tidak lagi tercatat ≥1% di KSEI) dan Sukses Makmur Jayapratama (10,67% → 7,54%, Mar 2026) terus melepas.",
                  "likuiditas":  "Nilai transaksi harian ±Rp584 jt (592.702 lembar × Rp985); keluar Rp100 jt dengan 20% volume butuh \u003c1 hari (±0,9 hari).",
                  "variabelKunci":  [
                                        "Isi portofolio investasi dan identitas/rekam jejak UBO Alan R.B.",
@@ -1487,7 +1487,7 @@
                  "tesis":  "PMHMETD I (rasio 168:117, Rp238/saham) menerbitkan 996,68 jt saham baru dan menghimpun Rp237,21 M (bersih Rp235,49 M); saham beredar menjadi 2,43 M. Keluarga Sutiono (Andri 38,90% dan Hasim 38,81%) ditambah Sandra Angelia 8,07% kini menguasai ±86%, sehingga free float tinggal 13,98%. Yang diuntungkan struktur ini adalah kreditur afiliasi PT Bara Alam Utama: alokasi pelunasan utang dinaikkan menjadi Rp142,06 M (60,33%), sehingga hanya ±Rp92 M yang tersisa untuk bisnis. Operasional tumbuh (sales volume H1 2026 Rp1,19 T, +257%; laba kotor Rp19 M), tetapi rugi 2025 membesar menjadi Rp67,7 M. Pada Rp244 (1,03× harga rights), pasar menghargai dukungan pengendali dan float yang ketat, bukan laba.",
                  "dilusi":  {
                                 "berlaku":  true,
-                                "asumsi":  "Sudah dieksekusi Juli 2026. Ekuitas Rp−38 M di data diasumsikan posisi sebelum dana rights masuk (30 Juni 2026); porsi publik pra-rights dihitung dari data insider (Andri 30,48% + Hasim 26,65% + Sandra Angela 6,85%).",
+                                "asumsi":  "Sudah dieksekusi Juli 2026. Ekuitas Rp−38 M di data diasumsikan posisi sebelum dana rights masuk (30 Juni 2026); porsi publik pra-rights dihitung dari data insider (Andri 30,48% + Hasim 26,65% + Sandra Angelia 6,85%).",
                                 "sahamSekarang":  1431524196,
                                 "sahamBaru":  996680000,
                                 "porsiPublikSekarang":  36.02,
@@ -1546,7 +1546,7 @@
                                     "atas":  1174,
                                     "metode":  "PBV 1–3× atas BVPS Rp391 untuk telko/FTTH berleverage naik; cek silang 40× laba TTM Rp590 M ≈ Rp494/saham, masih di dalam rentang."
                                 },
-                 "pengendaliBergerak":  "IMU masuk 48,37% melalui merger (22 Apr 2026); Candrakarya (40,83% → 17,81%) dan Gema Lintas Benua (30,18% → 14,94%) turun terutama karena dilusi tanpa penjualan besar, sementara XLSmart tercatat masuk 18,32% (Des 2025) tetapi tidak lagi muncul di daftar pemegang saham terkini; perlu verifikasi.",
+                 "pengendaliBergerak":  "IMU masuk 48,37% melalui merger (22 Apr 2026); Candrakarya (40,83% → 17,81%) dan Gema Lintas Benua (30,18% → 14,94%) turun terutama karena dilusi tanpa penjualan besar, sementara XLSmart justru melepas seluruh 18,32% pada 4 Des 2025 (rata-rata Rp432/saham, pembeli tidak diumumkan), sehingga tidak lagi muncul di daftar pemegang saham.",
                  "likuiditas":  "Nilai transaksi harian ±Rp1,57 M (344.794 lembar × Rp4.550); keluar Rp100 jt dengan 20% volume butuh ±0,3 hari, tetapi kedalaman pasar sangat rentan karena float efektif \u003c5%.",
                  "variabelKunci":  [
                                        "Kewajiban/rencana penambahan free float (penempatan atau divestasi blok akan menekan harga)",
@@ -1651,7 +1651,7 @@
                                     "atas":  529,
                                     "metode":  "Bawah: BVPS Rp121,96. Atas: harga MTO Rp529 yang ditawarkan pengendali (±4,3× nilai buku, sudah memuat premi kendali)."
                                 },
-                 "pengendaliBergerak":  "GX Archipelago masuk bertahap ke 29,5% (2 kali beli, Nov 2025–Mar 2026) lalu diam; tidak ada pemegang ≥5% lain yang tercatat bergerak.",
+                 "pengendaliBergerak":  "GX Archipelago masuk bertahap ke 29,5% (2 kali beli, Nov 2025–Mar 2026; pembelian kedua hanya 75 saham dari MTO) lalu diam; tidak ada pemegang ≥5% lain yang tercatat bergerak.",
                  "likuiditas":  "Nilai transaksi harian hanya ±Rp43 jt (26.866 lembar × Rp1.600); keluar Rp100 jt dengan 20% volume butuh ±11,6 hari bursa.",
                  "variabelKunci":  [
                                        "Pengungkapan identitas UBO Michael A.N. dan rencana bisnis GX Archipelago",

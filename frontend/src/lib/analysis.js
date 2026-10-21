@@ -76,7 +76,17 @@ export function buildAnalysis({ ticker: t, item: d, profile: p, reports: reps = 
   const dims = [], bull = [], bear = [], checks = [], exits = [];
 
   // Pergerakan pemegang ≥5% (365 hari): pengendali menambah/menjual, dan penjual besar lain (mis. pengendali lama).
-  const holders = ins?.holders || [];
+  // Keterbukaan ≥5% berhenti begitu porsi turun di bawah 5%, sehingga porsi terakhir bisa basi. Pemegang yang tidak
+  // lagi tercantum di daftar pemegang ≥5% Stockbit ditandai below5 (porsi kini di bawah 5%).
+  const curKeys = (p.shareholders || []).map(h => normName(h.name)).filter(k => k.length > 3);
+  const listedNow = n => curKeys.some(k => n.includes(k) || k.includes(n));
+  // Porsi terkini diambil dari daftar pemegang ≥1% KSEI bila tercantum di sana.
+  const one = (p.holders1 || []).map(h => ({ ...h, key: normName(h.name) }));
+  const nowPct = n => one.find(h => h.key.length > 3 && (n.includes(h.key) || h.key.includes(n)))?.pct ?? null;
+  const holders = (ins?.holders || []).map(h => {
+    if (!curKeys.length || h.to < 5 || listedNow(normName(h.name))) return h;
+    return { ...h, below5: true, now: nowPct(normName(h.name)) };
+  });
   const ctrlKeys = ctrlName.split(/,\s*(?=[A-Z])/).map(normName).filter(k => k.length > 3);
   const isCtrlH = h => { const n = normName(h.name); return ctrlKeys.some(k => n.includes(k) || k.includes(n)); };
   const ctrlMoves = holders.filter(isCtrlH);

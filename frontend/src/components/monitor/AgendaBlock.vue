@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { chText, meaningful } from '../../lib/diff.js'
-import { store, loadDiff } from '../../store.js'
+import { store, loadDiff, itemOf } from '../../store.js'
 import { tlEvents, fmtDate } from '../../lib/domain.js'
 import { isBackdoorNews, backdoorTickers } from '../../lib/news.js'
 
@@ -46,7 +46,7 @@ const due = computed(() => store.items.flatMap(d => tlEvents(d).filter(e => e.da
       <ol v-else-if="changed.length" class="cl">
         <li v-for="x in changed" :key="x.t">
           <RouterLink class="tk" :to="'/emiten/' + x.t">{{ x.t }}</RouterLink>
-          <span class="tx">{{ x.ch.map(chText).join(' · ') }}</span>
+          <span class="tx">{{ x.ch.map(c => chText(c, itemOf(x.t), { verified: store.verified })).join(' · ') }}</span>
         </li>
       </ol>
       <p v-else class="muted small">{{ diff ? (diff.base ? `Belum ada perubahan berarti sejak ${baseTxt}.` : 'Snapshot pertama baru diambil hari ini; perubahan tampil mulai besok.') : 'Memuat…' }}</p>

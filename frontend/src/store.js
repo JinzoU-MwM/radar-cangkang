@@ -247,7 +247,9 @@ export function userRefresh(kind) {
 // Data otomatis story (profil + riwayat pemegang saham) dari /api/story, disimpan 7 hari di item.
 // Dimuat ulang bila belum ada, sudah basi, atau patokannya (nama pengendali/tanggal PTW) berubah.
 let storyLoading = false
-const storyKey = d => `${(d.ctrlGuess ? '' : d.ctrlName) || d.acquirer || ''}|${d.tender?.start || ''}`
+// STORY_V dinaikkan bila aturan /api/story berubah (mis. penentuan pengendali lama) agar semua story dimuat ulang.
+const STORY_V = 2
+const storyKey = d => `${(d.ctrlGuess ? '' : d.ctrlName) || d.acquirer || ''}|${d.tender?.start || ''}|v${STORY_V}`
 export async function loadStories(tickers = null, force = false) {
   if (storyLoading || !canSync()) return
   const todo = store.items.filter(d => (tickers ? tickers.includes(d.ticker) : stageOf(d) !== 'radar') &&

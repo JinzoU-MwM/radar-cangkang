@@ -6,10 +6,10 @@ export const SECTORS = [
   // Pelayaran/logistik didahulukan: perusahaan angkutan batu bara tetap bisnis pelayaran, bukan tambang.
   { id: 'logistik', label: 'Logistik & pelayaran', motif: 'waves', re: /pelayaran|kapal|shipping|logistik|logistic|pelabuhan|\bport\b|angkutan|transport|kurir|tanker|galangan|tongkang|barge/i },
   { id: 'batubara', label: 'Tambang batu bara', motif: 'strata', re: /batu ?bara|coal|thermal/i },
-  { id: 'logam', label: 'Nikel, logam & baterai', motif: 'hex', re: /nikel|nickel|smelter|baterai|battery|kobalt|cobalt|bauksit|emas|gold|tembaga|copper|mineral|tambang|mining|logam/i },
+  { id: 'logam', label: 'Logam, mineral & manufaktur', motif: 'hex', re: /pengecoran|casting|permesinan|mekanikal|manufaktur|komponen|nikel|nickel|smelter|baterai|battery|kobalt|cobalt|bauksit|emas|gold|tembaga|copper|mineral|tambang|mining|logam/i },
   { id: 'energi', label: 'Energi & migas', motif: 'rings', re: /energi|energy|minyak|migas|oil|gas|panas bumi|geothermal|listrik|pembangkit|ebt|surya|solar|hidro/i },
   { id: 'kesehatan', label: 'Kesehatan & farmasi', motif: 'plus', re: /rumah sakit|kesehatan|klinik|farmasi|obat|medis|health|hospital|jantung|pharma/i },
-  { id: 'teknologi', label: 'Teknologi & telekomunikasi', motif: 'network', re: /teknologi|technology|digital|data center|pusat data|telekomunikasi|fiber|internet|software|aplikasi|platform|ai\b|kripto|crypto|media|hiburan|entertain/i },
+  { id: 'teknologi', label: 'Teknologi & telekomunikasi', motif: 'network', re: /teknologi|technology|digital|data center|pusat data|telekomunikasi|fiber|internet|software|aplikasi|platform|\bai\b|kripto|crypto|media|hiburan|entertain/i },
   { id: 'keuangan', label: 'Keuangan & investasi', motif: 'bars', re: /bank|keuangan|finance|financial|asuransi|investasi|investment|holding|modal ventura|sekuritas|leasing|pembiayaan/i },
   { id: 'properti', label: 'Properti & konstruksi', motif: 'blocks', re: /properti|property|real estate|hotel|konstruksi|construction|kawasan|perumahan|semen|beton|baja|kontraktor|infrastruktur/i },
   { id: 'konsumer', label: 'Konsumer & pangan', motif: 'dots', re: /makanan|minuman|food|beverage|pangan|ritel|retail|restoran|kuliner|susu|dairy|udang|shrimp|perikanan|agri|sawit|cpo|kemasan|fmcg|otomotif|dealer|tekstil|garmen|furnitur|mebel/i },

@@ -5,15 +5,17 @@
 // Dipakai di kartu Analisa dan dialog pengendali (satu markup).
 import { computed } from 'vue'
 import { relationTone } from '../../lib/emitenExtra.js'
-import { yakinOf, perkaraState, risikoText, chainLayers, boardStats } from '../../lib/profil.js'
+import { yakinOf, perkaraState, risikoText, chainLayers, boardStats, mergeBoard } from '../../lib/profil.js'
 import TickerText from '../TickerText.vue'
 
-const props = defineProps({ profil: { type: Object, required: true }, title: { type: String, default: '' } })
+// sb: profil Stockbit ({ directors, commissioners }) untuk melengkapi/menandai pengurus hasil riset.
+const props = defineProps({ profil: { type: Object, required: true }, title: { type: String, default: '' }, sb: { type: Object, default: null } })
+const merged = computed(() => mergeBoard(props.profil.pengurus, props.sb))
 const pengurus = computed(() => [
-  ...(props.profil.pengurus?.direksi || []).map(x => ({ ...x, grp: 'Direksi' })),
-  ...(props.profil.pengurus?.komisaris || []).map(x => ({ ...x, grp: 'Komisaris' })),
+  ...merged.value.direksi.map(x => ({ ...x, grp: 'Direksi' })),
+  ...merged.value.komisaris.map(x => ({ ...x, grp: 'Komisaris' })),
 ])
-const board = computed(() => boardStats(props.profil.pengurus))
+const board = computed(() => boardStats(merged.value))
 const af = computed(() => props.profil.afiliasi?.pihakLawan ? props.profil.afiliasi : null)
 const rel = computed(() => relationTone(af.value?.hubungan))
 const layers = computed(() => chainLayers(af.value?.strukturKepemilikan))
@@ -87,10 +89,14 @@ const firstSentence = t => { const m = String(t || '').match(/^.{20,180}?[.;](\s
         <table class="ledger">
           <thead><tr><th class="lbl">Nama</th><th class="lbl">Jabatan</th><th class="lbl">Asal</th><th class="lbl">Latar, riwayat & hubungan</th></tr></thead>
           <tbody>
-            <tr v-for="x in pengurus" :key="x.grp + x.nama">
+            <tr v-for="x in pengurus" :key="x.grp + x.nama" :class="{ gone: x.notListed }">
               <td><b>{{ x.nama }}</b><div class="small muted">{{ x.grp }}</div></td>
-              <td>{{ x.jabatan || 'belum ada' }}<template v-if="x.independen"> <span class="tag t-calm">independen</span></template></td>
-              <td><span class="tag" :class="x.orangPengendaliBaru ? 't-good' : 't-calm'">{{ x.orangPengendaliBaru ? 'orang pengendali baru' : 'pengurus lama' }}</span></td>
+              <td>{{ x.jabatan || 'belum ada' }}<template v-if="x.independen && !/independen/i.test(x.jabatan || '')"> <span class="tag t-calm">independen</span></template></td>
+              <td>
+                <span v-if="x.notListed" class="tag t-warn" title="Tidak ada di daftar pengurus terkini Stockbit (KSEI)">tidak tercantum lagi</span>
+                <span v-else-if="x.fromStockbit" class="tag t-calm">data Stockbit</span>
+                <span v-else class="tag" :class="x.orangPengendaliBaru ? 't-good' : 't-calm'">{{ x.orangPengendaliBaru ? 'orang pengendali baru' : 'pengurus lama' }}</span>
+              </td>
               <td class="small">
                 {{ x.latar || 'belum ada' }}
                 <div v-if="x.riwayat?.length" class="mini"><b>Riwayat:</b> {{ x.riwayat.join(' · ') }}</div>
@@ -164,6 +170,7 @@ const firstSentence = t => { const m = String(t || '').match(/^.{20,180}?[.;](\s
 </template>
 
 <style scoped>
+.ledger tr.gone td{opacity:.6}
 .pf h2{margin-bottom:8px}
 .sum{margin:0 0 6px;max-width:80ch}
 h3.lbl{margin:14px 0 6px}

@@ -642,6 +642,34 @@ def parse_date_ddmmyy(s):
     return None
 
 
+# Stockbit memisahkan jabatan pengurus per kunci; Direktur/Komisaris Utama ada di kunci tersendiri.
+EXEC_DIR = [("president_director", "Direktur Utama"), ("vice_president", "Wakil Direktur Utama"), ("director", "")]
+EXEC_COM = [("president_commissioner", "Komisaris Utama"), ("independent_president_commissioner", "Komisaris Utama, independen"),
+            ("vice_president_commissioner", "Wakil Komisaris Utama"),
+            ("independent_vice_president_commissioner", "Wakil Komisaris Utama, independen"),
+            ("commissioner", ""), ("independent_commissioner", "independen")]
+
+
+def exec_names(ke: dict, keys: list) -> list:
+    """Nama pengurus berurutan dari jabatan tertinggi, dengan label jabatan khusus dalam kurung."""
+    out, seen = [], set()
+    for k, label in keys:
+        for x in ke.get(k) or []:
+            name = re.sub(r"\s+", " ", str((x or {}).get("value") or "")).strip()
+            if not name or name.upper() in seen:
+                continue
+            seen.add(name.upper())
+            out.append(f"{name} ({label})" if label else name)
+    return out
+
+
+def holders_one_pct(p: dict) -> list:
+    """Pemegang ≥1% (KSEI bulanan) dari profil Stockbit."""
+    rows = (p.get("shareholder_one_percent") or {}).get("shareholder") or []
+    return [{"name": str(s.get("name") or "").strip(), "pct": to_num(str(s.get("percentage") or "").rstrip("%")),
+             "shares": to_num(str(s.get("value") or "").replace(",", ""))} for s in rows if s.get("name")]
+
+
 def get_profile(ticker: str, fresh: bool = False) -> dict:
     p = sb_fetch(f"/emitten/{ticker}/profile", fresh).get("data", {})
     k = sb_fetch(f"/keystats/ratio/v1/{ticker}?year_limit=10", fresh).get("data", {})
@@ -669,9 +697,9 @@ def get_profile(ticker: str, fresh: bool = False) -> dict:
                           "pengendali": "pengendali" in (s.get("badges") or [])}
                          for s in p.get("shareholder") or []],
         "beneficiary": [b.get("name") for b in p.get("beneficiary") or []],
-        "directors": [d.get("value") for d in ke.get("director") or []],
-        "commissioners": [str(c.get("value")) + (" (independen)" if "Independent" in str(c.get("key", "")) else "")
-                          for c in list(ke.get("commissioner") or []) + list(ke.get("independent_commissioner") or []) if c],
+        "directors": exec_names(ke, EXEC_DIR),
+        "commissioners": exec_names(ke, EXEC_COM),
+        "holders1": holders_one_pct(p),
         "stats": {"marketCap": to_num(stats.get("market_cap")),
                   "shares": to_num(stats.get("current_share_outstanding")),
                   "freeFloat": to_num(stats.get("free_float")),
@@ -788,8 +816,19 @@ def get_story(ticker: str, controller: str, near: str, fresh: bool = False) -> d
         groups: dict[str, list] = {}
         for r in win:
             groups.setdefault(r["name"], []).append(r)
-        old = [{"name": n, "before": max(x["prev"] for x in g), "after": min(x["cur"] for x in g)}
+        old = [{"name": n, "before": max(x["prev"] for x in g), "after": min(x["cur"] for x in g),
+                "gap": min(abs((x["date"] - buy["date"]).days) for x in g)}
                for n, g in groups.items() if max(x["prev"] for x in g) >= 5]
+        # Bila ada penjual besar (≥20%), itulah pengendali lama; pemegang kecil yang keluar beberapa minggu
+        # sebelumnya bukan bagian dari pengalihan (mis. GPSO: dua pemegang 7,5% keluar Sep 2025, akuisisi Okt).
+        if any(o["before"] >= 20 for o in old):
+            old = [o for o in old if o["before"] >= 20 or o["gap"] <= 7]
+        for o in old:
+            o.pop("gap", None)
+        # Porsi pembeli setelah pengalihan: puncak dari seluruh pembelian pembeli dalam 7 hari (transaksi bisa dipecah).
+        same = [r for r in rows if norm_name(r["name"]) == norm_name(buy["name"]) and 0 <= (r["date"] - buy["date"]).days <= 7]
+        if same:
+            buy = {**buy, "cur": max(r["cur"] for r in same)}
         old = sorted(old, key=lambda o: o["before"], reverse=True)[:4]
         if not old:
             prior = sorted((r for r in rows if r["date"] < buy["date"]
@@ -856,8 +895,8 @@ def get_controller(ticker: str, name: str, fresh: bool = False) -> dict:
             "shares": ctrl.get("value") if ctrl else "",
             "nationality": ctrl.get("nationality") if ctrl else "",
             "beneficiary": [b.get("name") for b in p.get("beneficiary") or []],
-            "directors": [d.get("value") for d in ke.get("director") or []],
-            "commissioners": [c.get("value") for c in list(ke.get("commissioner") or []) + list(ke.get("independent_commissioner") or []) if c],
+            "directors": exec_names(ke, EXEC_DIR),
+            "commissioners": exec_names(ke, EXEC_COM),
             "holdings": holdings}
 
 
@@ -895,6 +934,95 @@ def get_insider(ticker: str, days: int = 180, fresh: bool = False) -> dict:
         "lastPrice": g[0]["price"],
     } for n, g in groups.items()), key=lambda h: abs(h["change"]), reverse=True)
     return {"ticker": ticker, "days": days, "holders": holders}
+
+
+def insider_row(m: dict) -> dict | None:
+    """Satu baris keterbukaan pemegang saham (IDX/KSEI) Stockbit dalam bentuk ringkas untuk tab Insider Activity."""
+    d = parse_date_ddmmyy(m.get("date"))
+    if not d:
+        return None
+    pv, cv, ch = m.get("previous") or {}, m.get("current") or {}, m.get("changes") or {}
+    prev, cur = to_num(pv.get("percentage")), to_num(cv.get("percentage"))
+    if (prev or 0) > 100 or (cur or 0) > 100:
+        return None
+    sh = lambda o: to_num(str(o.get("value") or "").replace(",", "").replace("+", ""))
+    return {
+        "date": d.strftime("%Y-%m-%d"), "ticker": str(m.get("symbol") or "").upper(),
+        "name": re.sub(r"\s+", " ", str(m.get("name") or "")).strip(),
+        "prev": prev or 0, "cur": cur or 0, "chg": round((cur or 0) - (prev or 0), 4),
+        "prevShares": sh(pv), "curShares": sh(cv), "chgShares": sh(ch),
+        "price": to_num(((m.get("price") or {}).get("raw") or {}).get("value")),
+        "estPrice": bool(m.get("is_estimated_price")),
+        "value": to_num(((m.get("value") or {}).get("raw") or {}).get("value")),
+        "action": str(m.get("action_type") or "").replace("ACTION_TYPE_", ""),
+        "purpose": str(m.get("purpose") or "").strip(),
+        "source": "KSEI" if "KSEI" in str((m.get("data_source") or {}).get("type")) else "IDX",
+        "broker": str((m.get("broker_detail") or {}).get("code") or ""),
+        "foreign": "FOREIGN" in str(m.get("nationality") or ""),
+        "role": ("direksi" if any("DIREKTUR" in b for b in m.get("badges") or [])
+                 else "komisaris" if any("KOMISARIS" in b for b in m.get("badges") or []) else ""),
+    }
+
+
+def merge_ksei(rows: list[dict]) -> list[dict]:
+    """Data KSEI dicatat per rekening efek: satu pemegang di satu tanggal muncul beberapa baris berantai
+    (mis. 0→4,28, 4,28→4,97, 4,97→5,13). Baris pertama selalu mulai dari 0 sehingga tampak seperti pembelian
+    besar. Gabungkan menjadi satu baris per pemegang per tanggal: porsi akhir = ujung rantai. Porsi awal 0 diganti
+    porsi akhir tanggal KSEI sebelumnya (bila ada di data); rantai multi-rekening tanpa riwayat → prevUnknown=True."""
+    out, groups = [], {}
+    for r in rows:
+        if r["source"] != "KSEI":
+            out.append(r)
+            continue
+        k = (r["ticker"], r["name"].upper(), r["date"])
+        if k not in groups:
+            groups[k] = []
+            out.append(k)
+        groups[k].append(r)
+    merged: dict = {}
+    for k, g in groups.items():
+        prevs = {round(x["prev"], 4) for x in g}
+        end = next((x for x in g if round(x["cur"], 4) not in prevs or len(g) == 1), g[0])
+        start = min(g, key=lambda x: x["prev"]) if len(g) > 1 else g[0]
+        m = {**end, "prev": start["prev"], "prevShares": start["prevShares"],
+             "chgShares": (end["curShares"] or 0) - (start["prevShares"] or 0),
+             "value": sum(x["value"] or 0 for x in g) or None,
+             "broker": ", ".join(dict.fromkeys(x["broker"] for x in g if x["broker"])), "accounts": len(g)}
+        merged[k] = m
+    # Porsi awal dari tanggal KSEI sebelumnya untuk pemegang yang sama (data terurut terbaru dulu).
+    by_holder: dict = {}
+    for k in sorted(merged, key=lambda k: k[2]):
+        hk = (k[0], k[1])
+        m, last = merged[k], by_holder.get(hk)
+        if m["prev"] == 0:
+            if last is not None:
+                m["prev"], m["prevShares"] = last["cur"], last["curShares"]
+                m["chgShares"] = (m["curShares"] or 0) - (last["curShares"] or 0)
+            elif m["accounts"] > 1:
+                m["prevUnknown"] = True
+        m["chg"] = round(m["cur"] - m["prev"], 4)
+        by_holder[hk] = m
+    return [merged[x] if isinstance(x, tuple) else x for x in out]
+
+
+def get_insider_rows(ticker: str, fresh: bool = False) -> dict:
+    """Semua keterbukaan pemegang saham satu emiten (maks. 8 halaman, terbaru dulu)."""
+    return {"ticker": ticker, "rows": merge_ksei([r for r in (insider_row(m) for m in insider_moves(ticker, 8, fresh)) if r])}
+
+
+def get_insider_feed(days: int = 14, fresh: bool = False) -> dict:
+    """Keterbukaan pemegang saham seluruh pasar (feed InsiderNews Stockbit) untuk `days` hari terakhir."""
+    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    rows, pages = [], 0
+    for pg in range(1, 61):
+        j = sb_fetch(f"/insider/company/majorholder?page={pg}", fresh)
+        pages = pg
+        page = [r for r in (insider_row(m) for m in j.get("data", {}).get("movement") or []) if r]
+        rows += page
+        if not j.get("data", {}).get("is_more") or (page and min(r["date"] for r in page) < cutoff):
+            break
+        time.sleep(0.15)
+    return {"days": days, "since": cutoff, "pages": pages, "rows": merge_ksei([r for r in rows if r["date"] >= cutoff])}
 
 
 _bm_memo: dict[str, tuple[float, dict]] = {}
@@ -1506,6 +1634,10 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "api/insider":
             self.guard_token() or self.guard_ticker(ticker) or self.reply_json(
                 get_insider(ticker, max(30, min(720, int(self.qs("days") or 180))), fresh))
+        elif path == "api/insider-rows":
+            self.guard_token() or self.guard_ticker(ticker) or self.reply_json(get_insider_rows(ticker, fresh))
+        elif path == "api/insider-feed":
+            self.guard_token() or self.reply_json(get_insider_feed(max(1, min(60, int(self.qs("days") or 14))), fresh))
         elif path == "api/controller":
             self.guard_token() or self.guard_ticker(ticker) or self.reply_json(
                 get_controller(ticker, self.qs("name"), fresh))

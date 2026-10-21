@@ -22,7 +22,7 @@ const cards = computed(() => {
     const chg = num(r.item.chgPct)
     if (chg != null && Math.abs(chg) >= 5) why.push({ cls: chg > 0 ? 'up' : 'dn', text: 'Harga ' + fmtPct(chg) + ' sesi terakhir' })
     if (r.item.volRatio >= 3) why.push({ cls: 'now', text: `Volume ${String(r.item.volRatio).replace('.', ',')}× rata-rata` })
-    for (const c of meaningful(diffOf(r.t)).filter(c => c.k !== 'reports' || !r.isNew)) why.push({ cls: '', text: 'Sejak kemarin: ' + chText(c) })
+    for (const c of meaningful(diffOf(r.t)).filter(c => c.k !== 'reports' || !r.isNew)) why.push({ cls: '', text: 'Sejak kemarin: ' + chText(c, r.item, { verified: store.verified }) })
     return { r, why }
   }).filter(c => c.why.length).sort((a, b) => b.why.length - a.why.length || a.r.t.localeCompare(b.r.t))
 })

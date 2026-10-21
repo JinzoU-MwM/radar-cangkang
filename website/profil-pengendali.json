@@ -52,7 +52,7 @@
           },
           {
             "dengan": "PT Asia Intrainvesta",
-            "hubungan": "Penjual 29,41% dan masih memegang 24,74%; calon pembeli bisnis makanan bayi NAYZ (±Rp58,51 miliar)",
+            "hubungan": "Penjual 29,41% dan masih memegang 24,74% per KSEI bulanan (keterbukaan hingga 15 Oktober 2026: 19,27%); calon pembeli bisnis makanan bayi NAYZ (±Rp58,51 miliar)",
             "keyakinan": "terverifikasi"
           },
           {
@@ -201,11 +201,11 @@
         },
         {
           "nama": "Dody Arifianto",
-          "jabatan": "Direktur Utama (status terkini tidak jelas)",
+          "jabatan": "Direktur Utama",
           "orangPengendaliBaru": false,
-          "latar": "Diangkat RUPST 5 Juni 2026 menggantikan Arief Banang Trinovan; tidak lagi tercantum di data pengurus KSEI Oktober 2026, sehingga diduga diganti pada RUPSLB 2 Oktober 2026.",
+          "latar": "Diangkat RUPST 5 Juni 2026 menggantikan Arief Banang Trinovan; masih tercatat sebagai Direktur Utama di data Stockbit/KSEI Oktober 2026 (RUPSLB 2 Oktober 2026 menambah Nusttanakit Sasiarnon sebagai direktur).",
           "riwayat": [
-            "Direktur Utama — NAYZ — Juni 2026–?"
+            "Direktur Utama — NAYZ — Juni 2026–sekarang"
           ],
           "rangkap": [],
           "hubungan": "Pengurus masa transisi.",
@@ -248,11 +248,11 @@
         },
         {
           "nama": "Teuku Chairul Wisal",
-          "jabatan": "Komisaris Utama (diangkat Juni 2026; status terkini tidak jelas)",
+          "jabatan": "Komisaris Utama (diangkat Juni 2026)",
           "orangPengendaliBaru": false,
-          "latar": "Diangkat RUPST 5 Juni 2026; tidak lagi tercantum di data KSEI Oktober 2026.",
+          "latar": "Diangkat RUPST 5 Juni 2026; masih tercatat sebagai Komisaris Utama di data Stockbit/KSEI Oktober 2026.",
           "riwayat": [
-            "Komisaris Utama — NAYZ — Juni 2026–?"
+            "Komisaris Utama — NAYZ — Juni 2026–sekarang"
           ],
           "rangkap": [],
           "hubungan": "Pengurus masa transisi.",
@@ -303,7 +303,7 @@
           "sumber": "Saiko Suntik Bangkok Tellink ke NAYZ Senilai Rp2,2 Triliun — IDX Channel, 2026-10-05; Bisnis NAYZ Berbelok ke Telekomunikasi — Katadata, 2026-10-06"
         },
         {
-          "temuan": "Penjual lama PT Asia Intrainvesta tetap memegang 24,74% dan akan membeli kembali bisnis makanan bayi NAYZ: pengendali lama tetap untung dari dua sisi (jual cangkang @Rp23,5 dan ambil aset operasional).",
+          "temuan": "Penjual lama PT Asia Intrainvesta masih memegang 19,27–24,74% (keterbukaan 15 Okt 2026 vs KSEI bulanan) dan akan membeli kembali bisnis makanan bayi NAYZ: pengendali lama tetap untung dari dua sisi (jual cangkang @Rp23,5 dan ambil aset operasional).",
           "keyakinan": "indikasi",
           "sumber": "Penjelasan atas Permintaan Penjelasan Bursa — Stockbit Reports, 2026-07-23; Profil emiten NAYZ — server lokal /api/profile, 2026-10-21"
         }
@@ -318,7 +318,7 @@
     },
     "ringkas": "NAYZ dikendalikan Saiko Consultancy (Singapura) milik dua pengusaha Thailand yang masuk di Rp23,5 dan akan menginjeksi 75% Bangkok Tellink senilai maks. USD125 juta (20% tunai, 80% inbreng). Temuan baru: BTL sejak Februari 2025 terikat rencana merger SPAC Nasdaq (Arogo) bervaluasi USD350 juta yang belum dibatalkan, dan laporan keuangan BTL tidak pernah dipublikasikan.",
     "koreksi": [
-      "Susunan pengurus diperbarui: Dody Arifianto (Dirut) dan Teuku Chairul Wisal (Komut, diangkat 5 Juni 2026) tidak lagi tercantum di data KSEI Oktober 2026; data lama tidak mencantumkan Teuku Chairul Wisal.",
+      "Susunan pengurus dilengkapi: Dody Arifianto (Dirut) dan Teuku Chairul Wisal (Komut, diangkat 5 Juni 2026) masih tercatat di data KSEI Oktober 2026, ditambah Nusttanakit Sasiarnon (Direktur) dan Sawin Laosethakul (Komisaris) dari RUPSLB 2 Oktober 2026; data lama tidak mencantumkan Teuku Chairul Wisal.",
       "Porsi akuisisi Saiko: rencana awal 41,18% (April 2026) terealisasi hanya 29,41%; Asia Intrainvesta masih 24,74% dan Irman 12,96%.",
       "Klaim lama 'tidak tercatat memiliki rekam jejak pasar modal' dilengkapi: BTL pernah menempuh jalur SPAC Nasdaq melalui Arogo Capital (2025)."
     ],
@@ -347,7 +347,7 @@
             "kode": "MENN",
             "peran": "Salah satu dari enam pengendali baru (PMJ 11,67%)",
             "periode": "Februari 2025–2026",
-            "hasil": "Harga saat masuk ±Rp46–50; sempat ARA lalu ARB di tengah dugaan aksi jual pengendali (Feb 2025). Rencana BIKE mengakuisisi MENN dibatalkan. Per Oktober 2026 PMJ tinggal 0,16%, PT Negara Maju Makmur 4,40%, PT Kalimantan Indah Kedepan 2,15%, sementara SSI, KSI dan Sarana Majemuk tidak lagi tercatat ≥5%; pemegang terbesar kini Jora Nilam Judge (18,37%) dan Djoni (17,43%), dengan UBO tercatat Sarah Sartika Putri. Harga ±Rp53, artinya konsorsium praktis keluar tanpa injeksi aset.",
+            "hasil": "Harga saat masuk ±Rp46–50; sempat ARA lalu ARB di tengah dugaan aksi jual pengendali (Feb 2025). Rencana BIKE mengakuisisi MENN dibatalkan. Per Oktober 2026 PMJ tinggal 0,16%, PT Negara Maju Makmur 4,40%, PT Kalimantan Indah Kedepan 2,15%, sementara SSI, KSI dan Sarana Majemuk tidak lagi tercatat ≥5%; pemegang terbesar kini Jora Nilam Judge (18,37%); Djoni turun dari 17,43% ke 4,88% (Jan 2026), dengan UBO tercatat Sarah Sartika Putri. Harga ±Rp53; porsi konsorsium tersisa ±6,7% (NMM 4,40%, KIK 2,15%, PMJ 0,16%) tanpa injeksi aset, namun KSEI masih menandai ketiganya pengendali dan mencatat Cahyadi sebagai Direktur Utama serta Sarah Sartika Putri sebagai Komisaris Utama MENN (indikasi lingkar yang sama masih memegang kepengurusan).",
             "keyakinan": "terverifikasi",
             "sumber": "Enam Investor Akuisisi 67% Saham MENN — IDNFinancials, 2025-02-20 · https://www.idnfinancials.com/id/news/52603/enam-investor-akuisisi-67-saham-menn; Saham MENN ARB di Tengah Aroma Aksi Jual Pengendali — IDX Channel, 2025-02-26; Profil emiten MENN (data KSEI) — server lokal /api/profile, 2026-10-21"
           },
@@ -462,7 +462,7 @@
             "keyakinan": "disebut media"
           }
         ],
-        "karakteristik": "Bergerak melalui SPV berlapis dan pendanaan pinjaman pengendali; tidak tampil di kepengurusan emiten.",
+        "karakteristik": "Bergerak melalui SPV berlapis dan pendanaan pinjaman pengendali; tidak tampil di kepengurusan BIKE, namun data KSEI Okt 2026 mencatat nama Cahyadi sebagai Direktur Utama MENN (indikasi orang yang sama).",
         "risiko": "Identitas riil di balik struktur (yang dikaitkan media dengan tokoh politik) belum dapat diverifikasi; tidak ditemukan kasus hukum atas nama Cahyadi.",
         "sumber": [
           "Penjelasan atas Permintaan Penjelasan Bursa (KOREKSI) — Stockbit Reports, 2026-06-24",
@@ -476,7 +476,7 @@
           "nama": "Eric Kusuma",
           "jabatan": "Direktur Utama",
           "orangPengendaliBaru": true,
-          "latar": "Diangkat RUPSLB 2 Juli 2026; dikutip sebagai Dirut soal MoU Pasar Minggu (Sep 2026). Tidak tercantum di data pengurus KSEI yang diambil 21 Okt 2026. Latar profesional tidak ditemukan.",
+          "latar": "Diangkat RUPSLB 2 Juli 2026; dikutip sebagai Dirut soal MoU Pasar Minggu (Sep 2026). Data pengurus KSEI/Stockbit Okt 2026 mencantumkannya sebagai Direktur Utama dengan ejaan 'Erick Kusuma'. Latar profesional tidak ditemukan.",
           "riwayat": [
             "Direktur Utama — BIKE — sejak 2 Juli 2026"
           ],
@@ -538,7 +538,7 @@
           "nama": "Sendi",
           "jabatan": "Komisaris Utama",
           "orangPengendaliBaru": true,
-          "latar": "Diangkat 2 Juli 2026; tidak tercantum di data KSEI yang diambil 21 Okt 2026. Latar tidak ditemukan.",
+          "latar": "Diangkat 2 Juli 2026; tercantum sebagai Komisaris Utama di data KSEI/Stockbit Okt 2026 dan pemegang 5,89% BIKE. Latar tidak ditemukan.",
           "riwayat": [],
           "rangkap": [],
           "hubungan": "Era PMJ.",
@@ -637,7 +637,7 @@
     "koreksi": [
       "Ditambahkan rekam jejak hasil MENN: konsorsium PMJ/SSI/KSI tidak lagi menjadi pemegang besar per Oktober 2026 (PMJ 0,16%), bukan masih 11,67% seperti data lama.",
       "Muhammad Reagy Sukmana juga Komisaris Independen MENN (data KSEI); data lama hanya menyebut kaitannya dengan INPS. KSEI Oktober 2026 mencantumkan Jerry Erfansyah sebagai direktur INPS, sehingga status Reagy sebagai Dirut INPS perlu diverifikasi.",
-      "Data KSEI yang diambil 21 Oktober 2026 tidak mencantumkan Eric Kusuma dan Sendi; keduanya tetap dicantumkan berdasarkan keterbukaan dan media (Sep 2026), dengan catatan kemungkinan data KSEI belum diperbarui."
+      "Data pengurus KSEI/Stockbit Okt 2026 sudah mencantumkan Erick Kusuma (Direktur Utama; media menulis 'Eric') dan Sendi (Komisaris Utama)."
     ],
     "tidakDitemukan": [
       "Profil profesional Cahyadi",
@@ -1502,7 +1502,7 @@
             "Head of Distribution Channel & Development — PT Mega Asset Management — 2015–2017/2018",
             "Director of Finance/CFO — PT Intelex Technet Global — 2018–",
             "Komisaris — PT Prima Cakrawala Abadi Tbk — s.d. Oktober 2023",
-            "Direktur Utama — INPS — Juni 2026–sekarang"
+            "Direktur Utama — INPS — Juni 2026–sekarang (data pengurus KSEI/Stockbit Okt 2026 masih mencantumkan susunan lama: Eddy Purwanto Winata sebagai Direktur Utama)"
           ],
           "rangkap": [
             "Direktur PT Graha Inti Guna Persada",
@@ -2131,7 +2131,7 @@
         "entitas": "Kelompok pengendali ELIT",
         "porsi": "UBO bersama (porsi per orang tidak diungkap)",
         "latar": "Lulusan Swiss German University (detikNews 2019; tahun dan jurusan tidak disebut). Pendiri & CEO PT DSI Laser Internasional Indonesia sejak 2005; pernah tercatat CFO/IT Services Manager Elitery Data Center dan Komisaris PT BPPN (LinkedIn, dikutip detikNews 2019). Penerima Dji Sam Soe Award 2009 untuk wirausahawan muda.",
-        "pengalaman": "Konsultan data/IT tim Sandiaga Uno pada Pilgub DKI 2017 dan Pilpres 2019; anggota Dewan Pembina Gerakan OK OCE. CEO PT Samala Serasi Utama (entitas kemitraan Sandiaga–Roestiandi) dan Pendiri & CEO Rumah Siap Kerja (sejak 2019). Direktur PT Mitra Investindo Tbk (MITI) sejak RUPST Mei 2026; Wakil Presiden Direktur PT Mutuagung Lestari Tbk (MUTU) sejak RUPSLB 24 Agustus 2026. Disebut pendiri sekaligus Komisaris Utama ELIT (IDX Channel), meski data profil terbaru tidak mencantumkannya di dewan komisaris.",
+        "pengalaman": "Konsultan data/IT tim Sandiaga Uno pada Pilgub DKI 2017 dan Pilpres 2019; anggota Dewan Pembina Gerakan OK OCE. CEO PT Samala Serasi Utama (entitas kemitraan Sandiaga–Roestiandi) dan Pendiri & CEO Rumah Siap Kerja (sejak 2019). Direktur PT Mitra Investindo Tbk (MITI) sejak RUPST Mei 2026; Wakil Presiden Direktur PT Mutuagung Lestari Tbk (MUTU) sejak RUPSLB 24 Agustus 2026. Pendiri sekaligus Komisaris Utama ELIT (IDX Channel; dikonfirmasi data pengurus KSEI/Stockbit Okt 2026).",
         "rekamJejak": [
           {
             "entitas": "PT Mutuagung Lestari Tbk",
@@ -2154,7 +2154,7 @@
           {
             "entitas": "PT Data Sinergitama Jaya Tbk",
             "kode": "ELIT",
-            "peran": "Pendiri, UBO, (disebut) Komisaris Utama",
+            "peran": "Pendiri, UBO, Komisaris Utama",
             "periode": "Sejak pendirian–sekarang",
             "hasil": "IPO 2023; tumbuh organik.",
             "keyakinan": "disebut media",
@@ -2229,7 +2229,7 @@
         "nama": "Hendra Suryakusuma",
         "peran": "UBO",
         "entitas": "Kelompok pengendali ELIT; juga pemegang saham langsung",
-        "porsi": "Langsung 3,23% pra-IPO / 2,43% pasca-IPO; UBO bersama",
+        "porsi": "Langsung 3,23% pra-IPO / 2,43% (Nov 2025) / 1,90% (38,52 juta saham, KSEI Okt 2026); UBO bersama",
         "latar": "Tidak ditemukan profil profesional di sumber publik.",
         "pengalaman": "Tidak ditemukan.",
         "rekamJejak": [],
@@ -2435,7 +2435,7 @@
           "lapis": 1,
           "entitas": "PT Data Sinergitama Jaya Tbk",
           "pemilik": "Jimmy Sugiarto / Hendra Suryakusuma",
-          "porsi": "3,01% / 2,43%"
+          "porsi": "3,01% / 2,43% (data pasca-IPO; KSEI Okt 2026: Jimmy <1%, Hendra 1,90%)"
         },
         {
           "lapis": 2,
@@ -2472,7 +2472,7 @@
       "Pemilik akhir per entitas (Gratus Deo, Indonesia Muda Inovatif, Delemont Global Venture, Inotech) dan porsi UBO per orang",
       "Pendidikan Kresna Adiprawira",
       "Latar profesional Thomas Irawan Tjahjono, Hendra Suryakusuma, Peter Djatmiko, Meidyah Indreswari, dan para direktur selain Kresna",
-      "Konfirmasi jabatan Roestiandi Tsamanov di ELIT saat ini (IDX Channel menyebut Komisaris Utama; data profil tidak mencantumkannya)",
+      "Kepemilikan tidak langsung Roestiandi Tsamanov di ELIT (jabatan Komisaris Utama sudah terkonfirmasi data KSEI Okt 2026)",
       "Kepemilikan pribadi Roestiandi di MITI dan MUTU di luar Samala Serasi Utama",
       "Perkara bisnis terkait pengendali ELIT (tidak ditemukan di pencarian media)"
     ]
@@ -2502,7 +2502,7 @@
         "jaringan": [
           {
             "dengan": "PT Mandara Mas Semesta / Hartono Limmantoro",
-            "hubungan": "Penjual; Mandara Mas Semesta masih memegang sekitar 24–29% dan melepas saham untuk mendanai pengembangan lahan di Bali",
+            "hubungan": "Penjual; Mandara Mas Semesta masih memegang 24,10% (KSEI Okt 2026) dan melepas saham untuk mendanai pengembangan lahan di Bali",
             "keyakinan": "terverifikasi"
           }
         ],
@@ -2700,7 +2700,7 @@
           "lapis": 1,
           "entitas": "PT Agung Menjangan Mas Tbk",
           "pemilik": "Radiant Ruby Company Ltd; PT Mandara Mas Semesta; publik",
-          "porsi": "51,00%; sekitar 24–29%; sisanya"
+          "porsi": "51,00%; 24,10%; sisanya"
         },
         {
           "lapis": 2,
@@ -2744,7 +2744,7 @@
       {
         "nama": "PT Sinergi Inti Andalan Prima Tbk (INET)",
         "peran": "pengendali",
-        "entitas": "Emiten BEI (IPO Juli 2023), penyedia infrastruktur digital B2B untuk ISP (FTTH), didirikan 2016; dikendalikan PT Abadi Kreasi Unggul Nusantara (AKUN) 57,08% per Februari 2026",
+        "entitas": "Emiten BEI (IPO Juli 2023), penyedia infrastruktur digital B2B untuk ISP (FTTH), didirikan 2016; dikendalikan PT Abadi Kreasi Unggul Nusantara (AKUN) 57,08% per Februari 2026 (KSEI Oktober 2026: 59,76%)",
         "porsi": "53,58% (1.687.455.000 saham/53,57% dibeli Rp63/saham, Rp106,39 M dari Kopindosat; CSPA 28 Januari 2026, tuntas 2–3 Februari 2026; PTW Rp63 hanya terserap 240.000 saham)",
         "latar": "Harga beli 6,91% di atas nilai pasar wajar penilai independen (Rp99,52 M). Transaksi material di bawah 50% ekuitas INET sehingga tanpa RUPS; dinyatakan bukan transaksi afiliasi.",
         "pengalaman": "Ekspansi FTTH di Bali, Lombok, Kalimantan Barat; rights issue sekitar Rp3,2 T (bagian dana ekspansi Rp4,2 T) untuk anak usaha FTTH; saham INET pernah disuspensi hampir sepekan dan dibuka kembali 10 Desember 2025 setelah reli tajam; juga mengakuisisi THC (rincian tidak terverifikasi).",
@@ -2771,7 +2771,7 @@
         "jaringan": [
           {
             "dengan": "Koperasi Pegawai Indosat (Kopindosat)",
-            "hubungan": "Penjual; sisa porsi 6,29% PADA",
+            "hubungan": "Penjual; sisa 6,29% setelah transaksi, lalu naik menjadi 17,86% setelah membeli 11,57% dari Sigit Kuntjahjo (8 April 2026)",
             "keyakinan": "terverifikasi"
           },
           {
@@ -2934,10 +2934,10 @@
           "nama": "Sigit Kuntjahjo",
           "jabatan": "Komisaris",
           "orangPengendaliBaru": false,
-          "latar": "Juga pemegang sekitar 11,57% saham PADA (CNBC Indonesia).",
+          "latar": "Pernah memegang sekitar 11,57% saham PADA; seluruhnya dijual ke Kopindosat pada 8 April 2026 di Rp15/saham. Juga Direktur Keuangan Kopindosat.",
           "riwayat": [],
           "rangkap": [],
-          "hubungan": "Pemegang saham signifikan non-pengendali.",
+          "hubungan": "Pejabat Kopindosat (pemegang 17,86%); tidak lagi memegang saham PADA.",
           "keyakinan": "disebut media",
           "sumber": [
             "Sinergi Inti Andalan Prima (INET) Akuisisi 53,57% Saham PADA — CNBC Indonesia, 2026-02-03"
@@ -2990,8 +2990,8 @@
         {
           "lapis": 1,
           "entitas": "PT Personel Alih Daya Tbk",
-          "pemilik": "INET; Sigit Kuntjahjo; Kopindosat; publik",
-          "porsi": "53,58%; sekitar 11,57%; 6,29%; sisanya"
+          "pemilik": "INET; Kopindosat; publik",
+          "porsi": "53,58%; 17,86%; 28,56%"
         },
         {
           "lapis": 2,
@@ -3263,7 +3263,7 @@
         "nama": "Budi Gunawan",
         "peran": "UBO",
         "entitas": "PT Guna Makmur Raya (UBO bersama Carolina Kusuma) — pengendali lama/penjual bertahap, bukan pengambil alih",
-        "porsi": "Guna Makmur Raya 25,20% (setelah 7 April 2026); turun dari 64,15% (sebelum 14 November 2025) dan 40,17% (November 2025). Carolina Kusuma memegang sekitar 5% langsung (November 2025).",
+        "porsi": "Guna Makmur Raya 25,17% (KSEI; setelah 7–9 April 2026) ditambah Budi Gunawan 5,00% langsung (KSEI); turun dari 64,15% (sebelum 14 November 2025) dan 40,17% (November 2025). Carolina Kusuma memegang sekitar 5% langsung (November 2025).",
         "latar": "Direktur Utama TRUK (dikukuhkan RUPST Juni 2026); pendiri usaha angkutan truk/freight forwarding berbasis Surabaya. Pendidikan tidak ditemukan.",
         "pengalaman": "Memimpin usaha angkutan darat bahan kimia dan logistik (lebih dari 100 truk). Kinerja TRUK merugi 2021–2025; pendapatan 9 bulan 2025 Rp30,63 M (turun 24,52% yoy), total aset Rp56,49 M per 30 September 2025, ekuitas turun 9,4% akibat akumulasi rugi.",
         "rekamJejak": [
@@ -3272,7 +3272,7 @@
             "kode": "TRUK",
             "peran": "Pengendali dan Direktur Utama",
             "periode": "Sejak IPO–sekarang; divestasi bertahap November 2025–April 2026",
-            "hasil": "14 November 2025: Guna Makmur Raya menjual 104,33 juta saham (23,98%) di Rp100 (64,15% → 40,17%). 7 April 2026: menjual 65,25 juta saham (15%) di Rp198 (→ 25,20%), tujuan 'divestasi dengan kepemilikan saham langsung'. Pembeli kedua transaksi tidak diungkap. September 2026 PT Catur Dharma Anugerah Surya menjual 20% ke PRK/Hakimson di Rp428, dan harga melonjak hingga suspensi.",
+            "hasil": "14 November 2025: Guna Makmur Raya menjual 104,33 juta saham (23,98%) di Rp100 (64,15% → 40,17%). 7 April 2026: menjual 65,25 juta saham (15%) di Rp198 (→ 25,17%), tujuan 'divestasi dengan kepemilikan saham langsung'. Pembeli kedua transaksi tidak diungkap. September 2026 PT Catur Dharma Anugerah Surya menjual 20% ke PRK/Hakimson di Rp428, dan harga melonjak hingga suspensi.",
             "keyakinan": "terverifikasi",
             "sumber": "PT Guna Makmur Raya Kurangi Porsi Kepemilikan Sahamnya di TRUK — Pasardana, 2025-11-17 · https://pasardana.id/news/2025/11/17/pt-guna-makmur-raya-kurangi-porsi-kepemilikan-sahamnya-di-truk ; Guna Makmur Raya Kurangi Kepemilikan Saham TRUK — BCA Sekuritas, 2026-04-08 · https://bcasekuritas.co.id/latest-news/news/guna-makmur-raya-kurangi-kepemilikan-saham-truk"
           }
@@ -3530,7 +3530,7 @@
           "lapis": 1,
           "entitas": "PT Guna Timur Raya Tbk",
           "pemilik": "PT Guna Makmur Raya",
-          "porsi": "25,20% (April 2026)"
+          "porsi": "25,17% (April 2026, KSEI)"
         },
         {
           "lapis": 1,
@@ -3588,9 +3588,9 @@
         "Cek Jadwal Tender Sukarela TRUK yang Siap Diakuisisi Gabriel Rey — Bisnis.com, 2026-09-28 · https://market.bisnis.com/read/20260928/192/2007828/cek-jadwal-tender-sukarela-truk-yang-siap-diakuisisi-gabriel-rey"
       ]
     },
-    "ringkas": "Pengendali tercatat masih Guna Makmur Raya (Budi Gunawan, 25,20%) yang telah melepas porsi dari 64% sejak November 2025 di harga Rp100–198; calon pengendali baru Gabriel Rey (TRIV) lewat PRK bersama Andry Hakim membeli 20% di Rp428 dan menawar tender Rp740 untuk 30%. Belum ada rencana injeksi, bisnis inti merugi, dan saham sempat ARA 8 kali lalu disuspensi — valuasi ditopang figur, bukan fundamental.",
+    "ringkas": "Pengendali tercatat masih Guna Makmur Raya (Budi Gunawan, 25,17%) yang telah melepas porsi dari 64% sejak November 2025 di harga Rp100–198; calon pengendali baru Gabriel Rey (TRIV) lewat PRK bersama Andry Hakim membeli 20% di Rp428 dan menawar tender Rp740 untuk 30%. Belum ada rencana injeksi, bisnis inti merugi, dan saham sempat ARA 8 kali lalu disuspensi — valuasi ditopang figur, bukan fundamental.",
     "koreksi": [
-      "Data lama hanya menyebut porsi Guna Makmur Raya 25,17%; riwayat divestasi kini dilengkapi (64,15% → 40,17% pada 14 November 2025 di Rp100 → 25,20% pada 7 April 2026 di Rp198).",
+      "Data lama hanya menyebut porsi Guna Makmur Raya 25,17%; riwayat divestasi kini dilengkapi (64,15% → 40,17% pada 14 November 2025 di Rp100 → 25,17% pada 7 April 2026 di Rp198).",
       "Pengurus ditambah Carolina Kusuma sebagai Komisaris Utama (disebut BCA Sekuritas, November 2025); perlu konfirmasi apakah masih menjabat pasca-RUPST Juni 2026.",
       "PRK dirinci: Gabriel Rey 99,9%, akta pendirian 25 Agustus 2025 di Surabaya — PRK adalah entitas baru, berusia sekitar satu tahun saat membeli TRUK."
     ],
@@ -3640,7 +3640,7 @@
             "keyakinan": "terverifikasi"
           },
           {
-            "dengan": "Lima investor tunai: Suripto (Rp50 M), John Veter Firdaus (Rp50 M), Antony Lesmana (Rp50 M), Daniel Tejakusuma (Rp25 M), Rossa Linna (Rp25 M)",
+            "dengan": "Lima investor tunai: Suripto (Rp50 M), Jhon Veter Firdaus Reagen (Rp50 M), Antony Lesmana (Rp50 M), Daniel Tejakusuma (Rp25 M), Rossa Linna (Rp25 M)",
             "hubungan": "Penyetor tunai Rp200 miliar dalam PMTHMETD di Rp1/saham; disebut independen",
             "keyakinan": "terverifikasi"
           },
@@ -3919,7 +3919,7 @@
     "ringkas": "MKNT (kini Remitra Global) dikendalikan Handoyo Setiawan, pemilik Citra Baru Steel, melalui HBEH 64,86% hasil konversi utang di Rp1/saham, sehingga publik terdilusi 99,46% dan tersisa ±0,41%. Aset afiliasi dibeli tanpa RUPS dan tanpa pendapat kewajaran; Handoyo sempat tersangka dalam sengketa pembayaran CBS (dihentikan April 2026). Dewan komisaris diisi figur politik (Idrus Marham, eks-terpidana suap) dan eks-pimpinan bursa (Erry Firmansyah).",
     "koreksi": [
       "Pengendali lama MKNT ditegaskan: PT Monjes Investama (terdilusi menjadi ±0,12%).",
-      "Lima investor setoran tunai Rp200 miliar yang sebelumnya 'tidak ditemukan' kini teridentifikasi: Suripto, John Veter Firdaus, Antony Lesmana (masing-masing Rp50 miliar), Daniel Tejakusuma dan Rossa Linna (masing-masing Rp25 miliar).",
+      "Lima investor setoran tunai Rp200 miliar yang sebelumnya 'tidak ditemukan' kini teridentifikasi: Suripto, Jhon Veter Firdaus Reagen, Antony Lesmana (masing-masing Rp50 miliar), Daniel Tejakusuma dan Rossa Linna (masing-masing Rp25 miliar).",
       "Peran HBEH di entri pengendali ditulis 'pengendali' (sebelumnya 'pemegang kendali') agar sesuai format."
     ],
     "tidakDitemukan": [
@@ -3998,7 +3998,7 @@
           },
           {
             "dengan": "Noprian Fadli / Triple B",
-            "hubungan": "Triple B tercatat ±5,17% GPSO; GPSO tercantum di situs Triple B Advisory; Noprian disebut sebagai investor atau penasihat keuangan",
+            "hubungan": "Triple B sempat 5,17% GPSO (Okt 2025), kini 1,90% (KSEI Sep 2026); GPSO tercantum di situs Triple B Advisory; Noprian disebut sebagai investor atau penasihat keuangan",
             "keyakinan": "disebut media"
           },
           {
@@ -4020,7 +4020,7 @@
         "nama": "Noprian Fadli",
         "peran": "pemegang saham",
         "entitas": "PT Triple Berkah Bersama (Triple B; Noprian 99%, Nuzwan Gufron 1%)",
-        "porsi": "±5,17% via Triple B (disebut media/keterbukaan EPAC 2026); tidak tercantum di daftar pemegang ≥5% KSEI Oktober 2026",
+        "porsi": "1,90% via Triple B (KSEI Sep 2026); sempat 5,17% (keterbukaan 16 Okt 2025)",
         "latar": "Disebut media lulusan ITB dan Magister Manajemen Keuangan Universitas Padjadjaran; peserta Bank Niaga Executive Education Program (2001–2002). Berkarier di Bank Niaga/CIMB Niaga sekitar 2001–2010 dari account officer corporate banking hingga Banking Head dan Caretaker Corporate Banking Group Head (2009–2010), serta sempat di Investment Banking Group CIMB, Kuala Lumpur.",
         "pengalaman": "Mendirikan Triple B (Triple B Advisory) pada 2015 dan menjabat CEO; layanan M&A, restrukturisasi, valuasi, due diligence, IPO dan obligasi, dengan klien yang disebut media antara lain Sriwijaya Air, Krakatau Engineering dan Salim Ivomas. Direktur Utama PT Morris Capital Indonesia (MCI, pengendali PIPA) dan Direktur PIPA sejak RUPSLB 26 Januari 2026; Komisaris NINE sejak 2024. Dari penasihat, ia berubah menjadi akuisitor serial cangkang: NINE (2024), PIPA (2025), MEJA (2025), EPAC (2026), dan minoritas GPSO serta BRRC.",
         "rekamJejak": [
@@ -4063,7 +4063,7 @@
           {
             "entitas": "PT Geoprima Solusi Tbk",
             "kode": "GPSO",
-            "peran": "Pemegang saham ±5,17% via Triple B; disebut media sebagai investor/penasihat keuangan",
+            "peran": "Pemegang saham 1,90% via Triple B (KSEI Sep 2026; sempat 5,17%); disebut media sebagai investor/penasihat keuangan",
             "periode": "2025–2026 (porsi terkini tidak tercantum di daftar ≥5% KSEI Okt 2026)",
             "hasil": "GPSO diambil alih Tjokro Group (PIMSF) Okt 2025 @±Rp66; harga sempat Rp1.010, kini ±Rp224. Nama GPSO muncul di situs Triple B Advisory; peran advisori formal tidak dirinci.",
             "keyakinan": "disebut media",
@@ -4158,7 +4158,7 @@
           },
           {
             "dengan": "Tjokro Group (GPSO)",
-            "hubungan": "Triple B pemegang ±5,17% GPSO; GPSO tercantum di situs Triple B Advisory",
+            "hubungan": "Triple B pemegang 1,90% GPSO (KSEI Sep 2026; sempat 5,17%); GPSO tercantum di situs Triple B Advisory",
             "keyakinan": "disebut media"
           }
         ],
@@ -4179,13 +4179,27 @@
     "pengurus": {
       "direksi": [
         {
-          "nama": "Axel Tobias Joel",
-          "jabatan": "Direktur",
+          "nama": "Dionysius Tjokro",
+          "jabatan": "Direktur Utama",
           "orangPengendaliBaru": true,
-          "latar": "Masuk melalui perubahan pengurus Desember 2025–Maret 2026 setelah pengambilalihan; latar profesional tidak ditemukan di sumber publik.",
+          "latar": "Diangkat Direktur Utama dalam RUPSLB 19 Desember 2025 setelah pengambilalihan oleh PIMSF; memegang 14.500 saham GPSO (KSEI). Latar profesional lain tidak ditemukan di sumber publik.",
           "riwayat": [],
           "rangkap": [],
-          "hubungan": "Diangkat pada era Tjokro Group.",
+          "hubungan": "Marga sama dengan UBO Kurniawan Eddy Tjokro; hubungan keluarga belum dipastikan (indikasi).",
+          "keyakinan": "terverifikasi",
+          "sumber": [
+            "Daftar pemegang saham direksi GPSO (KSEI via Stockbit), 2026-10-21",
+            "Hasil RUPSLB GPSO 19 Desember 2025 — Warta Ekonomi/EmitenNews"
+          ]
+        },
+        {
+          "nama": "Axel Tobias Joel",
+          "jabatan": "Direktur",
+          "orangPengendaliBaru": false,
+          "latar": "Presiden Komisaris dan pemegang 7,5% GPSO pada era Karnadi Margaka (per Sep 2023); diangkat Direktur dalam RUPSLB 19 Desember 2025. Latar profesional lain tidak ditemukan di sumber publik.",
+          "riwayat": [],
+          "rangkap": [],
+          "hubungan": "Sudah di GPSO sebelum akuisisi (Komut era Karnadi Margaka) dan tetap menjabat sebagai Direktur di era Tjokro Group.",
           "keyakinan": "terverifikasi",
           "sumber": [
             "Profil emiten GPSO (data KSEI) — server lokal /api/profile, 2026-10-21"
@@ -4257,7 +4271,7 @@
           "sumber": "Pembelian atau penjualan saham perusahaan yang nilainya material — Stockbit Reports, 2026-05-07; Pengumuman Hasil PMTHMETD — Stockbit Reports, 2026-07-07"
         },
         {
-          "temuan": "Triple B (Noprian Fadli, pengendali MEJA/EPAC) memegang ±5,17% GPSO dan GPSO tercantum di situs Triple B Advisory, sehingga konsultan aksi korporasi kemungkinan ikut berinvestasi di emiten kliennya. Porsi Triple B tidak lagi tercantum di daftar pemegang ≥5% KSEI Oktober 2026 (dilusi PMTHMETD atau dijual).",
+          "temuan": "Triple B (Noprian Fadli, pengendali MEJA/EPAC) sempat memegang 5,17% GPSO (kini 1,90%, KSEI Sep 2026) dan GPSO tercantum di situs Triple B Advisory, sehingga konsultan aksi korporasi kemungkinan ikut berinvestasi di emiten kliennya. Porsi Triple B tidak lagi tercantum di daftar pemegang ≥5% KSEI Oktober 2026 (dilusi PMTHMETD atau dijual).",
           "keyakinan": "indikasi",
           "sumber": "EPAC Diambil Alih Triple B, Bidik Jadi Holding Investasi — Kabarbursa, 2026-05-28; Profil emiten GPSO — server lokal /api/profile, 2026-10-21"
         }
@@ -4484,8 +4498,8 @@
           {
             "entitas": "PT Geoprima Solusi Tbk",
             "kode": "GPSO",
-            "peran": "Pemegang saham ±5,17% via Triple B; disebut media sebagai investor/penasihat keuangan",
-            "periode": "2025–2026 (porsi terkini tidak tercantum di daftar ≥5% KSEI Okt 2026)",
+            "peran": "Pemegang saham via Triple B (sempat ±5,17%; 1,90% per KSEI Okt 2026); disebut media sebagai investor/penasihat keuangan",
+            "periode": "2025–2026 (porsi terkini 1,90% per KSEI Okt 2026)",
             "hasil": "GPSO diambil alih Tjokro Group (PIMSF) Okt 2025 @±Rp66; harga sempat Rp1.010, kini ±Rp224. Nama GPSO muncul di situs Triple B Advisory; peran advisori formal tidak dirinci.",
             "keyakinan": "disebut media",
             "sumber": "EPAC Diambil Alih Triple B, Bidik Jadi Holding Investasi — Kabarbursa, 2026-05-28; Dua Sosok Investor Indonesia yang Lagi Naik Daun — Mikirduit, 2025-09-23"
@@ -4579,7 +4593,7 @@
           },
           {
             "dengan": "Tjokro Group (GPSO)",
-            "hubungan": "Triple B pemegang ±5,17% GPSO; GPSO tercantum di situs Triple B Advisory",
+            "hubungan": "Triple B pernah memegang ±5,17% GPSO (kini 1,90% per KSEI Okt 2026); GPSO tercantum di situs Triple B Advisory",
             "keyakinan": "disebut media"
           }
         ],
@@ -4664,7 +4678,7 @@
           "sumber": "Negosiasi rencana pengambilalihan Perseroan — Stockbit Reports, 2026-04-27; Penjelasan atas Permintaan Penjelasan Bursa (KOREKSI) — Stockbit Reports, 2026-07-20"
         },
         {
-          "temuan": "Seorang direktur EPAC menjual seluruh 57,3 juta sahamnya (10 April 2026) dan seorang komisaris menjual seluruh 52,06 juta sahamnya (8 April 2026), kurang dari tiga minggu sebelum pengumuman negosiasi pengambilalihan (27 April 2026), di tengah kenaikan harga dari ±Rp42 ke Rp57–66.",
+          "temuan": "Direktur EPAC Nicky Gunhadi menjual seluruh 57,3 juta sahamnya (1,73%, 10 April 2026) dan Komisaris Utama Alex Budiarjo menjual seluruh 52,06 juta sahamnya (1,58%, 8 April 2026), kurang dari tiga minggu sebelum pengumuman negosiasi pengambilalihan (27 April 2026), di tengah kenaikan harga dari ±Rp42 ke Rp57–66.",
           "keyakinan": "terverifikasi",
           "sumber": "Penjelasan atas Volatilitas Transaksi — Stockbit Reports, 2026-04-28"
         },
@@ -4699,7 +4713,7 @@
       "UBO perorangan PT Sirkah Akselerasi Jaya",
       "Laporan keuangan teraudit dan susunan pengurus PT Media Telekomunikasi Mandiri",
       "Perkara PKPU/restrukturisasi MTM di SIPP: tidak ditemukan pemberitaan meski EPAC menyebut MTM sedang restrukturisasi utang",
-      "Identitas direktur dan komisaris lama yang menjual saham pada 8–10 April 2026",
+      "Alasan penjualan saham Nicky Gunhadi dan Alex Budiarjo pada 8–10 April 2026",
       "Calon pengurus baru yang akan diusulkan di RUPSLB 3 November 2026",
       "Harga dan pelaksanaan tender wajib Triple B di EPAC"
     ]
@@ -4922,8 +4936,8 @@
       {
         "nama": "Xaverius Nursalim",
         "peran": "UBO",
-        "entitas": "PT Putrasakti Mandiri (sekitar 32–38,9%) bersama PT Intan Perdana Sukses (24%) dan PT Cahayasakti Investindo Sukses Tbk/CSIS (24%) — pengendali lama/penjual, bukan pengambil alih",
-        "porsi": "Sekitar 80–86% gabungan kelompok pengendali lama (Putrasakti 38,909% per Oktober 2025 menurut IDNFinancials; data lain 31,999%). Seluruh 86% (1,075 miliar saham) diikat CSPA 22 April 2026 untuk dijual ke Ruby Mining.",
+        "entitas": "PT Putrasakti Mandiri (32,00% per KSEI Okt 2026; 38,909% per Okt 2025) bersama PT Intan Perdana Sukses (24%) dan PT Cahayasakti Investindo Sukses Tbk/CSIS (24%) — pengendali lama/penjual, bukan pengambil alih",
+        "porsi": "80% gabungan kelompok pengendali lama per KSEI Okt 2026 (Putrasakti 32,00%, CSIS 24%, Intan Perdana Sukses 24%); 86% pada Oktober 2025 (Putrasakti 38,909% menurut IDNFinancials). Seluruh 86% (1,075 miliar saham) diikat CSPA 22 April 2026 untuk dijual ke Ruby Mining.",
         "latar": "Generasi kedua keluarga Nursalim (putra Simon Nursalim), yang membangun usaha dari toko distribusi peralatan rumah tangga Kian Sin (distributor produk impor sejak 1980) menjadi PT Selaras Citra Nusantara Perkasa Tbk (SCNP, produsen peralatan rumah tangga merek Turbo, berdiri 1985, Bogor). Tercatat sekitar 1,67% SCNP secara pribadi (Maret 2023). Mantan Direktur Utama KDTN (diganti Rudy Susanto, 22 Juni 2026). Pendidikan tidak ditemukan.",
         "pengalaman": "Bersama Au Bintoro (Olympic Group) membawa KDTN IPO November 2022 (Rp150/saham, dana Rp37,5 M) untuk membangun hotel di rest area tol (Kedaton 8 Hotel Sentul, K8 Xpress/Swiss-Belexpress di rest area Cipali dan KM19 Japek). Pendapatan KDTN naik 30% dengan 5 hotel beroperasi (Juli 2026).",
         "rekamJejak": [
@@ -5235,7 +5249,7 @@
           "lapis": 1,
           "entitas": "PT Puri Sentul Permai Tbk",
           "pemilik": "PT Putrasakti Mandiri",
-          "porsi": "Sekitar 32–38,9%"
+          "porsi": "32,00% (KSEI Okt 2026)"
         },
         {
           "lapis": 1,
@@ -5308,8 +5322,8 @@
     "ringkas": "Kendali KDTN masih di tangan kelompok lama — keluarga Nursalim (SCNP) dan Au Bintoro (Olympic Group/CSIS) — yang mengikat penjualan 86% ke Ruby Mining (Hong Kong, UBO tak diungkap); pembeli sudah menaruh lima pengurus baru (termasuk tiga nama Tiongkok) tetapi menunda penyelesaian tanpa batas waktu setelah OJK menahan RUPS Independen. Red flag: hotel dijual ke PT Citra Nusantara Perkasa yang namanya nyaris identik dengan SCNP milik penjual, sementara uangnya dipakai membeli Sherman Mineral yang tanpa jejak publik.",
     "koreksi": [
       "Tjoea Aubintoro diidentifikasi sebagai Au Bintoro, pendiri Olympic Group, dan Xaverius Nursalim sebagai bagian keluarga pengendali SCNP (Kontan 20 Oktober 2022 menyebut 'Au Bintoro dan keluarga Nursalim bersaudara, pengendali SCNP' di IPO KDTN). Data lama hanya menyebut 'terafiliasi CSIS'.",
-      "Porsi Putrasakti Mandiri: IDNFinancials menyebut 38,909% (Oktober 2025), berbeda dari 31,999% di data lama; keduanya dicantumkan sebagai rentang.",
-      "Susunan pengurus baru dilengkapi: selain Rudy Susanto, Reza Lesmana (Kontan: Reza Lasmana), Alfajrul Hadi, dan Irma Tjandra, juga diangkat Zhang Lei dan Shi Liru (direktur) serta Zheng Mengsha (komisaris) pada 22 Juni 2026."
+      "Porsi Putrasakti Mandiri turun dari 38,909% (Oktober 2025, IDNFinancials) ke 32,00% (400 juta saham, KSEI per 30 September 2026); kelompok penjual kini 80%, lebih kecil dari 86% yang diikat CSPA.",
+      "Susunan pengurus baru dilengkapi: selain Rudy Susanto, Reza Lesmana (Kontan: Reza Lasmana), Alfajrul Hadi, dan Irma Tjandra, juga diangkat Zhang Lei dan Shi Liru (direktur) serta Zheng Mengsha (komisaris) pada 22 Juni 2026; ketiganya tidak tercantum di data pengurus KSEI/Stockbit Okt 2026, sehingga status efektif pengangkatannya perlu dikonfirmasi."
     ],
     "tidakDitemukan": [
       "UBO, direksi, dan rekam jejak Ruby Mining (Hong Kong) Limited (registri Hong Kong tidak dikutip media)",
@@ -5364,7 +5378,7 @@
           },
           {
             "dengan": "PT Pandawa Putra Investama",
-            "hubungan": "Pengendali lama yang menjual 59,24% dan masih memegang sisa saham (±5,6–7,6%)",
+            "hubungan": "Pengendali lama yang menjual 59,24% dan masih memegang sisa 5,62% (234,73 juta saham, KSEI Okt 2026)",
             "keyakinan": "terverifikasi"
           },
           {
@@ -5415,11 +5429,11 @@
         },
         {
           "nama": "Bambang Panca Putra",
-          "jabatan": "Presiden Direktur (dikutip Januari 2026)",
+          "jabatan": "Presiden Direktur",
           "orangPengendaliBaru": false,
-          "latar": "Dikutip Kontan sebagai Presiden Direktur DPUM saat pengumuman rencana akuisisi (Januari 2026). Status jabatan pasca-akuisisi tidak terkonfirmasi.",
+          "latar": "Dikutip Kontan sebagai Presiden Direktur DPUM saat pengumuman rencana akuisisi (Januari 2026); masih tercatat Direktur Utama (nama lengkap Bambang Panca Putra Yudiono) di data pengurus KSEI/Stockbit Okt 2026.",
           "riwayat": [
-            "Presiden Direktur — PT Dua Putra Utama Makmur Tbk — ±2025–2026"
+            "Presiden Direktur — PT Dua Putra Utama Makmur Tbk — ±2025–sekarang"
           ],
           "rangkap": [],
           "hubungan": "Era pengendali lama (Pandawa Putra Investama).",
@@ -5446,14 +5460,14 @@
         },
         {
           "nama": "Aris Widiarto",
-          "jabatan": "Komisaris (menurut profil MarketScreener; perlu konfirmasi)",
+          "jabatan": "Bukan pengurus DPUM per data KSEI Okt 2026 (MarketScreener mencantumkannya sebagai komisaris; kemungkinan data basi)",
           "orangPengendaliBaru": false,
           "latar": "Orang lingkaran pendiri grup Dua Putra: Marketing Manager PT Dua Putra Perkasa (2005–2008), General Manager CV Dua Putra Dewa (2008–2012), Presiden Direktur PT Pandawa Putra Investama (2016–2017).",
           "riwayat": [
             "Sales & Marketing — PT Dua Putra Perkasa — 2005–2008",
             "General Manager — CV Dua Putra Dewa — 2008–2012",
             "Presiden Direktur — PT Pandawa Putra Investama — 2016–2017",
-            "Komisaris — PT Dua Putra Utama Makmur Tbk — status terkini belum terverifikasi"
+            "Komisaris — PT Dua Putra Utama Makmur Tbk — menurut MarketScreener; tidak tercantum di data pengurus KSEI Okt 2026"
           ],
           "rangkap": [],
           "hubungan": "Terkait langsung pengendali lama (Pandawa Putra Investama).",
@@ -5481,7 +5495,7 @@
           "lapis": 1,
           "entitas": "PT Dua Putra Utama Makmur Tbk",
           "pemilik": "PT Pandawa Putra Investama",
-          "porsi": "±5,6–7,6% (sumber berbeda)"
+          "porsi": "5,62% (KSEI Okt 2026)"
         },
         {
           "lapis": 2,
@@ -5523,7 +5537,7 @@
     "ringkas": "DPUM dikendalikan Unirama Group (UBO Sherley Chandra Hadipurnomo) yang membayar tunai Rp217,65 miliar untuk bisnis riil—profil operator strategis, bukan cangkang murni. Namun pengendali lama (Pandawa Putra) menjual blok yang dibeli ±Rp17 pada 2024 seharga Rp88, didahului reli 250% dan suspensi; pantau PTW (berakhir 23 Oktober 2026) dan rencana rights issue.",
     "koreksi": [
       "Presiden Direktur DPUM yang dikutip media pada Januari 2026 adalah Bambang Panca Putra; data lama hanya mencantumkan R. Sri Dwi Mamik Wijaya dan Adi Winardi sebagai direktur.",
-      "Porsi sisa PPI berbeda antar-sumber (5,62% di data lama vs 7,57% di sumber lain); belum dapat dipastikan."
+      "Porsi sisa PPI 5,62% (234,73 juta saham) per KSEI Okt 2026; angka 7,57% di sumber lain sudah basi."
     ],
     "tidakDitemukan": [
       "Riwayat pendidikan/karier Sherley Chandra Hadipurnomo dan hubungannya dengan PT Unirama Duta Niaga",
@@ -5585,7 +5599,7 @@
             "kode": "BRRC",
             "peran": "Pemegang saham perorangan (non-pengendali)",
             "periode": "November 2025 – sekarang",
-            "hasil": "Membeli 50 juta saham di pasar negosiasi Rp150 dari PT Granada Global Industri (19 November 2025) → 5,18%; menambah 10,31 juta saham di Rp115 (Januari 2026) → 6,09%. Saham BRRC melejit setelah transaksi.",
+            "hasil": "Membeli 50 juta saham di pasar negosiasi Rp150 dari PT Granada Global Industri (19 November 2025) → 5,18%; menambah 10,31 juta saham di Rp115 (Januari 2026) → 6,09%; keterbukaan terakhir 23 Juli 2026 mencatat 5,26%, dan per KSEI Oktober 2026 tidak lagi tercatat ≥1%. Saham BRRC melejit setelah transaksi.",
             "keyakinan": "terverifikasi",
             "sumber": "BRRC Melejit Usai Noprian Fadli Transaksi 50 Juta Lembar di Pasar Nego — EmitenNews, 2025-11 · https://www.emitennews.com/news/brrc-melejit-usai-noprian-fadli-transaksi-50-juta-lembar-di-pasar-nego"
           },
@@ -5754,7 +5768,7 @@
         },
         {
           "nama": "Ramdani Eka Saputra",
-          "jabatan": "Komisaris (data profil lama menyebut Independen; detikFinance menyebut Komisaris)",
+          "jabatan": "Komisaris Independen (menurut data Stockbit/KSEI Oktober 2026; detikFinance menyebut Komisaris)",
           "orangPengendaliBaru": true,
           "latar": "Komisaris PT Morris Capital Indonesia; diangkat ke PIPA 26 Januari 2026. Latar lain tidak ditemukan.",
           "riwayat": [
@@ -5824,7 +5838,7 @@
     "koreksi": [
       "Peran Noprian Fadli diubah dari 'wakil pengendali' menjadi 'pengendali' (format standar) karena ia Direktur MCI dan pemilik manfaat kendaraan investasi grup; UBO formal MCI tetap tidak diungkap KSEI.",
       "Direktur Utama PIPA adalah Firrisky Ardi Nurtomo (sejak 26 Januari 2026, menggantikan Imanuel Kevin Mayola); data lama hanya mencantumkan Noprian sebagai direksi.",
-      "Status Ramdani Eka Saputra: detikFinance mencantumkan sebagai 'Komisaris' (bukan Komisaris Independen); perlu konfirmasi ke laporan resmi.",
+      "Status Ramdani Eka Saputra: data Stockbit/KSEI Oktober 2026 mencatatnya sebagai Komisaris Independen, meski ia juga Komisaris MCI; detikFinance menyebutnya 'Komisaris'.",
       "Terpidana kasus IPO era lama: Junaedi (Direktur PIPA) dan Mugi Bayu Pratama (eks Kepala Unit Evaluasi dan Pemantauan Perusahaan Tercatat 2 BEI); tersangka baru 3 Februari 2026: Boi Hutagalung (eks staf BEI), David Alusinsing (financial advisor), Ridwan Erviansyah (project manager IPO)."
     ],
     "tidakDitemukan": [
@@ -6356,7 +6370,7 @@
         "entitas": "PT Nextier Datamate Center (NDC)",
         "porsi": "Bersama Glenn T. Sugita atas 62,71% (porsi masing-masing tidak diungkap)",
         "latar": "Tidak ditemukan di sumber publik.",
-        "pengalaman": "Tidak ditemukan selain sebagai UBO NDC (JababekaDC 6 MW beroperasi, ekspansi ke 42 MW; BatangDC 60 MW).",
+        "pengalaman": "Tidak ditemukan selain sebagai UBO NDC dan Komisaris Utama MGLV (sejak RUPSLB 7 September 2026) (JababekaDC 6 MW beroperasi, ekspansi ke 42 MW; BatangDC 60 MW).",
         "rekamJejak": [],
         "perusahaan": [
           {
@@ -6901,7 +6915,7 @@
             "kode": "LAPD",
             "peran": "Pengendali melalui JSI; Direktur Utama",
             "periode": "September 2025 – sekarang",
-            "hasil": "Akuisisi 2,02 miliar saham (51%) dari Laymand Holdings Pte Ltd, PT Intiputera Bumitirta, Keraton Investment Ltd, Evi Felicia, dan Leo Andyanto pada Rp10/saham (±Rp20,23 miliar); dinyatakan tuntas 23 September 2025 (Kontan) / 10 November 2025 (data lama). PTW Rp51 (28 Februari–29 Maret 2026). Pengurus dirombak 14 Januari 2026. Ekuitas LAPD negatif Rp2,65 miliar dan modal kerja bersih negatif Rp26,44 miliar (30 Juni 2026); penjualan Juni 2026 anjlok 98,6%. Rencana PMHMETD II maks. 2 miliar saham Seri B di ±Rp50 (maks. Rp100 miliar) dengan JSI menyetor inbreng 99,99% saham BSS senilai Rp44,39 miliar; RUPSLB dijadwalkan 20 Oktober 2026, ditunda ke 29 Oktober 2026 atas permintaan klarifikasi OJK.",
+            "hasil": "Akuisisi 2,02 miliar saham (51%) dari Laymand Holdings Pte Ltd, PT Intiputera Bumitirta, Keraton Investment Ltd, Elvi Felicia, dan Leo Andyanto pada Rp10/saham (±Rp20,23 miliar); dinyatakan tuntas 23 September 2025 (Kontan) / 10 November 2025 (data lama). PTW Rp51 (28 Februari–29 Maret 2026). Pengurus dirombak 14 Januari 2026. Ekuitas LAPD negatif Rp2,65 miliar dan modal kerja bersih negatif Rp26,44 miliar (30 Juni 2026); penjualan Juni 2026 anjlok 98,6%. Rencana PMHMETD II maks. 2 miliar saham Seri B di ±Rp50 (maks. Rp100 miliar) dengan JSI menyetor inbreng 99,99% saham BSS senilai Rp44,39 miliar; RUPSLB dijadwalkan 20 Oktober 2026, ditunda ke 29 Oktober 2026 atas permintaan klarifikasi OJK.",
             "keyakinan": "terverifikasi",
             "sumber": "JSI Sinergi Mas Tuntaskan Akuisisi Saham Leyand International (LAPD) — Kontan, 2025-09 · https://investasi.kontan.co.id/news/jsi-sinergi-mas-tuntaskan-akuisisi-saham-leyand-international-lapd; LAPD Mau Rights Issue dan Inbreng Saham, Minta Restu RUPSLB — EmitenNews, 2026-09-12 · https://emitennews.com/news/lapd-mau-rights-issue-dan-inbreng-saham-minta-restu-rupslb; Penundaan RUPS Luar Biasa — Stockbit Reports, 2026-10-19"
           }
@@ -6970,7 +6984,7 @@
             "keyakinan": "indikasi"
           },
           {
-            "dengan": "Laymand Holdings Pte Ltd, PT Intiputera Bumitirta, Keraton Investment Ltd, Evi Felicia, Leo Andyanto",
+            "dengan": "Laymand Holdings Pte Ltd, PT Intiputera Bumitirta, Keraton Investment Ltd, Elvi Felicia, Leo Andyanto",
             "hubungan": "Penjual 51% LAPD (pengendali lama)",
             "keyakinan": "terverifikasi"
           }
@@ -7345,7 +7359,7 @@
         "nama": "Andi Syamsuddin Arsyad (Haji Isam)",
         "peran": "pemegang saham",
         "entitas": "Pribadi/grup Jhonlin",
-        "porsi": "±21,12% (masuk Mei 2026 di Rp137/saham, ±Rp936,65 miliar)",
+        "porsi": "20,04% per KSEI Oktober 2026 (6,84 miliar saham); ±21,12% saat masuk Mei 2026 di Rp137/saham (±Rp936,65 miliar), turun karena bertambahnya saham beredar (indikasi konversi OWK)",
         "latar": "Pengusaha asal Batulicin, Tanah Bumbu, Kalimantan Selatan; pendiri dan pemilik Jhonlin Group (batu bara, kontraktor tambang, sawit, minyak goreng, kawasan industri). Pendidikan formal tidak ditemukan.",
         "pengalaman": "Mengendalikan dua emiten sawit, PT Jhonlin Agro Raya Tbk (JARR) dan PT Pradiksi Gunatama Tbk (PGUN). Jhonlin juga mengembangkan smelter nikel PT Anugerah Barokah Cakrawala (40.000 ton/tahun, investasi ±Rp6 triliun) di KEK milik Jhonlin di Tanah Bumbu.",
         "rekamJejak": [
@@ -7530,7 +7544,7 @@
           "lapis": 1,
           "entitas": "PT Abadi Nusantara Hijau Investama Tbk (PACK)",
           "pemilik": "PT Eco Energi Perkasa; Haji Isam; Providentia Wealth Management (per September 2025, sebelum dilusi)",
-          "porsi": "38,50%; ±21,12%; 14,43% (sebelum rights issue, porsi terkini tidak ditemukan)"
+          "porsi": "38,50%; 20,04%; Providentia 14,43% per September 2025, 3,79% per Juli 2026 dan tidak lagi tercatat ≥1% di KSEI Oktober 2026"
         },
         {
           "lapis": 2,
@@ -7600,7 +7614,7 @@
         "entitas": "Langsung (perorangan)",
         "porsi": "42,75% per 28 Februari 2026; tercatat sebagai pemilik manfaat di data KSEI",
         "latar": "Direktur Utama sekaligus pengendali dan pemilik manfaat KOKA sejak sebelum IPO (Oktober 2023). Riwayat pendidikan dan karier sebelum KOKA tidak diungkap di sumber publik yang ditemukan.",
-        "pengalaman": "Memimpin KOKA (kontraktor umum sejak 2011). IPO Oktober 2023: 715.333.000 saham baru (25%) pada Rp128 per saham, penjamin emisi KGI Sekuritas dan UOB Kay Hian Sekuritas. Dalam prospektus berkomitmen tetap menjadi pemilik manfaat dan pengendali sekurang-kurangnya 5 tahun setelah pernyataan pendaftaran efektif. Sejak 2026 melepas saham kepada PT Liqun Investments Indonesia secara bertahap (CSPA 6 Maret 2026 Rp37,19 M; 15 Juli 2026 Rp17,35 M oleh PT Kreatif Konstruksi Indonesia, Gao Jinfeng, dan Ling Sun).",
+        "pengalaman": "Memimpin KOKA (kontraktor umum sejak 2011). IPO Oktober 2023: 715.333.000 saham baru (25%) pada Rp128 per saham, penjamin emisi KGI Sekuritas dan UOB Kay Hian Sekuritas. Dalam prospektus berkomitmen tetap menjadi pemilik manfaat dan pengendali sekurang-kurangnya 5 tahun setelah pernyataan pendaftaran efektif. Per KSEI Okt 2026 porsinya tetap 42,75%. Saham yang dibeli PT Liqun Investments Indonesia (CSPA 6 Maret 2026 Rp37,19 M; 15 Juli 2026 Rp17,35 M) berasal dari PT Kreatif Konstruksi Indonesia (24,75% → 11,50%), Gao Jinfeng (5,4% → 0) dan Ling Sun (5,6% → 0), yang jumlahnya persis 24,25%; belum terlihat Gao Jing sendiri menjual (indikasi).",
         "rekamJejak": [
           {
             "entitas": "PT Koka Indonesia Tbk",
@@ -7794,7 +7808,7 @@
       ]
     },
     "afiliasi": {
-      "pihakLawan": "Tidak ada injeksi aset. Penjual saham ke Liqun: Gao Jing, PT Kreatif Konstruksi Indonesia, Gao Jinfeng, Ling Sun (Sun Ling). Pemberi kontrak: PT Baja Jaya Lestari (Rp46,79 M, Pulau Obi), PT Kalimantan Aluminium Industry (Rp31,30 M), PT Karunia Permai Sentosa (Rp52,04 M).",
+      "pihakLawan": "Tidak ada injeksi aset. Penjual saham ke Liqun: PT Kreatif Konstruksi Indonesia, Gao Jinfeng, Ling Sun (Sun Ling); porsi Gao Jing tetap 42,75% per KSEI Okt 2026. Pemberi kontrak: PT Baja Jaya Lestari (Rp46,79 M, Pulau Obi), PT Kalimantan Aluminium Industry (Rp31,30 M), PT Karunia Permai Sentosa (Rp52,04 M).",
       "pengendaliPihakLawan": "Pengendali pemberi kontrak tidak diungkap; KOKA menyatakan PT Baja Jaya Lestari tidak terafiliasi",
       "karakteristik": "Akuisisi strategis bertahap tanpa injeksi aset; pertumbuhan diharapkan dari kontrak kawasan industri berbasis investasi Tiongkok dan anak usaha baru.",
       "hubungan": "Gao Jing menyatakan tidak ada hubungan afiliasi antara penjual dan pembeli; KOKA menyatakan transaksi Maret 2026 bukan transaksi afiliasi.",
@@ -7804,7 +7818,7 @@
           "lapis": 1,
           "entitas": "PT Koka Indonesia Tbk",
           "pemilik": "Gao Jing; PT Liqun Investments Indonesia; publik",
-          "porsi": "42,75% (per 28 Feb 2026); 24,25%; sisanya"
+          "porsi": "42,75% (KSEI Okt 2026); 24,25%; sisanya"
         },
         {
           "lapis": 2,
@@ -7866,7 +7880,7 @@
         "nama": "Eko Desriyanto",
         "peran": "UBO",
         "entitas": "PT Idea Asia Investama dan kepemilikan langsung",
-        "porsi": "Gabungan langsung dan melalui PT Idea Asia Investama yang akan dialihkan: 66,58% (707.322.700 saham). Idea Asia Investama turun ke 35,66% (378,8 juta saham) per 10 Februari 2026; data lain menyebut 28,66%.",
+        "porsi": "Gabungan langsung dan melalui PT Idea Asia Investama yang akan dialihkan: 66,58% (707.322.700 saham). Idea Asia Investama turun ke 35,66% (378,8 juta saham) per 10 Februari 2026, lalu 28,66% (Mei 2026; terkonfirmasi KSEI).",
         "latar": "Pendiri, pemegang saham pengendali, dan Presiden Direktur IDEA (diangkat RUPS Februari 2021). Lahir 1982 (profil Yahoo Finance). Riwayat pendidikan dan karier sebelum IDEA tidak ditemukan di sumber publik.",
         "pengalaman": "Membawa IDEA IPO melalui papan akselerasi pada 9 September 2021 (Rp140 per saham, dana Rp29,7 M). Mengembangkan jaringan cabang lewat kemitraan hotel (Hotel Garden Palace Surabaya, Life Hotel, Pandanaran Hotel Group Maret 2024). Membeli saham IDEA di pasar Agustus–September 2022 (Rp59–Rp63, total sekitar Rp823 juta) hingga 1,06%.",
         "rekamJejak": [
@@ -8015,7 +8029,7 @@
           "lapis": 1,
           "entitas": "PT Idea Indonesia Akademi Tbk",
           "pemilik": "PT Idea Asia Investama; Eko Desriyanto (langsung); publik",
-          "porsi": "Gabungan 66,58% (Idea Asia 35,66% per Februari 2026); sisanya publik"
+          "porsi": "Gabungan 66,58% (Idea Asia 28,66% per KSEI; 35,66% per Februari 2026); sisanya publik"
         },
         {
           "lapis": 2,
@@ -8588,7 +8602,7 @@
         "nama": "Janni",
         "peran": "UBO",
         "entitas": "Visionary Capital Global Pte. Ltd. (Singapura, didirikan 21 April 2025); juga pemegang saham TGUK secara langsung",
-        "porsi": "56,84% melalui VCG; Janni memiliki 90% VCG (Mei 2025), lalu 85% (Oktober 2026)",
+        "porsi": "56,84% melalui VCG ditambah 5,00% langsung (KSEI); Janni memiliki 90% VCG (Mei 2025), lalu 85% (Oktober 2026)",
         "latar": "Menurut satu media analisis, Janni adalah pengusaha senior di industri peternakan dan perdagangan daging, terkait PT Suri Nusantara Jaya dan Toko Daging Nusantara, serta pernah menjabat Direktur PT Estika Tata Tiara Tbk (BEEF). Klaim ini belum dikonfirmasi sumber resmi atau media lain.",
         "pengalaman": "Melalui VCG membeli 2,03 miliar saham TGUK dari PT Dinasti Kreatif Indonesia pada Rp20 (Rp40,6 M), penyelesaian 2 Oktober 2026. Rencana awal (Mei 2025) adalah 69,34%. TGUK beralih dari minuman ke perdagangan daging beku (konsep Toko Daging Platinum), sejalan dengan latar bisnis daging yang disebut media.",
         "rekamJejak": [
@@ -9488,7 +9502,7 @@
             "kode": "ASLI",
             "peran": "UBO pengendali melalui WKM",
             "periode": "Januari 2026–sekarang",
-            "hasil": "Membeli 62,72% dari Sudjatmiko pada Rp11/saham (Rp43,12 M) berdasarkan Akta PJB No. 12 tanggal 15 Januari 2026 (rencana awal 28 November 2025: 69,52%). Tender wajib Rp204/saham (5 Maret–3 April 2026) nihil peminat. Menjual 11,72% ke PT Cakrawala Multi Mineral pada sekitar Rp272 (Rp199,24 M, 4 Mei 2026; diskon ±33% dari harga penutupan Rp362), lalu membeli kembali 62,5 juta saham (1%) pada Rp325 (Rp20,31 M, 21 September 2026) untuk 'mempertahankan posisi pengendali'. Belum ada injeksi aset.",
+            "hasil": "Membeli 62,72% dari Sudjatmiko pada Rp11/saham (Rp43,12 M) berdasarkan Akta PJB No. 12 tanggal 15 Januari 2026 (rencana awal 28 November 2025: 69,52%). Tender wajib Rp204/saham (5 Maret–3 April 2026) nihil peminat. Menjual 11,72% ke PT Cakrawala Multi Mineral pada sekitar Rp272 (Rp199,24 M, 4 Mei 2026; diskon ±25% dari harga penutupan Rp362; sebagian media menulis 33%), lalu membeli kembali 62,5 juta saham (1%) pada Rp325 (Rp20,31 M, 21 September 2026) untuk 'mempertahankan posisi pengendali'. Belum ada injeksi aset.",
             "keyakinan": "terverifikasi",
             "sumber": "Wahana Konstruksi Mandiri Akuisisi 62,72% Saham ASLI Rp43,12 Miliar — Bisnis.com, 2026-01-20 · https://market.bisnis.com/read/20260120/192/1945623/wahana-konstruksi-mandiri-akuisisi-6272-saham-asli-rp4312-miliar; Pengendali Baru Gaspol, ASLI Gaet Investor Strategis — EmitenNews, 2026-05-07 · https://www.emitennews.com/news/pengendali-baru-gaspol-asli-gaet-investor-strategis; Pertegas Status Pengendali, Wahana Konstruksi Borong Saham ASLI Rp20,31 Miliar — Stockwatch, 2026-10-11 · https://stockwatch.id/pertegas-status-pengendali-wahana-konstruksi-borong-saham-asli-rp2031-miliar/"
           },
@@ -9665,7 +9679,7 @@
       "pihakLawan": "Tidak ada injeksi aset. Transaksi saham: Sudjatmiko (penjual 62,72% ke WKM) dan PT Cakrawala Multi Mineral (pembeli 11,72% dari WKM).",
       "pengendaliPihakLawan": "Pemilik dan pengurus PT Cakrawala Multi Mineral tidak diungkap di keterbukaan maupun media.",
       "karakteristik": "Transformasi organik ke kontraktor terintegrasi dan penunjang tambang/angkutan laut; sisa dana IPO Rp14,1 M dialihkan ke tongkang dan tugboat.",
-      "hubungan": "Sudjatmiko tidak terafiliasi dengan WKM. Hubungan CMM dengan WKM/Hariono tidak diungkap; CMM membeli pada diskon ±33% dari harga pasar.",
+      "hubungan": "Sudjatmiko tidak terafiliasi dengan WKM. Hubungan CMM dengan WKM/Hariono tidak diungkap; CMM membeli pada diskon ±25% dari harga pasar (Rp272 vs Rp362).",
       "pemilikAset": "Tidak ada injeksi aset",
       "strukturKepemilikan": [
         {
@@ -9703,7 +9717,7 @@
       "perkaraPihakLawan": [],
       "temuanTersembunyi": [
         {
-          "temuan": "Penjualan 11,72% ke CMM pada diskon ±33% dari harga pasar ke pihak yang identitasnya tidak diungkap; diskon besar ke pihak 'strategis' anonim lazim menandakan pihak yang memiliki kedekatan dengan penjual.",
+          "temuan": "Penjualan 11,72% ke CMM pada diskon ±25% dari harga pasar ke pihak yang identitasnya tidak diungkap; diskon besar ke pihak 'strategis' anonim lazim menandakan pihak yang memiliki kedekatan dengan penjual.",
           "keyakinan": "indikasi",
           "sumber": "Pengendali Baru Gaspol, ASLI Gaet Investor Strategis — EmitenNews, 2026-05-07"
         },
@@ -9726,8 +9740,8 @@
     },
     "ringkas": "Dikendalikan Hariono melalui WKM (52%), kontraktor Tanah Bumbu yang mengerjakan proyek Jhonlin dan pemiliknya memegang saham JARR serta PGUN, sehingga kuat di orbit Grup Haji Isam. WKM masuk pada Rp11 lalu menjual 11,72% ke pihak anonim (CMM) senilai Rp199 M, sehingga sudah balik modal berlipat sebelum ada injeksi apa pun. Pantau kontrak dari grup terafiliasi dan identitas pemilik CMM.",
     "koreksi": [
-      "Ejaan komisaris ditulis 'Wison' (sebelumnya 'Wilson') sesuai EmitenNews dan IDX Channel tentang hasil RUPSLB 27 April 2026.",
-      "Ejaan direktur ditulis 'Bambang Supeno Irianto' (sebelumnya 'Supeno Bambang Irianto') sesuai EmitenNews dan IDX Channel.",
+      "Ejaan komisaris ditulis 'Wison' (sebelumnya 'Wilson') sesuai EmitenNews dan IDX Channel tentang hasil RUPSLB 27 April 2026; data pengurus KSEI/Stockbit Okt 2026 menulis 'Wilson', sehingga ejaan final belum dapat dipastikan.",
+      "Ejaan direktur ditulis 'Bambang Supeno Irianto' (sebelumnya 'Supeno Bambang Irianto') sesuai EmitenNews dan IDX Channel; data pengurus KSEI/Stockbit Okt 2026 menulis 'Supeno Bambang Irianto'.",
       "Kepemilikan Hariono di PGUN (1,19%) ditambahkan; sebelumnya hanya JARR yang disebut dan bersumber ensiklopedia daring, kini dari Katadata 2026-03-06."
     ],
     "tidakDitemukan": [
@@ -9747,7 +9761,7 @@
         "nama": "William Teng",
         "peran": "UBO",
         "entitas": "Green City SG Pte. Ltd. (Singapura); pemegang saham GCSG menurut keterbukaan: Rich Step International Ltd, Yang Jie, dan PT Green Power Group Tbk (LABA)",
-        "porsi": "Masuk 41% (682,21 juta saham) pada Rp33/saham, 25 Agustus 2025. Data KSEI 31 Maret 2026: 162,21 juta saham (9,75%); setelah membeli 11,8 juta saham pada 2–3 Juli 2026, kepemilikan langsung sekitar 174 juta saham (±10,5%). Angka 22,70–22,73% yang dimuat sebagian media tidak konsisten dengan jumlah lembar (lihat koreksi).",
+        "porsi": "Masuk 41% (682,21 juta saham) pada Rp33/saham, 25 Agustus 2025. Data KSEI 31 Maret 2026: 162,21 juta saham (9,75%); setelah membeli 11,8 juta saham pada 2–3 Juli 2026. Per KSEI Oktober 2026 (Stockbit) tercatat 377,79 juta saham (22,70%); sumber tambahan lembar di luar pembelian Juli belum ditemukan.",
         "latar": "Pendiri dan CEO merek motor listrik ECGO (PT Green City Traffic, berdiri 2018), Managing Director Rich Step International Ltd, direktur Green City SG Pte Ltd, dan pemilik manfaat akhir GCSG. Pendidikan dan riwayat karier sebelum ECGO tidak ditemukan di sumber publik.",
         "pengalaman": "Membangun ECGO sejak 2018 (TKDN hingga 56%, lebih dari 10.000 unit terjual, dua model masuk daftar subsidi 2023–2024; segmen utama pengemudi ojek daring dengan skema sewa mulai Rp39.000/hari). ECGO bermitra dengan produsen baterai Gotion untuk pasokan 2 juta paket baterai senilai US$600 juta selama tiga tahun. Sejak 26 Agustus 2025 menjadi Direktur Utama KRYA dan mengalihkan bisnis KRYA dari konstruksi/baja ke kendaraan listrik melalui penyertaan 50,99% di PT Green City Traffic.",
         "rekamJejak": [
@@ -9833,7 +9847,7 @@
           }
         ],
         "karakteristik": "Operator bisnis motor listrik yang memakai KRYA sebagai wahana tercatat untuk anak usaha miliknya sendiri. Pola transaksinya bukan akumulasi jangka panjang: kendali dibeli sangat murah (Rp33), harga saham naik lebih dari 200% pada 2025, lalu GCSG dan LABA mendistribusikan sebagian besar saham ke pasar dalam kuartal pertama setelah tender wajib.",
-        "risiko": "Tidak ditemukan perkara hukum atas William Teng. Risiko tinggi: (1) pengendali telah melepas ±76% dari porsi awalnya sehingga keselarasan kepentingan dengan publik lemah; (2) transaksi afiliasi berlapis (KRYA–GCT–GCSG–LABA–EVMoto) tanpa penilai independen; (3) tokoh kunci jaringan (An Shaohong) dideportasi dan hilang kontak; (4) data kepemilikan simpang siur dan RUPS berulang kali gagal kuorum.",
+        "risiko": "Tidak ditemukan perkara hukum atas William Teng. Risiko tinggi: (1) pengendali sempat melepas ±76% dari porsi awalnya (41% menjadi 9,75% per Maret 2026; per KSEI Oktober 2026 tercatat 22,70%) sehingga keselarasan kepentingan dengan publik lemah; (2) transaksi afiliasi berlapis (KRYA–GCT–GCSG–LABA–EVMoto) tanpa penilai independen; (3) tokoh kunci jaringan (An Shaohong) dideportasi dan hilang kontak; (4) data kepemilikan simpang siur dan RUPS berulang kali gagal kuorum.",
         "sumber": [
           "Perusahaan William Teng Bermodal Rp22 Miliar Kendalikan KRYA — Hallo Bisnis, 2025-08-28",
           "Bangun Karya (KRYA) Tunjuk William Teng Jadi Dirut Baru Jelang Akuisisi — IDX Channel, 2025-08",
@@ -9863,7 +9877,7 @@
             "entitas": "PT Bangun Karya Perkasa Jaya Tbk",
             "kode": "KRYA",
             "peran": "Komisaris Utama",
-            "periode": "26 Agustus 2025–sekarang (penggantian tertunda karena RUPS gagal kuorum)",
+            "periode": "26 Agustus 2025–21 Januari 2026 (diberhentikan RUPSLB; digantikan Shenia Ayu Pangesti)",
             "hasil": "Lihat rekam jejak William Teng; pengendali dan LABA mendistribusikan saham setelah tender wajib.",
             "keyakinan": "terverifikasi",
             "sumber": "Perusahaan William Teng Bermodal Rp22 Miliar Kendalikan KRYA — Hallo Bisnis, 2025-08-28"
@@ -9909,7 +9923,7 @@
           }
         ],
         "karakteristik": "Figur penghubung jaringan investor Tiongkok yang memegang jabatan puncak di tiga emiten kecil (LABA, KRYA, OLIV) sekaligus pada 2025, seluruhnya diarahkan ke narasi kendaraan listrik.",
-        "risiko": "Tinggi: dideportasi dan hilang kontak; KRYA belum dapat menggantinya karena RUPS gagal kuorum; reputasi jaringan menekan harga ketiga emiten.",
+        "risiko": "Tinggi: dideportasi dan hilang kontak; KRYA telah menggantinya dengan Shenia Ayu Pangesti pada RUPSLB 21 Januari 2026; reputasi jaringan menekan harga ketiga emiten.",
         "sumber": [
           "LABA Buka Suara Perihal Deportasi An Shaohong, Akui Putus Kontak — CNBC Indonesia, 2025-12-09",
           "Geger DPO Buron Tiongkok di Indonesia, Bos KRYA dan LABA Dideportasi — Stockwatch, 2025-12-08",
@@ -9970,14 +9984,14 @@
       ],
       "komisaris": [
         {
-          "nama": "An Shaohong (kosong)",
-          "jabatan": "Komisaris Utama (dalam proses penggantian)",
+          "nama": "An Shaohong (mantan)",
+          "jabatan": "Mantan Komisaris Utama (diberhentikan RUPSLB 21 Januari 2026; digantikan Shenia Ayu Pangesti)",
           "orangPengendaliBaru": true,
-          "latar": "Dideportasi Desember 2025; pengganti belum ditetapkan karena RUPS Juli dan Agustus 2026 gagal kuorum.",
+          "latar": "Dideportasi Desember 2025; diberhentikan pada RUPSLB 21 Januari 2026 dan digantikan Shenia Ayu Pangesti.",
           "riwayat": [
             "Presiden Direktur — LABA — hingga Februari 2026",
             "Komisaris Utama — OLIV — hingga Juni 2026",
-            "Komisaris Utama — KRYA — Agustus 2025–sekarang"
+            "Komisaris Utama — KRYA — Agustus 2025–Januari 2026"
           ],
           "rangkap": [],
           "hubungan": "Tokoh kunci konsorsium Rich Step–LABA.",
@@ -10017,7 +10031,7 @@
           "lapis": 1,
           "entitas": "PT Bangun Karya Perkasa Jaya Tbk",
           "pemilik": "Green City SG Pte Ltd",
-          "porsi": "±10,5% (KSEI; 9,75% per 31 Maret 2026 + 0,71% Juli 2026)"
+          "porsi": "22,70% (KSEI Oktober 2026; 377,79 juta saham)"
         },
         {
           "lapis": 1,
@@ -10029,7 +10043,7 @@
           "lapis": 1,
           "entitas": "PT Bangun Karya Perkasa Jaya Tbk",
           "pemilik": "Dharmo Budiono (pemegang lama, tidak menjual pada 2026)",
-          "porsi": "±9,52%"
+          "porsi": "10,02% (KSEI Oktober 2026)"
         },
         {
           "lapis": 2,
@@ -10108,9 +10122,9 @@
         "Butuh Modal Tambahan, Bangun Karya (KRYA) Jual Gudang — IDX Channel, 2025-09-01"
       ]
     },
-    "ringkas": "Dikendalikan jaringan investor Tiongkok melalui Green City SG (UBO William Teng) dan LABA, yang membeli kendali pada Rp33 lalu melepas sebagian besar sahamnya setelah tender wajib; porsi langsung GCSG menurut KSEI tinggal sekitar 10%. KRYA kini bergantung pada transaksi afiliasi (anak usaha ECGO milik pengendali, pembeli EVMoto milik LABA), Komisaris Utama dideportasi, dan RUPS berulang kali gagal kuorum — profil risiko sangat tinggi.",
+    "ringkas": "Dikendalikan jaringan investor Tiongkok melalui Green City SG (UBO William Teng) dan LABA, yang membeli kendali pada Rp33 lalu melepas sebagian besar sahamnya setelah tender wajib; porsi GCSG menurut KSEI Oktober 2026 tercatat 22,70% (dari 41% awal, sempat 9,75%). KRYA kini bergantung pada transaksi afiliasi (anak usaha ECGO milik pengendali, pembeli EVMoto milik LABA), Komisaris Utama dideportasi, dan RUPS berulang kali gagal kuorum — profil risiko sangat tinggi.",
     "koreksi": [
-      "Porsi GCSG '22,70%' tidak konsisten dengan jumlah lembar: KSEI mencatat 162,21 juta saham (9,75%) per 31 Maret 2026 dan pembelian Juli 2026 hanya 11,8 juta saham, sehingga porsi langsung sekitar 10,5% (sejalan dengan angka 10,68% di data lama). Angka 22,73% di Pasardana/Stockwatch memuat salah ketik jumlah lembar (274/374 juta).",
+      "Porsi GCSG: KSEI mencatat 162,21 juta saham (9,75%) per 31 Maret 2026, sedangkan data KSEI Oktober 2026 (Stockbit) mencatat 377,79 juta saham (22,70%); pembelian Juli 2026 yang diungkap hanya 11,8 juta saham, sehingga sumber tambahan lembar belum ditemukan.",
       "Rich Step International disebut 'pengakuisisi awal ~62%'; menurut keterbukaan, pembelian 25 Agustus 2025 dilakukan oleh GCSG (41%) dan LABA (17%) pada Rp33, total ±58% (748,77 juta saham); 62% adalah angka rencana tahap kedua.",
       "William Ong bukan figur tanpa latar: ia disebut Presiden Direktur LABA (Warta Ekonomi, Mikirduit); juga tanggal penjualan Rp150 oleh GCSG terjadi dua kali (30 Desember 2025 dan 20 Januari 2026), bukan sekali.",
       "Brigitta Notoatmodjo adalah direktur sekaligus pemegang saham lama penjual ke GCSG (orangPengendaliBaru=false), dan mengundurkan diri Juni 2026."
@@ -10221,7 +10235,7 @@
           "nama": "Vicktor Aritonang",
           "jabatan": "Direktur Utama",
           "orangPengendaliBaru": null,
-          "latar": "Disebut Katadata sebagai Dirut DOOH (Okt 2026); tidak tercantum di data pengurus KSEI yang diambil 21 Okt 2026. Latar tidak ditemukan.",
+          "latar": "Disebut Katadata sebagai Dirut DOOH (Okt 2026) dan tercantum sebagai Direktur Utama di data pengurus KSEI/Stockbit Okt 2026. Latar tidak ditemukan.",
           "riwayat": [],
           "rangkap": [],
           "hubungan": "Tidak diketahui.",
@@ -10249,7 +10263,7 @@
           "nama": "Muhammad Fakhri Azhari",
           "jabatan": "Komisaris Utama",
           "orangPengendaliBaru": null,
-          "latar": "Diangkat RUPST 22 Juni 2026 (sebelum akta pengambilalihan 30 Juli 2026), menggantikan Geger Nuryaman Maulana; tidak tercantum di data KSEI 21 Okt 2026.",
+          "latar": "Diangkat RUPST 22 Juni 2026 (sebelum akta pengambilalihan 30 Juli 2026), menggantikan Geger Nuryaman Maulana; tercantum sebagai Komisaris Utama di data KSEI/Stockbit Okt 2026.",
           "riwayat": [],
           "rangkap": [],
           "hubungan": "Diangkat saat negosiasi dengan SII berjalan.",
@@ -10336,7 +10350,7 @@
     "ringkas": "DOOH dikendalikan Tinawati via SII (masuk Rp50); ia bekas pengendali induk WIFI yang menggandeng Hashim Djojohadikusumo pada 2025, sehingga label 'emiten Hashim' hanya kaitan tidak langsung. Rencana inti, membeli 29,88% INET @Rp300 (premi ±60% atas pasar) dari pihak terafiliasi dengan utang pengendali hingga Rp5 T yang akan dilunasi rights issue berdilusi hingga 95%, sangat berisiko bagi pemegang saham publik.",
     "koreksi": [
       "Peran Tinawati diperjelas: ia bekas pengendali ISB/WIFI yang menjual 45% ISB ke Arsari (Hashim) pada Januari 2025, bukan sekadar 'penghubung'; porsi tidak langsungnya di WIFI 24,80% via SID (Jan 2025), selain kepemilikan langsung 0,29%.",
-      "Ditambahkan Dirut Vicktor Aritonang (Katadata, 2 Okt 2026); data KSEI terbaru hanya mencantumkan Devi Nisa Suhartono dan Mohamad Ihsan.",
+      "Ditambahkan Dirut Vicktor Aritonang (Katadata, 2 Okt 2026); data pengurus KSEI/Stockbit Okt 2026 kini mencantumkan Vicktor Aritonang, Devi Nisa Suhartono, Muhammad Fakhri Azhari, dan Mohamad Ihsan.",
       "UBO AKUN ditulis 'Adhie M. Massardi' sesuai Kontan; KSEI menulis 'Adhie M. Masardi'."
     ],
     "tidakDitemukan": [
@@ -11313,7 +11327,7 @@
       "komisaris": [
         {
           "nama": "Wibowo Muljono",
-          "jabatan": "Presiden Komisaris (mengundurkan diri, surat 5 Maret 2026; efektif sesuai keputusan RUPST 31 Maret 2026)",
+          "jabatan": "Komisaris (mengundurkan diri dari Presiden Komisaris, surat 5 Maret 2026; menurut data Stockbit tetap tercatat sebagai komisaris setelah RUPST 31 Maret 2026, Komisaris Utama kini Djap Tet Fa)",
           "orangPengendaliBaru": true,
           "latar": "Diangkat 6 Oktober 2025 menggantikan Paulus Ridwan Purawinata; disebut figur Astra Property.",
           "riwayat": [
@@ -11417,7 +11431,7 @@
         "nama": "Alan Rachmat Budiman (Alan R.B.)",
         "peran": "UBO",
         "entitas": "PT Mercury Strategic Indonesia (MSI; perusahaan investasi di Jakarta Selatan, 99,96% dimiliki Mercury Strategic Partners Pte Ltd, Singapura)",
-        "porsi": "26,871% (2,15 miliar saham) dibeli Rp183/saham (±Rp393,45 M) dari PT Karunia Berkah Jayasejahtera, 12 Desember 2025; hasil tender wajib tidak ditemukan",
+        "porsi": "26,871% (2,15 miliar saham) dibeli Rp183/saham (±Rp393,45 M) dari PT Karunia Berkah Jayasejahtera, 12 Desember 2025; per KSEI Oktober 2026 tetap 26,87% (2,15 miliar saham), sehingga tender wajib praktis tidak menambah porsi",
         "latar": "Disebut Bisnis.com sebagai 'Al Alan Rachmat' pemilik MSI. Pendidikan, karier, dan rekam jejak usaha tidak ditemukan di media maupun keterbukaan; tidak terkait dengan tokoh lain bernama Rachmat Budiman (diplomat).",
         "pengalaman": "Tidak tercatat memiliki atau memimpin emiten lain. Setelah masuk, NATO diubah menjadi perusahaan investasi (nama baru PT Olympus Strategic Indonesia Tbk, disetujui RUPSLB 4 Februari 2026) dan membeli 100% Orbit Marketing Pte Ltd (Singapura) senilai SGD10.000 pada 16 Januari 2026.",
         "rekamJejak": [
@@ -11557,7 +11571,7 @@
           "lapis": 1,
           "entitas": "PT Olympus Strategic Indonesia Tbk",
           "pemilik": "PT Mercury Strategic Indonesia",
-          "porsi": "26,871% (sebelum hasil tender wajib)"
+          "porsi": "26,871% (tetap setelah tender wajib; KSEI Oktober 2026)"
         },
         {
           "lapis": 2,
@@ -12422,7 +12436,7 @@
           "orangPengendaliBaru": true,
           "latar": "Latar tidak ditemukan.",
           "riwayat": [
-            "Direktur — PT Cashlez Worldwide Indonesia Tbk — Okt 2026–sekarang"
+            "Direktur — PT Cashlez Worldwide Indonesia Tbk — Okt 2026–sekarang (belum tercantum di data pengurus KSEI/Stockbit Okt 2026)"
           ],
           "rangkap": [],
           "hubungan": "Tidak diungkap",
