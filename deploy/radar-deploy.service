@@ -1,0 +1,8 @@
+[Unit]
+Description=Radar Backdoor: CD lokal (uji + deploy commit baru di origin/main)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/radar-cangkang
+ExecStart=/usr/bin/bash %h/radar-cangkang/deploy/deploy.sh

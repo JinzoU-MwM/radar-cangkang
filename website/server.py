@@ -1188,6 +1188,14 @@ def get_diff(days: int = 1) -> dict:
     return {"base": base_day, "since": since_iso, "items": out}
 
 
+def deploy_status() -> dict | None:
+    """Status CD lokal terakhir (.ci/status.json ditulis deploy/deploy.sh), bila ada."""
+    try:
+        return json.loads((ROOT.parent / ".ci" / "status.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
 def kandidat_loop() -> None:
     """Hitung kandidat di latar belakang (setelah start, lalu tiap 6 jam) supaya halaman
     Kandidat — termasuk versi publik yang hanya membaca hasil jadi — tidak menunggu pemindaian."""
@@ -1477,6 +1485,7 @@ class Handler(BaseHTTPRequestHandler):
             exp = token_exp()
             self.reply_json({
                 "ok": True, "tokenLoaded": bool(get_token()), "tokenExp": exp,
+                "deploy": deploy_status(),
                 "tokenStale": bool(exp and exp < time.time()),
                 "pageFallback": False,
                 "needsToken": bool(cfg and cfg.get("quote", {}).get("source") != "page"),
