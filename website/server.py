@@ -310,6 +310,17 @@ def tsa_load(name: str) -> dict:
     return data
 
 
+TSA_SETS = ("signals", "gems", "foreign-flow", "broker-scanner")
+
+
+def tsa_full(name: str) -> dict:
+    """Dataset penuh satu sumber tradersaham sebagai daftar baris + meta (halaman Intel Pasar)."""
+    d = tsa_load(name)
+    rows = list(d.values()) if isinstance(d, dict) and name in ("signals", "gems") else \
+        d.get("stocks", []) if isinstance(d, dict) else d
+    return {"name": name, "meta": tsa_load("meta"), "rows": rows}
+
+
 def tsa_summary(ticker: str) -> dict:
     """Gabungkan seluruh data tradersaham untuk satu emiten: teknikal+broker (signals),
     skor gems, arus asing list, dan net broker scanner bila tersedia."""
@@ -1402,7 +1413,7 @@ class Handler(BaseHTTPRequestHandler):
                 break
         name = f.name if f else ""
         # Kode server/skrip (.py, .ps1), dotfile (token, kredensial, DB), dan config tidak pernah disajikan.
-        # tsa-*.json = dataset penuh tradersaham; hanya disajikan per emiten lewat /api/tsa/summary.
+        # tsa-*.json tidak disajikan mentah; datanya lewat /api/tsa/<sumber> dan /api/tsa/summary.
         blocked = (not f or name.startswith(".") or f.suffix.lower() in (".py", ".ps1", ".pyc")
                    or name == "stockbit.config.json" or (name.startswith("tsa-") and name.endswith(".json")))
         if blocked:
@@ -1538,6 +1549,9 @@ class Handler(BaseHTTPRequestHandler):
                 ],
                 "generated": int(time.time()),
             })
+        elif path.startswith("api/tsa/") and path.rsplit("/", 1)[1] in TSA_SETS:
+            # Dataset penuh dari file lokal (tidak memanggil tradersaham per pengunjung).
+            self.reply_json(tsa_full(path.rsplit("/", 1)[1]))
         elif path == "api/tsa/summary":
             # Data intel pasar dari tradersaham.com (snapshot tsa-*.json) untuk emiten radar.
             if not self.guard_ticker(ticker):

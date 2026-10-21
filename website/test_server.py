@@ -96,6 +96,12 @@ class DataApiTest(unittest.TestCase):
         self.assertTrue(res["ada"])
         st, _ = self.call("GET", "/api/tsa/summary?ticker=bad", ctype=None)
         self.assertEqual(st, 400)
+        st, res = self.call("GET", "/api/tsa/signals", ctype=None)
+        self.assertEqual((st, res["rows"][0]["regimeSignal"]), (200, "BULL"))
+        st, res = self.call("GET", "/api/tsa/broker-scanner", ctype=None)
+        self.assertEqual((st, res["rows"]), (200, []))
+        st, _ = self.call("GET", "/api/tsa/rahasia", ctype=None)
+        self.assertNotEqual(st, 200)  # hanya 4 sumber yang dikenal
 
     def test_07_public_is_read_only(self):
         st, res = self.call("PUT", "/api/items/NAYZ", {"ticker": "NAYZ"}, public=True)

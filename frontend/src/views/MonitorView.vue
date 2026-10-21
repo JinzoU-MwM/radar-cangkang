@@ -461,11 +461,6 @@ onMounted(() => autoRefresh('stockbit'))
 .chg.up{color:var(--good)}.chg.dn{color:var(--strong)}
 .vol{display:inline-block;margin-top:2px;padding:0 4px;border-radius:2px;background:var(--now-bg);color:var(--now-ink);font:700 11.5px var(--f-display)}
 @media (max-width:640px){.c-pos{display:none}}
-.sortb::after{content:"";display:inline-block;width:8px;height:10px;margin-left:5px;background:currentColor;opacity:.35;-webkit-mask:var(--ic-sort) center/contain no-repeat;mask:var(--ic-sort) center/contain no-repeat}
-.sortb.asc,.sortb.desc{color:var(--ink)}
-.sortb.asc::after,.sortb.desc::after{opacity:1}
-.sortb.desc::after{-webkit-mask-image:var(--ic-down);mask-image:var(--ic-down)}
-.sortb.asc::after{-webkit-mask-image:var(--ic-up);mask-image:var(--ic-up)}
 .rep{display:flex;gap:10px;align-items:baseline}
 .dd{flex:none;width:46px;font:700 15px var(--f-display);color:var(--ink-2)}
 .dd.now{color:var(--now-ink)}
