@@ -114,6 +114,9 @@ def cache_ttl(url: str) -> int:
         return 12 * 3600
     if "/stream/" in url:
         return 60 * 60
+    if "timeframe=3y" in url:
+        # Deret 3 tahun untuk siklus/benchmark: candle hari ini tidak mengubah polanya.
+        return 12 * 3600
     if re.search(r"stockbit\.com/symbol/|chartbit|/charts/|prices|orderbook|running|marketdetector", url):
         return 10 * 60 if market_open() else 12 * 3600
     return 60 * 60
@@ -125,6 +128,7 @@ FAIL_BACKOFF = 5 * 60   # jeda setelah panggilan gagal sebelum mencoba Stockbit 
 _fail_until: dict[str, int] = {}
 _stats_lock = threading.Lock()
 _upstream: list[float] = []
+_upstream_n = 0  # total panggilan Stockbit sejak server jalan (tidak berkurang)
 _hits: list[float] = []
 
 
@@ -258,8 +262,10 @@ def cached_text(url: str, fetch, fresh: bool = False) -> str:
     if hit is not None:
         _stat(_hits)
         return hit
+    global _upstream_n
     try:
         _stat(_upstream)
+        _upstream_n += 1
         body = fetch()
     except Exception as e:
         _fail_until[url] = now + FAIL_BACKOFF
@@ -771,7 +777,21 @@ def get_insider(ticker: str, days: int = 180, fresh: bool = False) -> dict:
     return {"ticker": ticker, "days": days, "holders": holders}
 
 
+_bm_memo: dict[str, tuple[float, dict]] = {}
+
+
 def get_benchmark(deals: list[str], fresh: bool = False) -> dict:
+    # Hasil dihitung ulang paling sering 10 menit sekali untuk kumpulan transaksi yang sama.
+    key = ",".join(sorted(deals))
+    hit = _bm_memo.get(key)
+    if hit and not fresh and time.time() - hit[0] < 600:
+        return hit[1]
+    res = _benchmark(deals, fresh)
+    _bm_memo[key] = (time.time(), res)
+    return res
+
+
+def _benchmark(deals: list[str], fresh: bool = False) -> dict:
     rows = []
     for dl in deals:
         if ":" not in dl:
@@ -779,6 +799,7 @@ def get_benchmark(deals: list[str], fresh: bool = False) -> dict:
         sym, start = dl.split(":", 1)
         if not (re.match(r"^[A-Z]{4}$", sym) and re.match(r"^\d{4}-\d{2}-\d{2}$", start)):
             continue
+        calls0 = _upstream_n  # bukan "before": nama itu dipakai untuk deret harga di bawah
         try:
             pr = chart_prices(sym, fresh)
             d0 = datetime.strptime(start, "%Y-%m-%d")
@@ -809,7 +830,10 @@ def get_benchmark(deals: list[str], fresh: bool = False) -> dict:
                          "lastDay": day_of(after[-1]["d"]), "series": series})
         except Exception:
             continue
-        time.sleep(0.2)
+        finally:
+            # Jeda sopan hanya bila benar-benar memanggil Stockbit (bukan dari cache).
+            if _upstream_n > calls0:
+                time.sleep(0.2)
 
     def quart(arr, f):
         s = sorted(arr)

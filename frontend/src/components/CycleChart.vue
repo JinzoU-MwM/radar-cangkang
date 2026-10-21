@@ -1,21 +1,7 @@
-<script>
-import { api } from '../api.js'
-
-// Benchmark per kumpulan transaksi (kode:tanggal mulai PTW), disimpan 6 jam selama tab terbuka.
-const cache = new Map()
-async function getBenchmark(deals) {
-  const hit = cache.get(deals)
-  if (hit && Date.now() - hit.at < 6 * 3600e3) return hit.v
-  const v = await api.get('/api/benchmark', { deals })
-  cache.set(deals, { v, at: Date.now() })
-  return v
-}
-</script>
-
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { store } from '../store.js'
+import { store, getBenchmark, benchmarkDeals } from '../store.js'
 import { progressOf } from '../lib/domain.js'
 import { CYC_MIN, CYC_MAX, CYCLE_PHASES, cycleModel, daysSince, dayTxt, phaseOf, ratioOf, xTxt } from '../lib/cycle.js'
 
@@ -24,8 +10,7 @@ import { CYC_MIN, CYC_MAX, CYCLE_PHASES, cycleModel, daysSince, dayTxt, phaseOf,
 const props = defineProps({ items: { type: Array, default: () => [] } })
 const router = useRouter()
 
-const deals = computed(() => props.items.filter(d => d.tender?.start)
-  .map(d => `${d.ticker}:${d.tender.start.slice(0, 10)}`).join(','))
+const deals = computed(() => benchmarkDeals())
 const loading = ref(false), error = ref(''), bm = ref(null)
 watch(deals, async v => {
   if (!v) { bm.value = null; return }
@@ -52,7 +37,12 @@ const yr = computed(() => {
   const ys = [...model.value.pts.flatMap(p => [p.q1, p.q3]), ...dots.value.map(o => o.ratio)]
   return { lo: Math.max(0.05, Math.min(...ys) * 0.8), hi: Math.max(...ys) * 1.25 }
 })
-const x = d => L + (d - CYC_MIN) / (CYC_MAX - CYC_MIN) * (W - L - R)
+// Sumbu x berhenti sedikit setelah data terakhir (kurva atau titik), dibulatkan ke 120 hari.
+const xMax = computed(() => {
+  const last = Math.max(0, ...model.value.pts.map(p => p.x), ...dots.value.map(o => o.day))
+  return Math.min(CYC_MAX, Math.max(240, Math.ceil((last + 30) / 120) * 120))
+})
+const x = d => L + (Math.min(d, xMax.value) - CYC_MIN) / (xMax.value - CYC_MIN) * (W - L - R)
 const y = v => T + (Math.log(yr.value.hi) - Math.log(Math.max(v, yr.value.lo))) / (Math.log(yr.value.hi) - Math.log(yr.value.lo)) * (H - T - B)
 const f1 = n => n.toFixed(1)
 const medPath = computed(() => model.value.pts.map((p, i) => `${i ? 'L' : 'M'}${f1(x(p.x))},${f1(y(p.md))}`).join(''))
@@ -61,24 +51,31 @@ const bandPath = computed(() => {
   return `M${P.map(p => `${f1(x(p.x))},${f1(y(p.q3))}`).join('L')}L${[...P].reverse().map(p => `${f1(x(p.x))},${f1(y(p.q1))}`).join('L')}Z`
 })
 const yTicks = computed(() => [0.1, 0.25, 0.5, 1, 2, 4, 8, 16, 32].filter(v => v >= yr.value.lo && v <= yr.value.hi))
-const xTicks = [-240, -120, 0, 120, 240, 360, 480, 600, 720]
-const xLbl = d => d === 0 ? 'PTW' : (d > 0 ? '+' : '') + d + ' hr'
+const xTicks = computed(() => [-240, -120, 0, 120, 240, 360, 480, 600, 720].filter(d => d <= xMax.value))
+const xLbl = d => d === 0 ? 'PTW' : (d > 0 ? '+' : '−') + Math.abs(d) + ' hari'
+const xAnchor = d => d === CYC_MIN ? 'start' : d === xMax.value ? 'end' : 'middle'
 
 // Pita fase mengikuti data: titik dasar & puncak median (puncak bisa terjadi sebelum PTW).
 const bands = computed(() => {
   const bD = model.value.baseDay ?? -150, pD = Math.min(model.value.peakDay ?? 0, 0)
   return [[CYC_MIN, bD, 'Akumulasi'], [bD, pD - 10, 'Rumor & run-up'], [pD - 10, 45, 'Puncak & PTW'], [45, 360, 'Distribusi & koreksi'], [360, CYC_MAX, 'Gelombang 2 / normalisasi']]
-    .map(([a, b, t]) => ({ x: x(a), w: Math.max(0, x(b) - x(a)), t }))
+    .filter(([a]) => a < xMax.value)
+    .map(([a, b, t]) => ({ x: x(a), w: Math.max(0, x(Math.min(b, xMax.value)) - x(a)), t }))
 })
 
-// Label kode hanya bila tidak menimpa label lain yang sudah ditaruh.
+// Label kode di kanan titik, atau di kiri bila kanan bertabrakan; bila dua-duanya
+// bertabrakan, label disembunyikan (kode tetap ada di tooltip dan daftar fase di bawah).
 const placed = computed(() => {
-  const used = []
-  return dots.value.map(o => {
-    const px = x(o.day), py = y(o.ratio)
-    const lbl = !used.some(([qx, qy]) => Math.abs(qx - px) < 42 && Math.abs(qy - py) < 12)
-    if (lbl) used.push([px, py])
-    return { ...o, px, py, lbl }
+  const pts = dots.value.map(o => ({ ...o, px: x(o.day), py: y(o.ratio) }))
+  const boxes = pts.map(o => [o.px - 7, o.py - 7, o.px + 7, o.py + 7])   // titik ikut dihindari
+  const hit = b => boxes.some(q => b[0] < q[2] && b[2] > q[0] && b[1] < q[3] && b[3] > q[1])
+  return pts.sort((a, b) => a.px - b.px).map(o => {
+    const w = o.t.length * 7.4 + 2
+    const right = [o.px + 9, o.py - 7, o.px + 9 + w, o.py + 7]
+    const left = [o.px - 9 - w, o.py - 7, o.px - 9, o.py + 7]
+    const pick = right[2] <= W - R && !hit(right) ? right : left[0] >= L && !hit(left) ? left : null
+    if (pick) boxes.push(pick)
+    return { ...o, lbl: !!pick, lx: pick === left ? o.px - 9 : o.px + 9, la: pick === left ? 'end' : 'start' }
   })
 })
 const href = t => router.resolve({ path: '/emiten/' + t, query: { tab: 'analisa' } }).href
@@ -116,7 +113,7 @@ const ariaLabel = computed(() => {
           </g>
           <line v-for="v in yTicks" :key="v" class="grid" :x1="L" :x2="W - R" :y1="y(v)" :y2="y(v)" />
           <text v-for="v in yTicks" :key="'y' + v" class="ax" :x="L - 6" :y="y(v) + 4" text-anchor="end">{{ String(v).replace('.', ',') }}×</text>
-          <text v-for="d in xTicks" :key="'x' + d" class="ax" :x="x(d)" :y="H - 12" text-anchor="middle">{{ xLbl(d) }}</text>
+          <text v-for="d in xTicks" :key="'x' + d" class="ax" :x="x(d)" :y="H - 12" :text-anchor="xAnchor(d)">{{ xLbl(d) }}</text>
           <path class="band" :d="bandPath" />
           <path class="med" :d="medPath" />
           <line class="ref" :x1="x(0)" :x2="x(0)" :y1="T" :y2="H - B" />
@@ -124,7 +121,7 @@ const ariaLabel = computed(() => {
           <a v-for="o in placed" :key="o.t" class="dot" :class="'ph-' + o.ph" :href="href(o.t)" @click.prevent="go(o.t)"
             :aria-label="`${o.t}, ${dayTxt(o.day)}, ${xTxt(o.ratio)} harga saat PTW. Buka analisa`">
             <circle :cx="o.px" :cy="o.py" r="6" />
-            <text v-if="o.lbl" :x="o.px + 9" :y="o.py + 4">{{ o.t }}</text>
+            <text v-if="o.lbl" :x="o.lx" :y="o.py + 4" :text-anchor="o.la">{{ o.t }}</text>
             <title>{{ o.t }} · {{ dayTxt(o.day) }} · {{ xTxt(o.ratio) }} harga saat PTW</title>
           </a>
         </svg>

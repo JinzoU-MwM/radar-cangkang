@@ -1,21 +1,7 @@
-<script>
-import { api } from '../../api.js'
-import { store } from '../../store.js'
-
-// Benchmark dari transaksi backdoor nyata di daftar (kode:tanggal mulai PTW), disimpan 6 jam untuk semua instans.
-let bmCache = null, bmAt = 0
-async function getBenchmark() {
-  if (bmCache && Date.now() - bmAt < 6 * 3600e3) return bmCache
-  const deals = store.items.filter(d => d.tender && d.tender.start).map(d => `${d.ticker}:${d.tender.start}`)
-  if (!deals.length) return null
-  bmCache = await api.get('/api/benchmark', { deals: deals.join(',') })
-  bmAt = Date.now()
-  return bmCache
-}
-</script>
-
 <script setup>
 import { computed, reactive, shallowRef, ref, watch } from 'vue'
+import { api } from '../../api.js'
+import { store, getBenchmark } from '../../store.js'
 import { buildAnalysis, KURS } from '../../lib/analysis.js'
 import { fmt, fmtDate, rp, big, x2, pctTxt } from '../../lib/domain.js'
 import { analysisProsCons, deepView, dilusi, radarGeom } from '../../lib/emitenExtra.js'

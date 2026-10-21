@@ -1,12 +1,7 @@
-<script>
-// Benchmark transaksi backdoor di radar (kode:tanggal mulai PTW), dibagi antar-instans dan disimpan 6 jam.
-let bmCache = null, bmAt = 0, bmKey = ''
-</script>
-
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../../api.js'
-import { store, itemOf, saveItem, toast } from '../../store.js'
+import { store, itemOf, saveItem, toast, getBenchmark } from '../../store.js'
 import { big, num, pctTxt, rp, stageOf } from '../../lib/domain.js'
 
 const props = defineProps({ ticker: { type: String, required: true } })
@@ -17,13 +12,6 @@ const bm = ref(null)
 const err = ref('')
 const loading = ref(true)
 
-async function getBenchmark() {
-  const deals = store.items.filter(d => d.tender?.start).map(d => `${d.ticker}:${d.tender.start}`).join(',')
-  if (!deals) return null
-  if (bmCache && bmKey === deals && Date.now() - bmAt < 6 * 3600e3) return bmCache
-  bmCache = await api.get('/api/benchmark', { deals }); bmAt = Date.now(); bmKey = deals
-  return bmCache
-}
 
 // Simpan kapitalisasi, free float, dan pengendali ke data radar (dipakai skor), hanya bila berubah.
 async function writeBack(pr) {

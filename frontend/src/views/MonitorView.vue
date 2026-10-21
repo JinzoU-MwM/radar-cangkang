@@ -1,21 +1,7 @@
-<script>
-import { api } from '../api.js'
-
-// Benchmark per kumpulan transaksi (kode:tanggal mulai PTW), disimpan 6 jam selama tab terbuka.
-const bmCache = new Map()
-async function getBenchmark(deals) {
-  const hit = bmCache.get(deals)
-  if (hit && Date.now() - hit.at < 6 * 3600e3) return hit.v
-  const v = await api.get('/api/benchmark', { deals })
-  bmCache.set(deals, { v, at: Date.now() })
-  return v
-}
-</script>
-
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { store, pandanganOf, autoRefresh, userRefresh, canSync, storyOf, loadStories } from '../store.js'
+import { store, pandanganOf, autoRefresh, userRefresh, canSync, storyOf, loadStories, getBenchmark, benchmarkDeals } from '../store.js'
 import { stageOf, trackIndex, fairGap, num, progressOf, dealOf, posisiOf, scoreOf, statusOf, potensiOf, sessionLabel, SIGNALS } from '../lib/domain.js'
 import { nominalRp } from '../lib/analysis.js'
 import StageTrack from '../components/StageTrack.vue'
@@ -123,7 +109,7 @@ function lastReport(t) {
 
 // Benchmark siklus harga: hanya dimuat saat set Potensi dibuka (ditarik dari Stockbit per emiten).
 const bm = ref(null), bmLoading = ref(false), bmError = ref('')
-const bmDeals = computed(() => store.items.filter(d => d.tender?.start).map(d => `${d.ticker}:${d.tender.start.slice(0, 10)}`).join(','))
+const bmDeals = computed(() => benchmarkDeals())
 watch([set, bmDeals], async ([s, deals]) => {
   if (s !== 'potensi' || !deals || bmLoading.value) return
   bmLoading.value = true; bmError.value = ''
@@ -389,9 +375,15 @@ onMounted(() => autoRefresh('stockbit'))
       <summary><h2>Metodologi skor</h2></summary>
       <p class="muted small">Skor penyaringan = jumlah bobot faktor yang terpenuhi, total 100. Faktor otomatis dihitung dari data pasar.</p>
       <ul class="weights">
-        <li v-for="s in SIGNALS" :key="s.id"><span class="w">+{{ s.w }}</span> {{ s.label }}<span v-if="s.auto" class="muted"> (otomatis)</span></li>
-        <li><span class="w"></span> Tingkat keyakinan: <b>Pemantauan</b> di bawah 35 · <b>Daftar pantau</b> 35–64 · <b>Keyakinan tinggi</b> 65 ke atas</li>
+        <!-- Satu <span> per butir: li memakai grid 2 kolom (bobot | teks). -->
+        <li v-for="s in SIGNALS" :key="s.id"><span class="w">+{{ s.w }}</span><span>{{ s.label }}<span v-if="s.auto" class="tag t-calm auto">otomatis</span></span></li>
       </ul>
+      <div class="levels" role="list" aria-label="Tingkat keyakinan">
+        <span class="lbl">Tingkat keyakinan</span>
+        <span role="listitem" class="tag st-calm">Pemantauan · di bawah 35</span>
+        <span role="listitem" class="tag st-warn">Daftar pantau · 35–64</span>
+        <span role="listitem" class="tag st-strong">Keyakinan tinggi · 65 ke atas</span>
+      </div>
     </details>
   </div>
 </template>
@@ -459,7 +451,9 @@ onMounted(() => autoRefresh('stockbit'))
 .ledger:not(.set-ringkas) :deep(td){vertical-align:top}
 .tlh{min-width:220px}
 .method ul{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:4px;max-width:80ch}
-.method li{display:grid;grid-template-columns:36px 1fr;gap:6px}
+.method li{display:grid;grid-template-columns:36px 1fr;gap:10px;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--rule-2)}
+.method .auto{margin-left:8px}
+.method .levels{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .method .w{font:700 15px var(--f-display);text-align:right}
 .method p{margin:0 0 8px}
 @media (max-width:640px){
