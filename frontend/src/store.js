@@ -5,6 +5,7 @@ import { api, loadJson } from './api.js'
 import { deriveStory } from './lib/story.js'
 import { syncReports, syncStockbit, syncTenders } from './lib/sync.js'
 import { stageOf } from './lib/domain.js'
+import { buildRelasi } from './lib/relasiAuto.js'
 
 const LS_ITEMS = 'radar-cangkang.v1'
 const LS_UPD = 'radar-cangkang.updates.v1'
@@ -266,4 +267,20 @@ export async function refreshStories() {
   } finally {
     store.busy.story = false
   }
+}
+
+// Relasi untuk diagram Alur saham: kurasi manual di relasi-verified.json bila ada,
+// selain itu dibangun otomatis dari profil, aset, pengendali, dan story.
+const relasiMemo = new Map()
+export function relasiOf(t) {
+  const cur = store.relasi[t]
+  if (cur?.nodes) return cur
+  const it = itemOf(t)
+  const key = [it?.updatedAt, it?.storyAuto?.at, !!store.profil[t], !!store.aset[t]].join('|')
+  const hit = relasiMemo.get(t)
+  if (hit && hit.key === key) return hit.v
+  const v = buildRelasi(t, { profil: store.profil, aset: store.aset, pengendali: store.pengendali, item: it,
+    story: it ? storyOf(t) : null, pandangan: store.pandangan[t] })
+  relasiMemo.set(t, { key, v })
+  return v
 }

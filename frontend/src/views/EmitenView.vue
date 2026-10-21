@@ -123,7 +123,7 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
           <div class="line1">
             <h1 class="tk">{{ T }}</h1>
             <SikapTag :sikap="pv?.sikap" />
-            <span v-if="score != null" class="tag score" :class="'t-' + statusOf(score)">Skor {{ score }} · {{ STATUS_LABEL[statusOf(score)] }}</span>
+            <span v-if="score != null" class="tag score" :class="'st-' + statusOf(score)">Skor {{ score }} · {{ STATUS_LABEL[statusOf(score)] }}</span>
             <span v-if="!known" class="tag t-calm">di luar radar</span>
             <span v-if="item" class="stage"><StageTrack :item="item" /><span v-if="tenderUntil" class="tag t-now">{{ tenderUntil }}</span></span>
           </div>
@@ -135,17 +135,6 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
               {{ baru || 'usaha baru belum ada' }}
             </span>
           </p>
-          <div class="recent">
-            <nav v-if="recent.length" class="chips" aria-label="Riwayat analisa">
-              <RouterLink v-for="t in recent" :key="t" class="chip" :class="{ on: t === T }" :aria-current="t === T ? 'page' : undefined"
-                :to="{ path: '/emiten/' + t, query: { tab: 'analisa' } }">{{ t }}</RouterLink>
-            </nav>
-            <form class="other" @submit.prevent="analyzeOther">
-              <label for="anOther" class="small muted">Analisa kode lain</label>
-              <input id="anOther" v-model="other" class="field" maxlength="4" autocomplete="off" spellcheck="false" placeholder="BBCA" @input="other = other.toUpperCase()">
-              <button type="submit" class="btn" :disabled="!otherOk">Analisa</button>
-            </form>
-          </div>
         </div>
         <div class="right">
           <button type="button" class="btn primary" aria-haspopup="dialog" @click="openFlow()">
@@ -158,6 +147,17 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
           </div>
         </div>
       </header>
+      <div class="recent">
+        <nav v-if="recent.length" class="chips" aria-label="Riwayat analisa">
+          <RouterLink v-for="t in recent" :key="t" class="chip" :class="{ on: t === T }" :aria-current="t === T ? 'page' : undefined"
+            :to="{ path: '/emiten/' + t, query: { tab: 'analisa' } }">{{ t }}</RouterLink>
+        </nav>
+        <form class="other" @submit.prevent="analyzeOther">
+          <label for="anOther" class="small muted">Analisa kode lain</label>
+          <input id="anOther" v-model="other" class="field" maxlength="4" autocomplete="off" spellcheck="false" placeholder="BBCA" @input="other = other.toUpperCase()">
+          <button type="submit" class="btn" :disabled="!otherOk">Analisa</button>
+        </form>
+      </div>
 
       <div class="tabs" role="tablist" aria-label="Bagian emiten">
         <button v-for="(t, i) in TABS" :key="t.id" :ref="el => (tabEls[i] = el)" type="button" role="tab" class="tab"
@@ -187,21 +187,21 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
 .back:hover{text-decoration:underline}
 .empty{display:grid;gap:8px;justify-items:start}
 .hd{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
-.id{min-width:0}
+.id{min-width:0;flex:1 1 520px}
 .line1{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap}
 .tk{font-size:40px;line-height:1}
 .stage{display:inline-flex;align-items:center;gap:10px}
 .nm{margin:6px 0 0;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:4px 14px}
 .biz{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
 .biz svg{color:var(--ink-2);flex:none}
-.right{display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap}
+.right{display:flex;gap:20px;align-items:flex-end;flex:none;margin-left:auto}
 .right .btn{min-height:40px}
 .px{text-align:right}
 .pv{font:700 36px/1 var(--f-display)}
 .panel{min-width:0}
 .score{border-radius:999px;padding:2px 10px}
 .none{padding:14px 0;margin:0;max-width:72ch}
-.recent{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:10px}
+.recent{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;margin-top:12px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px solid var(--rule);border-radius:999px;padding:2px 10px;font:700 13px var(--f-display);letter-spacing:.02em;color:var(--ink);text-decoration:none;background:var(--sheet);min-height:28px;display:inline-flex;align-items:center}
 .chip:hover{border-color:var(--ink)}

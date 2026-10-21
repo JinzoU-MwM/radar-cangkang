@@ -33,7 +33,7 @@ const capW = computed(() => cap.value ? (Math.log10(cap.value + 1) / Math.log10(
   <td><ProgressCell :prog="r.prog" :kjpp="store.aset[r.t]?.kjpp" /></td>
   <td>
     <div class="score"><span class="n">{{ r.score }}</span><span class="bar" :class="r.status"><i :style="{ width: r.score + '%' }"></i></span></div>
-    <span class="tag" :class="'t-' + r.status">{{ STATUS_LABEL[r.status] }}</span>
+    <span class="tag" :class="'st-' + r.status">{{ STATUS_LABEL[r.status] }}</span>
   </td>
   <td class="num">
     <b>{{ price != null ? 'Rp' + fmt(price) : '–' }}</b>
@@ -70,7 +70,7 @@ const capW = computed(() => cap.value ? (Math.log10(cap.value + 1) / Math.log10(
 .score .n{font:700 16px var(--f-display);min-width:24px}
 .bar{width:64px;height:6px;border-radius:3px;background:var(--rule-2);overflow:hidden}
 .bar i{display:block;height:100%;border-radius:3px}
-.bar.strong i{background:var(--strong)} .bar.warn i{background:var(--warn)} .bar.calm i{background:var(--calm)}
+.bar.strong i{background:var(--accent)} .bar.warn i{background:var(--warn)} .bar.calm i{background:var(--calm)}
 .hbar{display:block;height:6px;border-radius:3px;background:var(--rule-2);overflow:hidden;margin:3px 0 3px auto;width:100%;max-width:120px}
 .hbar i{display:block;height:100%;margin-left:auto;background:var(--accent);border-radius:3px}
 .hbar.pub i{background:var(--calm)}
