@@ -193,6 +193,36 @@ def tarik_semua(token, include_ff=True):
     if include_ff:
         try:
             rows = fetch_all_pages("/analytics/screener/foreign-flow", token)
+            total = None
+            try:
+                _, probe = http_json(f"{API}/analytics/screener/foreign-flow?search=PWON", token=token)
+                total = (probe or {}).get("total_count")
+            except Exception:
+                pass
+            # Gate is_preview: pagination di-clamp 5 emiten. Kalau total >> rows,
+            # sweep per-ticker pakai master list signals (963 emiten, free full).
+            if total and len(rows) < min(total, 400):
+                print(f"foreign-flow preview gate ({len(rows)}/{total}); sweep per-ticker…")
+                tickers = list(hasil.get("signals", {}).keys()) or \
+                          [x["stockCode"] for x in fetch_all_pages("/analytics/screener/signals-v2", token)]
+                merged = {}
+                for i, t in enumerate(tickers):
+                    try:
+                        _, d = http_json(f"{API}/analytics/screener/foreign-flow?search={t}", token=token)
+                        for x in (d or {}).get("data", []):
+                            if x.get("stock_code") == t:
+                                merged[t] = x
+                                break
+                    except Exception:
+                        pass
+                    time.sleep(DELAY)
+                    if (i + 1) % 100 == 0:
+                        print(f"  ff sweep {i+1}/{len(tickers)} → {len(merged)}", flush=True)
+                if len(merged) > len(rows):
+                    rows = list(merged.values())
+                    CAKUPAN["/analytics/screener/foreign-flow"] = {
+                        "diambil": len(rows), "total": total,
+                        "pratinjau": False, "bypass": "per-ticker"}
             hasil["foreign-flow"] = rows
             print(f"foreign-flow: {len(rows)} baris")
         except RuntimeError as e:

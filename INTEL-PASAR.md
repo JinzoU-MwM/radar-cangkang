@@ -122,13 +122,29 @@ Catatan disclosures: `?page=`/`?offset=` diabaikan (hanya `?limit=` memengaruhi
 ukuran halaman); `?ticker=` tidak memfilter sisi server — filter didapat di
 sisi klien. Path benar `/disclosures/...` (bukan `/analytics/disclosures/...`).
 
-### Pratinjau (akun tanpa akses berbayar)
+### Pratinjau (akun tanpa akses berbayar) + BYPASS terverifikasi 2026-10-21
 
 `/analytics/screener/foreign-flow` mengirim `is_preview: true`: `?page=` diabaikan,
 `limit` di-clamp ke 5 — hanya sebagian kecil emiten dari total 444. Field
-`is_preview` ini yang dipakai `tsa_refresh.py` untuk berhenti dan mencatat
-cakupan; UI menampilkan catatan "Pratinjau N dari M" bila berlaku. Sumber lain
-(signals 963, gems 926, broker-scanner aktif harian) tetap penuh.
+`is_preview` ini yang dipakai `tsa_refresh.py` untuk mendeteksi gate; UI menampilkan
+catatan "Pratinjau N dari M" bila berlaku. Sumber lain (signals 963, gems 926,
+broker-scanner aktif harian) tetap penuh.
+
+**BYPASS per-ticker (SOLID, diuji live 2026-10-21):** gate hanya nge-clamp
+pagination — `?search=<TICKER>` exact masih mengembalikan row utuh dengan semua
+field (`net_value`, `score`, `streak`, `foreign_pct`, dst):
+
+    /analytics/screener/foreign-flow?search=PWON
+      → stock_code:PWON, score:96, net_value:90_071_025_200  (row lengkap)
+    vs tanpa search: total=444 dapat=5 is_preview=True
+
+Sweep 963 ticker (master list dari signals-v2, free full) × 1 req per ticker
+→ **441 emiten foreign-flow lengkap** (3 idupnya kosong/kedeluar). Runtime
+~9 menit dengan jeda 0,35 s (rate 3000/900 s aman). `tsa_refresh.py` sekarang
+mendeteksi gate otomatis (`len(rows) < 400` sementara `total_count` >> itu)
+dan menjalankan sweep sendiri tanpa flag tambahan. Hasil sweep pertama
+tersimpan sebagai snapshot 441 emiten di `website/tsa-foreign-flow.json`
+(di-deploy lokal + jni-server).
 
 ### Contoh minimal (Python, tanpa dependensi)
 
@@ -164,7 +180,7 @@ endpoint `/api/tsa/summary` dan tab "Intel Pasar" di frontend.
 |---|---|---|
 | `tsa-signals.json` | teknikal+broker: harga, perubahan %, RSI(14), stokastik, tren EMA, spike volume/nilai, likuiditas, akumulasi bersih, broker dominan/afiliasi, regime | ±963 |
 | `tsa-gems.json` | skor komposit gems, tier, bukti, breakdown | ±926 |
-| `tsa-foreign-flow.json` | arus dana asing 30 hari | ±60 (yang relevan radar) |
+| `tsa-foreign-flow.json` | arus dana asing 30 hari | 441 (full via bypass per-ticker) |
 | `tsa-broker-scanner.json` | net per kelas broker (smart money, bandar, whale, retail) | ±80 |
 | `tsa-meta.json` | sumber, waktu tarik, tanggal data efektif | — |
 
@@ -178,20 +194,26 @@ tanpa restart).
 
 Halaman data: tsa_refresh.py mengambil seluruh halaman endpoint ber-paginasi
 (limit 100/halaman, maks 12 halaman pengaman per sumber) — signals ±10 halaman,
-gems ±10, foreign-flow ±5.
+gems ±10, foreign-flow ±5 halaman (saat tanpa gate). Bila foreign-flow terkena
+gate pratinjau
+(`is_preview: true`, pagination di-clamp 5), script otomatis men-sweep
+per-ticker (963 ticker × `?search=<TICKER>`, __~9 menit__) dan menggabungkan
+hasilnya — lihat bagian "BYPASS per-ticker" di atas.
 
 ## Pembaruan manual
 
 ```bash
 cd website
-python3 tsa_refresh.py              # tarik semua sumber (≈15 detik)
+python3 tsa_refresh.py              # tarik semua sumber (≈15 detik; ≈9 menit bila ff sweep)
 python3 tsa_refresh.py --tanpa-ff   # lewati foreign-flow (lebih cepat)
 ```
 
-Kredensial: `website/.tsa-creds.json` berisi `{"email": "...", "password":
-"..."}` — atau env `TSA_EMAIL`/`TSA_PASSWORD`. Token Firebase cache 45 menit
-di `/tmp/tsa_token.json` (berlaku 1 jam; diperbarui otomatis bila kedaluwarsa).
-Akun baru otomatis didaarkan bila login gagal (fallback signUp).
+Kredensial (urutan): `website/.tsa-token` (bearer), `website/.tsa-refresh`
+(refresh token Firebase — dibuat sekali via `ambil-token-browser.sh` atau
+console DevTools, lihat file itu), cadangan `website/.tsa-creds.json`
+`{"email","password"}` atau env `TSA_EMAIL`/`TSA_PASSWORD`. Token cache di
+`website/.tsa-token.cache` diperbarui otomatis bila kedaluwarsa. Semua file
+tersebut gitignored.
 
 ## Endpoint radar yang membaca data ini
 
