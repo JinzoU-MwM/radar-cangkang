@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { store, toast } from './store.js'
+import { store, toast, loadKandidat, autoKandidat } from './store.js'
 import { stageOf } from './lib/domain.js'
 import ChangelogPanel from './components/ChangelogPanel.vue'
 
@@ -9,8 +9,9 @@ const router = useRouter()
 const now = ref(Date.now())
 let timer
 
-const nKandidat = computed(() => store.items.filter(i => stageOf(i) === 'radar').length)
-const nMonitor = computed(() => store.items.length - nKandidat.value)
+const nRadar = computed(() => store.items.filter(i => stageOf(i) === 'radar').length)
+const nKandidat = computed(() => nRadar.value + autoKandidat().length)
+const nMonitor = computed(() => store.items.length - nRadar.value)
 const nBaru = computed(() => store.updates.filter(u => (u.updatedAt || u.date || '') > store.seenAt).length)
 
 // Status token Stockbit (masa berlaku ±24 jam) di kaki rail.
@@ -63,6 +64,9 @@ onMounted(() => {
   timer = setInterval(() => { now.value = Date.now() }, 60e3)
   addEventListener('keydown', onKey)
 })
+// Pemindaian kandidat bisa lama saat belum ada hasil jadi: mulai setelah data utama termuat
+// supaya tidak memakan jatah koneksi browser saat pemuatan awal.
+watch(() => store.ready, r => r && loadKandidat(), { immediate: true })
 onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onKey) })
 </script>
 

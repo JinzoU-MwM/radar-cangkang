@@ -141,5 +141,16 @@ class CacheTest(unittest.TestCase):
         self.assertEqual(len(calls), 1)  # percobaan kedua tidak memanggil Stockbit
 
 
+class KandidatTest(unittest.TestCase):
+    def test_title_signals(self):
+        f = server.kandidat_sigs
+        self.assertEqual(f("Keterbukaan Informasi Negosiasi Perubahan Pengendali"), ["akuisisi"])
+        self.assertIn("kbli", f("RUPSLB Perubahan Kegiatan Usaha dan Nama Perseroan"))
+        self.assertEqual(f("Rencana PMHMETD I"), ["rights"])
+        self.assertEqual(f("Perubahan Susunan Anggota Direksi"), ["direksi"])
+        self.assertEqual(f("Penghentian Sementara Perdagangan Efek"), ["uma"])
+        self.assertEqual(f("Laporan Keuangan Interim"), [])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

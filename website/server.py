@@ -890,6 +890,189 @@ def convert_reports(res: dict, ticker: str, cfg_reports: dict) -> list[dict]:
                     "url": f"https://stockbit.com/post/{s.get('stream_id')}"})
     return out
 
+def get_reports(cfg_reports: dict, ticker: str, fresh: bool = False, max_pages: int | None = None) -> list[dict]:
+    """Keterbukaan informasi satu emiten dari stream Stockbit (beberapa halaman, sampai batas hari)."""
+    max_pages = max_pages or int(cfg_reports.get("maxPages") or 1)
+    days = int(cfg_reports.get("days") or 180)
+    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    all_pg, cursor = [], 0
+    for _ in range(max_pages):
+        url = re.sub(r"last_stream_id=\d+", f"last_stream_id={cursor}", cfg_reports["url"]).replace("{ticker}", ticker)
+        res = stockbit_api(url, fresh)
+        page = res.get("data", {}).get("stream") or []
+        all_pg += page
+        dates = [str(x.get("created_at") or "")[:10] for x in page if x.get("created_at")]
+        if res.get("data", {}).get("pagination", {}).get("is_last_page") or not page or (dates and min(dates) < cutoff):
+            break
+        cursor = res.get("data", {}).get("pagination", {}).get("next_cursor") or 0
+        time.sleep(0.25)
+    return convert_reports({"data": {"stream": all_pg}}, ticker, cfg_reports)
+
+
+# ------------------------------------------------------------- kandidat ----
+# Calon cangkang otomatis: emiten di luar radar yang punya sinyal awal di data seluruh bursa
+# (rights issue, UMA, berita), lalu diperiksa keterbukaan informasinya di Stockbit.
+
+KANDIDAT_SIG = [
+    ("akuisisi", r"pengendali|pengambilalihan|akuisisi|negosiasi|pengalihan saham|penjualan saham|jual beli saham|"
+                 r"ppjb|term sheet|nota kesepahaman|\bmou\b|investor strategis|tender|\bmto\b|backdoor|caplok"),
+    ("kbli", r"kegiatan usaha|\bkbli\b|perubahan nama|nama perseroan"),
+    ("rights", r"hmetd|hak memesan|rights issue|penambahan modal|private placement|inbreng"),
+    ("direksi", r"perubahan (susunan )?(anggota )?(direksi|dewan komisaris|komisaris|pengurus)|"
+                r"pengunduran diri (anggota )?(direk|komisaris)|pengangkatan (direk|komisaris)"),
+    ("uma", r"\buma\b|unusual market|suspensi|penghentian sementara|volatilitas"),
+]
+
+
+def big_holder_moves(fresh: bool = False, pages: int = 60) -> list[dict]:
+    """Perpindahan blok besar: pemegang baru naik ke ≥ 20%, atau pemegang ≥ 20% turun ≥ 10 poin.
+    Entri yang dibalik pada tanggal yang sama (koreksi data) dan persentase > 100 diabaikan."""
+    raw = []
+    for pg in range(1, pages + 1):
+        j = sb_fetch(f"/insider/company/majorholder?page={pg}", fresh)
+        raw += j.get("data", {}).get("movement") or []
+        if not j.get("data", {}).get("is_more"):
+            break
+        time.sleep(0.2)
+    rows = []
+    for m in raw:
+        d = parse_date_ddmmyy(m.get("date"))
+        prev = to_num((m.get("previous") or {}).get("percentage")) or 0
+        cur = to_num((m.get("current") or {}).get("percentage")) or 0
+        if d and prev <= 100 and cur <= 100:
+            rows.append((d.strftime("%Y-%m-%d"), str(m.get("symbol") or ""), str(m.get("name") or "").strip(), prev, cur,
+                         str(m.get("price_formatted") or "")))
+    keys = {(d, t, n, p, c) for d, t, n, p, c, _ in rows}
+    out, seen = [], set()
+    for d, t, n, p, c, price in rows:
+        if (d, t, n, c, p) in keys or (d, t, n, p, c) in seen:
+            continue  # pasangan koreksi atau duplikat
+        seen.add((d, t, n, p, c))
+        if (p < 5 and c >= 20) or (p >= 20 and p - c >= 10):
+            verb = "masuk" if c > p else "melepas"
+            out.append({"ticker": t, "date": d,
+                        "text": f"{n.title()} {verb}: {p:g}% → {c:g}%" + (f" @Rp{price}" if price else "")})
+    return out
+
+
+def kandidat_sigs(title: str) -> list[str]:
+    t = (title or "").lower()
+    return [sid for sid, rx in KANDIDAT_SIG if re.search(rx, t)]
+
+
+_kd_memo: tuple[float, dict] | None = None
+_kd_lock = threading.Lock()
+KANDIDAT_MAX = 40
+
+
+def get_kandidat(cfg: dict, fresh: bool = False) -> dict:
+    # Dihitung ulang paling sering 6 jam sekali; satu perhitungan berjalan pada satu waktu.
+    global _kd_memo
+    with _kd_lock:
+        public = is_public_request()
+        if _kd_memo and (public or (not fresh and time.time() - _kd_memo[0] < 6 * 3600)):
+            return _kd_memo[1]
+        res = _kandidat(cfg, fresh)
+        if not public:  # versi publik hanya membaca cache; hasilnya tidak lengkap, jangan disimpan
+            _kd_memo = (time.time(), res)
+        return res
+
+
+def kandidat_loop() -> None:
+    """Hitung kandidat di latar belakang (setelah start, lalu tiap 6 jam) supaya halaman
+    Kandidat — termasuk versi publik yang hanya membaca hasil jadi — tidak menunggu pemindaian."""
+    time.sleep(20)
+    while True:
+        cfg = load_config()
+        if cfg and get_token():
+            try:
+                get_kandidat(cfg)
+            except Exception as e:
+                print(f"[kandidat] gagal: {e}", file=sys.stderr)
+        time.sleep(6 * 3600 + 60)
+
+
+def _kandidat(cfg: dict, fresh: bool = False) -> dict:
+    bd = cfg.get("backdoor") or {}
+    skip = {i["ticker"] for i in items_all() if i.get("stage") != "radar"} | set(bd.get("include") or []) \
+        | set(bd.get("exclude") or [])
+    found: dict[str, dict] = {}
+    errors: list[dict] = []
+
+    def add(t: str, sid: str, d: str, text: str, src: str) -> None:
+        if not TICKER_RE.match(t or "") or t in skip:
+            return
+        k = found.setdefault(t, {"ticker": t, "signals": {}})
+        sig = k["signals"].setdefault(sid, {"st": "on", "d": d, "ev": []})
+        if not any(e["text"] == text for e in sig["ev"]):
+            sig["ev"].append({"d": d, "text": text, "src": src})
+        sig["d"] = max(sig["d"], d)
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    # 0) Perpindahan blok pemegang saham besar di seluruh BEI (data KSEI/IDX via Stockbit).
+    try:
+        for m in big_holder_moves(fresh):
+            add(m["ticker"], "akuisisi", m["date"], m["text"], "https://stockbit.com/symbol/" + m["ticker"])
+    except Exception as e:
+        errors.append({"source": "Pemegang saham besar", "error": str(e)})
+    # 1) Rights issue seluruh BEI: hanya yang mendilusi besar (≥ 1 saham baru per saham lama).
+    try:
+        for r in (stockbit_api(SB + "/corpaction/rightissue?limit=100", fresh).get("data") or {}).get("rightissue") or []:
+            try:
+                ratio = float(r.get("rightissue_new") or 0) / float(r.get("rightissue_old") or 1)
+            except ValueError:
+                continue
+            if ratio >= 1:
+                add(r.get("company_symbol"), "rights", r.get("rightissue_cumdate") or today,
+                    f"Rights issue {r.get('rightissue_ratio')} @Rp{r.get('rightissue_price_formatted')} (cum {r.get('rightissue_cumdate')})",
+                    "https://stockbit.com/symbol/" + str(r.get("company_symbol")))
+    except Exception as e:
+        errors.append({"source": "Rights issue", "error": str(e)})
+    # 2) UMA seluruh BEI.
+    try:
+        uma = stockbit_api(SB + "/corpaction/uma?limit=100", fresh).get("data") or []
+        for u in uma if isinstance(uma, list) else []:
+            t = u.get("company_symbol") or u.get("symbol")
+            add(t, "uma", str(u.get("uma_date") or u.get("date") or today)[:10], "Unusual Market Activity (BEI)",
+                "https://stockbit.com/symbol/" + str(t))
+    except Exception as e:
+        errors.append({"source": "UMA", "error": str(e)})
+    # 3) Berita yang menyebut kode saham di judul.
+    if cfg.get("news"):
+        try:
+            for n in get_news(cfg["news"], [], fresh)["items"]:
+                for sid in kandidat_sigs(n["title"]):
+                    add(n["ticker"], sid, n["date"], n["title"], n["url"])
+        except Exception as e:
+            errors.append({"source": "Berita", "error": str(e)})
+
+    # 4) Periksa keterbukaan informasi tiap calon; data harga dari halaman Stockbit.
+    out = []
+    for t in sorted(found, key=lambda x: -len(found[x]["signals"]))[:KANDIDAT_MAX]:
+        k = found[t]
+        try:
+            if cfg.get("reports"):
+                for r in get_reports(cfg["reports"], t, fresh, max_pages=1):
+                    for sid in kandidat_sigs(r["title"]):
+                        add(t, sid, r["date"], r["title"], r["url"])
+            co = page_props(t, fresh).get("company") or {}
+            k["name"] = co.get("name") or ""
+            k["price"] = float(co["lastprice"]) if co.get("lastprice") not in (None, "") else None
+        except PublicNoCache:
+            pass
+        except Exception as e:
+            errors.append({"source": t, "error": str(e)[:120]})
+        sig = k["signals"]
+        # Rights issue saja pada saham mahal biasanya penggalangan dana biasa, bukan cangkang.
+        if set(sig) == {"rights"} and (k.get("price") is None or k["price"] > 300):
+            continue
+        for v in sig.values():
+            v["ev"].sort(key=lambda e: e["d"], reverse=True)
+            del v["ev"][5:]
+        k["flags"] = {sid: True for sid in sig}
+        out.append(k)
+    return {"asOf": datetime.now().isoformat(timespec="seconds"), "items": out, "errors": errors}
+
 # ---------------------------------------------------------------- server ----
 
 
@@ -1112,6 +1295,9 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json(get_news(cfg["news"], tickers, fresh))
         elif path == "api/reports":
             self.api_reports(cfg, ticker, fresh)
+        elif path == "api/kandidat":
+            if not self.guard_token():
+                self.reply_json(get_kandidat(cfg, fresh))
         elif path == "api/viz/summary":
             # Agregat lokal untuk infografis: komposisi tahap emiten dari story-verified.json +
             # daftar backdoor di config — tanpa token Stockbit.
@@ -1330,24 +1516,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         if not self.guard_ticker(ticker):
             try:
-                max_pages = int(cfg["reports"].get("maxPages") or 1)
-                days = int(cfg["reports"].get("days") or 180)
-                cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
-                all_pg, cursor = [], 0
-                for _ in range(max_pages):
-                    url = re.sub(r"last_stream_id=\d+", f"last_stream_id={cursor}", cfg["reports"]["url"])
-                    url = url.replace("{ticker}", ticker)
-                    res = stockbit_api(url, fresh)
-                    page = res.get("data", {}).get("stream") or []
-                    all_pg += page
-                    dates = [str(s.get("created_at") or "")[:10] for s in page if s.get("created_at")]
-                    if res.get("data", {}).get("pagination", {}).get("is_last_page") \
-                            or not page or (dates and min(dates) < cutoff):
-                        break
-                    cursor = res.get("data", {}).get("pagination", {}).get("next_cursor") or 0
-                    time.sleep(0.25)
-                self.reply_json({"ticker": ticker,
-                                 "items": convert_reports({"data": {"stream": all_pg}}, ticker, cfg["reports"])})
+                self.reply_json({"ticker": ticker, "items": get_reports(cfg["reports"], ticker, fresh)})
             except NoToken:
                 self.reply_json({"error": "Token belum diisi. Simpan di file .stockbit-token."}, 401)
             except urllib.error.HTTPError as e:
@@ -1402,6 +1571,7 @@ def main() -> int:
         return 1
     daemon = threading.Thread(target=srv.serve_forever, daemon=False)
     daemon.start()
+    threading.Thread(target=kandidat_loop, daemon=True).start()
     print(f"Radar Backdoor berjalan di http://localhost:{args.port}")
     print(f"Token Stockbit: {'terbaca' if get_token() else 'belum ada (tidak wajib untuk mode page)'}")
     if args.lan:

@@ -1,6 +1,6 @@
 <script setup>
-import { computed, reactive, ref } from 'vue'
-import { store, saveItem, toast } from '../store.js'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { store, saveItem, toast, loadKandidat, autoKandidat } from '../store.js'
 import { SIGNALS, stageOf, scoreOf, fmtDate, num } from '../lib/domain.js'
 
 // Label kolom pendek untuk header sempit; label lengkap di title.
@@ -9,7 +9,15 @@ const AUTO_SRC = { smallcap: 'mcap', lowprice: 'price' }
 const today = () => new Date().toISOString().slice(0, 10)
 const shortDate = d => new Date(d + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
 
-const rows = computed(() => store.items.filter(i => stageOf(i) === 'radar').slice().sort((a, b) => scoreOf(b) - scoreOf(a) || a.ticker.localeCompare(b.ticker)))
+// Kandidat otomatis: perpindahan blok pemegang saham besar, rights issue, UMA, dan berita seluruh BEI
+// (dihitung server), digabung dengan yang dilacak manual.
+const auto = store.kandidat
+onMounted(loadKandidat)
+const autoRows = computed(autoKandidat)
+const rows = computed(() => [...store.items.filter(i => stageOf(i) === 'radar'), ...autoRows.value]
+  .sort((a, b) => scoreOf(b) - scoreOf(a) || a.ticker.localeCompare(b.ticker)))
+// Baris otomatis disimpan ke database begitu dilacak, dicatat, atau dipindah.
+const plain = item => { const { auto: _a, ...rest } = item; return { ...rest, updatedAt: new Date().toISOString() } }
 
 // Status sel: catatan temuan bila ada; sinyal otomatis dari data pasar; flag lama tanpa catatan = aktif tanpa tanggal.
 function cellOf(item, s) {
@@ -28,7 +36,7 @@ function cellView(item, s) {
 }
 
 const sel = ref(null) // { t, id }
-const selItem = computed(() => sel.value && store.items.find(i => i.ticker === sel.value.t))
+const selItem = computed(() => sel.value && rows.value.find(i => i.ticker === sel.value.t))
 const selSig = computed(() => sel.value && SIGNALS.find(s => s.id === sel.value.id))
 const selCell = computed(() => selItem.value && cellOf(selItem.value, selSig.value))
 const form = reactive({ d: today(), text: '', src: '' })
@@ -54,7 +62,7 @@ async function record(st) {
   if (form.text.trim()) ev.push({ d: form.d, text: form.text.trim(), src: form.src.trim() })
   const sig = { st, d: form.d || prev.d || today(), ev }
   // flags ikut disetel supaya scoreOf tetap benar.
-  const next = { ...item, signals: { ...item.signals, [id]: sig }, flags: { ...item.flags, [id]: st === 'on' }, updatedAt: new Date().toISOString() }
+  const next = { ...plain(item), signals: { ...item.signals, [id]: sig }, flags: { ...item.flags, [id]: st === 'on' }, updatedAt: new Date().toISOString() }
   saving.value = true
   try {
     await saveItem(next)
@@ -75,9 +83,16 @@ async function track() {
   } catch (e) { toast('Gagal menambah kode: ' + e.message, true) }
 }
 
+async function keep(item) {
+  try {
+    await saveItem(plain(item))
+    toast(`${item.ticker} disimpan ke daftar kandidat.`)
+  } catch (e) { toast('Gagal menyimpan: ' + e.message, true) }
+}
+
 async function promote(item) {
   try {
-    await saveItem({ ...item, stage: 'spa', ms: { ...item.ms, spa: true }, updatedAt: new Date().toISOString() })
+    await saveItem({ ...plain(item), stage: 'spa', ms: { ...item.ms, spa: true }, updatedAt: new Date().toISOString() })
     if (sel.value?.t === item.ticker) sel.value = null
     toast(`${item.ticker} dipindah ke Monitor.`)
   } catch (e) { toast('Gagal memindah: ' + e.message, true) }
@@ -102,6 +117,7 @@ async function promote(item) {
     <section aria-labelledby="ledH" class="rule-top sec">
       <div class="legend-row">
         <h2 id="ledH">Buku sinyal</h2>
+        <p v-if="auto.asOf" class="small muted asof">Pindaian otomatis {{ fmtDate(auto.asOf.slice(0, 10)) }} {{ auto.asOf.slice(11, 16) }} · {{ autoRows.length }} kandidat otomatis</p>
         <div class="legend small muted">
           <span><i class="sw fresh"></i> 7 hari terakhir</span>
           <span><s>tanggal</s> batal</span>
@@ -119,7 +135,7 @@ async function promote(item) {
           </tr></thead>
           <tbody>
             <tr v-for="item in rows" :key="item.ticker">
-              <td class="kode"><span class="ticker big">{{ item.ticker }}</span><div v-if="item.name" class="small muted nm">{{ item.name }}</div></td>
+              <td class="kode"><span class="ticker big">{{ item.ticker }}</span><span v-if="item.auto" class="tag small" title="Ditemukan otomatis dari data seluruh BEI">otomatis</span><div v-if="item.name" class="small muted nm">{{ item.name }}</div></td>
               <td>
                 <div class="score">{{ scoreOf(item) }}<span> /100</span></div>
                 <div class="sbar" aria-hidden="true"><i :style="{ width: scoreOf(item) + '%' }"></i></div>
@@ -128,10 +144,13 @@ async function promote(item) {
                 <button v-for="v in [cellView(item, s)]" :key="s.id" type="button" class="cell" :class="[...v.cls, { picked: sel?.t === item.ticker && sel?.id === s.id }]"
                   :aria-label="v.aria" :aria-pressed="String(sel?.t === item.ticker && sel?.id === s.id)" @click="pick(item, s)">{{ v.text }}</button>
               </td>
-              <td><button v-if="!store.status?.readOnly" type="button" class="btn small" @click="promote(item)">Pindah ke Monitor</button></td>
+              <td class="rowacts"><template v-if="!store.status?.readOnly">
+                <button v-if="item.auto" type="button" class="btn small" @click="keep(item)">Simpan</button>
+                <button type="button" class="btn small" @click="promote(item)">Pindah ke Monitor</button>
+              </template></td>
             </tr>
             <tr v-if="!rows.length">
-              <td :colspan="SIGNALS.length + 3" class="muted empty">Belum ada kandidat. Ketik kode di kanan atas; sinyal harga dan kapitalisasi terisi sendiri, sisanya dicek dari keterbukaan informasi.</td>
+              <td :colspan="SIGNALS.length + 3" class="muted empty">{{ auto.loading ? 'Memindai perpindahan pemegang saham, rights issue, UMA, dan berita seluruh BEI…' : auto.error ? 'Kandidat otomatis gagal dimuat: ' + auto.error : 'Belum ada kandidat. Ketik kode di kanan atas untuk melacak manual.' }}</td>
             </tr>
           </tbody>
         </table>
@@ -184,6 +203,10 @@ async function promote(item) {
 .kode{padding-left:14px;width:84px}
 .big{font-size:20px}
 .nm{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kode .tag{margin-left:6px;vertical-align:3px;background:var(--accent-soft);color:var(--accent);font-size:10.5px;padding:0 5px}
+.rowacts{white-space:nowrap}
+.rowacts .btn+.btn{margin-left:6px}
+.asof{margin:0;flex-basis:100%}
 .skor{width:96px}
 .sg{width:76px;font-size:11.5px;line-height:1.15;white-space:normal}
 .w{font:700 13px var(--f-display);color:var(--ink)}
