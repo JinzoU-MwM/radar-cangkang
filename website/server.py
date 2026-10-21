@@ -158,6 +158,23 @@ def cache_read(url: str, min_time: int) -> str | None:
     return row[0] if row else None
 
 
+CACHE_KEEP_DAYS = 14   # salinan cache yang tidak disegarkan selama ini dibuang (batas umur data basi)
+
+
+def cache_prune(days: int = CACHE_KEEP_DAYS) -> int:
+    """Hapus salinan cache yang lebih tua dari `days` hari; kembalikan jumlah baris terhapus."""
+    con = db()
+    if not con:
+        return 0
+    with _db_lock:
+        n = con.execute("DELETE FROM http_cache WHERE fetched_at < ?", (int(time.time()) - days * 86400,)).rowcount
+        con.commit()
+    now = int(time.time())
+    for u in [u for u, t in _fail_until.items() if t < now]:
+        _fail_until.pop(u, None)
+    return n
+
+
 def cache_write(url: str, body: str) -> None:
     con = db()
     if not con:
@@ -881,6 +898,7 @@ def get_insider(ticker: str, days: int = 180, fresh: bool = False) -> dict:
 
 
 _bm_memo: dict[str, tuple[float, dict]] = {}
+BM_MEMO_MAX = 32
 
 
 def get_benchmark(deals: list[str], fresh: bool = False) -> dict:
@@ -891,6 +909,9 @@ def get_benchmark(deals: list[str], fresh: bool = False) -> dict:
         return hit[1]
     res = _benchmark(deals, fresh)
     _bm_memo[key] = (time.time(), res)
+    # Kunci berasal dari parameter pengunjung (deals): batasi jumlahnya supaya memori tidak membengkak.
+    while len(_bm_memo) > BM_MEMO_MAX:
+        _bm_memo.pop(min(_bm_memo, key=lambda k: _bm_memo[k][0]))
     return res
 
 
@@ -1092,6 +1113,9 @@ def snapshot_loop() -> None:
     while True:
         try:
             snapshot_today()
+            n = cache_prune()
+            if n:
+                print(f"[cache] {n} salinan lebih tua dari {CACHE_KEEP_DAYS} hari dihapus")
         except Exception as e:
             print(f"[snapshot] gagal: {e}", file=sys.stderr)
         nxt = (datetime.now() + timedelta(days=1)).replace(hour=0, minute=5, second=0, microsecond=0)
