@@ -249,10 +249,29 @@ class Stale(Exception):
     """Dibangkitkan fetch untuk menandakan salinan lama boleh dipakai."""
 
 
+class PublicNoCache(Exception):
+    """Pengunjung publik meminta data yang belum ada di cache."""
+
+
+# Pengunjung lewat domain publik (Cloudflare Tunnel) hanya boleh membaca cache:
+# tidak memanggil Stockbit/sumber berita dan tidak menulis data tim.
+_req = threading.local()
+
+
+def is_public_request() -> bool:
+    return getattr(_req, "public", False)
+
+
 def cached_text(url: str, fetch, fresh: bool = False) -> str:
     """Ambil dari cache bila segar; bila tidak, jalankan fetch lalu simpan.
     Bila fetch gagal, salinan lama dipakai daripada error."""
     now = int(time.time())
+    if is_public_request():
+        hit = cache_read(url, 0)
+        if hit is None:
+            raise PublicNoCache("Data ini belum tersedia di versi publik.")
+        _stat(_hits)
+        return hit
     # fresh=1 (tombol "Perbarui") tetap memakai salinan yang baru diambil < 5 menit lalu,
     # supaya klik berulang atau beberapa perangkat sekaligus tidak memanggil Stockbit lagi.
     hit = cache_read(url, now - (FRESH_MIN_AGE if fresh else cache_ttl(url)))
@@ -908,17 +927,24 @@ class Handler(BaseHTTPRequestHandler):
         return ip.is_private or ip.is_loopback or ip.is_link_local or ip in CGNAT
 
     # ---- HTTP
+    def is_public(self) -> bool:
+        # cloudflared selalu menambahkan Cf-Connecting-Ip; akses LAN/Tailscale langsung tidak.
+        return bool(self.headers.get("Cf-Connecting-Ip"))
+
     def do_GET(self) -> None:  # noqa: N802
+        _req.public = self.is_public()
         try:
             if not self.is_local():
                 self.reply(b"", 403)
                 return
             path = urllib.parse.unquote(urllib.parse.urlparse(self.path).path.lstrip("/"))
-            fresh = self.qs("fresh") == "1"
+            fresh = self.qs("fresh") == "1" and not _req.public
             if path.startswith("api/"):
                 self.handle_api(path, fresh)
                 return
             self.serve_static(path)
+        except PublicNoCache:
+            self.reply_json({"error": "Data ini belum tersedia di versi publik."}, 503)
         except Exception as e:
             print(f"[error] {self.path}: {e}", file=sys.stderr)
             try:
@@ -947,6 +973,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def handle_write(self, method: str) -> None:
         try:
+            if self.is_public():
+                self.reply_json({"error": "Versi publik hanya baca."}, 403)
+                return
             if not self.is_local():
                 self.reply(b"", 403)
                 return
@@ -1043,6 +1072,7 @@ class Handler(BaseHTTPRequestHandler):
                 "news": bool(cfg.get("news", {}).get("sources")) if cfg else False,
                 "tenders": bool(cfg.get("tenders", {}).get("url")) if cfg else False,
                 "stockbit1h": stats_1h(),
+                "readOnly": is_public_request(),
             })
         elif path == "api/tenders":
             self.api_tenders(cfg, fresh)

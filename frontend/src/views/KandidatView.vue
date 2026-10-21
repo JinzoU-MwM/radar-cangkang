@@ -88,7 +88,7 @@ async function promote(item) {
   <div class="kand">
     <header class="head">
       <h1>Kandidat</h1>
-      <form class="add" aria-label="Lacak emiten baru" @submit.prevent="track">
+      <form v-if="!store.status?.readOnly" class="add" aria-label="Lacak emiten baru" @submit.prevent="track">
         <div class="fld">
           <label for="addk" class="small muted">Lacak kode baru</label>
           <input id="addk" v-model="newCode" class="field code" type="text" placeholder="ABCD" maxlength="4" autocomplete="off"
@@ -128,7 +128,7 @@ async function promote(item) {
                 <button v-for="v in [cellView(item, s)]" :key="s.id" type="button" class="cell" :class="[...v.cls, { picked: sel?.t === item.ticker && sel?.id === s.id }]"
                   :aria-label="v.aria" :aria-pressed="String(sel?.t === item.ticker && sel?.id === s.id)" @click="pick(item, s)">{{ v.text }}</button>
               </td>
-              <td><button type="button" class="btn small" @click="promote(item)">Pindah ke Monitor</button></td>
+              <td><button v-if="!store.status?.readOnly" type="button" class="btn small" @click="promote(item)">Pindah ke Monitor</button></td>
             </tr>
             <tr v-if="!rows.length">
               <td :colspan="SIGNALS.length + 3" class="muted empty">Belum ada kandidat. Ketik kode di kanan atas; sinyal harga dan kapitalisasi terisi sendiri, sisanya dicek dari keterbukaan informasi.</td>
@@ -148,7 +148,7 @@ async function promote(item) {
         </div>
         <p v-if="!selCell.ev?.length" class="muted none-ev">{{ emptyText }}</p>
       </div>
-      <form v-if="!selSig.auto" class="rec" @submit.prevent>
+      <form v-if="!selSig.auto && !store.status?.readOnly" class="rec" @submit.prevent>
         <h3 class="lbl">Catat temuan</h3>
         <label class="small muted" for="ev-d">Tanggal</label>
         <input id="ev-d" v-model="form.d" type="date" class="field">

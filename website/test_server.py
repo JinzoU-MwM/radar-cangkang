@@ -29,9 +29,11 @@ class DataApiTest(unittest.TestCase):
         cls.srv.shutdown()
         cls.tmp.cleanup()
 
-    def call(self, method, path, body=None, ctype="application/json"):
+    def call(self, method, path, body=None, ctype="application/json", public=False):
         data = None if body is None else json.dumps(body).encode()
         req = urllib.request.Request(self.base + path, data=data, method=method)
+        if public:
+            req.add_header("Cf-Connecting-Ip", "203.0.113.9")  # seperti request lewat Cloudflare Tunnel
         if ctype:
             req.add_header("Content-Type", ctype)
         try:
@@ -78,6 +80,16 @@ class DataApiTest(unittest.TestCase):
         st, _ = self.call("GET", "/api/ohlc?ticker=xx&tf=3m", ctype=None)
         self.assertIn(st, (400, 401))
 
+    def test_07_public_is_read_only(self):
+        st, res = self.call("PUT", "/api/items/NAYZ", {"ticker": "NAYZ"}, public=True)
+        self.assertEqual(st, 403)
+        st, res = self.call("GET", "/api/status", ctype=None, public=True)
+        self.assertTrue(res["readOnly"])
+        st, res = self.call("GET", "/api/status", ctype=None)
+        self.assertFalse(res["readOnly"])
+        st, items = self.call("GET", "/api/items", ctype=None, public=True)
+        self.assertEqual(st, 200)
+
     def test_06_static_traversal_blocked(self):
         st, _ = self.call("GET", "/..%2fserver.py", ctype=None)
         self.assertEqual(st, 404)
@@ -101,6 +113,17 @@ class CacheTest(unittest.TestCase):
         self.assertEqual(server.cached_text(url, f), "body")
         self.assertEqual(server.cached_text(url, f, fresh=True), "body")
         self.assertEqual(len(calls), 1)  # salinan < 5 menit dipakai walau fresh
+
+    def test_public_reads_cache_only(self):
+        url = "https://exodus.stockbit.com/emitten/BBCA/profile"
+        server._req.public = True
+        try:
+            with self.assertRaises(server.PublicNoCache):
+                server.cached_text(url, lambda: self.fail("tidak boleh memanggil Stockbit"))
+            server.cache_write(url, "lama")
+            self.assertEqual(server.cached_text(url, lambda: self.fail("tidak boleh memanggil")), "lama")
+        finally:
+            server._req.public = False
 
     def test_failure_backoff_uses_stale(self):
         url = "https://exodus.stockbit.com/stream/v3/symbol/NAYZ"
