@@ -3,6 +3,7 @@
 Jalankan: python3 website/test_server.py
 """
 import json
+import time
 import tempfile
 import threading
 import unittest
@@ -12,6 +13,14 @@ from http.server import ThreadingHTTPServer
 from pathlib import Path
 
 import server
+
+# Data contoh tradersaham untuk tes (file asli tsa-*.json tidak dilacak git).
+_TSA_TMP = tempfile.TemporaryDirectory()
+for _n, _d in {"signals": {"ASPI": {"regimeSignal": "BULL"}}, "gems": {}, "foreign-flow": [],
+               "broker-scanner": {"stocks": []}, "meta": {"sumber": "tes"}}.items():
+    (Path(_TSA_TMP.name) / f"tsa-{_n}.json").write_text(json.dumps(_d))
+server.TSA_DIR = Path(_TSA_TMP.name)
+server._TSA_MEMO.clear()
 
 
 class DataApiTest(unittest.TestCase):
@@ -210,6 +219,23 @@ class TsaSummaryTest(unittest.TestCase):
         self.assertEqual(s["ticker"], "ASPI")
         self.assertIn("regimeSignal", s["signals"])
         self.assertFalse(server.tsa_summary("ZZZZ")["ada"])
+
+
+class TsaTokenTest(unittest.TestCase):
+    def test_bearer_file_like_stockbit(self):
+        import base64, tsa_refresh as tr
+        def jwt(exp):
+            body = base64.urlsafe_b64encode(json.dumps({"exp": exp}).encode()).decode().rstrip("=")
+            return f"h.{body}.s"
+        with tempfile.TemporaryDirectory() as d:
+            tr.BEARER_FILE, tr.CACHE_FILE, tr.REFRESH_FILE = (Path(d) / n for n in (".t", ".c", ".r"))
+            tr.CREDS_FILE = Path(d) / ".creds"
+            fresh = jwt(time.time() + 3600)
+            tr.BEARER_FILE.write_text("\ufeffBearer " + fresh)       # BOM + prefix "Bearer " tetap terbaca
+            self.assertEqual(tr.get_token(), fresh)
+            tr.BEARER_FILE.write_text(jwt(time.time() - 10))       # kedaluwarsa, tanpa cadangan = berhenti
+            with self.assertRaises(SystemExit):
+                tr.get_token()
 
 
 if __name__ == "__main__":

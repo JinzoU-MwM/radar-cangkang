@@ -5,10 +5,14 @@ Data yang ditarik: signals-v2 (teknikal+broker), gems, foreign-flow,
 broker-scanner, latest-date → disimpan sebagai snapshot keyed-by-ticker
 untuk endpoint /api/tsa/summary dan tab "Intel Pasar".
 
-Auth: Firebase email/password (akun khusus). Kredensial dibaca dari
-website/.tsa-creds.json: {"email": "...", "password": "..."  }
-Bila file tidak ada, dipakai env TSA_EMAIL / TSA_PASSWORD.
-Token dibuat/diperbarui otomatis tiap run (berlaku 1 jam).
+Auth (urutan, seperti bearer Stockbit — server tidak perlu menyimpan password):
+1. website/.tsa-token  — bearer (Firebase idToken) apa adanya; boleh symlink ke file yang
+   dirawat sistem lain (mis. auth-session-sync), sama seperti .stockbit-token. Dipakai
+   selama belum kedaluwarsa (dibaca dari klaim `exp` JWT).
+2. website/.tsa-refresh — Firebase refresh token (sekali ambil dari browser: localStorage
+   "firebase:authUser:…" → stsTokenManager.refreshToken). Dipakai untuk membuat idToken
+   baru tiap jam secara otomatis; hasilnya disimpan di website/.tsa-token.cache (chmod 600).
+3. Cadangan lama: website/.tsa-creds.json {"email","password"} atau env TSA_EMAIL/TSA_PASSWORD.
 
 Jalankan: python3 website/tsa_refresh.py [--semua] [--outhiraukan-gagal]
 Default: hanya menimpa file yang tariknya sukses; gagal satu sumber tidak
@@ -33,7 +37,9 @@ LIMIT = 100          # clamp server
 MAX_PAGES = 12       # pengaman anti-loop
 DELAY = 0.35         # jeda antar halaman (rate limit 3000/900s — longgar, tetap sopan)
 
-TOKEN_FILE = Path("/tmp/tsa_token.json")  # cache token antar-run (opsional)
+BEARER_FILE = ROOT / ".tsa-token"          # bearer dari luar (boleh symlink), seperti .stockbit-token
+REFRESH_FILE = ROOT / ".tsa-refresh"       # Firebase refresh token
+CACHE_FILE = ROOT / ".tsa-token.cache"     # idToken hasil refresh/login, chmod 600
 
 
 def rq_headers(path: str) -> dict:
@@ -69,32 +75,66 @@ def http_json(url, token=None, method="GET", body=None, rq=False):
         return 0, {"error": str(e)}
 
 
+def jwt_exp(token: str) -> float:
+    """Waktu kedaluwarsa (epoch) dari klaim `exp` JWT; 0 bila tidak terbaca."""
+    try:
+        part = token.split(".")[1]
+        return float(json.loads(base64.urlsafe_b64decode(part + "=" * (-len(part) % 4))).get("exp", 0))
+    except (IndexError, ValueError):
+        return 0
+
+
+def read_secret(path: Path) -> str:
+    try:
+        t = path.read_text(encoding="utf-8-sig").strip()
+    except OSError:
+        return ""
+    return t[7:].strip() if t.lower().startswith("bearer ") else t
+
+
+def save_cache(token: str) -> None:
+    CACHE_FILE.write_text(token)
+    os.chmod(CACHE_FILE, 0o600)
+
+
+def usable(token: str) -> bool:
+    return bool(token) and jwt_exp(token) > time.time() + 120
+
+
 def get_token():
-    """Login Firebase email/password → idToken. Cache 45 menit di /tmp."""
-    if TOKEN_FILE.exists():
-        try:
-            t = json.loads(TOKEN_FILE.read_text())
-            # idToken berlaku 3600s; cache 45 menit aman
-            if time.time() - t.get("_at", 0) < 2700:
-                return t["idToken"]
-        except (OSError, ValueError, KeyError):
-            pass
+    """Bearer tradersaham: file bearer → cache → refresh token → (cadangan) email/password."""
+    for t in (read_secret(BEARER_FILE), read_secret(CACHE_FILE)):
+        if usable(t):
+            return t
+    refresh = read_secret(REFRESH_FILE)
+    if refresh:
+        st, r = http_json(f"https://securetoken.googleapis.com/v1/token?key={FB_KEY}", method="POST",
+                          body={"grant_type": "refresh_token", "refresh_token": refresh})
+        if st == 200 and r.get("id_token"):
+            if r.get("refresh_token") and r["refresh_token"] != refresh:
+                REFRESH_FILE.write_text(r["refresh_token"])   # Firebase bisa merotasi refresh token
+                os.chmod(REFRESH_FILE, 0o600)
+            save_cache(r["id_token"])
+            return r["id_token"]
+        print(f"[tsa] refresh token ditolak ({st}); coba cadangan", file=sys.stderr)
+    creds = {}
     if CREDS_FILE.exists():
         creds = json.loads(CREDS_FILE.read_text())
     else:
         creds = {"email": os.environ.get("TSA_EMAIL"), "password": os.environ.get("TSA_PASSWORD")}
     if not creds.get("email") or not creds.get("password"):
-        sys.exit("Kredensial tidak ada: buat website/.tsa-creds.json atau set TSA_EMAIL/TSA_PASSWORD")
+        sys.exit("Token tradersaham tidak ada: isi website/.tsa-token (bearer) atau website/.tsa-refresh "
+                 "(refresh token), atau cadangan .tsa-creds.json")
     body = {"email": creds["email"], "password": creds["password"], "returnSecureToken": True}
     st, r = http_json(f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FB_KEY}",
                       method="POST", body=body)
     if st != 200 or "idToken" not in r:
-        # fallback: daftar akun baru bila login gagal (misal akun belum ada)
-        st, r = http_json(f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FB_KEY}",
-                          method="POST", body=body)
-    if st != 200 or "idToken" not in r:
         sys.exit(f"Firebase auth gagal ({st}): {json.dumps(r)[:200]}")
-    TOKEN_FILE.write_text(json.dumps({**r, "_at": time.time()}))
+    save_cache(r["idToken"])
+    if r.get("refreshToken") and not REFRESH_FILE.exists():
+        # Sekali login berhasil: simpan refresh token supaya password tidak dipakai lagi.
+        REFRESH_FILE.write_text(r["refreshToken"])
+        os.chmod(REFRESH_FILE, 0o600)
     return r["idToken"]
 
 

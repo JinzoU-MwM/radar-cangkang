@@ -23,6 +23,9 @@ frontend/node_modules/
 .playwright-mcp/
 .serena/
 .tsa-creds.json
+.tsa-token
+.tsa-token.cache
+.tsa-refresh
 
 # Data intel pasar tradersaham: ditulis ulang tiap jam oleh tsa_refresh.py, bukan bagian kode.
 website/tsa-*.json
