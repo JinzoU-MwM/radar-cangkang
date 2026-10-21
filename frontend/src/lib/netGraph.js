@@ -10,11 +10,21 @@ export const NET_TYPE = {
 const FILLER = /^\s*(langsung|pribadi|perorangan|atas nama sendiri|tidak|belum|tanpa|bukan|n\/a|-|–)/i
 const TICK = /\b[A-Z]{4}\b/g
 
+// Simpul hanya untuk nama pihak (orang/badan usaha). Kalimat, jabatan, atau daftar beberapa orang
+// dari teks riset ("KSEI mencantumkan…", "calon pengendali baru", "Komisaris Utama KRYA") dibuang.
+const ROLE = /\b(mencantumkan|disebut|menurut|calon|belum|tidak|pemegang|komisaris|direktur|dirut|komut|presiden|pengendali|ubo bersama)\b/i
+export function isEntityLabel(s) {
+  const t = String(s || '').trim()
+  const words = t.split(/\s+/).length
+  return t.length >= 3 && words <= 7 && /^[A-Z0-9(]/.test(t) && !ROLE.test(t) && !(t.includes(',') && words > 4)
+}
+
 export function buildNetwork({ profil = {}, relasi = {} } = {}) {
   const tickers = Object.keys(profil).filter(k => /^[A-Z]{4}$/.test(k))
   const known = new Set(tickers)
   const nodes = new Map(), edges = [], seen = new Set()
   const node = (id, label, type) => {
+    if (type !== 'emiten' && !nodes.has(id) && !isEntityLabel(label)) return null
     if (!nodes.has(id)) nodes.set(id, { id, label, type, em: new Set() })
     return nodes.get(id)
   }
@@ -31,7 +41,7 @@ export function buildNetwork({ profil = {}, relasi = {} } = {}) {
   for (const t of tickers) {
     const p = profil[t] || {}
     for (const o of p.pengendali || []) {
-      const pn = node('p:' + entityKey(o.nama), o.nama, 'orang'); pn.em.add(t)
+      const pn = node('p:' + entityKey(o.nama), o.nama, 'orang'); pn?.em.add(t)
       link(pn, em(t), o.peran || 'pengendali')
       // Badan usaha pengendali (bukan teks porsi atau "langsung").
       String(o.entitas || '').split(/;|\s+dan\s+|,(?=\s*PT\b)/).map(s => s.trim())
@@ -39,17 +49,17 @@ export function buildNetwork({ profil = {}, relasi = {} } = {}) {
         .slice(0, 2).forEach(s => {
           // Buang keterangan dalam kurung, termasuk kurung yang terpotong oleh pemisah ("PT X (Triple B").
           const label = s.replace(/\s*\(.*$/, '').replace(/^\s*(grup|melalui)\s+/i, '').replace(/\)\s*$/, '').trim()
-          const en = node('e:' + entityKey(label), label, 'entitas'); en.em.add(t)
+          const en = node('e:' + entityKey(label), label, 'entitas'); en?.em.add(t)
           link(pn, en, 'pemilik'); link(en, em(t), 'pengendali')
         })
       for (const r of o.rekamJejak || []) {
-        if (r.kode && r.kode !== t && known.has(r.kode)) { pn.em.add(r.kode); link(pn, em(r.kode), 'rekam jejak: ' + (r.peran || '')) }
+        if (r.kode && r.kode !== t && known.has(r.kode)) { pn?.em.add(r.kode); link(pn, em(r.kode), 'rekam jejak: ' + (r.peran || '')) }
       }
     }
     const af = p.afiliasi || {}
     if (af.pihakLawan && !FILLER.test(af.pihakLawan)) {
       const nm = String(af.pihakLawan).split(/[,(;]/)[0].trim().slice(0, 60)
-      const cn = node('x:' + entityKey(nm), nm, 'pihak'); cn.em.add(t)
+      const cn = node('x:' + entityKey(nm), nm, 'pihak'); cn?.em.add(t)
       link(em(t), cn, 'pihak lawan / aset target')
     }
     // Pengurus yang merangkap jabatan di emiten radar lain.
@@ -57,20 +67,21 @@ export function buildNetwork({ profil = {}, relasi = {} } = {}) {
       const others = (x.rangkap || []).flatMap(r => codesIn(r, t))
       if (!others.length) continue
       const bn = node('p:' + entityKey(x.nama), x.nama, nodes.has('p:' + entityKey(x.nama)) ? nodes.get('p:' + entityKey(x.nama)).type : 'pengurus')
-      bn.em.add(t); link(bn, em(t), x.jabatan || 'pengurus')
-      for (const c of others) { bn.em.add(c); link(bn, em(c), 'rangkap jabatan') }
+      bn?.em.add(t); link(bn, em(t), x.jabatan || 'pengurus')
+      for (const c of others) { bn?.em.add(c); link(bn, em(c), 'rangkap jabatan') }
     }
   }
   // Jaringan: hubungkan bila yang disebut orang/entitas yang sudah ada, atau sebuah kode emiten radar.
   for (const t of tickers) {
     for (const o of profil[t].pengendali || []) {
       const pn = nodes.get('p:' + entityKey(o.nama))
+      if (!pn) continue
       for (const j of o.jaringan || []) {
         const k = entityKey(j.dengan)
         const hit = k && [...nodes.values()].find(n => n !== pn && n.type !== 'emiten' &&
           (entityKey(n.label) === k || (entityKey(n.label).length > 8 && k.includes(entityKey(n.label)))))
         if (hit) link(pn, hit, String(j.hubungan || 'jaringan').slice(0, 60))
-        for (const c of codesIn(j.dengan, t)) { pn.em.add(c); link(pn, em(c), 'jaringan') }
+        for (const c of codesIn(j.dengan, t)) { pn?.em.add(c); link(pn, em(c), 'jaringan') }
       }
     }
   }
@@ -80,6 +91,7 @@ export function buildNetwork({ profil = {}, relasi = {} } = {}) {
     if (ts.length < 2) continue
     const ex = [...nodes.values()].find(n => n.type !== 'emiten' && entityKey(n.label) === k)
     const n = ex || node('r:' + k, labelFromRelasi(relasi, ts[0], k) || k, 'entitas')
+    if (!n) continue
     for (const t of ts) { n.em.add(t); link(n, em(t), 'alur saham') }
   }
   return { nodes: [...nodes.values()], edges }
@@ -140,8 +152,28 @@ export function layoutNet(nodes, edges, W, H, iters = 260) {
       p.vx += (W / 2 - p.x) * 0.004; p.vy += (H / 2 - p.y) * 0.006
       const v = Math.hypot(p.vx, p.vy), m = Math.min(v, 18 * temp + 1)
       p.x += p.vx / (v || 1) * m; p.y += p.vy / (v || 1) * m; p.vx *= 0.5; p.vy *= 0.5
-      p.x = Math.max(30, Math.min(W - 30, p.x)); p.y = Math.max(20, Math.min(H - 20, p.y))
+      // Sisakan ruang untuk label di tepi (label ±26 karakter di bawah simpul).
+      p.x = Math.max(80, Math.min(W - 80, p.x)); p.y = Math.max(22, Math.min(H - 26, p.y))
     }
   }
   return P.map(({ x, y }) => ({ x, y }))
+}
+
+// Tata letak dua kolom untuk penghubung lintas emiten: penghubung di kiri, emiten di kanan.
+// Urutan emiten mengikuti rata-rata posisi penghubungnya (barycenter) supaya garis jarang bersilangan.
+export function layoutBipartite(bridges, { W = 900, row = 30, top = 24 } = {}) {
+  const L = bridges.map((n, i) => ({ id: n.id, label: n.label, em: [...n.em], y: top + i * row }))
+  const bary = new Map()
+  L.forEach((b, i) => b.em.forEach(t => { const v = bary.get(t) || []; v.push(i); bary.set(t, v) }))
+  const tick = [...bary.keys()].sort((a, b) => {
+    const ma = bary.get(a).reduce((x, y) => x + y, 0) / bary.get(a).length, mb = bary.get(b).reduce((x, y) => x + y, 0) / bary.get(b).length
+    return ma - mb || a.localeCompare(b)
+  })
+  const H = top * 2 + Math.max(L.length, tick.length) * row
+  const rowR = tick.length > 1 ? (H - top * 2) / (tick.length - 1) : 0
+  const R = tick.map((t, i) => ({ t, y: tick.length > 1 ? top + i * rowR : H / 2 }))
+  const ry = new Map(R.map(r => [r.t, r.y]))
+  const xL = Math.round(W * 0.42), xR = Math.round(W * 0.8)
+  const links = L.flatMap(b => b.em.map(t => ({ from: b.id, t, y1: b.y, y2: ry.get(t) })))
+  return { W, H, xL, xR, left: L, right: R, links }
 }

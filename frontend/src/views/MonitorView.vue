@@ -183,6 +183,16 @@ const nearMiss = computed(() => inj.value.length < 1 ? [] : baseInj.value
   .map(r => ({ r, fail: inj.value.filter(k => INJ[k] && !INJ[k].test(r)) }))
   .filter(x => x.fail.length === 1)
   .map(({ r, fail }) => ({ t: r.t, why: WHY[fail[0]](r) })))
+// Alasan bervariasi (mis. "progress 35%") disatukan per jenis filter supaya kelompoknya tidak pecah.
+const nearGroups = computed(() => {
+  const m = new Map()
+  for (const n of nearMiss.value) {
+    const why = /^progress/.test(n.why) ? 'di luar rentang progress' : n.why
+    if (!m.has(why)) m.set(why, [])
+    m.get(why).push(n.t)
+  }
+  return [...m].map(([why, t]) => ({ why, t, n: t.length })).sort((a, b) => b.n - a.n)
+})
 function setPg(k, v) {
   const n = Math.max(0, Math.min(100, Math.round(+v || 0)))
   pg.value = { ...pg.value, [k]: n }
@@ -317,10 +327,12 @@ onMounted(() => autoRefresh('stockbit'))
       </div>
       <span class="muted small" aria-live="polite">{{ countTxt }}</span>
     </div>
-    <p v-if="nearMiss.length" class="near small">
-      <span class="muted">Nyaris lolos (gagal 1 filter):</span>
-      <template v-for="(n, i) in nearMiss" :key="n.t"><template v-if="i"> · </template><RouterLink class="ticker" :to="'/emiten/' + n.t">{{ n.t }}</RouterLink> <span class="muted">{{ n.why }}</span></template>
-    </p>
+    <!-- Nyaris lolos dikelompokkan per alasan; daftar kode dilipat supaya tidak memenuhi halaman. -->
+    <details v-if="nearMiss.length" class="near small">
+      <summary><b>{{ nearMiss.length }} emiten nyaris lolos</b> <span class="muted">(gagal 1 filter): {{ nearGroups.map(g => g.n + ' ' + g.why).join(', ') }}</span></summary>
+      <div v-for="g in nearGroups" :key="g.why" class="ng"><span class="muted">{{ g.why }}:</span>
+        <RouterLink v-for="t in g.t" :key="t" class="ticker" :to="'/emiten/' + t">{{ t }}</RouterLink></div>
+    </details>
 
     <p v-if="set === 'potensi'" class="potsum small">
       <template v-if="potSum.n">
@@ -454,6 +466,9 @@ onMounted(() => autoRefresh('stockbit'))
 <style scoped>
 .mon{display:flex;flex-direction:column;gap:14px}
 .near{margin:-6px 0 0;padding:6px 10px;border-left:3px solid var(--warn);background:var(--warn-bg);line-height:1.7}
+.near summary{cursor:pointer}
+.ng{margin-top:4px}
+.ng .ticker{font-size:14px;margin-left:8px}
 .head{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:flex-end;justify-content:space-between;padding-bottom:12px;border-bottom:2px solid var(--ink)}
 .ttl{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}
 .today{color:var(--ink-2)}

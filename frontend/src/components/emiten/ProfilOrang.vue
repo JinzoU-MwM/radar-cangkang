@@ -17,6 +17,8 @@ const board = computed(() => boardStats(props.profil.pengurus))
 const af = computed(() => props.profil.afiliasi?.pihakLawan ? props.profil.afiliasi : null)
 const rel = computed(() => relationTone(af.value?.hubungan))
 const layers = computed(() => chainLayers(af.value?.strukturKepemilikan))
+// Kalimat pertama (maks. ±180 karakter) sebagai ringkasan satu baris.
+const firstSentence = t => { const m = String(t || '').match(/^.{20,180}?[.;](\s|$)/); return m ? m[0].trim() : String(t || '').slice(0, 180) + (String(t || '').length > 180 ? '…' : '') }
 </script>
 
 <template>
@@ -32,12 +34,20 @@ const layers = computed(() => chainLayers(af.value?.strukturKepemilikan))
         <div><dt>Pengalaman</dt><dd><TickerText v-if="o.pengalaman" :text="o.pengalaman" /><template v-else>belum ada</template></dd></div>
         <div v-if="o.rekamJejak?.length"><dt>Rekam jejak</dt><dd>
           <ul class="rj">
+            <!-- Satu baris per emiten; paragraf hasil dan sumber dilipat di "Rincian". -->
             <li v-for="(r, i) in o.rekamJejak" :key="i">
-              <b><template v-if="r.kode"><TickerText :text="r.kode" /> </template>{{ r.entitas }}</b>
-              <span class="small muted"> {{ [r.peran, r.periode].filter(Boolean).join(' · ') }}</span>
-              <span class="tag" :class="yakinOf(r.keyakinan).cls">{{ yakinOf(r.keyakinan).label }}</span>
-              <div v-if="r.hasil" class="small"><TickerText :text="r.hasil" /></div>
-              <div v-if="r.sumber" class="small muted">{{ r.sumber }}</div>
+              <div class="rjh">
+                <span v-if="r.kode" class="rk"><TickerText :text="r.kode" /></span>
+                <b>{{ r.entitas }}</b>
+                <span class="tag" :class="yakinOf(r.keyakinan).cls">{{ yakinOf(r.keyakinan).label }}</span>
+              </div>
+              <div v-if="r.peran || r.periode" class="small muted">{{ [r.peran, r.periode].filter(Boolean).join(' · ') }}</div>
+              <div v-if="r.hasil" class="small lead1"><TickerText :text="firstSentence(r.hasil)" /></div>
+              <details v-if="r.hasil && r.hasil.length > firstSentence(r.hasil).length + 5 || r.sumber" class="rjd">
+                <summary class="small">Rincian</summary>
+                <div v-if="r.hasil" class="small"><TickerText :text="r.hasil" /></div>
+                <div v-if="r.sumber" class="small muted src">{{ r.sumber }}</div>
+              </details>
             </li>
           </ul>
         </dd></div>
@@ -177,6 +187,12 @@ ul{margin:0;padding-left:18px}
 .net,.rj,.co{list-style:none;padding:0;margin:0}
 .net li,.rj li{margin:2px 0 6px}
 .rj li{border-left:2px solid var(--rule);padding-left:8px}
+.rjh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px}
+.rk{font-family:var(--f-display);font-size:15px}
+.lead1{margin-top:2px}
+.rjd summary{cursor:pointer;color:var(--accent);font-weight:600;min-height:24px;display:inline-flex;align-items:center}
+.rjd > div{margin-top:4px;max-width:80ch}
+.src{overflow-wrap:anywhere}
 .co{display:flex;flex-wrap:wrap;gap:4px 14px}
 .tag{margin-left:2px}
 .tk{font-weight:700;color:var(--accent);text-decoration:underline dotted}
