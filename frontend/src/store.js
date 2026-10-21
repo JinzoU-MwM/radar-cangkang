@@ -284,3 +284,20 @@ export function relasiOf(t) {
   relasiMemo.set(t, { key, v })
   return v
 }
+
+// Benchmark siklus dari transaksi backdoor di daftar (kode:tanggal mulai PTW). Satu cache untuk
+// semua halaman (Monitor, Siklus, Analisa, Profil) + permintaan yang sedang jalan dipakai bersama.
+const bmCache = new Map(), bmInflight = new Map()
+export const benchmarkDeals = () => store.items.filter(d => d.tender?.start)
+  .map(d => `${d.ticker}:${String(d.tender.start).slice(0, 10)}`).sort().join(',')
+export async function getBenchmark(deals = benchmarkDeals()) {
+  if (!deals) return null
+  const hit = bmCache.get(deals)
+  if (hit && Date.now() - hit.at < 6 * 3600e3) return hit.v
+  if (!bmInflight.has(deals)) {
+    bmInflight.set(deals, api.get('/api/benchmark', { deals })
+      .then(v => { bmCache.set(deals, { v, at: Date.now() }); return v })
+      .finally(() => bmInflight.delete(deals)))
+  }
+  return bmInflight.get(deals)
+}
