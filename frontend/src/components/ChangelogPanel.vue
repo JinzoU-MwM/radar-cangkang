@@ -99,7 +99,7 @@ async function go(i) {
 
 <template>
   <button type="button" class="cl-btn" :aria-expanded="String(open)" aria-haspopup="dialog" @click="show">
-    Pembaruan
+    Pembaruan website
     <span v-if="nNew" class="cnt" :title="`${nNew} catatan belum dibaca`">{{ nNew }}<span class="sr-only"> belum dibaca</span></span>
   </button>
   <!-- Ke body: rail memakai position:sticky (konteks tumpukan sendiri), panel harus di atas seluruh halaman. -->
@@ -139,9 +139,9 @@ async function go(i) {
 </template>
 
 <style scoped>
-.cl-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:10px 12px;min-height:24px;border:0;border-radius:3px;background:none;font:inherit;font-weight:600;color:var(--rail-mute);cursor:pointer;text-align:left}
-.cl-btn:hover{color:var(--rail-ink);background:var(--rail-2)}
-.cl-btn .cnt{font-family:var(--f-display);font-weight:700;color:#ffa36b}  /* oranye terang: kontras ≥ 4,5:1 di rail hijau */
+.cl-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:4px 0;min-height:24px;border:0;border-radius:3px;background:none;font:inherit;font-size:12.5px;font-weight:600;color:var(--rail-mute);cursor:pointer;text-align:left}
+.cl-btn:hover{color:var(--rail-ink)}
+.cl-btn .cnt{font-family:var(--f-display);font-weight:700;color:var(--rail-ink);border:1px solid var(--rail-rule);border-radius:999px;padding:0 6px;font-size:11.5px}  /* netral: oranye di rail khusus data baru */
 @media (max-width:760px){.cl-btn{width:auto}}
 .cl-scrim{position:fixed;inset:0;z-index:40;background:rgb(15 32 25 / .45);display:flex;justify-content:flex-end}
 .cl-panel{background:var(--sheet);color:var(--ink);width:min(440px,100%);height:100%;overflow:auto;padding:18px 20px 32px;box-shadow:var(--shadow);outline:none;box-sizing:border-box}

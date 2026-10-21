@@ -11,6 +11,7 @@ import CycleChart from '../components/CycleChart.vue'
 import Timeline from '../components/monitor/Timeline.vue'
 import AgendaBlock from '../components/monitor/AgendaBlock.vue'
 import ProgressCells from '../components/monitor/ProgressCells.vue'
+import TodayCards from '../components/monitor/TodayCards.vue'
 import Modal from '../components/emiten/Modal.vue'
 import PotensiCells from '../components/monitor/PotensiCells.vue'
 import StoryCells from '../components/monitor/StoryCells.vue'
@@ -28,12 +29,13 @@ const special = ref('')
 const lsGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } }
 const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch {} }
 
-// Set kolom tabel: Ringkas (bawaan), Progress, Potensi, Story. Diingat di browser; ?set= di URL menang (peta hash lama).
-const SETS = [['ringkas', 'Ringkas'], ['progress', 'Progress'], ['potensi', 'Potensi'], ['story', 'Story']]
+// Tampilan: Hari ini (kartu; bawaan di HP), lalu set kolom tabel Ringkas (bawaan), Progress, Potensi, Story. Diingat di browser; ?set= di URL menang (peta hash lama).
+const SETS = [['hari', 'Hari ini'], ['ringkas', 'Ringkas'], ['progress', 'Progress'], ['potensi', 'Potensi'], ['story', 'Story']]
 const LS_SET = 'radar-cangkang.monSet'
 const route = useRoute(), router = useRouter()
 const validSet = v => SETS.some(([id]) => id === v) ? v : null
-const set = ref(validSet(route.query.set) || validSet(lsGet(LS_SET, '')) || 'ringkas')
+const narrow = () => typeof matchMedia === 'function' && matchMedia('(max-width: 640px)').matches
+const set = ref(validSet(route.query.set) || validSet(lsGet(LS_SET, '')) || (narrow() ? 'hari' : 'ringkas'))
 watch(() => route.query.set, v => { if (validSet(v)) set.value = v })
 // Set Story butuh profil & riwayat pemegang dari Stockbit; loadStories hanya menarik yang belum ada/basi.
 watch(() => set.value === 'story' && store.ready, on => { if (on) loadStories() }, { immediate: true })
@@ -195,7 +197,7 @@ const SORT = {
 // Klik judul kolom: urut turun (kode: naik), klik lagi membalik. Tanpa pilihan: proses dulu, persen turun, PTW terbaru.
 const sort = ref({ key: '', dir: -1 })
 function sortBy(k) { sort.value = { key: k, dir: sort.value.key === k ? -sort.value.dir : (k === 'ticker' ? 1 : -1) } }
-const sortOn = computed(() => COLS[set.value].some(c => c.k && c.k === sort.value.key) ? sort.value : null)
+const sortOn = computed(() => (COLS[set.value] || []).some(c => c.k && c.k === sort.value.key) ? sort.value : null)
 const ariaSort = k => sortOn.value?.key === k ? (sortOn.value.dir > 0 ? 'ascending' : 'descending') : 'none'
 
 const rows = computed(() => {
@@ -283,7 +285,7 @@ onMounted(() => autoRefresh('stockbit'))
       </div>
     </header>
 
-    <AgendaBlock :note="agendaNote" :can-mark="nNew > 0" @seen="markSeen" />
+    <AgendaBlock v-if="set !== 'hari'" :note="agendaNote" :can-mark="nNew > 0" @seen="markSeen" />
 
     <div class="bar-row">
       <div class="fbar">
@@ -312,7 +314,8 @@ onMounted(() => autoRefresh('stockbit'))
       <span v-else class="muted">Data siklus harga belum tersedia{{ bmError ? ': ' + bmError : '' }}. Butuh server dengan token Stockbit aktif.</span>
     </p>
 
-    <section id="progTable" ref="box" aria-label="Daftar emiten" class="sheet box">
+    <TodayCards v-if="set === 'hari'" :rows="rows" />
+    <section v-else id="progTable" ref="box" aria-label="Daftar emiten" class="sheet box">
       <table class="ledger" :class="'set-' + set">
         <thead><tr>
           <th v-for="(c, i) in COLS[set]" :key="set + i" class="lbl" :class="[c.cls, { tlh: c.tl }]" :title="c.tip" :aria-sort="c.k ? ariaSort(c.k) : undefined">
@@ -378,6 +381,7 @@ onMounted(() => autoRefresh('stockbit'))
     </details>
     <Modal v-if="fOpen" labelledby="fT" close-label="Tutup saringan" @close="fOpen = false">
       <template #title><h2 id="fT" class="ftitle">Saring emiten</h2></template>
+      <p class="small muted fnote">Angka di tiap pilihan = jumlah hasil bila pilihan itu dipakai, dengan saringan lain tetap. Pilihan Injeksi bisa digabung.</p>
       <div class="fgroups">
         <div role="group" aria-label="Saring status transaksi" class="grp">
           <span class="lbl">Status</span>
