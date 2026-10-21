@@ -899,6 +899,10 @@ class Handler(BaseHTTPRequestHandler):
 
     # ---- helpers
     def reply(self, body: bytes, status: int = 200, ctype: str = "application/json; charset=utf-8") -> None:
+        # Cloudflare mengganti 502 dari origin dengan halaman error-nya sendiri; untuk pengunjung
+        # publik, kegagalan data (biasanya: belum ada di cache) dikirim sebagai 503 agar pesannya sampai.
+        if status == 502 and is_public_request():
+            status = 503
         try:
             self.send_response(status)
             self.send_header("Content-Type", ctype)
