@@ -32,7 +32,7 @@ const SEED_ITEMS = [
 export const store = reactive({
   ready: false,
   // Kandidat otomatis dari /api/kandidat (pemindaian seluruh BEI di server).
-  kandidat: { items: [], asOf: '', loading: true, error: '' },
+  kandidat: { items: [], hidden: [], asOf: '', loading: true, error: '' },
   items: [],
   updates: [],
   verified: {},
@@ -325,7 +325,7 @@ export function alsoIn(title, ticker) {
 let kandidatReq = null
 export function loadKandidat() {
   kandidatReq ||= api.get('/api/kandidat')
-    .then(r => Object.assign(store.kandidat, { items: r.items || [], asOf: r.asOf || '' }))
+    .then(r => Object.assign(store.kandidat, { items: r.items || [], hidden: r.hidden || [], asOf: r.asOf || '' }))
     .catch(e => { store.kandidat.error = e.message; kandidatReq = null })
     .finally(() => { store.kandidat.loading = false })
   return kandidatReq
@@ -336,4 +336,21 @@ export function autoKandidat() {
   const known = new Set(store.items.map(i => i.ticker))
   return store.kandidat.items.filter(k => !known.has(k.ticker))
     .map(k => ({ id: k.ticker, ticker: k.ticker, name: k.name || '', price: k.price, stage: 'radar', flags: k.flags || {}, ms: {}, signals: k.signals || {}, auto: true }))
+}
+
+// Sembunyikan kandidat otomatis yang tidak relevan (tersimpan di server, berlaku untuk semua);
+// pulihkan mengembalikannya ke daftar.
+export async function hideKandidat(k) {
+  await api.put('/api/kandidat/hidden/' + k.ticker, {})
+  const kd = store.kandidat
+  kd.items = kd.items.filter(x => x.ticker !== k.ticker)
+  kd.hidden = [...kd.hidden, { ticker: k.ticker, name: k.name || '', at: Date.now() / 1000 }]
+}
+export async function unhideKandidat(h) {
+  await api.del('/api/kandidat/hidden/' + h.ticker)
+  const kd = store.kandidat
+  kd.hidden = kd.hidden.filter(x => x.ticker !== h.ticker)
+  // Data sinyalnya tidak ikut dikirim untuk yang tersembunyi: muat ulang daftar.
+  kandidatReq = null
+  await loadKandidat()
 }

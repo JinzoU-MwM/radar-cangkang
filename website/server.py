@@ -187,7 +187,8 @@ def data_db() -> sqlite3.Connection:
             _data.executescript(
                 "CREATE TABLE IF NOT EXISTS items(ticker TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at INTEGER NOT NULL);"
                 "CREATE TABLE IF NOT EXISTS updates(id TEXT PRIMARY KEY, data TEXT NOT NULL, date TEXT);"
-                "CREATE TABLE IF NOT EXISTS layout(ticker TEXT PRIMARY KEY, data TEXT NOT NULL);")
+                "CREATE TABLE IF NOT EXISTS layout(ticker TEXT PRIMARY KEY, data TEXT NOT NULL);"
+                "CREATE TABLE IF NOT EXISTS kandidat_hidden(ticker TEXT PRIMARY KEY, hidden_at INTEGER NOT NULL);")
             _data.commit()
         return _data
 
@@ -1187,6 +1188,14 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply_json({"ok": True, "count": len(body)})
             elif path == "api/migrate" and method == "POST" and isinstance(body, dict):
                 self.reply_json(migrate(body))
+            elif (len(parts) == 4 and parts[:3] == ["api", "kandidat", "hidden"] and TICKER_RE.match(parts[3])
+                  and method in ("PUT", "DELETE")):
+                # Kandidat otomatis yang disembunyikan tim (tidak relevan); DELETE memulihkan.
+                if method == "PUT":
+                    data_exec("INSERT OR REPLACE INTO kandidat_hidden VALUES(?,?)", [(parts[3], int(time.time()))])
+                else:
+                    data_exec("DELETE FROM kandidat_hidden WHERE ticker=?", [(parts[3],)])
+                self.reply_json({"ok": True})
             elif (len(parts) == 3 and parts[:2] == ["api", "layout"] and TICKER_RE.match(parts[2])
                   and method == "PUT" and isinstance(body, dict)):
                 data_exec("INSERT OR REPLACE INTO layout VALUES(?,?)",
@@ -1297,7 +1306,12 @@ class Handler(BaseHTTPRequestHandler):
             self.api_reports(cfg, ticker, fresh)
         elif path == "api/kandidat":
             if not self.guard_token():
-                self.reply_json(get_kandidat(cfg, fresh))
+                res = get_kandidat(cfg, fresh)
+                # Penyaringan "disembunyikan" di luar memo supaya langsung berlaku.
+                hidden = {t: at for t, at in data_rows("SELECT ticker, hidden_at FROM kandidat_hidden")}
+                self.reply_json({**res, "items": [k for k in res["items"] if k["ticker"] not in hidden],
+                                 "hidden": [{"ticker": t, "at": at, "name": next((k.get("name") for k in res["items"]
+                                             if k["ticker"] == t), "")} for t, at in sorted(hidden.items())]})
         elif path == "api/viz/summary":
             # Agregat lokal untuk infografis: komposisi tahap emiten dari story-verified.json +
             # daftar backdoor di config — tanpa token Stockbit.

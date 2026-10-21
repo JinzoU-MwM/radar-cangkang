@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { store, saveItem, toast, loadKandidat, autoKandidat } from '../store.js'
+import { store, saveItem, toast, loadKandidat, autoKandidat, hideKandidat, unhideKandidat } from '../store.js'
 import { SIGNALS, stageOf, scoreOf, fmtDate, num } from '../lib/domain.js'
 
 // Label kolom pendek untuk header sempit; label lengkap di title.
@@ -90,6 +90,20 @@ async function keep(item) {
   } catch (e) { toast('Gagal menyimpan: ' + e.message, true) }
 }
 
+async function hide(item) {
+  try {
+    await hideKandidat(item)
+    if (sel.value?.t === item.ticker) sel.value = null
+    toast(`${item.ticker} disembunyikan dari kandidat.`)
+  } catch (e) { toast('Gagal menyembunyikan: ' + e.message, true) }
+}
+async function unhide(h) {
+  try {
+    await unhideKandidat(h)
+    toast(`${h.ticker} dikembalikan ke kandidat.`)
+  } catch (e) { toast('Gagal memulihkan: ' + e.message, true) }
+}
+
 async function promote(item) {
   try {
     await saveItem({ ...plain(item), stage: 'spa', ms: { ...item.ms, spa: true }, updatedAt: new Date().toISOString() })
@@ -146,6 +160,7 @@ async function promote(item) {
               </td>
               <td class="rowacts"><template v-if="!store.status?.readOnly">
                 <button v-if="item.auto" type="button" class="btn small" @click="keep(item)">Simpan</button>
+                <button v-if="item.auto" type="button" class="btn small quiet" :aria-label="'Sembunyikan ' + item.ticker" @click="hide(item)">Sembunyikan</button>
                 <button type="button" class="btn small" @click="promote(item)">Pindah ke Monitor</button>
               </template></td>
             </tr>
@@ -155,6 +170,15 @@ async function promote(item) {
           </tbody>
         </table>
       </div>
+      <details v-if="auto.hidden.length" class="hid small">
+        <summary class="muted">{{ auto.hidden.length }} kandidat disembunyikan</summary>
+        <ul>
+          <li v-for="h in auto.hidden" :key="h.ticker">
+            <span class="ticker">{{ h.ticker }}</span> <span class="muted">{{ h.name }}</span>
+            <button v-if="!store.status?.readOnly" type="button" class="btn small" @click="unhide(h)">Pulihkan</button>
+          </li>
+        </ul>
+      </details>
     </section>
 
     <section v-if="selItem && selSig" aria-labelledby="evH" class="rule-top sec ev-grid">
@@ -207,6 +231,11 @@ async function promote(item) {
 .rowacts{white-space:nowrap}
 .rowacts .btn+.btn{margin-left:6px}
 .asof{margin:0;flex-basis:100%}
+.quiet{color:var(--ink-2);border-color:transparent;background:transparent}
+.quiet:hover{color:var(--ink);border-color:var(--rule)}
+.hid summary{cursor:pointer;padding:4px 0}
+.hid ul{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.hid li{display:flex;gap:10px;align-items:center}
 .skor{width:96px}
 .sg{width:76px;font-size:11.5px;line-height:1.15;white-space:normal}
 .w{font:700 13px var(--f-display);color:var(--ink)}

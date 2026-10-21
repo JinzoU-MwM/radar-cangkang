@@ -90,6 +90,15 @@ class DataApiTest(unittest.TestCase):
         st, items = self.call("GET", "/api/items", ctype=None, public=True)
         self.assertEqual(st, 200)
 
+    def test_08_kandidat_hide(self):
+        req = lambda m: urllib.request.urlopen(urllib.request.Request(
+            self.base + "/api/kandidat/hidden/ABCD", data=b"{}" if m == "PUT" else None, method=m,
+            headers={"Content-Type": "application/json"}))
+        self.assertEqual(json.loads(req("PUT").read())["ok"], True)
+        self.assertEqual(server.data_rows("SELECT ticker FROM kandidat_hidden"), [("ABCD",)])
+        req("DELETE")
+        self.assertEqual(server.data_rows("SELECT ticker FROM kandidat_hidden"), [])
+
     def test_06_static_traversal_blocked(self):
         st, _ = self.call("GET", "/..%2fserver.py", ctype=None)
         self.assertEqual(st, 404)
