@@ -427,16 +427,6 @@ onMounted(() => autoRefresh('stockbit'))
 .tools{display:flex;flex-wrap:wrap;gap:8px}
 .tools .field{width:240px;max-width:100%}
 .now{color:var(--now-ink)}
-.fgroups{display:flex;flex-direction:column;gap:16px;margin:14px 0 4px}
-.fgroups .grp > .lbl{flex-basis:100%}
-.ftitle{margin:0;font:700 22px var(--f-display)}
-.ffoot{display:flex;justify-content:space-between;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--rule-2)}
-.fbar{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
-.fbar .btn{display:inline-flex;gap:6px;align-items:center}
-.fcount{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--now);color:#fff;font:700 12px var(--f-display)}
-.chip{background:var(--accent-soft);border-color:transparent}
-.chip span{margin-left:4px;font-weight:700}
-.linkbtn{background:none;border:0;padding:4px;color:var(--accent);text-decoration:underline;cursor:pointer}
 .grp{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .grp .lbl{margin-right:2px}
 .box{overflow:auto;max-height:72vh}
@@ -471,8 +461,6 @@ onMounted(() => autoRefresh('stockbit'))
 .ev{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;min-width:0}
 .empty{padding:14px}
 .foot{margin:0;font-size:12px}
-.pill:disabled{opacity:.4;cursor:default}
-.pill:disabled:hover{border-color:var(--rule)}
 .bar-row{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
 /* Kontrol segmen: tombol bersebelahan, satu aktif. */
 .seg{display:flex;flex-wrap:wrap;align-items:center;gap:0}
