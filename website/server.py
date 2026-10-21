@@ -1401,8 +1401,9 @@ class Handler(BaseHTTPRequestHandler):
                 break
         name = f.name if f else ""
         # Kode server/skrip (.py, .ps1), dotfile (token, kredensial, DB), dan config tidak pernah disajikan.
+        # tsa-*.json = dataset penuh tradersaham; hanya disajikan per emiten lewat /api/tsa/summary.
         blocked = (not f or name.startswith(".") or f.suffix.lower() in (".py", ".ps1", ".pyc")
-                   or name == "stockbit.config.json")
+                   or name == "stockbit.config.json" or (name.startswith("tsa-") and name.endswith(".json")))
         if blocked:
             self.reply(b"", 404)
             return
