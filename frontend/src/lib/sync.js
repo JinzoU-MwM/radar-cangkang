@@ -47,10 +47,12 @@ export async function syncTenders(items, api, { errors = [] } = {}) {
 }
 
 // Harga, kapitalisasi, porsi publik & pengendali per emiten. Berhenti total bila token ditolak (401).
-// opts.ownership=false melewati /api/ownership (butuh token); opts.delay = jeda antarpermintaan (ms).
-export async function syncStockbit(items, api, { errors = [], ownership = true, delay = 400 } = {}) {
+// opts.ownership=false melewati /api/ownership (butuh token); opts.delay = jeda antarpermintaan (ms);
+// opts.onProgress(i, n) dipanggil sebelum tiap emiten (i mulai 1).
+export async function syncStockbit(items, api, { errors = [], ownership = true, delay = 400, onProgress } = {}) {
   const list = clone(items)
-  for (const next of list) {
+  for (const [k, next] of list.entries()) {
+    onProgress?.(k + 1, list.length)
     let q
     try { q = await api.get('/api/quote', { ticker: next.ticker }) } catch (e) {
       errors.push({ source: next.ticker, error: errText(e) })
@@ -127,14 +129,16 @@ export function inferMilestones(d, reports) {
 }
 
 // Stockbit Reports per emiten backdoor + berita media. Item digabung berdasarkan id agar tidak dobel.
-// opts: reports/news = fitur aktif, tickers = daftar kode (bawaan: emiten backdoor), delay (ms).
-export async function syncReports(items, updates, api, { news = false, reports = true, tickers, delay = 400 } = {}) {
+// opts: reports/news = fitur aktif, tickers = daftar kode (bawaan: emiten backdoor), delay (ms),
+// onProgress(i, n) sebelum tiap emiten yang laporannya ditarik.
+export async function syncReports(items, updates, api, { news = false, reports = true, tickers, delay = 400, onProgress } = {}) {
   let list = clone(items)
   const upd = clone(updates)
   const errors = []
   let added = 0, addedNews = 0
   const codes = [...(tickers || backdoorTickers(list))].filter(t => /^[A-Z]{4}$/.test(t))
-  for (const t of reports ? codes : []) {
+  for (const [k, t] of (reports ? codes : []).entries()) {
+    onProgress?.(k + 1, codes.length)
     try {
       const j = await api.get('/api/reports', { ticker: t })
       for (const it of j.items || []) {

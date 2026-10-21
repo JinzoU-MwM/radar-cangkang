@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { store, itemOf, pandanganOf, storyOf, autoRefresh, loadStories } from '../store.js'
-import { fmtDate, rp } from '../lib/domain.js'
+import { fmtDate, rp, scoreOf, statusOf, STATUS_LABEL } from '../lib/domain.js'
 import SikapTag from '../components/SikapTag.vue'
 import StageTrack from '../components/StageTrack.vue'
 import OwnershipFlow from '../components/OwnershipFlow.vue'
@@ -33,8 +33,12 @@ const item = computed(() => itemOf(T.value))
 const pv = computed(() => pandanganOf(T.value))
 const story = computed(() => storyOf(T.value))
 const known = computed(() => !!(item.value || pv.value || store.verified[T.value]))
+// Kode di luar radar tetap bisa dianalisa selama formatnya kode saham BEI (4 huruf).
+const valid = computed(() => /^[A-Z]{4}$/.test(T.value))
+// Tab yang hanya berisi data radar/story; untuk kode bebas ditulis "belum ada".
+const RADAR_ONLY = ['ringkasan', 'story']
 
-const tab = computed(() => TABS.some(t => t.id === route.query.tab) ? route.query.tab : 'ringkasan')
+const tab = computed(() => TABS.some(t => t.id === route.query.tab) ? route.query.tab : known.value ? 'ringkasan' : 'analisa')
 function pick(id) { router.replace({ query: { ...route.query, tab: id } }) }
 
 // Panah kiri/kanan, Home/End di daftar tab (pola tab WAI-ARIA, aktivasi otomatis).
@@ -68,6 +72,27 @@ const priceNote = computed(() => {
   return p?.hargaAcuan != null ? `harga acuan analisa ${fmtDate(p.asOf)}` : 'belum ada harga'
 })
 
+const score = computed(() => item.value ? scoreOf(item.value) : null)
+
+// Riwayat kode yang pernah dianalisa (maks. 8, terbaru di depan), per browser.
+const RECENT_KEY = 'radar-cangkang.anRecent'
+const readRecent = () => { try { const v = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); return Array.isArray(v) ? v.filter(x => /^[A-Z]{4}$/.test(x)) : [] } catch { return [] } }
+const recent = ref(readRecent())
+watch(() => [T.value, tab.value], ([t, tb]) => {
+  if (tb !== 'analisa' || !valid.value) return
+  recent.value = [t, ...readRecent().filter(x => x !== t)].slice(0, 8)
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent.value)) } catch {}
+}, { immediate: true })
+
+const other = ref('')
+const otherOk = computed(() => /^[A-Z]{4}$/.test(other.value.trim().toUpperCase()))
+function analyzeOther() {
+  const t = other.value.trim().toUpperCase()
+  if (!/^[A-Z]{4}$/.test(t)) return
+  other.value = ''
+  router.push({ path: '/emiten/' + t, query: { tab: 'analisa' } })
+}
+
 const flow = ref(false)
 const flowFocus = ref(null)
 function openFlow(focus = null) { flowFocus.value = focus; flow.value = true }
@@ -82,9 +107,9 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
   <div class="em">
     <RouterLink to="/" class="back">‹ Monitor</RouterLink>
 
-    <section v-if="!known" class="empty rule-top">
+    <section v-if="!valid && !known" class="empty rule-top">
       <h1>{{ T }}</h1>
-      <p>Kode {{ T }} belum ada di radar dan belum punya pandangan analis atau story terverifikasi.</p>
+      <p>{{ T }} bukan kode saham BEI. Kode saham terdiri dari 4 huruf, misalnya BBCA.</p>
       <RouterLink to="/">Kembali ke Monitor</RouterLink>
     </section>
 
@@ -94,6 +119,8 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
           <div class="line1">
             <h1 class="tk">{{ T }}</h1>
             <SikapTag :sikap="pv?.sikap" />
+            <span v-if="score != null" class="tag score" :class="'t-' + statusOf(score)">Skor {{ score }} · {{ STATUS_LABEL[statusOf(score)] }}</span>
+            <span v-if="!known" class="tag t-calm">di luar radar</span>
             <span v-if="item" class="stage"><StageTrack :item="item" /><span v-if="tenderUntil" class="tag t-now">{{ tenderUntil }}</span></span>
           </div>
           <p class="nm">
@@ -104,6 +131,17 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
               {{ baru || 'usaha baru belum ada' }}
             </span>
           </p>
+          <div class="recent">
+            <nav v-if="recent.length" class="chips" aria-label="Riwayat analisa">
+              <RouterLink v-for="t in recent" :key="t" class="chip" :class="{ on: t === T }" :aria-current="t === T ? 'page' : undefined"
+                :to="{ path: '/emiten/' + t, query: { tab: 'analisa' } }">{{ t }}</RouterLink>
+            </nav>
+            <form class="other" @submit.prevent="analyzeOther">
+              <label for="anOther" class="small muted">Analisa kode lain</label>
+              <input id="anOther" v-model="other" class="field" maxlength="4" autocomplete="off" spellcheck="false" placeholder="BBCA" @input="other = other.toUpperCase()">
+              <button type="submit" class="btn" :disabled="!otherOk">Analisa</button>
+            </form>
+          </div>
         </div>
         <div class="right">
           <button type="button" class="btn primary" aria-haspopup="dialog" @click="openFlow()">
@@ -124,7 +162,8 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
       </div>
 
       <div :id="'panel-' + tab" role="tabpanel" :aria-labelledby="'tab-' + tab" class="panel">
-        <TabRingkasan v-if="tab === 'ringkasan'" :ticker="T" />
+        <p v-if="!known && RADAR_ONLY.includes(tab)" class="muted none">{{ T }} belum ada di radar, jadi {{ tab === 'story' ? 'story dan pengendali' : 'ringkasan transaksi' }} belum ada. Tab Analisa, Teknikal, Spekulasi, Profil, dan Berita tetap memakai data Stockbit.</p>
+        <TabRingkasan v-else-if="tab === 'ringkasan'" :ticker="T" />
         <TabStory v-else-if="tab === 'story'" :ticker="T" @flow="openFlow" />
         <TabAnalisa v-else-if="tab === 'analisa'" :ticker="T" />
         <TabTeknikal v-else-if="tab === 'teknikal'" :ticker="T" />
@@ -156,6 +195,16 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
 .px{text-align:right}
 .pv{font:700 36px/1 var(--f-display)}
 .panel{min-width:0}
+.score{border-radius:999px;padding:2px 10px}
+.none{padding:14px 0;margin:0;max-width:72ch}
+.recent{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--rule);border-radius:999px;padding:2px 10px;font:700 13px var(--f-display);letter-spacing:.02em;color:var(--ink);text-decoration:none;background:var(--sheet);min-height:28px;display:inline-flex;align-items:center}
+.chip:hover{border-color:var(--ink)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.other{display:flex;gap:6px;align-items:center}
+.other input{width:84px;min-height:32px;font:700 14px var(--f-display);letter-spacing:.04em;text-transform:uppercase}
+.other .btn{min-height:32px}
 @media (max-width:760px){
   .hd{align-items:flex-start}
   .right{width:100%;justify-content:space-between}

@@ -59,7 +59,7 @@ const vpRead = computed(() => {
               <tr><td>Target</td><td class="r num c-good">{{ rp(p.target) }}<div v-if="p.target2" class="small muted">T2 {{ rp(p.target2) }}</div></td><td class="r muted">{{ done(p) ? '' : pctTxt(p.target, c) }}</td></tr>
               <tr><td>Invalidasi<div class="small muted">batal bila ditutup {{ p.bias > 0 ? 'di bawah' : 'di atas' }}</div></td><td class="r num c-strong">{{ rp(p.inv) }}</td><td class="r muted">{{ done(p) ? '' : pctTxt(p.inv, c) }}</td></tr>
               <tr v-if="done(p)"><td>Hasil</td><td class="r" colspan="2">{{ p.statusTxt }}{{ p.end != null ? ' · ' + d(p.end) : '' }}</td></tr>
-              <tr v-else><td>Imbal-risiko dari harga kini</td><td class="r num" colspan="2">{{ rr(p) }} : 1</td></tr>
+              <tr v-else><td>Risk/reward dari harga kini</td><td class="r num" colspan="2">{{ rr(p) }} : 1</td></tr>
               <tr><td>Konfirmasi volume</td><td colspan="2" class="small muted r">{{ p.volTxt }}</td></tr>
             </tbody>
           </table>
@@ -97,7 +97,7 @@ const vpRead = computed(() => {
           </tbody>
         </table>
         <p v-else class="small muted">Belum ada pola candlestick dalam 120 hari terakhir.</p>
-        <p class="small muted">Persentase = keyakinan: kekuatan pola, lokasi terhadap pita Bollinger, volume, konteks tren, dan konfirmasi hari berikutnya.</p>
+        <p class="small muted">Persentase = keyakinan: kekuatan pola, lokasi terhadap band Bollinger, volume, konteks tren, dan konfirmasi hari berikutnya.</p>
       </section>
       <section class="rule-top">
         <h2>Divergensi RSI & MACD</h2>

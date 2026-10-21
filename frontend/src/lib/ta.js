@@ -92,18 +92,18 @@ export function taSignals(bars, ind) {
   // 3. RSI.
   const r = ind.rsi[i], r5 = ind.rsi[i - 5]
   if (r != null) {
-    if (r < 30) vote('RSI 14', 1, `RSI ${r.toFixed(0)} — jenuh jual, peluang pantulan teknikal.`)
-    else if (r > 70) vote('RSI 14', -1, `RSI ${r.toFixed(0)} — jenuh beli, rawan koreksi.`)
+    if (r < 30) vote('RSI 14', 1, `RSI ${r.toFixed(0)} — oversold, peluang technical rebound.`)
+    else if (r > 70) vote('RSI 14', -1, `RSI ${r.toFixed(0)} — overbought, rawan koreksi.`)
     else if (r >= 50 && r5 != null && r > r5) vote('RSI 14', 1, `RSI ${r.toFixed(0)} naik di atas 50 — momentum menguat.`)
     else if (r < 50 && r5 != null && r < r5) vote('RSI 14', -1, `RSI ${r.toFixed(0)} turun di bawah 50 — momentum melemah.`)
     else vote('RSI 14', 0, `RSI ${r.toFixed(0)} — momentum netral.`)
   }
-  // 4. MACD (+ persilangan baru).
+  // 4. MACD (+ cross baru).
   const mm = ind.macd.m[i], ms = ind.macd.sg[i], mh = ind.macd.h[i], mh1 = ind.macd.h[i - 1]
   if (mm != null && ms != null) {
     let cross = 0; for (let k = i; k > i - 5; k--) { const a = ind.macd.h[k], p = ind.macd.h[k - 1]; if (a != null && p != null && Math.sign(a) !== Math.sign(p)) { cross = i - k + 1; break } }
     const rising = mh1 != null && mh > mh1
-    vote('MACD 12/26/9', mm > ms ? 1 : -1, `MACD ${mm > ms ? 'di atas' : 'di bawah'} garis sinyal, histogram ${rising ? 'membesar' : 'mengecil'}${cross ? `; persilangan ${mm > ms ? 'naik' : 'turun'} ${cross} hari lalu` : ''}.`)
+    vote('MACD 12/26/9', mm > ms ? 1 : -1, `MACD ${mm > ms ? 'di atas' : 'di bawah'} garis sinyal, histogram ${rising ? 'membesar' : 'mengecil'}${cross ? `; cross ${mm > ms ? 'ke atas' : 'ke bawah'} ${cross} hari lalu` : ''}.`)
   }
   // 5. Bollinger Bands (+ squeeze).
   const up = ind.bb.up[i], lo = ind.bb.lo[i], mid = ind.bb.mid[i]
@@ -111,10 +111,10 @@ export function taSignals(bars, ind) {
     const bw = (up - lo) / mid, bws = ind.bb.up.map((u, k) => u != null ? (u - ind.bb.lo[k]) / ind.bb.mid[k] : null).slice(-120).filter(x => x != null)
     const squeeze = bws.length > 40 && bw <= Math.min(...bws) * 1.1
     const pos = (c - lo) / (up - lo || 1)
-    if (c < lo) vote('Bollinger 20,2', 1, `Harga di bawah pita bawah ${rpx(lo)} — jenuh jual secara statistik.`)
-    else if (c > up) vote('Bollinger 20,2', -1, `Harga di atas pita atas ${rpx(up)} — terlalu jauh dari rata-rata.`)
-    else vote('Bollinger 20,2', 0, `Harga di ${Math.round(pos * 100)}% lebar pita (${rpx(lo)}–${rpx(up)}).`)
-    if (squeeze) votes[votes.length - 1].txt += ' Pita sedang menyempit tajam (squeeze) — volatilitas biasanya akan meledak.'
+    if (c < lo) vote('Bollinger 20,2', 1, `Harga di bawah lower band ${rpx(lo)} — oversold secara statistik.`)
+    else if (c > up) vote('Bollinger 20,2', -1, `Harga di atas upper band ${rpx(up)} — terlalu jauh dari rata-rata.`)
+    else vote('Bollinger 20,2', 0, `Harga di ${Math.round(pos * 100)}% lebar band (${rpx(lo)}–${rpx(up)}).`)
+    if (squeeze) votes[votes.length - 1].txt += ' Band sedang menyempit tajam (squeeze) — volatilitas biasanya akan meledak.'
   }
   // 6. Volume: konfirmasi atau distribusi.
   const va = ind.vma[i]
@@ -125,7 +125,7 @@ export function taSignals(bars, ind) {
   }
   const score = votes.reduce((s, x) => s + x.s, 0)
   const sig = score >= 3 ? ['Beli kuat', 'good'] : score >= 2 ? ['Beli', 'good'] : score <= -3 ? ['Jual kuat', 'bad'] : score <= -2 ? ['Jual', 'bad'] : ['Netral', 'warn']
-  // Level kunci: support/resistance dari pita, SAR, dan ekstrem 20 hari.
+  // Level kunci: support/resistance dari band, SAR, dan ekstrem 20 hari.
   const last20 = bars.slice(-20), lo20 = Math.min(...last20.map(x => x.l)), hi20 = Math.max(...last20.map(x => x.h))
   const supports = [lo, sUp ? sar : null, lo20].filter(x => x != null && x < c), resists = [up, !sUp ? sar : null, hi20].filter(x => x != null && x > c)
   const sup = supports.length ? Math.max(...supports) : lo20, res = resists.length ? Math.min(...resists) : hi20
@@ -168,7 +168,7 @@ export function buildPlan(bars, ind, s = taSignals(bars, ind)) {
   } else {
     type = 'Tidak ada setup beli — rencana keluar'
     entry = null; entryLo = entryHi = null; stop = floorTick(s.sup)
-    note = `Sinyal teknikal negatif. Bagi pemegang: manfaatkan pantulan ke ${rp(s.res)} untuk mengurangi posisi; keluar penuh bila ditutup di bawah ${rp(s.sup)}.`
+    note = `Sinyal teknikal negatif. Bagi pemegang: manfaatkan rebound ke ${rp(s.res)} untuk mengurangi posisi; keluar penuh bila ditutup di bawah ${rp(s.sup)}.`
   }
   if (entry != null && stop >= entry) stop = floorTick(entry - Math.max(tick(entry), atrV))
   const R = entry != null ? entry - stop : null

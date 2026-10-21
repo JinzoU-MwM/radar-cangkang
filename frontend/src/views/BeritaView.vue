@@ -5,8 +5,12 @@ import { UTYPES, fmtDate } from '../lib/domain.js'
 import { isBackdoorNews, newsTake } from '../lib/news.js'
 
 const TAG = { good: 't-good', warn: 't-warn', bad: 't-strong', calm: 't-calm' }
-// Arah dampak tiap poin terhadap pemegang saham publik.
-const TONE = { 1: { cls: 'pos', name: 'Positif' }, '-1': { cls: 'neg', name: 'Negatif atau risiko' }, 0: { cls: 'mid', name: 'Perlu dicermati' } }
+// Arah dampak tiap poin terhadap pemegang saham publik; bentuk SVG: segitiga naik, segitiga turun, bulat.
+const TONE = {
+  1: { cls: 'pos', name: 'Positif', d: 'M5 1.5 9 8.5H1z' },
+  '-1': { cls: 'neg', name: 'Negatif atau risiko', d: 'M1 1.5h8L5 8.5z' },
+  0: { cls: 'mid', name: 'Perlu dicermati', d: 'M5 1.75a3.25 3.25 0 1 0 0 6.5a3.25 3.25 0 1 0 0-6.5z' },
+}
 const typeName = id => (UTYPES.find(t => t.id === id) || UTYPES[UTYPES.length - 1]).name
 // Sumber dari prefiks id: "sb-report-" = Stockbit Reports, "news-" = media.
 const srcOf = u => /^sb-report-/.test(u.id) ? 'stockbit' : /^news-/.test(u.id) ? 'media' : ''
@@ -20,7 +24,9 @@ const types = computed(() => [{ id: '', name: 'Semua', n: feed.value.length },
   ...UTYPES.map(t => ({ ...t, n: feed.value.filter(u => u.type === t.id).length })).filter(t => t.n)])
 
 const inItems = computed(() => new Set(store.items.map(i => i.ticker)))
-const hay = u => [u.ticker, u.title, u.summary, u.source].join(' ').toLowerCase()
+const nameOf = computed(() => new Map(store.items.map(i => [i.ticker, i.name || ''])))
+// Pencarian: kode, nama emiten, judul, ringkasan, atau nama sumber.
+const hay = u => [u.ticker, nameOf.value.get(u.ticker), u.title, u.summary, u.source].join(' ').toLowerCase()
 
 const list = computed(() => {
   const words = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean)
@@ -57,7 +63,7 @@ onMounted(() => autoRefresh('reports'))
       </div>
       <div class="tools">
         <label for="nq" class="sr-only">Cari berita</label>
-        <input id="nq" v-model="q" data-search type="search" class="field" placeholder="Cari kode atau judul">
+        <input id="nq" v-model="q" data-search type="search" class="field" placeholder="Cari kode, nama, atau judul">
         <label for="nsrc" class="sr-only">Sumber</label>
         <select id="nsrc" v-model="src" class="field">
           <option value="">Semua sumber</option>
@@ -73,11 +79,12 @@ onMounted(() => autoRefresh('reports'))
 
     <div role="group" aria-label="Saring jenis" class="types">
       <button v-for="t in types" :key="t.id" type="button" class="pill" :aria-pressed="String(type === t.id)" @click="type = t.id">{{ t.name }}<b>{{ t.n }}</b></button>
+      <span v-if="feed.length" class="muted small count">{{ list.length }} pengumuman</span>
     </div>
 
     <section aria-label="Daftar berita" class="sheet list">
       <p v-if="!feed.length" class="muted empty">Belum ada berita. Tekan Perbarui berita untuk menarik laporan Stockbit dan media.</p>
-      <p v-else-if="!list.length" class="muted empty">Tidak ada berita yang cocok. Ubah kata kunci atau saringan.</p>
+      <p v-else-if="!list.length" class="muted empty">Tidak ada berita yang cocok<template v-if="q.trim()"> dengan “{{ q.trim() }}”</template>. Ubah kata kunci atau saringan.</p>
       <div v-for="g in groups" :key="g.d">
         <h2 class="lbl gd">{{ g.label }}</h2>
         <article v-for="r in g.rows" :key="r.u.id" class="item" :class="{ fresh: r.fresh }">
@@ -94,9 +101,13 @@ onMounted(() => autoRefresh('reports'))
               <div class="tags">
                 <span class="tag" :class="TAG[r.take.cls]">{{ r.take.label }}</span>
                 <span class="tag" :class="TAG[r.take.arah.cls]" :title="`${r.take.arah.pos} poin positif, ${r.take.arah.neg} poin negatif`">{{ r.take.arah.label }}</span>
+                <RouterLink v-if="r.take.canAnalyze" class="an" :to="{ path: '/emiten/' + r.u.ticker, query: { tab: 'analisa' } }">Analisa {{ r.u.ticker }}</RouterLink>
               </div>
               <ul class="pts">
-                <li v-for="(p, i) in r.points" :key="i" :class="p.tone.cls" :title="p.tone.name"><span class="sr-only">{{ p.tone.name }}: </span>{{ p.text }}</li>
+                <li v-for="(p, i) in r.points" :key="i" :title="p.tone.name">
+                  <svg class="tone" :class="p.tone.cls" viewBox="0 0 10 10" role="img" :aria-label="p.tone.name"><path :d="p.tone.d" /></svg>
+                  <span>{{ p.text }}</span>
+                </li>
               </ul>
               <p v-if="r.take.sikapLine" class="sk"><span class="tag" :class="TAG[r.take.sikapLine.cls]">{{ r.take.sikapLine.ticker }} · {{ r.take.sikapLine.sikap }}</span> <span class="muted">{{ r.take.sikapLine.ringkas }}</span></p>
             </div>
@@ -105,7 +116,7 @@ onMounted(() => autoRefresh('reports'))
         </article>
       </div>
     </section>
-    <p class="muted foot">Latar oranye = belum dilihat sejak terakhir buka. Tingkat sinyal, arah dampak, dan poin dibaca otomatis dari judul dan ringkasan. Garis kiri poin: hijau = positif bagi pemegang saham publik, merah = negatif atau risiko, kuning = perlu dicermati.</p>
+    <p class="muted foot">Latar oranye = belum dilihat sejak terakhir buka. Tingkat sinyal, arah dampak, dan poin dibaca otomatis dari judul dan ringkasan. Penanda poin: segitiga naik hijau = positif bagi pemegang saham publik, segitiga turun merah = negatif atau risiko, bulat kuning = perlu dicermati.</p>
   </div>
 </template>
 
@@ -129,11 +140,13 @@ a.title:hover{text-decoration:underline}
 .take{margin-top:6px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
 .tags{display:flex;flex-wrap:wrap;gap:6px}
 .pts{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
-/* Penanda arah: garis tegak berwarna di kiri poin (hijau positif, bata negatif, oker perlu dicermati). */
-.pts li{padding-left:12px;position:relative}
-.pts li::before{content:"";position:absolute;left:0;top:.3em;bottom:.3em;width:3px;border-radius:1px;background:var(--warn)}
-.pts li.pos::before{background:var(--good)}
-.pts li.neg::before{background:var(--strong)}
+/* Penanda arah: bentuk + warna, jadi tetap terbaca tanpa membedakan warna. */
+.pts li{display:flex;gap:7px;align-items:baseline}
+.tone{flex:none;width:9px;height:9px;fill:var(--warn);transform:translateY(1px)}
+.tone.pos{fill:var(--good)}
+.tone.neg{fill:var(--strong)}
+.an{color:var(--accent);font-weight:600;text-underline-offset:3px;align-self:center}
+.count{margin-left:auto;align-self:center}
 .sk{margin:0}
 .foot{margin:0;font-size:12px}
 @media (max-width:760px){

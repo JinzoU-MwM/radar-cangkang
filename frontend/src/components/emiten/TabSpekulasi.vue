@@ -90,12 +90,12 @@ const signed = v => (v < 0 ? '−' : '+') + rp(Math.abs(v))
             </template>
             <tr><td><b>Stop loss</b><div class="small muted">{{ pl.usePola ? `di bawah level invalidasi pola ${rp(pl.bp.inv)}` : pl.entry ? (pl.sUp && pl.stop <= pl.sar ? 'di bawah Parabolic SAR' : 'di bawah support/terendah 20 hari') + ', ≥1× ATR dari entry' : 'batas keluar penuh bagi pemegang' }}</div></td><td class="r num c-strong">{{ rp(pl.stop) }}</td><td class="r muted">{{ pctTxt(pl.stop, pl.entry || pl.c) }}</td></tr>
             <template v-if="pl.entry">
-              <tr><td><b>Target 1</b><div class="small muted">{{ pl.usePola ? 'maks. 1,5R dan separuh jalan ke target pola' : '1,5R' }}; jual 50%, naikkan stop ke titik impas</div></td><td class="r num c-good">{{ rp(pl.tp1) }}</td><td class="r muted">{{ pctTxt(pl.tp1, pl.entry) }}</td></tr>
+              <tr><td><b>Target 1</b><div class="small muted">{{ pl.usePola ? 'maks. 1,5R dan separuh jalan ke target pola' : '1,5R' }}; jual 50%, naikkan stop ke break even</div></td><td class="r num c-good">{{ rp(pl.tp1) }}</td><td class="r muted">{{ pctTxt(pl.tp1, pl.entry) }}</td></tr>
               <tr><td><b>Target 2</b><div class="small muted">{{ pl.usePola ? 'target pola' : '3R' }}; sisa posisi, trailing stop Parabolic SAR</div></td><td class="r num c-good">{{ rp(pl.tp2) }}</td><td class="r muted">{{ pctTxt(pl.tp2, pl.entry) }}</td></tr>
               <tr><td><b>Risiko per saham (R)</b><div class="small muted">entry − stop</div></td><td class="r num">{{ rp(pl.R) }}</td><td class="r muted">{{ pctTxt(pl.stop, pl.entry) }}</td></tr>
-              <tr><td><b>Imbal-risiko</b><div class="small muted">Target 1 / Target 2 terhadap R</div></td><td class="r num">{{ pl.usePola ? `${((pl.tp1 - pl.entry) / pl.R).toFixed(1).replace('.', ',')} : 1 · ${((pl.tp2 - pl.entry) / pl.R).toFixed(1).replace('.', ',')} : 1` : '1,5 : 1 · 3 : 1' }}</td><td></td></tr>
+              <tr><td><b>Risk/reward</b><div class="small muted">Target 1 / Target 2 terhadap R</div></td><td class="r num">{{ pl.usePola ? `${((pl.tp1 - pl.entry) / pl.R).toFixed(1).replace('.', ',')} : 1 · ${((pl.tp2 - pl.entry) / pl.R).toFixed(1).replace('.', ',')} : 1` : '1,5 : 1 · 3 : 1' }}</td><td></td></tr>
             </template>
-            <tr v-else><td><b>Area jual saat pantulan</b><div class="small muted">resistance terdekat</div></td><td class="r num">{{ rp(sig.res) }}</td><td class="r muted">{{ pctTxt(sig.res, pl.c) }}</td></tr>
+            <tr v-else><td><b>Area jual saat rebound</b><div class="small muted">resistance terdekat</div></td><td class="r num">{{ rp(sig.res) }}</td><td class="r muted">{{ pctTxt(sig.res, pl.c) }}</td></tr>
           </tbody>
         </table>
         <p v-if="pl.resBlock" class="warn">Resistance {{ rp(pl.resBlock) }} berada sebelum Target 1 — pertimbangkan ambil sebagian di sana.</p>
@@ -119,7 +119,7 @@ const signed = v => (v < 0 ? '−' : '+') + rp(Math.abs(v))
             <div><dt>Rugi maks. (kena stop)</dt><dd><b class="c-strong">−{{ rp(res.maxLoss) }}</b><span>{{ pctModal(res.maxLoss, 2) }}</span></dd></div>
             <div><dt>Laba di Target 1 (50%)</dt><dd><b :class="res.pnl1 >= 0 ? 'c-good' : 'c-strong'">{{ signed(res.pnl1) }}</b></dd></div>
             <div><dt>Laba di Target 2 (50%)</dt><dd><b :class="res.pnl2 >= 0 ? 'c-good' : 'c-strong'">{{ signed(res.pnl2) }}</b></dd></div>
-            <div><dt>Titik impas</dt><dd><b>{{ rp(res.breakeven) }}</b><span>setelah biaya beli+jual</span></dd></div>
+            <div><dt>Break even (BEP)</dt><dd><b>{{ rp(res.breakeven) }}</b><span>setelah biaya beli+jual</span></dd></div>
           </dl>
           <p v-if="res.why.length" class="small muted">Ukuran {{ res.why.join('; ') }}.</p>
           <p v-if="res.finalLots === 0" class="warn">Modal/risiko terlalu kecil untuk 1 lot pada jarak stop ini, atau likuiditas tidak cukup.</p>
@@ -133,13 +133,13 @@ const signed = v => (v < 0 ? '−' : '+') + rp(Math.abs(v))
         <ol v-if="pl.entry" class="steps">
           <li>Pasang <b>limit order</b> di zona {{ zone(pl).replace(' – ', '–') }}; batal bila harga lari di atas {{ rp(ceilTick((pl.entryHi || pl.entry) + 0.5 * pl.atr)) }} (jangan mengejar).</li>
           <li>Segera pasang <b>stop loss</b> (auto order) di {{ rp(pl.stop) }} — penutupan harian di bawahnya berarti keluar tanpa tawar-menawar.</li>
-          <li>Di <b>Target 1</b> {{ rp(pl.tp1) }} jual 50% dan pindahkan stop ke titik impas.</li>
+          <li>Di <b>Target 1</b> {{ rp(pl.tp1) }} jual 50% dan pindahkan stop ke break even.</li>
           <li>Sisa 50% diikat <b>trailing stop</b> Parabolic SAR menuju Target 2 {{ rp(pl.tp2) }}.</li>
           <li><b>Batas waktu</b>: bila dalam 10 hari bursa harga tidak bergerak ke Target 1, keluar — modal punya biaya peluang.</li>
         </ol>
         <ol v-else class="steps">
           <li>Tidak membuka posisi baru selama sinyal teknikal {{ sig.sig[0] }}.</li>
-          <li>Bagi pemegang: kurangi posisi saat pantulan ke {{ rp(sig.res) }}.</li>
+          <li>Bagi pemegang: kurangi posisi saat rebound ke {{ rp(sig.res) }}.</li>
           <li>Keluar penuh bila harga ditutup di bawah {{ rp(pl.stop) }}.</li>
           <li>Tinjau ulang setup bila Parabolic SAR berbalik ke bawah harga dan MACD memotong ke atas garis sinyal.</li>
         </ol>

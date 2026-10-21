@@ -21,10 +21,11 @@ import { fmt, fmtDate, rp, big, x2, pctTxt } from '../../lib/domain.js'
 import { analysisProsCons, deepView, dilusi, radarGeom } from '../../lib/emitenExtra.js'
 import SikapTag from '../SikapTag.vue'
 import ProsCons from './ProsCons.vue'
+import ProfilOrang from './ProfilOrang.vue'
 import { errText } from './ta/useOhlc.js'
 
 const props = defineProps({ ticker: String })
-const loading = ref(true), error = ref(''), A = shallowRef(null)
+const loading = ref(true), error = ref(''), A = shallowRef(null), bm = shallowRef(null)
 // Bobot dimensi (sama dengan sintesis skor di lib/analysis.js).
 const W = { 'Pengendali': 0.25, 'Substansi aset': 0.25, 'Posisi harga': 0.2, 'Struktur & likuiditas': 0.1, 'Katalis': 0.1, 'Fundamental': 0.1 }
 const HI_SIGNAL = /(transaksi material|perubahan kegiatan usaha|inbreng|HMETD|penilai|akuisisi|pengambilalihan|tender|RUPS|private placement|penempatan terbatas)/i
@@ -36,7 +37,7 @@ const kc = reactive({ V: 0, C: 0, P: 0, T: 0, H: 100 })
 let seq = 0
 async function load() {
   const t = props.ticker, my = ++seq
-  loading.value = true; error.value = ''; A.value = null
+  loading.value = true; error.value = ''; A.value = null; bm.value = null
   try {
     const item = store.items.find(x => x.ticker === t)
     const profile = await api.get('/api/profile', { ticker: t })
@@ -56,6 +57,7 @@ async function load() {
     const k = a.pa?.kalkulator || {}
     Object.assign(kc, { V: Math.round((k.nilaiDibayarSaham ?? a.injRp ?? 0) / 1e8) / 10, C: Math.round((k.kasSegar || 0) / 1e8) / 10,
       P: k.hargaPelaksanaan || a.tender?.price || a.price, T: 0, H: 100 })
+    bm.value = benchmark
     A.value = a
   } catch (e) {
     if (my === seq) error.value = errText(e)
@@ -99,7 +101,8 @@ const KC = [
 ]
 const holders = computed(() => (A.value?.holders || []).filter(h => Math.abs(h.change) >= 0.1 || A.value.isCtrlH(h)).slice(0, 8))
 // Infografis: radar enam dimensi, kelebihan vs kekurangan, sudut pandang mendalam.
-const extra = computed(() => ({ profil: store.profil[props.ticker], aset: store.aset[props.ticker], hsc: store.hsc?.kode || [] }))
+const extra = computed(() => ({ profil: store.profil[props.ticker], aset: store.aset[props.ticker], hsc: store.hsc?.kode || [],
+  bm: bm.value, verified: store.verified }))
 const pc = computed(() => A.value ? analysisProsCons(A.value, extra.value) : null)
 const deep = computed(() => A.value ? deepView(A.value, extra.value) : [])
 const radar = computed(() => A.value?.dims?.length ? radarGeom(A.value.dims) : null)
@@ -226,7 +229,7 @@ const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
           </tbody></table>
         </template>
         <p v-else class="small muted">Data harga belum cukup.</p>
-        <p v-if="A.rr != null" class="small">Rasio imbal-risiko <b>{{ rr(A.rr) }} : 1</b>. Investor berpengalaman umumnya baru tertarik di atas 3 : 1 untuk saham berlikuiditas tipis.</p>
+        <p v-if="A.rr != null" class="small">Rasio risk/reward <b>{{ rr(A.rr) }} : 1</b>. Investor berpengalaman umumnya baru tertarik di atas 3 : 1 untuk saham berlikuiditas tipis.</p>
         <template v-if="A.sv?.injectType">
           <h3 class="lbl">Injeksi aset</h3>
           <p class="small"><b>{{ A.sv.injectType }}</b><template v-if="A.sv.injectTarget"> · {{ A.sv.injectTarget }}</template><template v-if="A.sv.nominal"> · {{ A.sv.nominal }}</template><template v-if="A.injRp && /USD|SGD/.test(A.sv.nominal)"> (≈{{ big(A.injRp) }}, kurs asumsi Rp{{ KURS.USD.toLocaleString('id-ID') }}/USD)</template></p>
@@ -248,6 +251,8 @@ const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
       <p><b>Rencana:</b> {{ A.pv.rencana }}</p>
       <p class="warn"><b>Catatan investor:</b> {{ A.pv.catatan }}</p>
     </section>
+
+    <ProfilOrang v-if="extra.profil" :profil="extra.profil" />
 
     <!-- Kalkulator dilusi. -->
     <section v-if="calcMode" class="rule-top">

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { progressOf, statusOf, stageOf, trackIndex, fairGap, scoreOf, dealOf, posisiOf, pctTxt } from '../domain.js'
+import { potensiOf, MILESTONES, progressOf, statusOf, stageOf, trackIndex, fairGap, scoreOf, dealOf, posisiOf, pctTxt } from '../domain.js'
 
 describe('domain', () => {
   it('progressOf: estimasi dari tahap tanpa tonggak, jumlah bobot bila ada', () => {
@@ -62,5 +62,17 @@ describe('trackIndex dengan konteks', () => {
     const it0 = { ticker: 'FORU', ms: { spa: true, akuisisi: true }, stage: 'tender' }
     expect(trackIndex(it0)).toBe(1)
     expect(trackIndex(it0, { aset: {}, verified: { FORU: { executed: true } } })).toBe(4)
+  })
+  it('progressOf: applicable & auto untuk rincian', () => {
+    const p = progressOf({ ms: { spa: true }, msAuto: { spa: '2026-01-02' } })
+    expect(p.applicable).toBe(MILESTONES); expect(p.auto.spa).toBe('2026-01-02')
+    expect(progressOf({}).auto).toEqual({})
+    const strat = progressOf({ ticker: 'X', ms: { spa: true } }, { verified: { X: { baru: 'Tetap' } } })
+    expect(strat.applicable.map(m => m.id)).toEqual(['spa', 'akuisisi', 'to_umum', 'to_selesai'])
+  })
+  it('potensiOf: naik ke puncak, turun ke PTW, rasio hanya bila PTW di bawah harga', () => {
+    expect(potensiOf({ price: 100, peak: 300, ptw: 50, base: 60 })).toEqual({ up: 2, down: -0.5, ratio: 4, runupPeak: 5 })
+    expect(potensiOf({ price: 40, peak: 300, ptw: 50 }).ratio).toBe(null)
+    expect(potensiOf({ price: null, peak: 300 })).toEqual({ up: null, down: null, ratio: null, runupPeak: null })
   })
 })

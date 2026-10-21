@@ -510,7 +510,7 @@ export function taProsCons(B, I, s, pa, A) {
   if (pos > 0.85) cons.push({ t: `Dekat puncak 1 tahun (${Math.round(pos * 100)}% rentang)`, d: `Rentang ${rp(lo)}–${rp(hi)}; ruang naik terbatas sebelum menguji puncak.` })
   const atrP = (I.atr[i] || 0) / c
   if (atrP > 0.08) cons.push({ t: `Volatilitas tinggi (ATR ${pct1(atrP)}% per hari)`, d: 'Stop loss harus lebar sehingga ukuran posisi kecil; risiko gap besar.' })
-  if (s.rr != null) (s.rr >= 2 ? pros : s.rr < 1.5 ? cons : []).push({ t: `Imbal-risiko ke resistance ${s.rr.toFixed(1).replace('.', ',')} : 1`, d: `Resistance ${rp(s.res)}, invalidasi ${rp(s.stop)}.` })
+  if (s.rr != null) (s.rr >= 2 ? pros : s.rr < 1.5 ? cons : []).push({ t: `Risk/reward ke resistance ${s.rr.toFixed(1).replace('.', ',')} : 1`, d: `Resistance ${rp(s.res)}, invalidasi ${rp(s.stop)}.` })
   if (s.valDay < 5e8) cons.push({ t: `Likuiditas tipis (${big(s.valDay)}/hari)`, d: 'Indikator mudah terdistorsi satu-dua transaksi besar.' })
   else if (s.valDay >= 5e9) pros.push({ t: `Likuid (${big(s.valDay)}/hari)`, d: 'Sinyal teknikal lebih dapat diandalkan.' })
   if (pa) (/asimetri/i.test(pa.sikap) ? pros : /hindari|spekulatif/i.test(pa.sikap) ? cons : []).push({ t: `Pandangan fundamental: ${pa.sikap}`, d: s.score >= 2 && /hindari|spekulatif/i.test(pa.sikap) ? 'Momentum naik bertentangan dengan fundamental; perlakukan sebagai trading jangka pendek.' : '' })
@@ -536,7 +536,7 @@ export function spProsCons(pl, pa) {
   const atrP = pl.atr / pl.c
   if (atrP > 0.08) cons.push({ t: `Volatilitas tinggi (ATR ${pct1(atrP)}%/hari)`, d: 'Satu hari buruk bisa melewati stop; gunakan ukuran kecil.' })
   else if (atrP < 0.04) pros.push({ t: `Volatilitas terkendali (ATR ${pct1(atrP)}%/hari)`, d: 'Stop bisa ketat sehingga ukuran posisi lebih efisien.' })
-  if (s.rr != null && s.rr >= 2) pros.push({ t: `Imbal-risiko ke resistance ${s.rr.toFixed(1).replace('.', ',')} : 1`, d: '' })
+  if (s.rr != null && s.rr >= 2) pros.push({ t: `Risk/reward ke resistance ${s.rr.toFixed(1).replace('.', ',')} : 1`, d: '' })
   if (pa && /hindari/i.test(pa.sikap)) cons.push({ t: 'Pandangan analis Hindari', d: 'Ukuran posisi otomatis dipotong 50%.' })
   else if (pa && /spekulatif/i.test(pa.sikap)) cons.push({ t: 'Pandangan analis Spekulatif tinggi', d: 'Perlakukan sebagai trading jangka pendek dengan disiplin stop.' })
   else if (pa && /asimetri/i.test(pa.sikap)) pros.push({ t: 'Didukung pandangan fundamental', d: pa.sikap })

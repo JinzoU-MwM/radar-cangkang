@@ -45,7 +45,7 @@ export const store = reactive({
   features: {},
   // Waktu kunjungan terakhir browser ini: penanda "baru" di Monitor dan Berita.
   seenAt: ls.get(LS_SEEN, ''),
-  busy: { stockbit: false, reports: false },
+  busy: { stockbit: false, reports: false, story: false },
   toasts: [],
   syncNote: '',
 })
@@ -55,6 +55,19 @@ export function toast(text, warn = false) {
   const id = ++toastId
   store.toasts.push({ id, text, warn })
   setTimeout(() => { store.toasts = store.toasts.filter(t => t.id !== id) }, warn ? 9000 : 5000)
+}
+
+// Toast progres ("Memperbarui i/n") yang teksnya diganti di tempat dan tetap tampil sampai done().
+function progressToast() {
+  let id = 0
+  return {
+    set(text) {
+      const t = id && store.toasts.find(x => x.id === id)
+      if (t) t.text = text
+      else { id = ++toastId; store.toasts.push({ id, text }) }
+    },
+    done() { if (id) store.toasts = store.toasts.filter(x => x.id !== id) },
+  }
 }
 
 export const itemOf = t => store.items.find(i => i.ticker === t)
@@ -81,6 +94,13 @@ export async function saveItem(item) {
 
 // Simpan hanya item yang berubah supaya tidak menimpa suntingan anggota tim lain.
 export async function saveItems(list) {
+  // Sinkron berjalan di atas salinan lama; story yang tersimpan selama sinkron
+  // (loadStories) lebih baru dari salinan itu, jadi dipertahankan.
+  const cur = new Map(store.items.map(i => [i.ticker, i]))
+  list = list.map(i => {
+    const c = cur.get(i.ticker)
+    return c?.storyAuto && (c.storyAuto.at || 0) > (i.storyAuto?.at || 0) ? { ...i, storyAuto: c.storyAuto } : i
+  })
   const before = new Map(store.items.map(i => [i.ticker, JSON.stringify(i)]))
   const gone = store.items.filter(i => !list.some(x => x.ticker === i.ticker))
   store.items = list
@@ -142,18 +162,23 @@ export const canSync = () => {
 export async function runSyncStockbit() {
   if (store.busy.stockbit) return
   store.busy.stockbit = true
+  const prog = progressToast()
   try {
     // sync.js mencatat kegagalan per emiten (mis. 401) ke `errors` dan berhenti tanpa melempar.
     const errors = []
+    const before = new Set(store.items.map(i => i.ticker))
     let items = store.items
     if (store.status?.tenders) items = await syncTenders(items, api, { errors })
-    items = await syncStockbit(items, api, { errors })
+    const added = items.filter(i => !before.has(i.ticker)).length
+    items = await syncStockbit(items, api, { errors, onProgress: (i, n) => prog.set(`Memperbarui harga ${i}/${n}`) })
     await saveItems(items)
-    if (errors.length) for (const e of errors.slice(0, 3)) toast(`${e.source}: ${e.error}`, true)
-    else toast('Harga, kepemilikan, dan tender diperbarui dari Stockbit.')
+    prog.done()
+    toast(`Stockbit: ${store.status?.tenders ? added + ' emiten baru, ' : ''}harga dan kepemilikan diperbarui.`)
+    for (const e of errors.slice(0, 3)) toast(`${e.source}: ${e.error}`, true)
   } catch (e) {
     toast(e.status === 401 ? 'Token Stockbit ditolak atau belum ada.' : 'Gagal memperbarui dari Stockbit: ' + e.message, true)
   } finally {
+    prog.done()
     store.busy.stockbit = false
   }
 }
@@ -161,34 +186,44 @@ export async function runSyncStockbit() {
 export async function runSyncReports() {
   if (store.busy.reports) return
   store.busy.reports = true
+  const prog = progressToast()
   try {
     // Tanpa `tickers`: sync.js memakai daftar emiten backdoor (di luar tahap penyaringan), seperti versi lama.
-    const res = await syncReports(store.items, store.updates, api, { news: !!store.status?.news, reports: !!store.status?.reports })
+    const res = await syncReports(store.items, store.updates, api, { news: !!store.status?.news, reports: !!store.status?.reports,
+      onProgress: (i, n) => prog.set(`Memperbarui laporan ${i}/${n}`) })
     await saveItems(res.items)
     await saveUpdates(res.updates)
+    prog.done()
+    toast(`Diperbarui: ${res.added} laporan Stockbit, ${res.addedNews} berita media baru.`)
     for (const e of res.errors || []) toast(`${e.source}: ${e.error}`, true)
-    toast('Laporan dan berita diperbarui.')
     loadStories().catch(() => {})
   } catch (e) {
     toast('Gagal memperbarui berita: ' + e.message, true)
   } finally {
+    prog.done()
     store.busy.reports = false
   }
 }
 
 // Paling sering sekali per 15 menit per jenis data per browser, supaya Stockbit tidak dibanjiri.
+const RUN = { reports: () => runSyncReports(), story: () => refreshStories(), stockbit: () => runSyncStockbit() }
+
+// kind: 'stockbit' | 'reports' | 'story'.
 export function autoRefresh(kind) {
+  if (!RUN[kind]) return
   if (!canSync()) return
   const last = ls.get(AUTO_KEY, {})
   if (Date.now() - (last[kind] || 0) < AUTO_GAP) return
   if (kind === 'reports' && !(store.status.reports || store.status.news)) return
+  if (store.busy[kind]) return
+  // Catat waktu percobaan lebih dulu: bila gagal (mis. token kedaluwarsa), tidak diulang terus-menerus.
   ls.set(AUTO_KEY, { ...last, [kind]: Date.now() })
-  ;(kind === 'reports' ? runSyncReports() : runSyncStockbit()).catch(() => {})
+  RUN[kind]().catch(() => {})
 }
 
 export function userRefresh(kind) {
   api.freshFor(120e3)
-  return kind === 'reports' ? runSyncReports() : runSyncStockbit()
+  return (RUN[kind] || RUN.stockbit)()
 }
 
 // Data otomatis story (profil + riwayat pemegang saham) dari /api/story, disimpan 7 hari di item.
@@ -215,5 +250,19 @@ export async function loadStories(tickers = null, force = false) {
     }
   } finally {
     storyLoading = false
+  }
+}
+
+// "Perbarui semua story": tarik ulang Stockbit Reports, tunggu pemuatan story yang sedang jalan
+// (runSyncReports memicunya sendiri), lalu muat ulang profil & riwayat pengendali semua emiten backdoor.
+export async function refreshStories() {
+  if (store.busy.story) return
+  store.busy.story = true
+  try {
+    await runSyncReports()
+    while (storyLoading) await new Promise(r => setTimeout(r, 500))
+    await loadStories(null, true)
+  } finally {
+    store.busy.story = false
   }
 }

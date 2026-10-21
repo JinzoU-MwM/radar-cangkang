@@ -142,3 +142,24 @@ describe('clip', () => {
     expect(clip('pendek', 20)).toBe('pendek')
   })
 })
+
+describe('fase siklus di analisa', () => {
+  // Lima transaksi sintetis: harga ÷ PTW konstan k sepanjang -200..+400 hari.
+  const mk = (t, k) => ({ ticker: t, p0: 100, last: 100 * k, peak: 100 * k, base: 50, baseDay: -150, peakDay: -20,
+    series: Array.from({ length: 31 }, (_, i) => [-200 + i * 20, k]) })
+  const bm = { deals: [1, 2, 3, 4, 5].map(k => mk('D' + k, k)) }
+  const now = new Date('2026-10-21T00:00:00').getTime()
+  const start = new Date(now - 100 * 864e5).toISOString().slice(0, 10)
+  const base = { t: 'ABCD', dims: [], d: { ticker: 'ABCD', tender: { start, price: 100 }, price: 90, ms: {} } }
+  it('pros/cons per fase', () => {
+    expect(analysisProsCons(base, { bm, now }).pros.map(x => x.t)).toContain('Siklus: Di bawah harga PTW')
+    expect(analysisProsCons({ ...base, d: { ...base.d, price: 900 } }, { bm, now }).cons.map(x => x.t)).toContain('Siklus: Euforia berlanjut')
+    expect(analysisProsCons(base, { bm, now, aset: { kjpp: { status: 'terbit' } } }).pros.map(x => x.t)).toContain('Siklus: Injeksi aset (gelombang 2)')
+    expect(analysisProsCons(base, { now }).pros.some(x => /Siklus/.test(x.t))).toBe(false)
+  })
+  it('deepView: nama fase, jumlah kasus, titik dasar & puncak median', () => {
+    const [h, t] = deepView(base, { bm, now }).find(p => /siklus/.test(p[0]))
+    expect(h).toBe('Posisi dalam siklus backdoor')
+    expect(t).toMatch(/^10[01] hari sejak PTW dimulai; fase: Di bawah harga PTW\. Pada 5 kasus, titik dasar median 150 hari sebelum PTW \(0,5×\) dan puncak median 20 hari sebelum PTW \(3×\)\. Pasar meragukan/)
+  })
+})

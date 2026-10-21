@@ -73,9 +73,19 @@ export function progressOf(d, { aset = {}, verified = {} } = {}) {
   const applicable = noInject ? MILESTONES.filter(m => TAKEOVER_MS.includes(m.id)) : MILESTONES
   const done = applicable.filter(m => ms[m.id])
   const next = applicable.find(m => !ms[m.id]) || null
-  if (!done.length) return { pct: STAGE_PCT[stageOf(d)] ?? 0, est: true, next: null, ms, noInject }
+  // auto = tanggal deteksi otomatis per tahapan (msAuto), untuk rincian asal data.
+  const base = { ms, noInject, applicable, auto: d.msAuto || {} }
+  if (!done.length) return { ...base, pct: STAGE_PCT[stageOf(d)] ?? 0, est: true, next: null }
   const total = applicable.reduce((s, m) => s + m.w, 0)
-  return { pct: Math.round(done.reduce((s, m) => s + m.w, 0) / total * 100), est: false, next, ms, noInject }
+  return { ...base, pct: Math.round(done.reduce((s, m) => s + m.w, 0) / total * 100), est: false, next }
+}
+
+// Potensi harga dari level emiten sendiri: naik = kembali ke puncak siklus, turun = ke harga PTW.
+// ratio = naik ÷ |turun| (hanya bila PTW di bawah harga kini); runupPeak = puncak ÷ harga pra-rumor.
+export function potensiOf({ price, peak, ptw, base }) {
+  const up = peak && price ? peak / price - 1 : null
+  const down = ptw && price ? ptw / price - 1 : null
+  return { up, down, ratio: up != null && down != null && down < 0 ? up / -down : null, runupPeak: base && peak ? peak / base : null }
 }
 
 export const scoreOf = d => SIGNALS.reduce((s, sig) => s + ((sig.auto ? sig.auto(d) : (d.flags || {})[sig.id]) ? sig.w : 0), 0)

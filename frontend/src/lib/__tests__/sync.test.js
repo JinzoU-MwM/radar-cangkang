@@ -30,7 +30,9 @@ describe('syncStockbit', () => {
   })
   it('memperbarui harga & kepemilikan', async () => {
     const api = fakeApi({ '/api/quote': { price: 50, volume: 300, avgVolume: 100 }, '/api/ownership': { marketCap: 123.45e9, freeFloat: 20, controllerPct: 70, controllerName: 'PT X' } })
-    const [d] = await syncStockbit([{ ticker: 'AAAA' }], api, { delay: 0 })
+    const prog = []
+    const [d] = await syncStockbit([{ ticker: 'AAAA' }], api, { delay: 0, onProgress: (i, n) => prog.push([i, n]) })
+    expect(prog).toEqual([[1, 1]])
     expect(d.price).toBe(50); expect(d.mcap).toBe(123.5); expect(d.flags.volume).toBe(true); expect(d.ctrlName).toBe('PT X')
   })
 })
@@ -59,7 +61,10 @@ describe('inferMilestones & syncReports', () => {
     const updates = [{ id: 'sb-report-1', ticker: 'ABCD', title: 'lama' }]
     const api = fakeApi({ '/api/reports': { items: [{ id: 'sb-report-1', title: 'baru' }, { id: 'sb-report-2', title: 'x' }] },
       '/api/news': { items: [], errors: [{ source: 'Kontan', error: 'timeout' }] } })
-    const r = await syncReports(items, updates, api, { news: true, delay: 0 })
+    const prog = []
+    const r = await syncReports(items, updates, api, { news: true, delay: 0, onProgress: (i, n) => prog.push(`${i}/${n}`) })
+    expect(prog).toEqual(['1/1'])
+    expect(r.addedNews).toBe(0)
     expect(updates[0].title).toBe('lama')
     expect(r.updates.map(u => u.title)).toEqual(['baru', 'x'])
     expect(r.added).toBe(1)

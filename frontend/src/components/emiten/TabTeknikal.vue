@@ -114,12 +114,12 @@ const GAUGE = ['Jual kuat', 'Jual', 'Netral', 'Beli', 'Beli kuat']
         <h2>Level kunci</h2>
         <table class="ledger">
           <tbody>
-            <tr><td>Resistance terdekat<div class="small muted">pita atas / SAR / tertinggi 20 hari</div></td><td class="r num">{{ rpx(s.res) }}</td><td class="r muted">{{ pctTxt(s.res, last.c) }}</td></tr>
-            <tr><td>Support terdekat<div class="small muted">pita bawah / SAR / terendah 20 hari</div></td><td class="r num">{{ rpx(s.sup) }}</td><td class="r muted">{{ pctTxt(s.sup, last.c) }}</td></tr>
+            <tr><td>Resistance terdekat<div class="small muted">upper band / SAR / tertinggi 20 hari</div></td><td class="r num">{{ rpx(s.res) }}</td><td class="r muted">{{ pctTxt(s.res, last.c) }}</td></tr>
+            <tr><td>Support terdekat<div class="small muted">lower band / SAR / terendah 20 hari</div></td><td class="r num">{{ rpx(s.sup) }}</td><td class="r muted">{{ pctTxt(s.sup, last.c) }}</td></tr>
             <tr><td>Level invalidasi<div class="small muted">{{ s.stop === s.lo20 ? 'terendah 20 hari' : 'Parabolic SAR' }} — sinyal batal bila ditutup di bawahnya</div></td><td class="r num">{{ rpx(s.stop) }}</td><td class="r muted">{{ pctTxt(s.stop, last.c) }}</td></tr>
           </tbody>
         </table>
-        <p v-if="s.rr != null" class="small muted">Rasio imbal-risiko ke resistance {{ s.rr.toFixed(1).replace('.', ',') }} : 1{{ s.rr < 1.5 ? ' — kurang menarik secara teknikal.' : '.' }}</p>
+        <p v-if="s.rr != null" class="small muted">Rasio risk/reward ke resistance {{ s.rr.toFixed(1).replace('.', ',') }} : 1{{ s.rr < 1.5 ? ' — kurang menarik secara teknikal.' : '.' }}</p>
         <p v-if="s.valDay < 5e8" class="warn">Likuiditas tipis (transaksi harian rata-rata {{ big(s.valDay) }}): indikator teknikal mudah terdistorsi oleh satu-dua transaksi besar.</p>
         <p v-else class="small muted">Transaksi harian rata-rata {{ big(s.valDay) }}.</p>
         <p v-if="pa" :class="conflict ? 'warn' : 'small muted'"><b>Dibanding pandangan analis ({{ pa.sikap }}):</b>

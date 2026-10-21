@@ -6,7 +6,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { createChart, CrosshairMode, LineStyle } from 'lightweight-charts'
 import { rpx } from '../../../lib/ta.js'
-import { fmt, fmtDate } from '../../../lib/domain.js'
+import { fmt, fmtDate, x2 } from '../../../lib/domain.js'
 
 const props = defineProps({
   bars: { type: Array, required: true },
@@ -22,7 +22,8 @@ const props = defineProps({
 
 const elMain = ref(), elRsi = ref(), elMacd = ref()
 const hover = ref(null)
-const ov = ref({ w: 0, rects: [] })   // overlay SVG di atas panel harga: volume profile, zona volume, golden pocket
+const ov = ref({ w: 0, rects: [], tags: [] })   // overlay SVG di atas panel harga: volume profile, zona volume, golden pocket
+const rsiBand = ref(null)   // pita RSI 30–70 di panel RSI: { w, y, h }
 let charts = [], observer = null, resizer = null, raf = 0, retry = 0
 let col = {}, candleS = null, rsiS = null, macdS = null
 let layer = { series: [], plines: [] }
@@ -71,6 +72,7 @@ function build() {
   const vol = main.addHistogramSeries({ priceScaleId: 'vol', priceFormat: { type: 'volume' }, priceLineVisible: false, lastValueVisible: false })
   main.priceScale('vol').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } })
   vol.setData(B.map((b, i) => ({ time: b.d, value: b.v, color: alpha(b.c >= (B[i - 1]?.c ?? b.c) ? good : strong, 0.4) })))
+  line(main, ser(I.vma), v('ink-2'), { priceScaleId: 'vol' })   // MA20 volume
   line(main, ser(I.bb.up), A)
   line(main, ser(I.bb.lo), A)
   line(main, ser(I.bb.mid), A, { lineStyle: LineStyle.Dashed })
@@ -165,7 +167,8 @@ function drawLayers() {
       const c = tone(p.bias)
       seg(main, p.curve || p.pts, c, { lineWidth: 2 })
       for (const s of p.segs) seg(main, [{ i: s.i1, p: s.p1 }, { i: s.i2, p: s.p2 }], c, { lineStyle: LineStyle.Dashed })
-      if (p.labels) p.pts.forEach((q, k) => mark(marks, q.i, q.t === 'L' ? 1 : -1, p.labels[k], 'circle'))
+      // Titik pivot pola (lembah di bawah bar, puncak di atas), berlabel bila pola punya label titik (XABCD dsb.).
+      p.pts.forEach((q, k) => mark(marks, q.i, q.t === 'L' ? 1 : -1, p.labels?.[k] || '', 'circle'))
       mark(marks, p.start, p.bias, `${p.name} ${p.conf}%`, 'square')
       if (p.bo != null) mark(marks, p.bo, p.bias, p.bias > 0 ? 'Breakout' : 'Breakdown', 'circle')
       const nm = shown.length > 1 ? ' ' + p.name : ''
@@ -207,14 +210,14 @@ function queueOverlay() {
 }
 function drawOverlay() {
   const main = charts[0]
-  if (!main || !candleS) { ov.value = { w: 0, rects: [] }; return }
+  if (!main || !candleS) { ov.value = { w: 0, rects: [], tags: [] }; rsiBand.value = null; return }
   const A = props.adv, Lv = props.lv, L = props.layers, ts = main.timeScale()
   // Lebar panel = lebar elemen − sumbu harga (timeScale().width() bernilai 0 karena sumbu waktu panel ini disembunyikan).
   const W = elMain.value.clientWidth - main.priceScale('right').width()
   // Tepat setelah dibuat, sumbu harga belum diukur: coba lagi di frame berikutnya, maksimal ~0,5 detik.
   if (W <= 0 || W === elMain.value.clientWidth) { if (++retry < 30) queueOverlay(); return }
   retry = 0
-  const y = p => candleS.priceToCoordinate(p), rects = []
+  const y = p => candleS.priceToCoordinate(p), rects = [], tags = []
   const band = (lo, hi, x, w, cls, op) => {
     const y1 = y(hi), y2 = y(lo)
     if (y1 == null || y2 == null) return
@@ -228,7 +231,11 @@ function drawOverlay() {
       const z = A.zones.find(o => o.role === r)
       if (!z) continue
       const x = Math.max(0, (ts.logicalToCoordinate(z.i) ?? 0) - half)
-      if (x < W) band(z.lo, z.hi, x, W - x, 'zn ' + r, (0.06 + z.str / 800).toFixed(2))
+      if (x >= W) continue
+      band(z.lo, z.hi, x, W - x, 'zn ' + r, (0.06 + z.str / 800).toFixed(2))
+      const ty = y(z.hi)
+      // Zona yang mulai dekat tepi kanan: label rata kanan agar tidak terpotong.
+      if (ty != null) tags.push({ ...(x > W * 0.6 ? { x: W - 4, a: 'end' } : { x: x + 3, a: 'start' }), y: Math.max(10, ty - 3), cls: 'zn ' + r, t: `Zona volume ${r === 'inside' ? '' : r + ' '}${x2(z.vx)} · ${z.holds}× rebound` })
     }
   }
   if (Lv && L.vp) {
@@ -239,7 +246,10 @@ function drawOverlay() {
       band(vp.lo + k * vp.step, vp.lo + (k + 1) * vp.step, W - w, w, 'vp' + (k === vp.poc ? ' poc' : k >= vp.a && k <= vp.z ? ' va' : ''))
     })
   }
-  ov.value = { w: W, rects }
+  ov.value = { w: W, rects, tags }
+  // Pita RSI 30–70: koordinat dari skala panel RSI.
+  const y70 = rsiS.priceToCoordinate(70), y30 = rsiS.priceToCoordinate(30)
+  rsiBand.value = y70 != null && y30 != null ? { w: elRsi.value.clientWidth - charts[1].priceScale('right').width(), y: y70, h: y30 - y70 } : null
 }
 function applyRange() {
   const ts = charts[0]?.timeScale(), n = props.bars.length
@@ -248,13 +258,18 @@ function applyRange() {
   else ts.setVisibleLogicalRange({ from: n - props.range, to: n + 1 })
 }
 
-// Bacaan bar yang disorot (bawaan: bar terakhir).
+const f2 = v => v == null ? '–' : v.toLocaleString('id-ID', { maximumFractionDigits: 2 })
+// Bacaan bar yang disorot (bawaan: bar terakhir). Hanya membaca data, tidak menggambar ulang chart.
 const read = computed(() => {
   const B = props.bars, i = hover.value ?? B.length - 1, b = B[i], I = props.ind
   return { d: fmtDate(b.d), o: rpx(b.o), h: rpx(b.h), l: rpx(b.l), c: rpx(b.c), v: fmt(b.v, 0),
     rsi: I.rsi[i] != null ? I.rsi[i].toFixed(0) : '–',
-    macd: I.macd.m[i] != null ? I.macd.m[i].toLocaleString('id-ID', { maximumFractionDigits: 2 }) : '–',
-    cdl: props.adv?.candles.find(k => k.i === i) || null }
+    macd: f2(I.macd.m[i]), sg: f2(I.macd.sg[i]),
+    bb: I.bb.lo[i] != null ? `${rpx(I.bb.lo[i])} – ${rpx(I.bb.up[i])}` : '–',
+    sar: I.sar.sar[i] != null ? rpx(I.sar.sar[i]) : '–',
+    cdl: props.adv?.candles.find(k => k.i === i) || null,
+    // Pola yang breakout/breakdown tepat di bar ini.
+    bo: (props.adv?.active || []).filter(p => p.bo === i) }
 })
 
 onMounted(() => {
@@ -276,17 +291,23 @@ watch(() => [props.adv, props.lv, props.sel, { ...props.layers }], drawLayers)
     <p class="read">
       <span class="cond d">{{ read.d }}</span>
       <span>O <b>{{ read.o }}</b></span><span>H <b>{{ read.h }}</b></span><span>L <b>{{ read.l }}</b></span><span>C <b>{{ read.c }}</b></span>
-      <span>Vol <b>{{ read.v }}</b> lot</span><span>RSI <b>{{ read.rsi }}</b></span><span>MACD <b>{{ read.macd }}</b></span>
+      <span>Vol <b>{{ read.v }}</b> lot</span><span>BB <b>{{ read.bb }}</b></span><span>SAR <b>{{ read.sar }}</b></span>
+      <span>RSI <b>{{ read.rsi }}</b></span><span>MACD <b>{{ read.macd }}</b> / <b>{{ read.sg }}</b></span>
+      <span v-for="p in read.bo" :key="p.id" :class="p.bias > 0 ? 'c-good' : 'c-strong'">{{ p.bias > 0 ? 'Breakout' : 'Breakdown' }} <b>{{ p.name }}</b></span>
       <span v-if="read.cdl" :class="read.cdl.bias > 0 ? 'c-good' : read.cdl.bias < 0 ? 'c-strong' : ''">Candlestick <b>{{ read.cdl.n }}</b> {{ read.cdl.conf }}%</span>
     </p>
     <div class="wrap">
-      <div ref="elMain" class="pane main" role="img" aria-label="Chart candle harian dengan Bollinger, MA50, Parabolic SAR, volume, dan lapisan pola"></div>
+      <div ref="elMain" class="pane main" role="img" aria-label="Chart candle harian dengan Bollinger, MA50, Parabolic SAR, volume dan MA20 volume, serta lapisan pola"></div>
       <svg v-if="ov.rects.length" class="ov" :width="ov.w" aria-hidden="true">
         <rect v-for="(r, k) in ov.rects" :key="k" :class="r.cls" :x="r.x" :y="r.y" :width="r.w" :height="r.h" :fill-opacity="r.op" />
+        <text v-for="(t, k) in ov.tags" :key="'t' + k" :class="t.cls" :x="t.x" :y="t.y" :text-anchor="t.a">{{ t.t }}</text>
       </svg>
     </div>
     <div class="lab lbl">RSI 14</div>
-    <div ref="elRsi" class="pane rsi" role="img" aria-label="Chart RSI 14"></div>
+    <div class="wrap">
+      <div ref="elRsi" class="pane rsi" role="img" aria-label="Chart RSI 14 dengan pita 30 sampai 70"></div>
+      <svg v-if="rsiBand" class="ov" :width="rsiBand.w" aria-hidden="true"><rect class="rz" x="0" :y="rsiBand.y" :width="rsiBand.w" :height="Math.max(0, rsiBand.h)" /></svg>
+    </div>
     <div class="lab lbl">MACD 12/26/9</div>
     <div ref="elMacd" class="pane macd" role="img" aria-label="Chart MACD 12/26/9"></div>
   </div>
@@ -305,6 +326,8 @@ watch(() => [props.adv, props.lv, props.sel, { ...props.layers }], drawLayers)
 .ov .vp.poc{fill:var(--ink);fill-opacity:.45}
 .ov .gp{fill:var(--viz-b);fill-opacity:.1}
 .ov .zn.support{fill:var(--good)} .ov .zn.resistance{fill:var(--strong)} .ov .zn.inside{fill:var(--warn)}
+.ov text{font:600 11px var(--f-body);fill-opacity:1;paint-order:stroke;stroke:var(--sheet);stroke-width:3px}
+.ov .rz{fill:var(--viz-a);fill-opacity:.08}
 .read .c-good b,.read .c-good{color:var(--good)} .read .c-strong b,.read .c-strong{color:var(--strong)}
 .main{height:360px}
 .rsi{height:96px}

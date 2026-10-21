@@ -1,7 +1,7 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { store } from './store.js'
+import { store, toast } from './store.js'
 import { stageOf } from './lib/domain.js'
 import ChangelogPanel from './components/ChangelogPanel.vue'
 
@@ -24,6 +24,18 @@ const token = computed(() => {
   if (left < 2 * 3600e3) return { cls: 'warn', text: `Token habis dalam ${h ? h + ' jam ' : ''}${m} menit (${until})` }
   return { cls: 'ok', text: `Token berlaku s.d. ${until}` }
 })
+
+// Peringatan sekali saat sisa token < 1 jam; diulang hanya setelah token diganti (sisa > 2 jam lagi).
+let tokenWarned = false
+watch([() => store.status?.tokenExp, now], ([exp, t]) => {
+  if (!exp) return
+  const left = exp * 1000 - t
+  if (left > 0 && left < 3600e3 && !tokenWarned) {
+    tokenWarned = true
+    toast(`Token Stockbit habis dalam ${Math.floor(left / 60e3)} menit. Siapkan token baru di .stockbit-token`, true)
+  }
+  if (left > 2 * 3600e3) tokenWarned = false
+}, { immediate: true })
 
 const theme = ref(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light')
 function toggleTheme() {
@@ -67,7 +79,7 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
       <ChangelogPanel />
       <div class="foot">
         <span v-if="token" class="tok" :class="token.cls">{{ token.text }}</span>
-        <span v-else-if="store.status && !store.status.configured">Stockbit: config belum diisi</span>
+        <span v-else-if="store.status && !store.status.configured" class="tok">Stockbit: config belum diisi</span>
         <span>/ cari · 1–3 pindah menu</span>
         <button type="button" class="theme" @click="toggleTheme">{{ theme === 'dark' ? 'Tema terang' : 'Tema gelap' }}</button>
       </div>
@@ -100,5 +112,5 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
 .toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:50;max-width:380px}
 .toast{background:var(--ink);color:var(--paper);padding:10px 14px;border-radius:3px;box-shadow:var(--shadow)}
 .toast.warn{background:var(--strong)}
-@media (max-width:760px){.rail{position:static;height:auto;max-width:none;flex-basis:100%;flex-direction:row;flex-wrap:wrap;align-items:center}.brand{padding:0 12px 0 0}.foot{display:none}.content{padding:16px}}
+@media (max-width:760px){.rail{position:static;height:auto;max-width:none;flex-basis:100%;flex-direction:row;flex-wrap:wrap;align-items:center}.brand{padding:0 12px 0 0}.foot{flex-basis:100%;margin:6px 0 0;padding:6px 12px 0}.foot>:not(.tok){display:none}.foot:not(:has(.tok)){display:none}.content{padding:16px}}
 </style>

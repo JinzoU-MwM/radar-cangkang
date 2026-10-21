@@ -1,6 +1,7 @@
 // Logika murni untuk fitur emiten tambahan: aset injeksi & KJPP (aset-verified.json), profil pengendali
 // (profil-pengendali.json), bagan mekanisme transaksi, simulasi nilai KJPP, kelebihan/kekurangan, dan sudut pandang.
-import { big, fmt, rp, x2 } from './domain.js'
+import { big, fmt, progressOf, rp, x2 } from './domain.js'
+import { cycleModel, daysSince, dayTxt, phaseName, phaseOf } from './cycle.js'
 import { KURS, nominalRp, sentences } from './analysis.js'
 
 const RED_RE = /(dilusi|dilutif|leverage|tanpa RUPS|deportasi|gagal kuorum|ekuitas (induk )?negatif|tidak jelas|bertentangan|ditahan OJK|OJK (sedang )?(memeriksa|menahan)|suspensi|diskon|utang pemegang saham|tanpa penjelasan|tersangka|red flag)/i
@@ -200,9 +201,18 @@ export function relationTone(hub) {
   return null
 }
 
+// Fase siklus emiten ini dari benchmark (bm = /api/benchmark). null bila belum ada PTW atau kurva siklus.
+export function cycleOf(a, { bm, aset, verified = {}, now = Date.now() } = {}) {
+  if (!bm || !a.d?.tender?.start) return null
+  const model = cycleModel(bm)
+  if (!model.pts.length) return null
+  const ms = progressOf(a.d, { aset: aset ? { [a.t]: aset } : {}, verified }).ms
+  return { model, ph: phaseOf(a.d, model, { ms, verified, now }), day: daysSince(a.d.tender.start, now) }
+}
+
 // Sintesis dari skor dimensi, profil pengendali, aset & KJPP, dilusi, posisi harga, insider, likuiditas, HSC.
 // a = hasil buildAnalysis.
-export function analysisProsCons(a, { profil, aset, hsc = [] } = {}) {
+export function analysisProsCons(a, { profil, aset, hsc = [], bm, verified, now } = {}) {
   const pros = [], cons = [], D = Object.fromEntries((a.dims || []).map(x => [x.k, x]))
   const k = aset?.kjpp || {}, dl = a.pa?.dilusi || {}
   if (D.Pengendali?.s >= 6.5) pros.push({ t: 'Pengendali kredibel', d: D.Pengendali.why.join(' ') })
@@ -249,6 +259,14 @@ export function analysisProsCons(a, { profil, aset, hsc = [] } = {}) {
   if (hsc.includes(a.t)) cons.push({ t: 'Termasuk saham HSC BEI', d: 'Kepemilikan terkonsentrasi tinggi; dikeluarkan dari perhitungan IHSG.' })
   if (D.Fundamental?.s >= 6.5) pros.push({ t: 'Fundamental berlaba', d: D.Fundamental.why.join(' ') })
   else if (D.Fundamental?.s <= 3) cons.push({ t: 'Fundamental lemah', d: D.Fundamental.why.join(' ') })
+  const cy = cycleOf(a, { bm, aset, verified, now })
+  if (cy) {
+    const t = `Siklus: ${phaseName(cy.ph)}`
+    if (cy.ph === 'inj') pros.push({ t, d: 'Nilai kini ditentukan kualitas aset yang masuk.' })
+    if (cy.ph === 'bawah') pros.push({ t, d: 'Risiko turun relatif terbatas bila rencana pengendali tetap berjalan.' })
+    if (cy.ph === 'euf') cons.push({ t, d: 'Harga di atas kuartil 3 kasus serupa, rawan koreksi.' })
+    if (cy.ph === 'dist') cons.push({ t, d: 'Fase setelah puncak; mayoritas kasus serupa turun dari puncak.' })
+  }
   if (a.pa?.sikap) {
     const x = { t: `Pandangan analis: ${a.pa.sikap}`, d: clip(String(a.pa.ringkas || ''), 170) }
     if (/asimetri/i.test(a.pa.sikap)) pros.push(x); else if (/hindari|spekulatif/i.test(a.pa.sikap)) cons.push(x)
@@ -290,9 +308,8 @@ export function ctrlProsCons({ profil, pv, c, active = [], exited = [], radarTic
 
 // ---------- Sudut pandang mendalam ----------
 
-// Narasi berangka per emiten: [judul, teks][]. Fase siklus belum dipindahkan ke Vue, jadi bagian siklus
-// hanya memakai rasio harga terhadap harga saat PTW dari benchmark.
-export function deepView(a, { profil, aset } = {}) {
+// Narasi berangka per emiten: [judul, teks][]. Bagian siklus butuh benchmark (bm).
+export function deepView(a, { profil, aset, bm, verified, now } = {}) {
   const dl = a.pa?.dilusi || {}, k = aset?.kjpp || {}, out = []
   const who = profil?.ringkas || (a.pv?.siapa ? sentences(a.pv.siapa)[0] : '')
   if (who) out.push(['Siapa pengendalinya dan apa motifnya', `${who}${a.pv?.rencana ? ' Rencana yang dinyatakan: ' + sentences(a.pv.rencana)[0] : ''}`])
@@ -311,13 +328,26 @@ export function deepView(a, { profil, aset } = {}) {
       ? ` Bila publik tidak ikut menebus, porsinya turun dari ${fmt(dl.porsiPublikSekarang ?? a.flt ?? 0, 1)}% ke ${fmt(dl.porsiPublikSetelah, 1)}%${dl.nilaiPerSaham ? `, dengan nilai buku per saham pasca-transaksi sekitar ${rp(dl.nilaiPerSaham)}` : ''}.` : ''
     out.push(['Siapa yang diuntungkan struktur transaksi', `${benefit}${benefit ? '.' : ''}${dil} Selisih harga masuk pengendali dan harga pasar adalah keuntungan yang sudah dikunci pengendali sebelum aset terbukti.`.trim()])
   }
-  if (a.deal?.p0 && a.deal?.last && a.d?.tender?.start) {
-    const day = Math.round((Date.now() - new Date(a.d.tender.start + 'T00:00:00')) / 864e5)
-    out.push(['Posisi dalam siklus backdoor', `${day} hari sejak PTW dimulai; harga kini ${x2(a.deal.last / a.deal.p0)} harga saat PTW.`])
+  const cy = cycleOf(a, { bm, aset, verified, now })
+  if (cy) {
+    const { model: m, ph, day } = cy
+    const vs = a.deal?.p0 && a.deal?.last ? `; harga kini ${x2(a.deal.last / a.deal.p0)} harga saat PTW` : ''
+    out.push(['Posisi dalam siklus backdoor', `${day} hari sejak PTW dimulai; fase: ${phaseName(ph) || 'belum ada'}${vs}. Pada ${m.n} kasus, titik dasar median ${dayTxt(m.baseDay)} (${x2(m.baseX)}) dan puncak median ${dayTxt(m.peakDay)} (${x2(m.peakX)}). ${PHASE_NOTE[ph] || ''}`.trim()])
+  } else if (a.deal?.p0 && a.deal?.last && a.d?.tender?.start) {
+    out.push(['Posisi dalam siklus backdoor', `${daysSince(a.d.tender.start, now)} hari sejak PTW dimulai; harga kini ${x2(a.deal.last / a.deal.p0)} harga saat PTW.`])
   }
   const salah = a.pa?.tesisSalahBila || [], kunci = a.pa?.variabelKunci || []
   if (salah.length || kunci.length) out.push(['Yang bisa membuat tesis salah dan yang harus dipantau', `${salah.join('; ')}${kunci.length ? `${salah.length ? '. ' : ''}Pantau: ${kunci.join('; ')}` : ''}.`])
   return out
+}
+
+const PHASE_NOTE = {
+  pra: 'Emiten masih di fase awal: kenaikan terbesar historis justru terjadi sebelum PTW.',
+  ptw: 'PTW menopang harga; setelah PTW selesai penopang ini hilang.',
+  euf: 'Harga di atas kebanyakan kasus serupa, koreksi lebih mungkin daripada lanjutan.',
+  dist: 'Mayoritas kasus serupa terus turun sampai ada katalis gelombang kedua (injeksi).',
+  bawah: 'Pasar meragukan rencana; bukti eksekusi (KJPP atau RUPSLB) bisa memicu pembalikan.',
+  inj: 'Nilai berikutnya ditentukan laba aset baru, bukan cerita.',
 }
 
 // ---------- Radar enam dimensi ----------

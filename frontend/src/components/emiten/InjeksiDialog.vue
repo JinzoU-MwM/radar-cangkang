@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { api } from '../../api.js'
 import { store, itemOf } from '../../store.js'
-import { big, fmt, fmtDate, num, pctTxt, rp, x2 } from '../../lib/domain.js'
+import { big, fmt, fmtDate, num, pctTxt, progressOf, rp, x2 } from '../../lib/domain.js'
 import { MECH_LABEL, dilusi, flowOf, injSteps, kjppStatus, mechOf, peerMultiples, reservesOf, simDefaults, simKjpp, toM, txValue } from '../../lib/emitenExtra.js'
 import { KURS } from '../../lib/analysis.js'
 import Modal from './Modal.vue'
@@ -44,7 +44,8 @@ const flow = computed(() => (a.value || sv.value?.injectType) ? flowOf({
   t: props.ticker, mech: mech.value, aset: a.value, sv: sv.value, ctrlName: item.value?.ctrlName || item.value?.acquirer,
   owner: String(af.value?.pemilikAset || '').slice(0, 34), hargaPelaksanaan: kc.value.hargaPelaksanaan, pubText: pubText.value,
 }) : null)
-const steps = computed(() => injSteps(mech.value, { sv: sv.value, ms: item.value?.ms || {} }))
+// Tahapan dari progressOf (memasukkan KJPP terbit di aset-verified dan injeksi tereksekusi), bukan item.ms mentah.
+const steps = computed(() => injSteps(mech.value, { sv: sv.value, ms: progressOf(item.value || { ticker: props.ticker }, { aset: store.aset, verified: store.verified }).ms }))
 const flowLabel = computed(() => flow.value ? [...flow.value.boxes.map(b => `${b.t1} (${b.t2})`), ...flow.value.arrows.map(x => x.lines.join(' '))].join('; ') : '')
 
 // Simulasi nilai KJPP: isian Rp miliar; kelipatan pembanding dari Stockbit.
@@ -56,6 +57,7 @@ const mining = computed(() => res.value || /tambang|batu bara|nikel/i.test(ast.v
 const sim = computed(() => simKjpp(si))
 const peers = computed(() => (a.value?.pembanding || []).filter(t => /^[A-Z]{4}$/.test(t)).slice(0, 5))
 const peerNote = ref('')
+const peerUsed = ref([])
 const prof = ref(null)
 const SIM_IN = computed(() => [
   ['tx', 'Nilai transaksi diumumkan (Rp miliar)', 'nilai yang dibayar/diinbrengkan'],
@@ -63,7 +65,7 @@ const SIM_IN = computed(() => [
   ['laba', 'Laba bersih aset 100% (Rp miliar/tahun)', perHint.value],
   ['pend', 'Pendapatan aset 100% (Rp miliar/tahun)', perHint.value],
   ['eq', 'Ekuitas aset 100% (Rp miliar)', 'nilai buku'],
-  ...(mining.value ? [['res', 'Cadangan aset 100% (juta ton)', res.value ? res.value.kind : 'isi bila diketahui'],
+  ...(mining.value ? [['res', 'Cadangan aset 100% (juta ton)', res.value ? [res.value.kind, String(ast.value.tambang?.kalori || '').slice(0, 40)].filter(Boolean).join(' · ') : 'isi bila diketahui'],
     ['usdTon', 'Nilai per ton cadangan (USD/ton)', 'asumsi Anda; kosongkan bila tidak yakin']] : []),
   ['per', 'PER pembanding (×)', peerNote.value],
   ['ps', 'P/S pembanding (×)', peerNote.value],
@@ -98,6 +100,7 @@ onMounted(async () => {
   prof.value = own
   if (!peers.value.length) return
   const m = peerMultiples(ps)
+  peerUsed.value = ps.filter(Boolean).map(p => p.ticker).filter(Boolean)
   for (const key of ['per', 'ps', 'pbv']) if (m[key] != null && si[key] == null) si[key] = Math.round(m[key] * 100) / 100
   peerNote.value = m.n ? `median ${m.n} pembanding Stockbit` : 'data pembanding kosong'
 })
@@ -176,7 +179,7 @@ const sources = computed(() => [...(a.value?.sumber || []).map(t => ({ t })), ..
       </ol>
     </section>
 
-    <section v-if="a" class="sec">
+    <section v-if="a || sv?.injectType" class="sec">
       <h3 class="lbl">Simulasi nilai KJPP <span class="tag t-warn">simulasi</span></h3>
       <p class="small muted">
         <template v-if="ks.id === 'terbit'">Penilaian KJPP resmi tersedia<template v-if="k.nilaiRp"> ({{ big(k.nilaiRp) }})</template>. Simulasi di bawah sebagai pembanding.</template>
@@ -184,6 +187,7 @@ const sources = computed(() => [...(a.value?.sumber || []).map(t => ({ t })), ..
         <template v-else>Belum ada laporan penilaian KJPP. Simulasi memperkirakan nilai wajar dengan pendekatan penilai.</template>
         Angka di sini tidak resmi dan tidak menambah progress.
       </p>
+      <p v-if="ast.nama" class="small">Aset: <b>{{ ast.nama }}</b><template v-if="ast.porsi"> · porsi {{ ast.porsi }}</template><template v-if="ast.sektor"> · sektor {{ ast.sektor }}</template></p>
       <div class="inputs">
         <label v-for="[key, label, hint] in SIM_IN" :key="key" class="in" :for="fid(key)">
           <span class="small">{{ label }}</span>
@@ -191,6 +195,7 @@ const sources = computed(() => [...(a.value?.sumber || []).map(t => ({ t })), ..
           <em class="small muted">{{ hint }}</em>
         </label>
       </div>
+      <p class="small muted">{{ peerUsed.length ? 'Pembanding (Stockbit): ' + peerUsed.join(', ') : 'Pembanding: ' + (a?.pembanding?.join(', ') || 'belum ditentukan') }}</p>
       <p v-if="sim.implied" class="small">Nilai transaksi tersirat <b>Rp{{ fmt(Math.round(sim.implied)) }}/ton</b> (sekitar USD{{ fmt(sim.implied / KURS.USD, 2) }}/ton) atas {{ fmt(si.res * sim.por, 1) }} juta ton porsi yang masuk.</p>
       <p v-if="sim.mid == null" class="note">
         <template v-if="si.laba > 0 || si.pend > 0 || si.eq > 0">Belum bisa disimulasikan: kelipatan pembanding (PER, P/S, atau PBV) belum ada. Isi salah satunya di atas.</template>

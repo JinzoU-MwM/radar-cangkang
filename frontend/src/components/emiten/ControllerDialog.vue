@@ -97,10 +97,19 @@ const srcs = computed(() => [ctrlInfo.value?.src, ...people.value.map(p => p.inf
       </button>
     </div>
 
+    <dl class="kv kpi">
+      <div><dt>Jumlah saham</dt><dd>{{ c?.shares || (loading ? 'memuat' : 'belum ada') }}</dd></div>
+      <div><dt>Pengendali lama</dt><dd>{{ story?.oldName || 'belum ada' }}</dd></div>
+      <div><dt>Afiliasi aktif</dt><dd>{{ c ? active.length + ' emiten' : (loading ? 'memuat' : 'belum ada') }}</dd></div>
+    </dl>
+
     <section v-if="pg" class="sec">
       <h3 class="lbl">Siapa dan apa rencananya</h3>
+      <p v-if="pg.bukanPengambilAlih" class="note">Nama di kolom pengendali {{ ticker }} adalah pengendali lama/penjual atau bukan pengambil alih. Data kepemilikan dan afiliasi di bawah milik nama tersebut.</p>
       <p>{{ pg.siapa }}</p>
-      <p v-if="pg.grup">{{ pg.grup }}</p>
+      <p v-if="pg.grup"><b>Latar belakang grup:</b> {{ pg.grup }}</p>
+      <p v-if="pg.rencana"><b>Rencana:</b> {{ pg.rencana }}</p>
+      <p v-if="pg.catatan" class="catat"><b>Catatan investor:</b> {{ pg.catatan }}</p>
       <p v-if="pg.sumberJudul" class="small muted">Sumber: {{ pg.sumberJudul }}<template v-if="pg.sumberTanggal"> · {{ fmtDate(pg.sumberTanggal) }}</template></p>
     </section>
 
@@ -223,6 +232,7 @@ const srcs = computed(() => [ctrlInfo.value?.src, ...people.value.map(p => p.inf
             <RouterLink class="ticker" :to="'/emiten/' + x.ticker">{{ x.ticker }}</RouterLink> {{ x.name }}
             <template v-if="x.ctrlPct != null"> · {{ (+x.ctrlPct).toLocaleString('id-ID') }}%</template>
           </p>
+          <template v-if="story?.injCo"><h3 class="lbl">Aset yang diinjeksikan</h3><p>{{ [story.injType, story.injCo, story.nominal].filter(Boolean).join(' · ') }}</p></template>
           <template v-if="item?.tender?.price"><h3 class="lbl">Harga PTW</h3><p>{{ rp(item.tender.price) }}</p></template>
         </section>
       </div>
@@ -311,4 +321,7 @@ ul{margin:0;padding-left:18px}
 .net li{margin:2px 0 4px}
 @media (max-width:760px){.kv>div{grid-template-columns:1fr;gap:2px}}
 .more summary{cursor:pointer;font-weight:600;min-height:28px}
+.kpi{margin:0 0 4px}
+.note{padding:8px 12px;background:var(--warn-bg);color:var(--warn)}
+.catat{background:var(--sheet-2);padding:8px 12px}
 </style>

@@ -56,7 +56,7 @@ export function buildAnalysis({ ticker: t, item: d, profile: p, reports: reps = 
   const pvText = pv ? [pv.siapa, pv.grup, pv.rencana, pv.catatan].join(" ") : "";
   const injRp = nominalRp(sv?.nominal);
   const injRatio = injRp && mcap ? injRp / mcap : null;
-  // Injeksi dianggap tereksekusi bila ditandai di story-verified.json (executed) atau tonggaknya tercapai.
+  // Injeksi dianggap tereksekusi bila ditandai di story-verified.json (executed) atau tahapannya tercapai.
   const executed = !!(sv?.executed || ms.inbreng || ms.bisnis);
   const foreignSpv = /\b(PTE|LTD|LIMITED|B\.V\.|INC|HOLDINGS? LIMITED)\b/i.test(ctrlName) && !/^PT\b/i.test(ctrlName.trim());
   const notTaker = !!pv?.bukanPengambilAlih;
@@ -92,7 +92,7 @@ export function buildAnalysis({ ticker: t, item: d, profile: p, reports: reps = 
     let s = 5; const why = [];
     if (ctrlNet < -1) {
       s -= 3; why.push(`Pengendali mengurangi porsi ${fmt(ctrlNet, 2)} poin dalam 365 hari.`);
-      bear.push(`Pengendali menjual: porsi turun ${fmt(-ctrlNet, 2)} poin — sinyal terkuat bahwa orang dalam tidak sepakat dengan harga pasar.`);
+      bear.push(`Pengendali menjual: porsi turun ${fmt(-ctrlNet, 2)} poin — sinyal terkuat bahwa insider tidak sepakat dengan harga pasar.`);
       exits.push("Pengendali melanjutkan penjualan saham di pasar.");
     } else if (ctrlAddedLater) {
       s += 1; why.push("Pengendali menambah porsi setelah masuk.");
@@ -117,7 +117,7 @@ export function buildAnalysis({ ticker: t, item: d, profile: p, reports: reps = 
         if (injRatio >= 1) bull.push(`Injeksi ${sv.injectTarget || sv.injectType} (${sv.nominal}) setara ${x2(injRatio)} kapitalisasi — bila dieksekusi di valuasi wajar, skala usaha berubah total.`);
         if (injRatio < 0.3) bear.push(`Injeksi kecil (${sv.nominal}, ${x2(injRatio)} kapitalisasi): kelompok injeksi kecil median 0,68× harga PTW.`);
       } else { s = 4; why.push("Injeksi diumumkan tetapi nilainya belum disebut."); bear.push("Nilai injeksi belum disebut: pasar memperdagangkan harapan, bukan aset."); }
-      if (executed) { s += 2; why.push("Tonggak injeksi/konsolidasi sudah tercapai."); }
+      if (executed) { s += 2; why.push("Tahapan injeksi/konsolidasi sudah tercapai."); }
       else { why.push("Belum dieksekusi: injeksi besar yang baru diumumkan median 0,78× vs 2,24× setelah eksekusi."); checks.push("Laporan penilai independen (KJPP) atas aset injeksi dan kelipatan valuasinya terhadap emiten sejenis."); }
     } else if (isRadar) {
       s = m.netIncomeTtm > 0 ? 6 : 2;
@@ -204,7 +204,7 @@ export function buildAnalysis({ ticker: t, item: d, profile: p, reports: reps = 
   const score = Math.round(dims.reduce((s, x) => s + x.s * W[x.k], 0) * 10);
   const stance = score >= 65 ? { id: "good", t: "Asimetri positif — layak dipelajari lebih dalam" }
     : score >= 45 ? { id: "warn", t: "Netral — tunggu konfirmasi katalis" }
-    : { id: "bad", t: "Spekulatif tinggi — risiko lebih besar dari imbal hasil" };
+    : { id: "bad", t: "Spekulatif tinggi — risiko lebih besar dari potensi keuntungan" };
 
   // Skenario harga dari level emiten sendiri.
   const levels = [];
@@ -221,7 +221,7 @@ export function buildAnalysis({ ticker: t, item: d, profile: p, reports: reps = 
   }
   const down = levels.find(l => l[0] === "Skenario turun"), up = levels.find(l => l[0] === "Skenario naik");
   const rr = down && up && price > down[2] ? (up[2] - price) / (price - down[2]) : null;
-  if (rr != null) (rr >= 2 ? bull : bear).push(`Rasio imbal-risiko ${rr.toFixed(1).replace(".", ",")} : 1 (naik ke ${rp(up[2])} vs turun ke ${rp(down[2])}).`);
+  if (rr != null) (rr >= 2 ? bull : bear).push(`Rasio risk/reward ${rr.toFixed(1).replace(".", ",")} : 1 (naik ke ${rp(up[2])} vs turun ke ${rp(down[2])}).`);
 
   // Tesis satu paragraf.
   const parts = [];

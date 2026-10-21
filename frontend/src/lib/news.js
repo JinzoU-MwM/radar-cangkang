@@ -25,7 +25,7 @@ export const isBackdoorNews = (u, items = [], set = backdoorTickers(items)) => {
   return !MARKET_WRAP.test(u.title) || BACKDOOR_TOPIC.test(text)
 }
 
-// Aturan berurutan; dua poin pertama yang cocok ditampilkan. Level: 3 = sinyal tinggi, 2 = sedang, 1 = rutin, 0 = derau.
+// Aturan berurutan; dua poin pertama yang cocok ditampilkan. Level: 3 = sinyal tinggi, 2 = sedang, 1 = rutin, 0 = noise.
 export const NEWS_RULES = [
   [/pengendali baru|perubahan pengendali|pengambilalihan|akuisisi saham .*pengendali|ppjb|cspa|perjanjian (jual beli|pengalihan) saham/i, 3, "Perubahan kendali: siapa pembelinya, berapa harga per saham, dan apakah wajib PTW — harga beli pengendali menjadi patokan nilai."],
   [/penawaran tender|tender offer|\bPTW\b|\bMTO\b/i, 3, "Tender wajib: harga tender adalah biaya masuk pengendali, bukan lantai harga setelah periode tender selesai."],
@@ -37,7 +37,7 @@ export const NEWS_RULES = [
   [/transaksi afiliasi|benturan kepentingan/i, 2, "Transaksi afiliasi: uji kewajaran harga — nilai bisa berpindah ke pengendali tanpa persetujuan publik."],
   [/suspensi|penghentian sementara|disuspen/i, 2, "Suspensi: posisi tidak bisa dijual sampai dibuka — risiko likuiditas penuh; cek alasan dan jadwal pembukaan."],
   [/terkonsentrasi/i, 2, "Kepemilikan terkonsentrasi: free float sangat tipis, harga mudah digerakkan; pencabutan status berarti saham publik bertambah."],
-  [/(pemegang saham|pengendali|direksi|komisaris).{0,60}(jual|lepas|kurangi|divestasi)|(jual|lepas|kurangi).{0,40}(porsi|kepemilikan)/i, 2, "Pemegang besar melepas saham: perhatikan apakah berulang — penjualan orang dalam adalah sinyal paling jujur."],
+  [/(pemegang saham|pengendali|direksi|komisaris).{0,60}(jual|lepas|kurangi|divestasi)|(jual|lepas|kurangi).{0,40}(porsi|kepemilikan)/i, 2, "Pemegang besar melepas saham: perhatikan apakah berulang — penjualan insider adalah sinyal paling jujur."],
   [/(pemegang saham|pengendali|direksi|komisaris).{0,60}(beli|tambah|perbesar|akumulasi)|(perbesar|tambah) porsi/i, 2, "Pemegang besar menambah porsi: sinyal keyakinan bila harga belinya dekat harga pasar dan dilakukan berulang."],
   [/akuisisi|mengambil alih/i, 2, "Akuisisi: ukur nilai aset yang masuk terhadap kapitalisasi dan sumber dananya (kas, utang pengendali, atau saham baru)."],
   [/RUPSLB|RUPS Luar Biasa|pemanggilan RUPS|rencana (rapat|RUPS)/i, 2, "RUPS: agenda (KBLI, pengurus, modal dasar, rights) menunjukkan langkah berikutnya; penundaan berulang = dokumen belum siap."],
@@ -49,7 +49,7 @@ export const NEWS_RULES = [
   [/pinjaman|fasilitas kredit|obligasi|sukuk|ijarah|MTN/i, 1, "Pendanaan utang: rutin, kecuali utang dari pengendali yang nantinya dikonversi menjadi saham."],
   [/volatilitas|permintaan penjelasan bursa|\bUMA\b|unusual market/i, 0, "Penjelasan volatilitas/permintaan bursa: harga sudah bergerak lebih dulu — bukan informasi nilai, sering pertanda spekulasi."],
 ];
-export const NEWS_LEVEL = [["Derau", "bad"], ["Rutin", "calm"], ["Sinyal sedang", "warn"], ["Sinyal tinggi", "good"]];
+export const NEWS_LEVEL = [["Noise", "bad"], ["Rutin", "calm"], ["Sinyal sedang", "warn"], ["Sinyal tinggi", "good"]];
 // Arah dampak tiap aturan NEWS_RULES (urutan sama): 1 positif bagi publik, -1 negatif/risiko, 0 perlu dicermati.
 const NEWS_TONE = [1, 0, 1, 1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 0, 0, 0, 1, 0, 0, 0, -1]
 const KINERJA = NEWS_RULES.findIndex(r => /kinerja/.test(r[0].source))
