@@ -142,19 +142,34 @@ def sync_user(token):
     http_json(f"{API}/auth/login", token=token, method="POST", body={"idToken": "x"})
 
 
+CAKUPAN = {}  # path -> {"diambil", "total", "pratinjau"}: dicatat ke tsa-meta.json
+
+
+def row_key(x):
+    return x.get("stockCode") or x.get("stock_code") or json.dumps(x, sort_keys=True)
+
+
 def fetch_all_pages(path, token, extra=""):
-    """Ambil semua halaman endpoint ber-paginasi; kembalikan list `data`."""
-    rows, page = [], 1
+    """Ambil semua halaman endpoint ber-paginasi; kembalikan list `data` tanpa duplikat.
+    Berhenti bila server mengirim pratinjau (is_preview: akun tanpa akses penuh) atau
+    halaman tidak maju (current_page tetap), supaya halaman yang sama tidak diambil berulang."""
+    rows, seen, page, r = [], set(), 1, {}
     while page <= MAX_PAGES:
         st, r = http_json(f"{API}{path}?page={page}&limit={LIMIT}{extra}", token)
         if st != 200:
             raise RuntimeError(f"{path} page {page}: {st} {json.dumps(r)[:120]}")
-        rows.extend(r.get("data", []))
+        for x in r.get("data", []):
+            if row_key(x) not in seen:
+                seen.add(row_key(x))
+                rows.append(x)
         tp = r.get("total_pages") or r.get("totalPages") or 1
-        if page >= tp:
+        cur = r.get("current_page") or r.get("currentPage") or page
+        if r.get("is_preview") or page >= tp or cur != page:
             break
         page += 1
         time.sleep(DELAY)
+    CAKUPAN[path] = {"diambil": len(rows), "total": r.get("total_count") or r.get("totalCount") or len(rows),
+                     "pratinjau": bool(r.get("is_preview"))}
     return rows
 
 
@@ -223,6 +238,8 @@ def simpan(hasil):
         "tarik": now,
         "tanggal_data": hasil.get("latest_date"),
         "catatan": "Refresh otomatis via website/tsa_refresh.py",
+        # Cakupan per sumber: pratinjau = akun hanya mendapat sebagian (mis. 5 dari 444).
+        "cakupan": {p.rsplit("/", 1)[-1]: c for p, c in CAKUPAN.items()},
     }, ensure_ascii=False, indent=1), encoding="utf-8")
     return now
 
