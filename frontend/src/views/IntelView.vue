@@ -78,6 +78,8 @@ const rows = computed(() => {
 })
 function sortBy(k) { if (sortK.value === k) sortDir.value = -sortDir.value; else { sortK.value = k; sortDir.value = -1 } }
 const meta = computed(() => data.value?.meta || null)
+// Cakupan dari server: akun tradersaham tanpa akses penuh hanya mendapat pratinjau sebagian emiten.
+const cakupan = computed(() => meta.value?.cakupan?.[set.value] || meta.value?.cakupan?.[set.value + '-v2'] || null)
 </script>
 
 <template>
@@ -97,6 +99,7 @@ const meta = computed(() => data.value?.meta || null)
       <span class="small muted">{{ cfg.note }} {{ rows.length.toLocaleString('id-ID') }} emiten.</span>
     </div>
 
+    <p v-if="cakupan?.pratinjau" class="note small">Pratinjau: akun tradersaham yang dipakai hanya mendapat {{ cakupan.diambil }} dari {{ cakupan.total.toLocaleString('id-ID') }} emiten untuk {{ cfg.l.toLowerCase() }}. Data lengkap butuh akses berbayar di tradersaham.</p>
     <p v-if="loading" class="muted">Memuat…</p>
     <p v-else-if="err" class="warn">{{ err }}</p>
     <section v-else class="sheet box" aria-label="Tabel intel pasar">
@@ -140,4 +143,5 @@ td{font-size:13.5px}
 .up{color:var(--good)}.dn{color:var(--strong)}
 .more{align-self:center}
 .warn{color:var(--strong)}
+.note{margin:0;padding:8px 12px;background:var(--warn-bg);color:var(--warn);border-radius:3px}
 </style>
