@@ -49,3 +49,18 @@ describe('buildRelasi aset', () => {
     expect(r.edges.some(e => e[0] === 'aset')).toBe(false)
   })
 })
+
+describe('layoutRows', () => {
+  it('memberi koordinat per baris, emiten di tengah baris 2', async () => {
+    const { layoutRows } = await import('../relasiAuto.js')
+    const r = layoutRows({ nodes: [{ id: 'a', row: 2 }, { id: 'em', row: 2 }, { id: 'b', row: 2 }, { id: 'p', row: 0 }] })
+    expect(r.nodes.find(n => n.id === 'em').x).toBe(680)
+    expect(r.nodes.find(n => n.id === 'p')).toMatchObject({ x: 680, y: 120 })
+    expect(r.nodes.every(n => Number.isFinite(n.x))).toBe(true)
+  })
+  it('relasi yang sudah berkoordinat tidak diubah', async () => {
+    const { layoutRows } = await import('../relasiAuto.js')
+    const rel = { nodes: [{ id: 'em', x: 10, y: 20 }] }
+    expect(layoutRows(rel)).toBe(rel)
+  })
+})

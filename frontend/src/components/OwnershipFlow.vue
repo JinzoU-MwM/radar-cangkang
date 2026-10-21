@@ -34,7 +34,7 @@ const edges = computed(() => (data.value?.edges || []).map(([source, target, kin
 const ready = ref(false)
 const selId = ref(props.focus)
 
-const { fitView, zoomIn, zoomOut, viewport } = useVueFlow(flowId)
+const { fitView, zoomIn, zoomOut, viewport, getNodes } = useVueFlow(flowId)
 const zoomPct = computed(() => Math.round(viewport.value.zoom * 100) + '%')
 const fit = () => fitView({ padding: 0.08, duration: 200 })
 
@@ -48,6 +48,42 @@ function clip(a, b) {
   const t = Math.min(dx ? (a.w / 2 + 3) / Math.abs(dx) : 1e9, dy ? (a.h / 2 + 3) / Math.abs(dy) : 1e9)
   return { x: a.x + dx * t, y: a.y + dy * t }
 }
+// Posisi label tiap garis: dicoba di beberapa titik sepanjang garis, dipilih yang tidak
+// menimpa label lain maupun kotak. Dihitung ulang saat kotak digeser (getNodes reaktif).
+const labelPos = computed(() => {
+  const nodes = getNodes.value
+  if (!nodes.length || !data.value?.edges) return {}
+  const rect = {}
+  for (const n of nodes) { const c = center(n); rect[n.id] = c }
+  const cards = Object.values(rect).map(c => [c.x - c.w / 2 - 4, c.y - c.h / 2 - 4, c.x + c.w / 2 + 4, c.y + c.h / 2 + 4])
+  const labels = []
+  const area = (b, q) => Math.max(0, Math.min(b[2], q[2]) - Math.max(b[0], q[0])) * Math.max(0, Math.min(b[3], q[3]) - Math.max(b[1], q[1]))
+  // Skor tumpang tindih: menimpa label lain jauh lebih buruk daripada menyentuh tepi kotak.
+  const cost = b => labels.reduce((t, q) => t + area(b, q) * 20, 0) + cards.reduce((t, q) => t + area(b, q), 0)
+  const out = {}
+  data.value.edges.forEach(([src, tgt, , label], i) => {
+    const a = rect[src], b = rect[tgt]
+    if (!a || !b) return
+    const s = clip(a, b), e = clip(b, a)
+    const w = String(label || '').length * 6.6 + 14, h = 18
+    let best = null
+    for (const t of [0.5, 0.38, 0.62, 0.28, 0.72, 0.2, 0.8]) {
+      const x = s.x + (e.x - s.x) * t, y = s.y + (e.y - s.y) * t
+      // garis pendek mendatar: label boleh naik/turun sedikit dari garis
+      for (const dy of Math.abs(e.y - s.y) < 4 ? [0, -16, 16] : [0]) {
+        const box = [x - w / 2, y + dy - h / 2, x + w / 2, y + dy + h / 2]
+        const c = cost(box)
+        if (!best || c < best.c) best = { x, y: y + dy, box, c }
+        if (c === 0) break
+      }
+      if (best.c === 0) break
+    }
+    labels.push(best.box)
+    out['e' + i] = { x: best.x, y: best.y }
+  })
+  return out
+})
+
 function geom(p) {
   const a = center(p.sourceNode), b = center(p.targetNode)
   const s = clip(a, b), e = clip(b, a)
@@ -58,7 +94,7 @@ function geom(p) {
   return {
     path: `M${s.x},${s.y} L${bx},${by}`,
     head: `${e.x},${e.y} ${bx + nx},${by + ny} ${bx - nx},${by - ny}`,
-    lx: (s.x + e.x) / 2, ly: (s.y + e.y) / 2,
+    lx: labelPos.value[p.id]?.x ?? (s.x + e.x) / 2, ly: labelPos.value[p.id]?.y ?? (s.y + e.y) / 2,
   }
 }
 
