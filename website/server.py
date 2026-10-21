@@ -108,13 +108,39 @@ def market_open() -> bool:
 
 
 def cache_ttl(url: str) -> int:
+    # Data yang jarang berubah (profil, kepemilikan, aksi korporasi) disimpan setengah hari;
+    # harga/candle 10 menit saat bursa buka dan sampai sesi berikutnya saat tutup.
     if re.search(r"corpaction|tenderoffer|majorholder|emitten|profile|keystats|financial|shareholding", url):
-        return 6 * 3600
+        return 12 * 3600
     if "/stream/" in url:
-        return 20 * 60
-    if re.search(r"stockbit\.com/symbol/|chartbit|prices|orderbook|running|marketdetector", url):
-        return 10 * 60 if market_open() else 6 * 3600
-    return 15 * 60
+        return 60 * 60
+    if re.search(r"stockbit\.com/symbol/|chartbit|/charts/|prices|orderbook|running|marketdetector", url):
+        return 10 * 60 if market_open() else 12 * 3600
+    return 60 * 60
+
+
+# Statistik pemakaian Stockbit (1 jam terakhir) untuk /api/status.
+FRESH_MIN_AGE = 5 * 60  # fresh=1 tidak memanggil ulang salinan yang umurnya < 5 menit
+FAIL_BACKOFF = 5 * 60   # jeda setelah panggilan gagal sebelum mencoba Stockbit lagi
+_fail_until: dict[str, int] = {}
+_stats_lock = threading.Lock()
+_upstream: list[float] = []
+_hits: list[float] = []
+
+
+def _stat(bucket: list[float]) -> None:
+    now = time.time()
+    with _stats_lock:
+        bucket.append(now)
+        while bucket and bucket[0] < now - 3600:
+            bucket.pop(0)
+
+
+def stats_1h() -> dict:
+    now = time.time()
+    with _stats_lock:
+        return {"upstream": sum(1 for t in _upstream if t >= now - 3600),
+                "cacheHits": sum(1 for t in _hits if t >= now - 3600)}
 
 
 def cache_read(url: str, min_time: int) -> str | None:
@@ -223,18 +249,26 @@ def cached_text(url: str, fetch, fresh: bool = False) -> str:
     """Ambil dari cache bila segar; bila tidak, jalankan fetch lalu simpan.
     Bila fetch gagal, salinan lama dipakai daripada error."""
     now = int(time.time())
-    if not fresh:
-        hit = cache_read(url, now - cache_ttl(url))
-        if hit is not None:
-            return hit
+    # fresh=1 (tombol "Perbarui") tetap memakai salinan yang baru diambil < 5 menit lalu,
+    # supaya klik berulang atau beberapa perangkat sekaligus tidak memanggil Stockbit lagi.
+    hit = cache_read(url, now - (FRESH_MIN_AGE if fresh else cache_ttl(url)))
+    if hit is None and _fail_until.get(url, 0) > now:
+        # Baru saja gagal (mis. token kedaluwarsa): jangan ulangi selama jeda, pakai salinan lama.
+        hit = cache_read(url, 0)
+    if hit is not None:
+        _stat(_hits)
+        return hit
     try:
+        _stat(_upstream)
         body = fetch()
     except Exception as e:
+        _fail_until[url] = now + FAIL_BACKOFF
         old = cache_read(url, 0)
         if old is not None:
             print(f"[cache] basi dipakai ({e}): {url}", file=sys.stderr)
             return old
         raise
+    _fail_until.pop(url, None)
     cache_write(url, body)
     return body
 
@@ -984,6 +1018,7 @@ class Handler(BaseHTTPRequestHandler):
                 "reports": bool(cfg.get("reports", {}).get("url")) if cfg else False,
                 "news": bool(cfg.get("news", {}).get("sources")) if cfg else False,
                 "tenders": bool(cfg.get("tenders", {}).get("url")) if cfg else False,
+                "stockbit1h": stats_1h(),
             })
         elif path == "api/tenders":
             self.api_tenders(cfg, fresh)

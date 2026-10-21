@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { VueFlow, useVueFlow, BaseEdge, EdgeLabelRenderer } from '@vue-flow/core'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
-import { store } from '../store.js'
+import { store, relasiOf } from '../store.js'
 import { api } from '../api.js'
 
 const props = defineProps({
@@ -17,7 +17,7 @@ const REL = Object.fromEntries(KINDS)
 const sizeOf = k => (k === 'main' ? { w: 280, h: 104 } : { w: 236, h: 80 })
 
 const flowId = 'alur-' + props.ticker
-const data = computed(() => store.relasi?.[props.ticker] || null)
+const data = computed(() => relasiOf(props.ticker))
 const byId = computed(() => Object.fromEntries((data.value?.nodes || []).map(n => [n.id, n])))
 
 // JSON & server menyimpan titik TENGAH; vue-flow memakai pojok kiri atas.

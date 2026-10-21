@@ -83,5 +83,40 @@ class DataApiTest(unittest.TestCase):
         self.assertEqual(st, 404)
 
 
+class CacheTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        server.CACHE_DB = Path(self.tmp.name) / "cache.sqlite"
+        server._db = None
+        server._fail_until.clear()
+
+    def tearDown(self):
+        server._db = None
+        self.tmp.cleanup()
+
+    def test_fresh_reuses_recent_copy(self):
+        calls = []
+        f = lambda: calls.append(1) or "body"
+        url = "https://exodus.stockbit.com/emitten/NAYZ/profile"
+        self.assertEqual(server.cached_text(url, f), "body")
+        self.assertEqual(server.cached_text(url, f, fresh=True), "body")
+        self.assertEqual(len(calls), 1)  # salinan < 5 menit dipakai walau fresh
+
+    def test_failure_backoff_uses_stale(self):
+        url = "https://exodus.stockbit.com/stream/v3/symbol/NAYZ"
+        server.cache_write(url, "lama")
+        con = server.db()
+        con.execute("UPDATE http_cache SET fetched_at=0")
+        con.commit()
+        calls = []
+
+        def boom():
+            calls.append(1)
+            raise RuntimeError("401")
+        self.assertEqual(server.cached_text(url, boom), "lama")
+        self.assertEqual(server.cached_text(url, boom), "lama")
+        self.assertEqual(len(calls), 1)  # percobaan kedua tidak memanggil Stockbit
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

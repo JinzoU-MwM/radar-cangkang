@@ -35,7 +35,7 @@ const ladder = computed(() => {
   const last = { below0: -99, above: at(now), below1: -99 } // "kini" selalu di atas
   const ticks = [...pts].sort((a, b) => a.v - b.v).map(x => {
     const x0 = at(x.v)
-    const row = ['below0', 'above', 'below1'].find(r => Math.abs(x0 - last[r]) >= GAP) || 'below1'
+    const row = ['below0', 'below1', 'above'].find(r => Math.abs(x0 - last[r]) >= GAP) || 'above'
     last[row] = x0
     return { ...x, x: x0, row }
   })
@@ -164,7 +164,7 @@ const steps = computed(() => {
 .lead{margin:0;font-size:16px;max-width:900px}
 section p{margin:0 0 6px;max-width:80ch}
 .lbl{margin:0 0 10px}
-.ladder{position:relative;height:140px;margin:16px 8px 0}
+.ladder{position:relative;height:156px;margin:16px 8px 0}
 .track{position:absolute;left:0;right:0;top:54px;height:14px;background:var(--rule-2);border-radius:2px}
 .zone{position:absolute;top:54px;height:14px;background:var(--range)}
 .tk{position:absolute;top:46px;height:30px;width:2px;margin-left:-1px;background:var(--ink)}
@@ -173,7 +173,7 @@ section p{margin:0 0 6px;max-width:80ch}
 .tl{position:absolute;transform:translateX(-50%);font-size:12px;white-space:nowrap;text-align:center;line-height:1.25;display:flex;flex-direction:column}
 .tl span{color:var(--ink-2)}
 .tl.below0{top:82px}
-.tl.below1{top:82px;transform:translate(-50%,22px)}
+.tl.below1{top:82px;transform:translate(-50%,36px)}
 .tl.above{top:4px}
 .tl.nowl{top:-14px;color:var(--strong);font-weight:700;font-size:14px}
 .up{color:var(--strong)}

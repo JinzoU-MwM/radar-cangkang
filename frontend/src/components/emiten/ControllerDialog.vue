@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../../api.js'
-import { store, itemOf, storyOf } from '../../store.js'
+import { store, itemOf, storyOf, relasiOf } from '../../store.js'
 import { fmtDate, rp, stageOf } from '../../lib/domain.js'
 import { ctrlProsCons, relationTone } from '../../lib/emitenExtra.js'
 import Modal from './Modal.vue'
@@ -14,7 +14,7 @@ const emit = defineEmits(['close', 'flow'])
 const item = computed(() => itemOf(props.ticker))
 const story = computed(() => storyOf(props.ticker))
 const pg = computed(() => store.pengendali[props.ticker] || null)
-const rs = computed(() => store.relasi[props.ticker] || null)
+const rs = computed(() => relasiOf(props.ticker))
 
 // Bila pengendali lebih dari satu ("A, B"), pakai nama pertama untuk pencarian.
 const name = computed(() => String(item.value?.ctrlName || item.value?.acquirer || '')
