@@ -16,6 +16,7 @@ const srcText = s => Array.isArray(s) ? s.slice(0, 3).join(' · ') : String(s ||
 // Posisi x tengah untuk n kotak dalam satu baris, berpusat di 680 (sama dengan diagram kurasi).
 const rowXs = (n, gap = 320) => Array.from({ length: n }, (_, i) => 680 + (i - (n - 1) / 2) * gap)
 const ROW_Y = [164, 374, 616, 844]
+const ROW_Y_RISET = [120, 400, 680, 960]  // hasil riset: baris lebih renggang untuk label garis
 
 export function buildRelasi(t, { profil = {}, aset = {}, pengendali = {}, verified = {}, item = null, story = null, pandangan = null } = {}) {
   const pf = profil[t] || {}, as = aset[t] || {}, pv = pengendali[t] || {}, sv = verified[t] || {}
@@ -150,4 +151,23 @@ export function buildRelasi(t, { profil = {}, aset = {}, pengendali = {}, verifi
   }
   nodes.forEach(n => delete n.row)
   return { auto: true, nodes, edges, info }
+}
+
+// Tata letak untuk relasi hasil riset yang hanya menyebut `row` (0–3) tanpa koordinat:
+// tiap baris dipusatkan di x=680, emiten di tengah baris 2, jarak antar-kotak menyempit bila baris padat.
+export function layoutRows(rel) {
+  if (!rel?.nodes || rel.nodes.every(n => Number.isFinite(n.x) && Number.isFinite(n.y))) return rel
+  const nodes = rel.nodes.map(n => ({ ...n }))
+  for (let r = 0; r < 4; r++) {
+    let row = nodes.filter(n => (n.row ?? 3) === r)
+    if (r === 2) {
+      // Emiten di tengah: bagi kotak lain ke kiri dan kanan.
+      const em = row.find(n => n.id === 'em'), rest = row.filter(n => n !== em)
+      row = em ? [...rest.slice(0, Math.floor(rest.length / 2)), em, ...rest.slice(Math.floor(rest.length / 2))] : row
+    }
+    // Jarak lega (≥ 400) supaya label garis antar-kotak bersebelahan tidak tertutup kotak.
+    const gap = Math.max(400, Math.min(460, 2000 / Math.max(1, row.length)))
+    row.forEach((n, i) => { n.x = 680 + (i - (row.length - 1) / 2) * gap; n.y = ROW_Y_RISET[r] })
+  }
+  return { ...rel, nodes }
 }

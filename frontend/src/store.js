@@ -5,7 +5,7 @@ import { api, loadJson } from './api.js'
 import { deriveStory } from './lib/story.js'
 import { syncReports, syncStockbit, syncTenders } from './lib/sync.js'
 import { stageOf } from './lib/domain.js'
-import { buildRelasi } from './lib/relasiAuto.js'
+import { buildRelasi, layoutRows } from './lib/relasiAuto.js'
 
 const LS_ITEMS = 'radar-cangkang.v1'
 const LS_UPD = 'radar-cangkang.updates.v1'
@@ -279,7 +279,13 @@ export async function refreshStories() {
 const relasiMemo = new Map()
 export function relasiOf(t) {
   const cur = store.relasi[t]
-  if (cur?.nodes) return cur
+  if (cur?.nodes) {
+    const hit = relasiMemo.get('cur:' + t)
+    if (hit && hit.src === cur) return hit.v
+    const v = layoutRows(cur)
+    relasiMemo.set('cur:' + t, { src: cur, v })
+    return v
+  }
   const it = itemOf(t)
   const key = [it?.updatedAt, it?.storyAuto?.at, !!store.profil[t], !!store.aset[t]].join('|')
   const hit = relasiMemo.get(t)
