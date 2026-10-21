@@ -279,7 +279,7 @@ export function relasiOf(t) {
   const key = [it?.updatedAt, it?.storyAuto?.at, !!store.profil[t], !!store.aset[t]].join('|')
   const hit = relasiMemo.get(t)
   if (hit && hit.key === key) return hit.v
-  const v = buildRelasi(t, { profil: store.profil, aset: store.aset, pengendali: store.pengendali, item: it,
+  const v = buildRelasi(t, { profil: store.profil, aset: store.aset, pengendali: store.pengendali, verified: store.verified, item: it,
     story: it ? storyOf(t) : null, pandangan: store.pandangan[t] })
   relasiMemo.set(t, { key, v })
   return v

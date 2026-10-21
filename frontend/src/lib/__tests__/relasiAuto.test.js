@@ -34,3 +34,18 @@ describe('buildRelasi', () => {
     expect(r.edges.some(e => e[3] === 'afiliasi')).toBe(false)
   })
 })
+
+describe('buildRelasi aset', () => {
+  const p = { X: { pengendali: [{ nama: 'A', peran: 'UBO', entitas: 'PT B' }] } }
+  it('target injeksi dari story-verified bila aset-verified kosong', () => {
+    const r = buildRelasi('X', { profil: p, verified: { X: { injectTarget: 'PT Tambang C (60%)', injectType: 'Inbreng', nominal: 'Rp1 T' } } })
+    expect(r.nodes.find(n => n.id === 'aset').t).toBe('PT Tambang C')
+    expect(r.edges).toContainEqual(['aset', 'em', 'plan', 'Rp1 T'])
+  })
+  it('tanpa injeksi: kotak keterangan tanpa garis', () => {
+    const r = buildRelasi('X', { profil: p, verified: { X: { baru: 'Tetap: logistik' } } })
+    const a = r.nodes.find(n => n.id === 'aset')
+    expect([a.t, a.s, a.k]).toEqual(['Tanpa injeksi aset', 'bisnis lama dipertahankan', 'none'])
+    expect(r.edges.some(e => e[0] === 'aset')).toBe(false)
+  })
+})
