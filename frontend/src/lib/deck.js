@@ -4,6 +4,7 @@
 import { fmtDate } from './domain.js'
 import { PT_STATUS, ptStatusTxt, confLvl } from './patterns.js'
 import { phaseName } from './cycle.js'
+import { mergeBoard } from './profil.js'
 
 const W = 10, H = 5.625, M = 0.45, CW = W - 2 * M
 const TOP = 1.2, BOT = 4.6
@@ -244,7 +245,9 @@ export function buildDeck(PptxGenJS, d, th) {
   }
 
   // ===== 7. Pengurus (kartu, bukan tabel) =====
-  const board = [...(d.profil?.pengurus?.direksi || []).map(x => ({ ...x, g: 'Direksi' })), ...(d.profil?.pengurus?.komisaris || []).map(x => ({ ...x, g: 'Komisaris' }))]
+  // Pengurus riset dilengkapi daftar terkini Stockbit; yang tidak lagi tercantum tidak ditampilkan.
+  const mb = mergeBoard(d.profil?.pengurus, d.profile)
+  const board = [...mb.direksi.map(x => ({ ...x, g: 'Direksi' })), ...mb.komisaris.map(x => ({ ...x, g: 'Komisaris' }))].filter(x => !x.notListed)
   if (board.length) {
     const nb = board.filter(x => x.orangPengendaliBaru).length
     const s = slide('Pengurus', 'Direksi & Komisaris', `${nb} dari ${board.length} pengurus adalah orang pengendali baru${board.some(x => (x.rangkap || []).length) ? '; sebagian merangkap jabatan di emiten lain' : ''}.`)

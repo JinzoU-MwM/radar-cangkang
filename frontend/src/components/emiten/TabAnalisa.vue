@@ -244,7 +244,7 @@ const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
       <p class="warn"><b>Catatan investor:</b> {{ A.pv.catatan }}</p>
     </section>
 
-    <ProfilOrang v-if="extra.profil" :profil="extra.profil" />
+    <ProfilOrang v-if="extra.profil" :profil="extra.profil" :sb="A.p" />
     <ControllerTrack v-if="ctrl" :c="ctrl" :self="ticker" :old-ctrl="!!store.pengendali[ticker]?.bukanPengambilAlih" />
     <NetworkMap v-if="extra.profil" :focus="ticker" />
 
@@ -279,6 +279,7 @@ const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
         <tbody>
           <tr v-for="h in holders" :key="h.name">
             <td><b>{{ h.name }}</b> <span v-if="A.isCtrlH(h)" class="tag t-calm">Pengendali</span>
+              <span v-if="h.below5" class="tag t-warn" title="Tidak lagi tercantum di daftar pemegang ≥5% Stockbit; porsi di kolom adalah laporan ≥5% terakhir">kini {{ h.now != null ? fmt(h.now, 2) + '%' : '<5%' }}</span>
               <div class="small muted">{{ h.buys }}× beli · {{ h.sells }}× jual · {{ fmtDate(h.firstDate) }} – {{ fmtDate(h.lastDate) }}</div></td>
             <td class="r num">{{ fmt(h.from, 2) }}% → {{ fmt(h.to, 2) }}%</td>
             <td class="r num" :class="h.change >= 0 ? 'c-good' : 'c-strong'">{{ h.change >= 0 ? '+' : '' }}{{ fmt(h.change, 2) }}</td>

@@ -122,7 +122,7 @@ const srcs = computed(() => [ctrlInfo.value?.src, ...people.value.map(p => p.inf
       <ProsCons :pros="pc.pros" :cons="pc.cons" pro-label="Kekuatan" con-label="Kelemahan & red flag" />
     </section>
 
-    <ProfilOrang v-if="pf?.pengendali?.length" :profil="pf" :title="`Profil pengendali per orang (${pf.pengendali.length})`" class="sec" />
+    <ProfilOrang v-if="pf?.pengendali?.length" :profil="pf" :sb="c" :title="`Profil pengendali per orang (${pf.pengendali.length})`" class="sec" />
 
     <section v-if="ctrlInfo" class="sec">
       <h3 class="lbl">Struktur</h3>

@@ -1,6 +1,6 @@
 <script setup>
-// Unduh seluruh hasil analisa emiten sebagai presentasi PowerPoint. Tema mengikuti bisnis emiten dan
-// berganti tiap unduhan (varian terakhir disimpan di peramban). pptxgenjs dimuat hanya saat dibutuhkan.
+// Unduh seluruh hasil analisa emiten sebagai presentasi PowerPoint atau PDF. Tema mengikuti bisnis emiten dan
+// berganti tiap unduhan (varian terakhir disimpan di peramban). pptxgenjs/jsPDF dimuat hanya saat dibutuhkan.
 import { computed, ref } from 'vue'
 import { store, storyOf, getBenchmark, toast } from '../../store.js'
 import { api } from '../../api.js'
@@ -36,20 +36,27 @@ const SLIDES = [
   ['Kesimpulan', 'syarat & sinyal keluar'],
 ]
 
-async function download() {
+// kind: 'pptx' atau 'pdf'. PDF digambar ulang dari slide yang sama (jsPDF), jadi isi dan temanya identik.
+async function download(kind = 'pptx') {
   if (busy.value) return
-  busy.value = true; done.value = null
+  busy.value = kind; done.value = null
   try {
     step.value = 'Memuat pustaka presentasi'
-    const [{ default: PptxGenJS }, d] = await Promise.all([
+    const [{ default: PptxGenJS }, pdfLib, d] = await Promise.all([
       import('pptxgenjs'),
+      kind === 'pdf' ? Promise.all([import('jspdf'), import('../../lib/deckPdf.js')]) : null,
       collectDeck(props.ticker, { store, api, storyOf, getBenchmark, onStep: s => { step.value = s } }),
     ])
     const th = pickTheme(d.sector.id, { lastId: readLast(), choose: choice.value })
     step.value = 'Menyusun slide'
     const pres = buildDeck(PptxGenJS, d, th)
-    const file = deckFileName(props.ticker, d.date, th)
-    await pres.writeFile({ fileName: file })
+    let file = deckFileName(props.ticker, d.date, th)
+    if (kind === 'pdf') {
+      const [{ jsPDF }, { deckToPdf, pdfFileName }] = pdfLib
+      step.value = 'Menyusun PDF'
+      file = pdfFileName(file)
+      ;(await deckToPdf(pres, jsPDF)).save(file)
+    } else await pres.writeFile({ fileName: file })
     saveLast(th.id)
     done.value = { file, theme: th, slides: pres.slides.length, sector: d.sector.label }
   } catch (e) {
@@ -94,11 +101,16 @@ async function download() {
           </button>
         </div>
 
-        <button type="button" class="btn go" :disabled="busy" @click="download">
-          {{ busy ? (step || 'Menyiapkan…') + '…' : 'Unduh presentasi (.pptx)' }}
-        </button>
+        <div class="gos">
+          <button type="button" class="btn go" :disabled="!!busy" @click="download('pptx')">
+            {{ busy === 'pptx' ? (step || 'Menyiapkan') + '…' : 'Unduh presentasi (.pptx)' }}
+          </button>
+          <button type="button" class="btn go" :disabled="!!busy" @click="download('pdf')">
+            {{ busy === 'pdf' ? (step || 'Menyiapkan') + '…' : 'Unduh presentasi (.pdf)' }}
+          </button>
+        </div>
         <p v-if="done" class="ok" role="status">
-          Tersimpan: <b>{{ done.file }}</b> · {{ done.slides }} slide · tema {{ done.theme.name }} ({{ done.sector }}).
+          Tersimpan: <b>{{ done.file }}</b> · {{ done.slides }} {{ /\.pdf$/.test(done.file) ? 'halaman' : 'slide' }} · tema {{ done.theme.name }} ({{ done.sector }}).
           Unduhan berikutnya otomatis memakai varian lain.
         </p>
       </div>
@@ -130,6 +142,7 @@ async function download() {
 .sw i{flex:1;height:8px;border-radius:2px}
 .sw.shuffle{background:var(--rule-2);align-items:center;justify-content:center;font-size:18px}
 .link{background:none;border:0;padding:0;margin:2px 0 12px;color:var(--now-ink);cursor:pointer;font:inherit;text-decoration:underline}
+.gos{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .go{width:100%;padding:10px;font-weight:600}
 .ok{margin:10px 0 0;font-size:13px}
 .slides{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px}
@@ -140,6 +153,7 @@ async function download() {
 .note{margin:12px 0 0;font-size:12px}
 @media (max-width:760px){
   .grid{grid-template-columns:1fr}
+  .gos{grid-template-columns:1fr}
   .slides{grid-template-columns:1fr}
 }
 </style>
