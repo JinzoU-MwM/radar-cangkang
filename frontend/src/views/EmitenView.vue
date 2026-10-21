@@ -14,6 +14,7 @@ import TabSpekulasi from '../components/emiten/TabSpekulasi.vue'
 import TabProfil from '../components/emiten/TabProfil.vue'
 import TabBerita from '../components/emiten/TabBerita.vue'
 import TabIntel from '../components/emiten/TabIntel.vue'
+import TabDownload from '../components/emiten/TabDownload.vue'
 import { api } from '../api.js'
 
 const props = defineProps({ ticker: { type: String, required: true } })
@@ -29,6 +30,7 @@ const TABS = [
   { id: 'profil', name: 'Profil' },
   { id: 'intel', name: 'Intel Pasar' },
   { id: 'berita', name: 'Berita' },
+  { id: 'download', name: 'Download' },
 ]
 
 const T = computed(() => props.ticker.toUpperCase())
@@ -179,6 +181,7 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
         <TabProfil v-else-if="tab === 'profil'" :ticker="T" />
         <TabIntel v-else-if="tab === 'intel'" :ticker="T" />
         <TabBerita v-else-if="tab === 'berita'" :ticker="T" />
+        <TabDownload v-else-if="tab === 'download'" :ticker="T" />
       </div>
     </template>
 
