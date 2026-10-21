@@ -1,10 +1,10 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { store, saveItem, toast, loadKandidat, autoKandidat, hideKandidat, unhideKandidat } from '../store.js'
 import { SIGNALS, stageOf, scoreOf, fmtDate, num } from '../lib/domain.js'
 
 // Label kolom pendek untuk header sempit; label lengkap di title.
-const HEAD = { akuisisi: 'Ganti pengendali', kbli: 'Ubah usaha', smallcap: 'Mcap <500 M', lowprice: 'Harga maks. 100', uma: 'UMA / suspensi', volume: 'Volume aneh' }
+const HEAD = { akuisisi: 'Ganti pengendali', kbli: 'Ubah usaha', smallcap: 'Mcap kecil', lowprice: 'Harga maks. 100', uma: 'UMA / suspensi', volume: 'Volume aneh' }
 const AUTO_SRC = { smallcap: 'mcap', lowprice: 'price' }
 const today = () => new Date().toISOString().slice(0, 10)
 const shortDate = d => new Date(d + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
@@ -14,8 +14,18 @@ const shortDate = d => new Date(d + 'T00:00:00').toLocaleDateString('id-ID', { d
 const auto = store.kandidat
 onMounted(loadKandidat)
 const autoRows = computed(autoKandidat)
-const rows = computed(() => [...store.items.filter(i => stageOf(i) === 'radar'), ...autoRows.value]
-  .sort((a, b) => scoreOf(b) - scoreOf(a) || a.ticker.localeCompare(b.ticker)))
+// Urutan: skor (bawaan) atau tanggal sinyal terbaru di satu kolom (klik judul kolom).
+// "7 hari" = hanya calon dengan sinyal bertanggal dalam 7 hari terakhir.
+const sortSig = ref('')
+const recentOnly = ref(false)
+const sigDate = (item, id) => cellOf(item, SIGNALS.find(s => s.id === id))?.d || ''
+const latestSig = item => SIGNALS.reduce((m, s) => { const d = cellOf(item, s).d || ''; return d > m ? d : m }, '')
+const allRows = computed(() => [...store.items.filter(i => stageOf(i) === 'radar'), ...autoRows.value])
+const nRecent = computed(() => allRows.value.filter(i => latestSig(i) >= weekAgo()).length)
+const rows = computed(() => allRows.value.filter(i => !recentOnly.value || latestSig(i) >= weekAgo())
+  .sort((a, b) => (sortSig.value ? sigDate(b, sortSig.value).localeCompare(sigDate(a, sortSig.value)) : 0) ||
+    scoreOf(b) - scoreOf(a) || a.ticker.localeCompare(b.ticker)))
+const sortBy = id => { sortSig.value = sortSig.value === id ? '' : id }
 // Baris otomatis disimpan ke database begitu dilacak, dicatat, atau dipindah.
 const plain = item => { const { auto: _a, ...rest } = item; return { ...rest, updatedAt: new Date().toISOString() } }
 
@@ -27,10 +37,12 @@ function cellOf(item, s) {
   if (item.flags?.[s.id]) return { st: 'on' }
   return { st: 'unk' }
 }
+// Sinyal otomatis menampilkan angkanya (harga atau kapitalisasi), bukan sekadar "otomatis".
+const autoVal = (item, s) => s.id === 'lowprice' ? 'Rp' + num(item.price).toLocaleString('id-ID') : 'Rp' + Math.round(num(item.mcap)).toLocaleString('id-ID') + ' M'
 const weekAgo = () => new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10)
 function cellView(item, s) {
   const c = cellOf(item, s)
-  const text = c.st === 'unk' ? 'cek' : c.st === 'none' ? '–' : c.d ? shortDate(c.d) : c.auto ? 'otomatis' : 'aktif'
+  const text = c.st === 'unk' ? 'cek' : c.d ? shortDate(c.d) : c.auto ? autoVal(item, s) : c.st === 'none' ? '–' : 'aktif'
   const state = { on: 'aktif', void: 'batal', none: 'tidak ada', unk: 'belum dicek' }[c.st]
   return { cls: [c.st, c.st === 'on' && c.d && c.d >= weekAgo() ? 'fresh' : ''], text, aria: `${s.label}: ${state}${c.d ? ' ' + fmtDate(c.d) : ''}` }
 }
@@ -42,9 +54,13 @@ const selCell = computed(() => selItem.value && cellOf(selItem.value, selSig.val
 const form = reactive({ d: today(), text: '', src: '' })
 const saving = ref(false)
 
-function pick(item, s) {
+const evBox = ref(null)
+async function pick(item, s) {
   sel.value = { t: item.ticker, id: s.id }
   Object.assign(form, { d: today(), text: '', src: '' })
+  // Panel bukti ada di bawah tabel: bawa ke layar supaya tidak perlu mencari.
+  await nextTick()
+  evBox.value?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
 }
 
 const emptyText = computed(() => {
@@ -131,6 +147,7 @@ async function promote(item) {
     <section aria-labelledby="ledH" class="rule-top sec">
       <div class="legend-row">
         <h2 id="ledH">Buku sinyal</h2>
+        <button type="button" class="pill" :aria-pressed="String(recentOnly)" @click="recentOnly = !recentOnly">Sinyal 7 hari terakhir<b>{{ nRecent }}</b></button>
         <p v-if="auto.asOf" class="small muted asof">Pindaian otomatis {{ fmtDate(auto.asOf.slice(0, 10)) }} {{ auto.asOf.slice(11, 16) }} · {{ autoRows.length }} kandidat otomatis</p>
         <div class="legend small muted">
           <span><i class="sw fresh"></i> 7 hari terakhir</span>
@@ -144,12 +161,13 @@ async function promote(item) {
           <thead><tr>
             <th class="lbl kode">Kode</th>
             <th class="lbl skor">Skor</th>
-            <th v-for="s in SIGNALS" :key="s.id" class="lbl sg" :title="s.label">{{ HEAD[s.id] || s.short }}<br><span class="w">{{ s.w }}</span></th>
+            <th v-for="s in SIGNALS" :key="s.id" class="lbl sg" :title="s.label" :aria-sort="sortSig === s.id ? 'descending' : 'none'">
+              <button type="button" class="sortb" :class="{ desc: sortSig === s.id }" :aria-pressed="String(sortSig === s.id)" :title="'Urut menurut tanggal sinyal: ' + s.label" @click="sortBy(s.id)">{{ HEAD[s.id] || s.short }}</button><br><span class="w">bobot {{ s.w }}</span></th>
             <th class="lbl"><span class="sr-only">Aksi</span></th>
           </tr></thead>
           <tbody>
             <tr v-for="item in rows" :key="item.ticker">
-              <td class="kode"><span class="ticker big">{{ item.ticker }}</span><span v-if="item.auto" class="tag small" title="Ditemukan otomatis dari data seluruh BEI">otomatis</span><div v-if="item.name" class="small muted nm">{{ item.name }}</div></td>
+              <td class="kode"><RouterLink class="ticker big" :to="'/emiten/' + item.ticker">{{ item.ticker }}</RouterLink><span v-if="!item.auto" class="tag small" title="Disimpan tim">tim</span><div v-if="item.name" class="small muted nm">{{ item.name }}</div></td>
               <td>
                 <div class="score">{{ scoreOf(item) }}<span> /100</span></div>
                 <div class="sbar" aria-hidden="true"><i :style="{ width: scoreOf(item) + '%' }"></i></div>
@@ -165,7 +183,7 @@ async function promote(item) {
               </template></td>
             </tr>
             <tr v-if="!rows.length">
-              <td :colspan="SIGNALS.length + 3" class="muted empty">{{ auto.loading ? 'Memindai perpindahan pemegang saham, rights issue, UMA, dan berita seluruh BEI…' : auto.error ? 'Kandidat otomatis gagal dimuat: ' + auto.error : 'Belum ada kandidat. Ketik kode di kanan atas untuk melacak manual.' }}</td>
+              <td :colspan="SIGNALS.length + 3" class="muted empty">{{ auto.loading ? 'Memindai perpindahan pemegang saham, rights issue, UMA, dan berita seluruh BEI…' : auto.error ? (/token/i.test(auto.error) ? 'Data Stockbit tidak aktif di server, jadi kandidat otomatis belum bisa dipindai. Kode masih bisa dilacak manual.' : 'Kandidat otomatis gagal dimuat: ' + auto.error) : 'Belum ada kandidat. Ketik kode di kanan atas untuk melacak manual.' }}</td>
             </tr>
           </tbody>
         </table>
@@ -181,13 +199,13 @@ async function promote(item) {
       </details>
     </section>
 
-    <section v-if="selItem && selSig" aria-labelledby="evH" class="rule-top sec ev-grid">
+    <section v-if="selItem && selSig" ref="evBox" aria-labelledby="evH" class="rule-top sec ev-grid">
       <div>
         <h2 id="evH">{{ sel.t }} · {{ selSig.label }}</h2>
         <div class="small muted sub">{{ selItem.name || 'Nama belum ada' }} · bobot {{ selSig.w }}</div>
         <div v-for="(e, i) in selCell.ev || []" :key="i" class="ev">
           <span class="ed">{{ e.d ? fmtDate(e.d) : 'tanpa tanggal' }}</span>
-          <div>{{ e.text }}<div v-if="e.src" class="small muted">{{ e.src }}</div></div>
+          <div>{{ e.text }}<div v-if="e.src" class="small muted"><a v-if="/^https?:/.test(e.src)" :href="e.src" target="_blank" rel="noopener">{{ e.src.replace(/^https?:\/\/(www\.)?/, '').slice(0, 60) }}</a><template v-else>{{ e.src }}</template></div></div>
         </div>
         <p v-if="!selCell.ev?.length" class="muted none-ev">{{ emptyText }}</p>
       </div>
@@ -228,6 +246,8 @@ async function promote(item) {
 .big{font-size:20px}
 .nm{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kode .tag{margin-left:6px;vertical-align:3px;background:var(--accent-soft);color:var(--accent);font-size:10.5px;padding:0 5px}
+.sg .sortb{text-align:left;line-height:1.15}
+.ev-grid{scroll-margin-top:16px}
 .rowacts{white-space:nowrap}
 .rowacts .btn+.btn{margin-left:6px}
 .asof{margin:0;flex-basis:100%}

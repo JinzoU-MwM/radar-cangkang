@@ -188,7 +188,9 @@ def data_db() -> sqlite3.Connection:
                 "CREATE TABLE IF NOT EXISTS items(ticker TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at INTEGER NOT NULL);"
                 "CREATE TABLE IF NOT EXISTS updates(id TEXT PRIMARY KEY, data TEXT NOT NULL, date TEXT);"
                 "CREATE TABLE IF NOT EXISTS layout(ticker TEXT PRIMARY KEY, data TEXT NOT NULL);"
-                "CREATE TABLE IF NOT EXISTS kandidat_hidden(ticker TEXT PRIMARY KEY, hidden_at INTEGER NOT NULL);")
+                "CREATE TABLE IF NOT EXISTS kandidat_hidden(ticker TEXT PRIMARY KEY, hidden_at INTEGER NOT NULL);"
+                "CREATE TABLE IF NOT EXISTS snapshots(day TEXT NOT NULL, ticker TEXT NOT NULL, taken_at INTEGER NOT NULL,"
+                " data TEXT NOT NULL, PRIMARY KEY(day, ticker));")
             _data.commit()
         return _data
 
@@ -979,6 +981,82 @@ def get_kandidat(cfg: dict, fresh: bool = False) -> dict:
         return res
 
 
+# ------------------------------------------------------- diff harian ----
+# Snapshot ringkas tiap emiten sekali sehari (dini hari), supaya Monitor bisa menunjukkan apa yang berubah
+# sejak kemarin atau sejak N hari: harga, porsi pengendali, tonggak transaksi, tender, laporan baru.
+
+SNAP_KEEP_DAYS = 60
+
+
+def snap_of(item: dict) -> dict:
+    return {"price": item.get("price"), "ctrlPct": item.get("ctrlPct"), "ctrlName": item.get("ctrlName") or "",
+            "ms": sorted(k for k, v in (item.get("ms") or {}).items() if v),
+            "tender": (item.get("tender") or {}).get("price"), "stage": item.get("stage") or ""}
+
+
+def snapshot_today(force: bool = False) -> str:
+    day = datetime.now().strftime("%Y-%m-%d")
+    if not force and data_rows("SELECT 1 FROM snapshots WHERE day=? LIMIT 1", (day,)):
+        return day
+    now = int(time.time())
+    data_exec("INSERT OR REPLACE INTO snapshots VALUES(?,?,?,?)",
+              [(day, i["ticker"], now, json.dumps(snap_of(i), ensure_ascii=False)) for i in items_all()])
+    cutoff = (datetime.now() - timedelta(days=SNAP_KEEP_DAYS)).strftime("%Y-%m-%d")
+    data_exec("DELETE FROM snapshots WHERE day < ?", [(cutoff,)])
+    return day
+
+
+def snapshot_loop() -> None:
+    """Ambil snapshot saat server mulai (bila hari ini belum ada), lalu tiap hari pukul 00:05."""
+    while True:
+        try:
+            snapshot_today()
+        except Exception as e:
+            print(f"[snapshot] gagal: {e}", file=sys.stderr)
+        nxt = (datetime.now() + timedelta(days=1)).replace(hour=0, minute=5, second=0, microsecond=0)
+        time.sleep(max(60, (nxt - datetime.now()).total_seconds()))
+
+
+def get_diff(days: int = 1) -> dict:
+    """Perubahan tiap emiten dibanding snapshot `days` hari lalu (1 = snapshot dini hari ini = tutup kemarin)."""
+    target = (datetime.now() - timedelta(days=max(0, days - 1))).strftime("%Y-%m-%d")
+    row = data_rows("SELECT day, MIN(taken_at) FROM snapshots WHERE day <= ? GROUP BY day ORDER BY day DESC LIMIT 1", (target,))
+    if not row:
+        row = data_rows("SELECT day, MIN(taken_at) FROM snapshots GROUP BY day ORDER BY day ASC LIMIT 1")
+    if not row:
+        return {"base": None, "items": []}
+    base_day, taken = row[0]
+    base = {t: json.loads(d) for t, d in data_rows("SELECT ticker, data FROM snapshots WHERE day=?", (base_day,))}
+    since_iso = datetime.fromtimestamp(taken, timezone.utc).isoformat().replace("+00:00", "Z")
+    new_reports: dict[str, int] = {}
+    for u in updates_all():
+        if u.get("ticker") and str(u.get("updatedAt") or "") > since_iso:
+            new_reports[u["ticker"]] = new_reports.get(u["ticker"], 0) + 1
+    out = []
+    for item in items_all():
+        t, cur, old = item["ticker"], snap_of(item), base.get(item["ticker"])
+        ch = []
+        if old is None:
+            ch.append({"k": "new"})
+        else:
+            p0, p1 = old.get("price"), cur["price"]
+            if p0 and p1 and p0 != p1:
+                ch.append({"k": "price", "from": p0, "to": p1, "pct": round((p1 - p0) / p0 * 100, 1)})
+            if old.get("ctrlPct") != cur["ctrlPct"] and cur["ctrlPct"] is not None:
+                ch.append({"k": "ctrl", "from": old.get("ctrlPct"), "to": cur["ctrlPct"],
+                           "name": cur["ctrlName"] if cur["ctrlName"] != old.get("ctrlName") else ""})
+            added = [m for m in cur["ms"] if m not in (old.get("ms") or [])]
+            if added:
+                ch.append({"k": "ms", "added": added})
+            if old.get("tender") != cur["tender"] and cur["tender"]:
+                ch.append({"k": "tender", "from": old.get("tender"), "to": cur["tender"]})
+        if new_reports.get(t):
+            ch.append({"k": "reports", "n": new_reports[t]})
+        if ch:
+            out.append({"ticker": t, "changes": ch})
+    return {"base": base_day, "since": since_iso, "items": out}
+
+
 def kandidat_loop() -> None:
     """Hitung kandidat di latar belakang (setelah start, lalu tiap 6 jam) supaya halaman
     Kandidat — termasuk versi publik yang hanya membaca hasil jadi — tidak menunggu pemindaian."""
@@ -1304,6 +1382,12 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json(get_news(cfg["news"], tickers, fresh))
         elif path == "api/reports":
             self.api_reports(cfg, ticker, fresh)
+        elif path == "api/diff":
+            try:
+                days = max(1, min(SNAP_KEEP_DAYS, int(self.qs("days") or 1)))
+            except ValueError:
+                days = 1
+            self.reply_json(get_diff(days))
         elif path == "api/kandidat":
             if not self.guard_token():
                 res = get_kandidat(cfg, fresh)
@@ -1430,7 +1514,9 @@ class Handler(BaseHTTPRequestHandler):
                 "uma": val("uma", "company.uma") is True,
                 "corpAction": val("corpAction", "company.corp_action.active") is True,
                 "volume": num(val("volume", "company.volume")),
-                "avgVolume": num(val("avgVolume", "company.average"))}
+                "avgVolume": num(val("avgVolume", "company.average")),
+                # perubahan harga sesi terakhir (%) dari halaman Stockbit
+                "pctChange": num(get_by_path(cp, "company.percentage_change"))}
 
     def map_fields(self, q, res) -> dict:
         f = q.get("fields", {})
@@ -1586,6 +1672,7 @@ def main() -> int:
     daemon = threading.Thread(target=srv.serve_forever, daemon=False)
     daemon.start()
     threading.Thread(target=kandidat_loop, daemon=True).start()
+    threading.Thread(target=snapshot_loop, daemon=True).start()
     print(f"Radar Backdoor berjalan di http://localhost:{args.port}")
     print(f"Token Stockbit: {'terbaca' if get_token() else 'belum ada (tidak wajib untuk mode page)'}")
     if args.lan:

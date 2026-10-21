@@ -178,3 +178,16 @@ export function tlEvents(d) {
   if (d.tender?.paydate) ev.push({ label: 'PTW dibayar', date: d.tender.paydate.slice(0, 10) })
   return ev.sort((a, b) => a.date.localeCompare(b.date))
 }
+
+// Penanda "baru": laporan yang masuk ke radar setelah tim menandai "sudah dilihat" (seenAt, ISO).
+// updatedAt = waktu laporan masuk database; laporan lama tanpa updatedAt dinilai dari tanggalnya
+// (tanggal saja, jam tidak diketahui) terhadap tanggal lokal penanda.
+const localDay = iso => { const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
+export function isNewSince(u, seenAt) {
+  if (!u || !seenAt) return false
+  if (u.updatedAt) return new Date(u.updatedAt) > new Date(seenAt)
+  return !!u.date && u.date.slice(0, 10) > localDay(seenAt)
+}
+
+// Warna tag sikap analis; dipakai SikapTag dan Berita supaya sama di semua halaman.
+export const SIKAP_CLS = { 'Hindari': 't-strong', 'Spekulatif tinggi': 't-warn', 'Netral': 't-calm', 'Asimetri positif': 't-good' }

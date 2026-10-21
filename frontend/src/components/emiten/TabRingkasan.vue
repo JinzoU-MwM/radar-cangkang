@@ -26,6 +26,11 @@ const ladder = computed(() => {
   if (item.value?.tender?.price) pts.push({ v: item.value.tender.price, l: 'PTW' })
   const now = kini.value
   if (!pts.length || now == null) return null
+  // Level dengan harga sama digabung jadi satu label ("wajar atas · PTW"), supaya tidak bertumpuk.
+  for (let i = pts.length - 1; i > 0; i--) {
+    const j = pts.findIndex(x => x.v === pts[i].v)
+    if (j < i) { pts[j] = { ...pts[j], l: pts[j].l + ' · ' + pts[i].l, soft: pts[j].soft && pts[i].soft }; pts.splice(i, 1) }
+  }
   // Skala dipotong di sekitar level yang ada (bukan dari 0) supaya tick tidak menumpuk di kanan.
   const vals = [now, ...pts.map(x => x.v)]
   const hi = Math.max(...vals), lo = Math.min(...vals)
@@ -75,6 +80,7 @@ const steps = computed(() => {
 
   <div v-else class="rk">
     <p class="lead">{{ pv.ringkas }}</p>
+    <p v-if="pv.asOf" class="small muted asof">Pandangan per {{ fmtDate(pv.asOf) }}<template v-if="pv.hargaAcuan != null && item?.price != null && pv.hargaAcuan !== item.price"> pada harga Rp{{ pv.hargaAcuan.toLocaleString('id-ID') }}; harga kini Rp{{ Number(item.price).toLocaleString('id-ID') }}</template>.</p>
 
     <section class="rule-top" aria-labelledby="rk-ladder">
       <h2 id="rk-ladder" class="lbl">Harga terhadap level kunci (Rp)</h2>
@@ -160,6 +166,7 @@ const steps = computed(() => {
 </template>
 
 <style scoped>
+.asof{margin:-4px 0 0}
 .rk{display:flex;flex-direction:column;gap:20px}
 .lead{margin:0;font-size:16px;max-width:900px}
 section p{margin:0 0 6px;max-width:80ch}

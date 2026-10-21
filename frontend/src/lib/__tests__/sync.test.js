@@ -58,7 +58,7 @@ describe('inferMilestones & syncReports', () => {
   })
   it('menggabung laporan berdasarkan id dan mengumpulkan error', async () => {
     const items = [{ id: 'ABCD', ticker: 'ABCD', stage: 'tender' }]
-    const updates = [{ id: 'sb-report-1', ticker: 'ABCD', title: 'lama' }]
+    const updates = [{ id: 'sb-report-1', ticker: 'ABCD', title: 'lama', updatedAt: '2026-01-01T00:00:00.000Z' }]
     const api = fakeApi({ '/api/reports': { items: [{ id: 'sb-report-1', title: 'baru' }, { id: 'sb-report-2', title: 'x' }] },
       '/api/news': { items: [], errors: [{ source: 'Kontan', error: 'timeout' }] } })
     const prog = []
@@ -67,7 +67,22 @@ describe('inferMilestones & syncReports', () => {
     expect(r.addedNews).toBe(0)
     expect(updates[0].title).toBe('lama')
     expect(r.updates.map(u => u.title)).toEqual(['baru', 'x'])
+    // laporan lama tetap memakai stempel pertama kali masuk, supaya tidak dianggap baru lagi
+    expect(r.updates[0].updatedAt).toBe('2026-01-01T00:00:00.000Z')
+    expect(r.updates[1].updatedAt).toBeTruthy()
     expect(r.added).toBe(1)
     expect(r.errors).toEqual([{ source: 'Kontan', error: 'timeout' }])
+  })
+})
+
+describe('isNewSince', () => {
+  it('memakai stempel masuk radar, atau tanggal saja bila stempel tidak ada', async () => {
+    const { isNewSince } = await import('../domain.js')
+    const seen = '2026-10-21T02:00:00.000Z'
+    expect(isNewSince({ updatedAt: '2026-10-21T03:00:00.000Z', date: '2026-10-01' }, seen)).toBe(true)
+    expect(isNewSince({ updatedAt: '2026-10-21T01:00:00.000Z', date: '2026-10-21' }, seen)).toBe(false)
+    expect(isNewSince({ date: '2026-10-22' }, seen)).toBe(true)
+    expect(isNewSince({ date: '2026-10-20' }, seen)).toBe(false)
+    expect(isNewSince(null, seen)).toBe(false)
   })
 })

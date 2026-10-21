@@ -1,8 +1,8 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { store, pandanganOf, autoRefresh, userRefresh, canSync, storyOf, loadStories, getBenchmark, benchmarkDeals } from '../store.js'
-import { stageOf, trackIndex, fairGap, num, progressOf, dealOf, posisiOf, scoreOf, statusOf, potensiOf, sessionLabel, SIGNALS } from '../lib/domain.js'
+import { store, markSeen, pandanganOf, autoRefresh, userRefresh, canSync, storyOf, loadStories, getBenchmark, benchmarkDeals } from '../store.js'
+import { stageOf, trackIndex, fairGap, num, progressOf, dealOf, posisiOf, scoreOf, statusOf, potensiOf, sessionLabel, SIGNALS, isNewSince } from '../lib/domain.js'
 import { nominalRp } from '../lib/analysis.js'
 import StageTrack from '../components/StageTrack.vue'
 import SikapTag from '../components/SikapTag.vue'
@@ -84,6 +84,7 @@ const SPECIAL = {
   highScore: { label: 'Skor ≥ 65', test: r => r.score >= 65 },
 }
 
+const fmtChg = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + '%'
 const shortDate = iso => new Date(iso.slice(0, 10) + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
 
 // Laporan terbaru per kode dari feed; cadangan dari sumberTambahan "Judul — Sumber, YYYY-MM-DD".
@@ -98,7 +99,7 @@ const latestUpd = computed(() => {
 })
 function lastReport(t) {
   const u = latestUpd.value[t]
-  if (u) return { date: u.date.slice(0, 10), title: u.title || '', src: u.source || '', stamp: u.updatedAt || u.date }
+  if (u) return { date: u.date.slice(0, 10), title: u.title || '', src: u.source || '', stamp: u.updatedAt || u.date, upd: u }
   let best = null
   for (const s of store.verified[t]?.sumberTambahan || []) {
     if (typeof s !== 'string' || /diakses/i.test(s)) continue
@@ -132,7 +133,7 @@ const all = computed(() => store.items.filter(i => stageOf(i) !== 'radar').map(i
   const pp = { price: num(item.price) ?? b?.last ?? null, peak: b?.peak ?? null, ptw: item.tender?.price ?? null, base: b?.base ?? null }
   return { item, t, prog, deal: dealOf(item, prog, ctx), pos: posisiOf(item, prog, ctx), ptw: ptwOf(item, prog.ms), sikap: pa?.sikap || '', price, lo, hi, gap: fairGap(price, lo, hi), ti: trackIndex(item, ctx), rep,
     score, status: statusOf(score), pot: { ...pp, ...potensiOf(pp) },
-    isNew: !!(rep && store.seenAt && rep.stamp > store.seenAt) }
+    isNew: isNewSince(rep?.upd, store.seenAt) }
 }))
 
 // Pencarian juga mencakup isi story (bisnis lama/baru, pengendali lama, injeksi).
@@ -157,7 +158,7 @@ const countBy = (skip, test) => searched.value.filter(r => pass(r, skip) && test
 
 const dealPills = computed(() => STATUS.map(([id, label]) => ({ id, label, n: countBy('deal', r => !id || r.deal === id) })))
 const stagePills = computed(() => [{ i: -1, label: 'Semua', n: countBy('stage', () => true) },
-  ...TRACK.map((label, i) => ({ i, label, n: countBy('stage', r => r.ti === i) }))])
+  ...TRACK.slice(0, -1).map((label, i) => ({ i, label, n: countBy('stage', r => r.ti === i) }))])  // "Selesai" ada di saringan Status
 const sikapPills = computed(() => SIKAP.map(([id, label]) => ({ id, label, n: countBy('sikap', r => r.sikap === id) })))
 const specialPills = computed(() => Object.entries(SPECIAL).map(([id, f]) => ({ id, label: f.label, n: countBy('special', f.test) })))
 // Dasar hitungan tombol injeksi: semua saringan lain aktif, injeksi diabaikan.
@@ -175,8 +176,8 @@ function setPg(k, v) {
 
 // Kolom per set. k = kunci urut (kosong = tidak bisa diurutkan).
 const COLS = {
-  ringkas: [{ k: 'ticker', l: 'Kode' }, { k: 'pct', l: 'Tahap', tip: 'PPJB, PTW, RUPSLB, Injeksi, Selesai. Urut menurut persen penyelesaian' }, { l: 'Posisi' },
-    { l: 'Selanjutnya', cls: 'c-next' }, { l: 'Sikap' }, { l: 'Harga', cls: 'num c-opt' },
+  ringkas: [{ k: 'ticker', l: 'Kode' }, { k: 'pct', l: 'Tahap', tip: 'PPJB, PTW, RUPSLB, Injeksi, Selesai. Urut menurut persen penyelesaian' }, { l: 'Posisi', cls: 'c-pos' },
+    { l: 'Selanjutnya', cls: 'c-next' }, { l: 'Sikap' }, { k: 'chg', l: 'Harga · Δ', cls: 'num', tip: 'Harga terakhir dan perubahan sesi terakhir (%). Vol ×n = volume dibanding rata-rata.' },
     { k: 'gap', l: 'Selisih nilai wajar', cls: 'c-opt', tip: 'Jarak harga dari batas rentang nilai wajar. 0% = di dalam rentang.' }, { k: 'date', l: 'Laporan terakhir', cls: 'wide' }],
   progress: [{ k: 'ticker', l: 'Emiten target' }, { k: 'stage', l: 'Status · tahap' }, { l: 'Jadwal', tl: true }, { k: 'pct', l: 'Penyelesaian' },
     { k: 'score', l: 'Skor · keyakinan' }, { k: 'mcap', l: 'Harga · kap. pasar', cls: 'num' }, { k: 'ctrl', l: 'Pengendali · publik', cls: 'num' }, { l: 'Faktor utama' }],
@@ -188,7 +189,7 @@ const COLS = {
 }
 const SORT = {
   ticker: r => r.t, pct: r => r.prog.pct, stage: r => r.ti, score: r => r.score, gap: r => r.gap, date: r => r.rep?.date || null,
-  price: r => r.pot.price, mcap: r => num(r.item.mcap), ctrl: r => num(r.item.ctrlPct),
+  chg: r => num(r.item.chgPct), price: r => r.pot.price, mcap: r => num(r.item.mcap), ctrl: r => num(r.item.ctrlPct),
   ptwgap: r => r.pot.ptw && r.pot.price ? r.pot.price / r.pot.ptw : null, peak: r => r.pot.runupPeak, upside: r => r.pot.up, risk: r => r.pot.down,
 }
 // Klik judul kolom: urut turun (kode: naik), klik lagi membalik. Tanpa pilihan: proses dulu, persen turun, PTW terbaru.
@@ -200,7 +201,7 @@ const ariaSort = k => sortOn.value?.key === k ? (sortOn.value.dir > 0 ? 'ascendi
 const rows = computed(() => {
   const list = searched.value.filter(r => pass(r))
   const s = sortOn.value
-  if (!s) return list.sort((a, b) => (a.deal === b.deal ? 0 : a.deal === 'proses' ? -1 : 1) || b.prog.pct - a.prog.pct ||
+  if (!s) return list.sort((a, b) => (b.isNew - a.isNew) || (a.deal === b.deal ? 0 : a.deal === 'proses' ? -1 : 1) || b.prog.pct - a.prog.pct ||
     (b.item.tender?.start || '').localeCompare(a.item.tender?.start || ''))
   const f = SORT[s.key]
   return list.sort((a, b) => {
@@ -247,7 +248,7 @@ const seenTxt = computed(() => {
     d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':')
 })
 const nNew = computed(() => all.value.filter(r => r.isNew).length)
-const agendaNote = computed(() => seenTxt.value ? `Sejak dibuka ${seenTxt.value}: ${nNew.value} emiten punya laporan baru` : '')
+const agendaNote = computed(() => `${nNew.value ? nNew.value + ' emiten punya laporan baru' : 'Tidak ada laporan baru'} sejak ditandai dilihat ${seenTxt.value}`)
 
 // Tanggal & sesi bursa di kepala halaman, diperbarui tiap menit.
 const todayTxt = () => { const n = new Date(); return n.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' }) + ' · ' + sessionLabel(n) }
@@ -282,7 +283,7 @@ onMounted(() => autoRefresh('stockbit'))
       </div>
     </header>
 
-    <AgendaBlock :note="agendaNote" />
+    <AgendaBlock :note="agendaNote" :can-mark="nNew > 0" @seen="markSeen" />
 
     <div class="bar-row">
       <div class="fbar">
@@ -328,13 +329,17 @@ onMounted(() => autoRefresh('stockbit'))
                 <StageTrack :item="r.item" />
                 <span class="pct small" :title="r.prog.est ? 'Perkiraan dari tahap; tahapan belum terisi' : 'Penyelesaian transaksi'">{{ r.prog.est ? '±' : '' }}{{ r.prog.pct }}%</span>
               </td>
-              <td class="pos">
+              <td class="pos c-pos">
                 <span v-if="r.deal === 'selesai'" class="tag done">Selesai</span>
                 <span class="clamp">{{ r.pos.now }}</span>
               </td>
               <td class="nx c-next"><span class="clamp" :title="r.pos.next">{{ r.pos.next || '–' }}</span></td>
               <td><SikapTag :sikap="r.sikap" short /></td>
-              <td class="num price c-opt">{{ r.price != null ? r.price.toLocaleString('id-ID') : '–' }}</td>
+              <td class="num">
+                <span class="price">{{ r.price != null ? r.price.toLocaleString('id-ID') : '–' }}</span>
+                <span v-if="num(r.item.chgPct) != null" class="chg" :class="r.item.chgPct > 0 ? 'up' : r.item.chgPct < 0 ? 'dn' : ''">{{ fmtChg(r.item.chgPct) }}</span>
+                <span v-if="r.item.volRatio >= 3" class="vol" :title="'Volume ' + r.item.volRatio + '× rata-rata'">vol {{ String(r.item.volRatio).replace('.', ',') }}×</span>
+              </td>
               <td class="c-opt"><FairBar :price="r.price" :lo="r.lo" :hi="r.hi" /></td>
               <td class="rp">
                 <div v-if="r.rep" class="rep">
@@ -356,7 +361,7 @@ onMounted(() => autoRefresh('stockbit'))
       <summary><h2>Siklus saham backdoor</h2></summary>
       <CycleChart v-if="cycOpen" :items="store.items" />
     </details>
-    <p v-if="set === 'ringkas'" class="muted foot">Persen di kolom Tahap = penyelesaian transaksi (± = perkiraan dari tahap). Bar hijau = rentang nilai wajar dari pandangan analis, garis hitam = harga. Selisih merah = di atas batas atas, hijau = di bawah batas bawah, 0% = di dalam rentang. Tanggal oranye = laporan baru sejak kunjungan terakhir.</p>
+    <p v-if="set === 'ringkas'" class="muted foot">Persen di kolom Tahap = penyelesaian transaksi (± = perkiraan dari tahap). Bar hijau = rentang nilai wajar dari pandangan analis, garis hitam = harga. Selisih merah = di atas batas atas, hijau = di bawah batas bawah, 0% = di dalam rentang. Tanggal oranye = laporan baru sejak ditandai dilihat; baris itu naik ke atas. Δ = perubahan harga sesi terakhir.</p>
     <details class="sheet cyc method">
       <summary><h2>Metodologi skor</h2></summary>
       <p class="muted small">Skor penyaringan = jumlah bobot faktor yang terpenuhi, total 100. Faktor otomatis dihitung dari data pasar.</p>
@@ -447,7 +452,11 @@ onMounted(() => autoRefresh('stockbit'))
 @media (max-width:1199px){.c-opt{display:none}}
 @media (max-width:1399px){.c-next{display:none}}
 @media (max-width:760px){.pos{min-width:130px}}
-.price{font:700 16px var(--f-display)}
+.price{display:block;font:700 16px var(--f-display)}
+.chg{display:block;font:600 12.5px var(--f-display);color:var(--ink-2)}
+.chg.up{color:var(--good)}.chg.dn{color:var(--strong)}
+.vol{display:inline-block;margin-top:2px;padding:0 4px;border-radius:2px;background:var(--now-bg);color:var(--now-ink);font:700 11.5px var(--f-display)}
+@media (max-width:640px){.c-pos{display:none}}
 .sortb::after{content:"";display:inline-block;width:8px;height:10px;margin-left:5px;background:currentColor;opacity:.35;-webkit-mask:var(--ic-sort) center/contain no-repeat;mask:var(--ic-sort) center/contain no-repeat}
 .sortb.asc,.sortb.desc{color:var(--ink)}
 .sortb.asc::after,.sortb.desc::after{opacity:1}

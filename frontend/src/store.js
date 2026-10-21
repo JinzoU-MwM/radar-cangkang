@@ -46,12 +46,18 @@ export const store = reactive({
   changelog: {},   // changelog.json: panel Pembaruan
   status: null,
   features: {},
-  // Waktu kunjungan terakhir browser ini: penanda "baru" di Monitor dan Berita.
-  seenAt: ls.get(LS_SEEN, ''),
+  // Penanda "sudah dilihat" browser ini (diset lewat tombol, bukan otomatis saat tab ditutup):
+  // dasar penanda "baru" di Monitor, Berita, dan rail. Belum pernah diset = 24 jam terakhir.
+  seenAt: ls.get(LS_SEEN, '') || new Date(Date.now() - 864e5).toISOString(),
   busy: { stockbit: false, reports: false, story: false },
   toasts: [],
   syncNote: '',
 })
+
+export function markSeen() {
+  store.seenAt = new Date().toISOString()
+  ls.set(LS_SEEN, store.seenAt)
+}
 
 let toastId = 0
 export function toast(text, warn = false) {
@@ -155,7 +161,6 @@ export async function init() {
   try { await loadData() } catch (e) { toast('Gagal memuat data dari server: ' + e.message, true) }
   try { store.features = await api.get('/api/features') } catch {}
   store.ready = true
-  addEventListener('pagehide', () => ls.set(LS_SEEN, new Date().toISOString()))
   setInterval(loadStatus, 5 * 60e3)
   // Ambil ulang data tim saat tab kembali aktif, supaya suntingan anggota lain terlihat.
   document.addEventListener('visibilitychange', () => {

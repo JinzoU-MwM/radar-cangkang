@@ -84,15 +84,6 @@ watch(() => [T.value, tab.value], ([t, tb]) => {
   try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent.value)) } catch {}
 }, { immediate: true })
 
-const other = ref('')
-const otherOk = computed(() => /^[A-Z]{4}$/.test(other.value.trim().toUpperCase()))
-function analyzeOther() {
-  const t = other.value.trim().toUpperCase()
-  if (!/^[A-Z]{4}$/.test(t)) return
-  other.value = ''
-  router.push({ path: '/emiten/' + t, query: { tab: 'analisa' } })
-}
-
 const flow = ref(false)
 const flowFocus = ref(null)
 function openFlow(focus = null) { flowFocus.value = focus; flow.value = true }
@@ -152,11 +143,6 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
           <RouterLink v-for="t in recent" :key="t" class="chip" :class="{ on: t === T }" :aria-current="t === T ? 'page' : undefined"
             :to="{ path: '/emiten/' + t, query: { tab: 'analisa' } }">{{ t }}</RouterLink>
         </nav>
-        <form class="other" @submit.prevent="analyzeOther">
-          <label for="anOther" class="small muted">Analisa kode lain</label>
-          <input id="anOther" v-model="other" class="field" maxlength="4" autocomplete="off" spellcheck="false" placeholder="BBCA" @input="other = other.toUpperCase()">
-          <button type="submit" class="btn" :disabled="!otherOk">Analisa</button>
-        </form>
       </div>
 
       <div class="tabs" role="tablist" aria-label="Bagian emiten">
@@ -206,9 +192,6 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
 .chip{border:1px solid var(--rule);border-radius:999px;padding:2px 10px;font:700 13px var(--f-display);letter-spacing:.02em;color:var(--ink);text-decoration:none;background:var(--sheet);min-height:28px;display:inline-flex;align-items:center}
 .chip:hover{border-color:var(--ink)}
 .chip.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
-.other{display:flex;gap:6px;align-items:center}
-.other input{width:84px;min-height:32px;font:700 14px var(--f-display);letter-spacing:.04em;text-transform:uppercase}
-.other .btn{min-height:32px}
 @media (max-width:760px){
   .hd{align-items:flex-start}
   .right{width:100%;justify-content:space-between}
