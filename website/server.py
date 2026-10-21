@@ -1400,7 +1400,8 @@ class Handler(BaseHTTPRequestHandler):
                 f = cand
                 break
         name = f.name if f else ""
-        blocked = (not f or name.startswith(".") or name.endswith(".ps1") or name == "server.py"
+        # Kode server/skrip (.py, .ps1), dotfile (token, kredensial, DB), dan config tidak pernah disajikan.
+        blocked = (not f or name.startswith(".") or f.suffix.lower() in (".py", ".ps1", ".pyc")
                    or name == "stockbit.config.json")
         if blocked:
             self.reply(b"", 404)
