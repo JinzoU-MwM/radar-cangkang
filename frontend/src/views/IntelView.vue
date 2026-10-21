@@ -26,7 +26,7 @@ const SETS = {
     { k: 'regimeSignal', l: 'Regime', f: v => REGIME[v]?.[0] || v || '–', t: v => REGIME[v]?.[1] || '' },
     { k: 'netAccumulationScore', l: 'Skor akum.', num: true, f: v => fmt(n(v), 1) },
     { k: 'dominantAccumBroker', l: 'Broker dominan' }, { k: 'volumeSpikeRatio', l: 'Vol ×', num: true, f: v => fmt(n(v), 2) }] },
-  gems: { l: 'Gems', note: 'Saringan "permata": akumulasi, stabilitas harga, lonjakan volume.', sort: 'accumScore7dAvg', cols: [
+  gems: { l: 'Gems', note: 'Filter "permata": akumulasi, stabilitas harga, lonjakan volume.', sort: 'accumScore7dAvg', cols: [
     { k: 'stockCode', l: 'Kode', tk: true }, { k: 'stockName', l: 'Nama', w: true },
     { k: 'closePrice', l: 'Harga', num: true, f: v => fmt(n(v)) }, { k: 'priceChangePct', l: 'Δ', num: true, f: pct, t: tone },
     { k: 'regimeSignal', l: 'Regime', f: v => REGIME[v]?.[0] || v || '–', t: v => REGIME[v]?.[1] || '' },

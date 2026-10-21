@@ -101,6 +101,38 @@ const TENDER_RULES = [
 ]
 const TAKEOVER_RE = /pengalihan saham|pengambilalihan|pengendali|perjanjian jual beli saham/i
 
+// Tahapan dari laporan (RUPSLB, HMETD, KJPP, injeksi, usaha baru) hanya diakui bila ada bukti laporannya.
+// Mengembalikan salinan item yang dibersihkan + daftar yang dihapus, untuk uji coba sebelum disimpan:
+// tanpa tanggal bukti (sisa input manual/versi lama), bukti terbit sebelum PTW dibayar, atau laporan
+// pada tanggal itu tidak lagi lolos aturan deteksi yang sudah diperketat.
+export function sanitizeMilestones(items, updates) {
+  const RULE = Object.fromEntries(MS_RULES)
+  const removed = []
+  const out = items.map(d => {
+    if (!d.ms) return d
+    const ms = { ...d.ms }, auto = { ...(d.msAuto || {}) }
+    const paid = ms.to_selesai && d.tender?.paydate
+    const gone = []
+    for (const k of ['rupslb', 'rights', 'kjpp', 'inbreng', 'bisnis']) {
+      if (!ms[k]) continue
+      let why = ''
+      if (!auto[k]) why = 'tanpa tanggal bukti'
+      else if (paid && auto[k] <= paid) why = 'bukti sebelum PTW dibayar'
+      else {
+        const same = (updates || []).filter(u => u.ticker === d.ticker && u.date === auto[k] && /^sb-report-/.test(u.id || ''))
+        if (RULE[k] && same.length && !same.some(u => RULE[k].test(u.title || ''))) why = 'laporan tidak lolos aturan terbaru'
+      }
+      if (!why) continue
+      delete ms[k]; delete auto[k]
+      gone.push({ tahap: k, why })
+    }
+    if (!gone.length) return d
+    removed.push({ ticker: d.ticker, gone })
+    return { ...d, ms, msAuto: auto }
+  })
+  return { items: out, removed }
+}
+
 // Item baru dengan ms/msAuto terisi (msAuto = tanggal deteksi otomatis); item yang sama bila tak ada patokan.
 export function inferMilestones(d, reports) {
   const ms = { ...(d.ms || {}) }, auto = { ...(d.msAuto || {}) }

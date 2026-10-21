@@ -8,10 +8,12 @@ import { analysisProsCons, deepView, dilusi, radarGeom } from '../../lib/emitenE
 import SikapTag from '../SikapTag.vue'
 import ProsCons from './ProsCons.vue'
 import ProfilOrang from './ProfilOrang.vue'
+import ControllerTrack from './ControllerTrack.vue'
+import NetworkMap from '../NetworkMap.vue'
 import { errText } from './ta/useOhlc.js'
 
 const props = defineProps({ ticker: String })
-const loading = ref(true), error = ref(''), A = shallowRef(null), bm = shallowRef(null)
+const loading = ref(true), error = ref(''), A = shallowRef(null), bm = shallowRef(null), ctrl = shallowRef(null)
 // Bobot dimensi (sama dengan sintesis skor di lib/analysis.js).
 const W = { 'Pengendali': 0.25, 'Substansi aset': 0.25, 'Posisi harga': 0.2, 'Struktur & likuiditas': 0.1, 'Katalis': 0.1, 'Fundamental': 0.1 }
 const HI_SIGNAL = /(transaksi material|perubahan kegiatan usaha|inbreng|HMETD|penilai|akuisisi|pengambilalihan|tender|RUPS|private placement|penempatan terbatas)/i
@@ -45,6 +47,10 @@ async function load() {
       P: k.hargaPelaksanaan || a.tender?.price || a.price, T: 0, H: 100 })
     bm.value = benchmark
     A.value = a
+    // Rekam jejak harga pengendali: riwayat kepemilikan 5%+ atas nama pengendali (dimuat terpisah, tidak menahan analisa).
+    ctrl.value = null
+    const nm = String(a.ctrlName || '').replace(/\s*\(.*\)$/, '').split(/,\s*(?=[A-Z])/)[0].trim()
+    if (nm) api.get('/api/controller', { ticker: t, name: nm }).then(c => { if (my === seq) ctrl.value = c }).catch(() => {})
   } catch (e) {
     if (my === seq) error.value = errText(e)
   } finally {
@@ -239,6 +245,8 @@ const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
     </section>
 
     <ProfilOrang v-if="extra.profil" :profil="extra.profil" />
+    <ControllerTrack v-if="ctrl" :c="ctrl" :self="ticker" :old-ctrl="!!store.pengendali[ticker]?.bukanPengambilAlih" />
+    <NetworkMap v-if="extra.profil" :focus="ticker" />
 
     <!-- Kalkulator dilusi. -->
     <section v-if="calcMode" class="rule-top">

@@ -15,6 +15,7 @@ import TodayCards from '../components/monitor/TodayCards.vue'
 import Modal from '../components/emiten/Modal.vue'
 import PotensiCells from '../components/monitor/PotensiCells.vue'
 import StoryCells from '../components/monitor/StoryCells.vue'
+import NetworkMap from '../components/NetworkMap.vue'
 
 const TRACK = ['PPJB', 'PTW', 'RUPSLB', 'Injeksi', 'Selesai']
 const SIKAP = [['Hindari', 'Hindari'], ['Spekulatif tinggi', 'Spekulatif'], ['Netral', 'Netral'], ['Asimetri positif', 'Asimetri+']]
@@ -170,6 +171,18 @@ const injPills = computed(() => Object.entries(INJ).map(([k, f]) => ({ k, ...f, 
   n: baseInj.value.filter(r => passInj(r, [...new Set([...inj.value, k])])).length })))
 const ptwPills = computed(() => PTW.map(([id, label]) => ({ id, label,
   n: baseInj.value.filter(r => passInj(r, inj.value.filter(k => k !== 'ctrlIn')) && r.prog.ms.akuisisi && !store.pengendali[r.t]?.bukanPengambilAlih && (!id || r.ptw === id)).length })))
+// Emiten yang hanya gagal SATU filter injeksi aktif, beserta alasannya — agar hasil filter bisa diperiksa.
+const fmtT = v => v >= 1e12 ? 'Rp' + (v / 1e12).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' T' : 'Rp' + Math.round(v / 1e9).toLocaleString('id-ID') + ' M'
+const WHY = {
+  nonHsc: r => store.hsc.kode.includes(r.t) ? 'saham HSC' : 'tanpa data injeksi aset',
+  ctrlIn: r => store.pengendali[r.t]?.bukanPengambilAlih ? 'bukan pengambilalihan' : !r.prog.ms.akuisisi ? 'akuisisi belum efektif' : 'PTW ' + r.ptw,
+  big: r => asetRp(r.t) ? 'aset ' + fmtT(asetRp(r.t)) : 'nilai aset belum diungkap',
+  prog: r => r.prog.est ? 'progress masih estimasi' : `progress ${r.prog.pct}%`,
+}
+const nearMiss = computed(() => inj.value.length < 1 ? [] : baseInj.value
+  .map(r => ({ r, fail: inj.value.filter(k => INJ[k] && !INJ[k].test(r)) }))
+  .filter(x => x.fail.length === 1)
+  .map(({ r, fail }) => ({ t: r.t, why: WHY[fail[0]](r) })))
 function setPg(k, v) {
   const n = Math.max(0, Math.min(100, Math.round(+v || 0)))
   pg.value = { ...pg.value, [k]: n }
@@ -265,6 +278,8 @@ const syncTitle = computed(() => store.busy.stockbit ? 'Sedang memperbarui'
 
 // Grafik siklus baru dimuat saat dibuka: datanya ditarik dari Stockbit per emiten.
 const cycOpen = ref(false)
+// Peta jaringan juga baru dihitung saat dibuka (tata letak graf).
+const netOpen = ref(false)
 
 onMounted(() => autoRefresh('stockbit'))
 </script>
@@ -291,9 +306,9 @@ onMounted(() => autoRefresh('stockbit'))
       <div class="fbar">
         <button id="progInj" type="button" class="btn" :aria-expanded="String(fOpen)" aria-haspopup="dialog" @click="fOpen = true">
           <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 2.5h12M3.5 7h7M5.5 11.5h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
-          Saring<b v-if="chips.length" class="fcount">{{ chips.length }}</b>
+          Filter<b v-if="chips.length" class="fcount">{{ chips.length }}</b>
         </button>
-        <button v-for="c in chips" :key="c.key" type="button" class="pill chip" :aria-label="'Hapus saringan ' + c.label" @click="c.clear()">{{ c.label }} <span aria-hidden="true">×</span></button>
+        <button v-for="c in chips" :key="c.key" type="button" class="pill chip" :aria-label="'Hapus filter ' + c.label" @click="c.clear()">{{ c.label }} <span aria-hidden="true">×</span></button>
         <button v-if="chips.length > 1" type="button" class="linkbtn small" @click="clearFilters">Hapus semua</button>
       </div>
       <div role="group" aria-label="Tampilan tabel" class="seg">
@@ -302,6 +317,10 @@ onMounted(() => autoRefresh('stockbit'))
       </div>
       <span class="muted small" aria-live="polite">{{ countTxt }}</span>
     </div>
+    <p v-if="nearMiss.length" class="near small">
+      <span class="muted">Nyaris lolos (gagal 1 filter):</span>
+      <template v-for="(n, i) in nearMiss" :key="n.t"><template v-if="i"> · </template><RouterLink class="ticker" :to="'/emiten/' + n.t">{{ n.t }}</RouterLink> <span class="muted">{{ n.why }}</span></template>
+    </p>
 
     <p v-if="set === 'potensi'" class="potsum small">
       <template v-if="potSum.n">
@@ -356,13 +375,17 @@ onMounted(() => autoRefresh('stockbit'))
             <PotensiCells v-else-if="set === 'potensi'" :r="r" />
             <StoryCells v-else :r="r" />
           </tr>
-          <tr v-if="!rows.length"><td :colspan="COLS[set].length" class="muted empty">Tidak ada emiten yang cocok dengan saringan ini.</td></tr>
+          <tr v-if="!rows.length"><td :colspan="COLS[set].length" class="muted empty">Tidak ada emiten yang cocok dengan filter ini.</td></tr>
         </tbody>
       </table>
     </section>
     <details id="cycleBox" class="sheet cyc" @toggle="cycOpen = cycOpen || $event.target.open">
       <summary><h2>Siklus saham backdoor</h2></summary>
       <CycleChart v-if="cycOpen" :items="store.items" />
+    </details>
+    <details id="netBox" class="sheet cyc" @toggle="netOpen = netOpen || $event.target.open">
+      <summary><h2>Peta jaringan pengendali</h2></summary>
+      <NetworkMap v-if="netOpen" :heading="false" />
     </details>
     <p v-if="set === 'ringkas'" class="muted foot">Persen di kolom Tahap = penyelesaian transaksi (± = perkiraan dari tahap). Bar hijau = rentang nilai wajar dari pandangan analis, garis hitam = harga. Selisih merah = di atas batas atas, hijau = di bawah batas bawah, 0% = di dalam rentang. Tanggal oranye = laporan baru sejak ditandai dilihat; baris itu naik ke atas. Δ = perubahan harga sesi terakhir.</p>
     <details class="sheet cyc method">
@@ -379,27 +402,27 @@ onMounted(() => autoRefresh('stockbit'))
         <span role="listitem" class="tag st-strong">Keyakinan tinggi · 65 ke atas</span>
       </div>
     </details>
-    <Modal v-if="fOpen" labelledby="fT" close-label="Tutup saringan" @close="fOpen = false">
-      <template #title><h2 id="fT" class="ftitle">Saring emiten</h2></template>
-      <p class="small muted fnote">Angka di tiap pilihan = jumlah hasil bila pilihan itu dipakai, dengan saringan lain tetap. Pilihan Injeksi bisa digabung.</p>
+    <Modal v-if="fOpen" labelledby="fT" close-label="Tutup filter" @close="fOpen = false">
+      <template #title><h2 id="fT" class="ftitle">Filter emiten</h2></template>
+      <p class="small muted fnote">Angka di tiap pilihan = jumlah hasil bila pilihan itu dipakai, dengan filter lain tetap. Pilihan Injeksi bisa digabung.</p>
       <div class="fgroups">
-        <div role="group" aria-label="Saring status transaksi" class="grp">
+        <div role="group" aria-label="Filter status transaksi" class="grp">
           <span class="lbl">Status</span>
           <button v-for="p in dealPills" :key="p.id" type="button" class="pill" :aria-pressed="String(deal === p.id)" :disabled="!p.n && deal !== p.id" @click="deal = p.id">{{ p.label }}<b>{{ p.n }}</b></button>
         </div>
-        <div role="group" aria-label="Saring tahap" class="grp">
+        <div role="group" aria-label="Filter tahap" class="grp">
           <span class="lbl">Tahap</span>
           <button v-for="p in stagePills" :key="p.i" type="button" class="pill" :aria-pressed="String(stage === p.i)" :disabled="!p.n && stage !== p.i" @click="stage = p.i">{{ p.label }}<b>{{ p.n }}</b></button>
         </div>
-        <div role="group" aria-label="Saring sikap" class="grp">
+        <div role="group" aria-label="Filter sikap" class="grp">
           <span class="lbl">Sikap</span>
           <button v-for="p in sikapPills" :key="p.id" type="button" class="pill" :aria-pressed="String(sikap === p.id)" :disabled="!p.n && sikap !== p.id" @click="sikap = sikap === p.id ? '' : p.id">{{ p.label }}<b>{{ p.n }}</b></button>
         </div>
-        <div role="group" aria-label="Saring kondisi khusus" class="grp">
+        <div role="group" aria-label="Filter kondisi khusus" class="grp">
           <span class="lbl">Khusus</span>
           <button v-for="p in specialPills" :key="p.id" type="button" class="pill" :aria-pressed="String(special === p.id)" :disabled="!p.n && special !== p.id" @click="special = special === p.id ? '' : p.id">{{ p.label }}<b>{{ p.n }}</b></button>
         </div>
-        <div role="group" aria-label="Saring injeksi aset, bisa digabung" class="grp">
+        <div role="group" aria-label="Filter injeksi aset, bisa digabung" class="grp">
           <span class="lbl">Injeksi</span>
           <button type="button" class="pill" :aria-pressed="String(!inj.length)" @click="inj = []">Semua<b>{{ baseInj.length }}</b></button>
           <template v-for="p in injPills" :key="p.k">
@@ -430,6 +453,7 @@ onMounted(() => autoRefresh('stockbit'))
 
 <style scoped>
 .mon{display:flex;flex-direction:column;gap:14px}
+.near{margin:-6px 0 0;padding:6px 10px;border-left:3px solid var(--warn);background:var(--warn-bg);line-height:1.7}
 .head{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:flex-end;justify-content:space-between;padding-bottom:12px;border-bottom:2px solid var(--ink)}
 .ttl{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}
 .today{color:var(--ink-2)}

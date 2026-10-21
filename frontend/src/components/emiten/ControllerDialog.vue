@@ -3,9 +3,12 @@ import { computed, onMounted, ref } from 'vue'
 import { api } from '../../api.js'
 import { store, itemOf, storyOf, relasiOf } from '../../store.js'
 import { fmtDate, rp, stageOf } from '../../lib/domain.js'
-import { ctrlProsCons, relationTone } from '../../lib/emitenExtra.js'
+import { ctrlProsCons } from '../../lib/emitenExtra.js'
 import Modal from './Modal.vue'
 import ProsCons from './ProsCons.vue'
+import ProfilOrang from './ProfilOrang.vue'
+import ControllerTrack from './ControllerTrack.vue'
+import NetworkMap from '../NetworkMap.vue'
 
 // Profil pengendali baru: data Stockbit (/api/controller) + profil terverifikasi + orang di baliknya (relasi-verified.json).
 const props = defineProps({ ticker: { type: String, required: true } })
@@ -70,10 +73,6 @@ const pengurus = computed(() => [
   ...(pf.value?.pengurus?.direksi || []).map(x => ({ ...x, grp: 'Direksi' })),
   ...(pf.value?.pengurus?.komisaris || []).map(x => ({ ...x, grp: 'Komisaris' })),
 ])
-const af = computed(() => pf.value?.afiliasi || null)
-const rel = computed(() => relationTone(af.value?.hubungan))
-const VER = /terverifikasi/i
-const noRisk = r => !r || /^tidak (ditemukan|ada)\b/i.test(r.trim())
 const pc = computed(() => ctrlProsCons({ profil: pf.value, pv: pg.value, c: c.value, active: active.value, exited: exited.value,
   radarTickers: active.value.map(h => h.symbol).filter(inRadar), group: group.value.map(x => x.ticker) }))
 
@@ -123,28 +122,7 @@ const srcs = computed(() => [ctrlInfo.value?.src, ...people.value.map(p => p.inf
       <ProsCons :pros="pc.pros" :cons="pc.cons" pro-label="Kekuatan" con-label="Kelemahan & red flag" />
     </section>
 
-    <section v-if="pf?.pengendali?.length" class="sec">
-      <h3 class="lbl">Profil pengendali per orang ({{ pf.pengendali.length }})</h3>
-      <article v-for="o in pf.pengendali" :key="o.nama" class="pp">
-        <header><b class="pn">{{ o.nama }}</b><span class="small muted">{{ [o.peran, o.entitas].filter(Boolean).join(' · ') }}</span></header>
-        <dl class="kv">
-          <div><dt>Porsi</dt><dd>{{ o.porsi || 'belum ada' }}</dd></div>
-          <div><dt>Latar</dt><dd>{{ o.latar || 'belum ada' }}</dd></div>
-          <div><dt>Pengalaman</dt><dd>{{ o.pengalaman || 'belum ada' }}</dd></div>
-          <div v-if="o.karakteristik"><dt>Karakter</dt><dd>{{ o.karakteristik }}</dd></div>
-          <div v-if="o.jaringan?.length"><dt>Jaringan</dt><dd>
-            <ul class="net">
-              <li v-for="j in o.jaringan" :key="j.dengan">
-                <b>{{ j.dengan }}</b> <span class="tag" :class="VER.test(j.keyakinan || '') ? 't-good' : 't-warn'">{{ VER.test(j.keyakinan || '') ? 'terverifikasi' : 'disebut media' }}</span>
-                <span v-if="j.hubungan" class="small muted"> {{ j.hubungan }}</span>
-              </li>
-            </ul>
-          </dd></div>
-          <div><dt>Risiko</dt><dd :class="{ flag: !noRisk(o.risiko) }">{{ o.risiko || 'belum ada' }}</dd></div>
-        </dl>
-        <details v-if="o.sumber?.length" class="more"><summary>Sumber ({{ o.sumber.length }})</summary><ul class="small"><li v-for="x in o.sumber" :key="x">{{ x }}</li></ul></details>
-      </article>
-    </section>
+    <ProfilOrang v-if="pf?.pengendali?.length" :profil="pf" :title="`Profil pengendali per orang (${pf.pengendali.length})`" class="sec" />
 
     <section v-if="ctrlInfo" class="sec">
       <h3 class="lbl">Struktur</h3>
@@ -180,37 +158,6 @@ const srcs = computed(() => [ctrlInfo.value?.src, ...people.value.map(p => p.inf
       <p v-if="ctrlInfo.open?.length" class="small muted">Belum terverifikasi: {{ ctrlInfo.open.join('; ') }}</p>
     </section>
 
-    <section v-if="pengurus.length" class="sec">
-      <h3 class="lbl">Struktur direksi & komisaris</h3>
-      <div class="scroll">
-        <table class="ledger">
-          <thead><tr><th class="lbl">Nama</th><th class="lbl">Jabatan</th><th class="lbl">Asal</th><th class="lbl">Latar</th></tr></thead>
-          <tbody>
-            <tr v-for="x in pengurus" :key="x.grp + x.nama">
-              <td><b>{{ x.nama }}</b><div class="small muted">{{ x.grp }}</div></td>
-              <td>{{ x.jabatan || 'belum ada' }}<template v-if="x.independen"> <span class="tag t-calm">independen</span></template></td>
-              <td><span class="tag" :class="x.orangPengendaliBaru ? 't-good' : 't-calm'">{{ x.orangPengendaliBaru ? 'orang pengendali baru' : 'pengurus lama' }}</span></td>
-              <td class="small">{{ x.latar || 'belum ada' }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section v-if="af" class="sec">
-      <h3 class="lbl">Afiliasi pihak lawan transaksi</h3>
-      <dl class="kv">
-        <div><dt>Pihak lawan</dt><dd>{{ af.pihakLawan || 'belum ada' }}</dd></div>
-        <div><dt>Pemilik aset</dt><dd>{{ af.pemilikAset || 'belum ada' }}</dd></div>
-        <div><dt>Pengendali/UBO</dt><dd>{{ af.pengendaliPihakLawan || 'belum ada' }}</dd></div>
-        <div v-if="af.karakteristik"><dt>Karakteristik</dt><dd>{{ af.karakteristik }}</dd></div>
-        <div :class="{ hot: rel }"><dt>Hubungan</dt><dd>
-          <span v-if="rel" class="tag t-strong">{{ rel === 'afiliasi' ? 'terafiliasi' : 'perlu dicermati' }}</span>
-          {{ af.hubungan || 'belum ada' }}
-        </dd></div>
-      </dl>
-      <details v-if="af.sumber?.length" class="more"><summary>Sumber ({{ af.sumber.length }})</summary><ul class="small"><li v-for="x in af.sumber" :key="x">{{ x }}</li></ul></details>
-    </section>
 
     <p v-if="loading" class="muted">Memuat data pengendali {{ name }} dari Stockbit…</p>
     <p v-else-if="err" class="muted">Data Stockbit untuk pengendali tidak bisa dimuat: {{ err }}.</p>
@@ -271,10 +218,8 @@ const srcs = computed(() => [ctrlInfo.value?.src, ...people.value.map(p => p.inf
       </section>
     </template>
 
-    <details v-if="pf?.tidakDitemukan?.length" class="more">
-      <summary>Belum ditemukan di sumber publik ({{ pf.tidakDitemukan.length }})</summary>
-      <ul class="small"><li v-for="x in pf.tidakDitemukan" :key="x">{{ x }}</li></ul>
-    </details>
+    <ControllerTrack v-if="c" :c="c" :self="ticker" :old-ctrl="!!pg?.bukanPengambilAlih" />
+    <NetworkMap :focus="ticker" />
 
     <section v-if="srcs.length" class="sec">
       <h3 class="lbl">Sumber relasi</h3>
