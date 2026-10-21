@@ -237,6 +237,7 @@ onBeforeUnmount(() => {
 .card.k-main{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .card.k-main b{font-family:var(--f-display);font-size:28px;line-height:1}
 .card.k-main span{color:var(--accent-ink);opacity:.8}
+.card.k-none{background:transparent;border:1px dashed var(--rule);color:var(--ink-2)}
 .card.k-void{background:var(--strong-bg);border-color:color-mix(in oklab,var(--strong) 35%,var(--strong-bg))}
 .card.k-void span{color:var(--strong)}
 .card.on{outline:3px solid var(--now)}

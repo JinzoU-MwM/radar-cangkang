@@ -5,8 +5,9 @@
 
 const pctOf = s => (String(s || '').match(/(\d+(?:[.,]\d+)?)\s*%/) || [])[1]?.replace('.', ',') || ''
 // Nama pendek untuk kotak: buang keterangan dalam kurung dan setelah ";" / " — ".
-const short = (s, n = 40) => {
-  const t = String(s || '').split(/\s[—–-]\s|;/)[0].replace(/\s*\([^)]*\)/g, '').trim()
+const short = (s, n = 46) => {
+  // Potong di keterangan pertama: " (", " — ", ";", ", ", " / ", " → " (kurung bisa bersarang, jadi tidak diregex berpasangan).
+  const t = String(s || '').split(/\s[—–-]\s|;|\s\(|,\s|\s\/\s|\s→\s|\sdan\s/)[0].trim()
   return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t
 }
 const clip = (s, n = 70) => { s = String(s || '').trim(); return s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s }
@@ -16,8 +17,8 @@ const srcText = s => Array.isArray(s) ? s.slice(0, 3).join(' · ') : String(s ||
 const rowXs = (n, gap = 320) => Array.from({ length: n }, (_, i) => 680 + (i - (n - 1) / 2) * gap)
 const ROW_Y = [164, 374, 616, 844]
 
-export function buildRelasi(t, { profil = {}, aset = {}, pengendali = {}, item = null, story = null, pandangan = null } = {}) {
-  const pf = profil[t] || {}, as = aset[t] || {}, pv = pengendali[t] || {}
+export function buildRelasi(t, { profil = {}, aset = {}, pengendali = {}, verified = {}, item = null, story = null, pandangan = null } = {}) {
+  const pf = profil[t] || {}, as = aset[t] || {}, pv = pengendali[t] || {}, sv = verified[t] || {}
   const people = (pf.pengendali || []).slice(0, 4)
   if (!people.length && !pv.siapa && !item?.ctrlName) return null
 
@@ -26,7 +27,7 @@ export function buildRelasi(t, { profil = {}, aset = {}, pengendali = {}, item =
 
   // Baris 0: orang (UBO / pemegang kendali / wakil pengendali).
   people.forEach((p, i) => {
-    add('p' + i, 0, short(p.nama, 34), clip([p.peran, pctOf(p.porsi) && pctOf(p.porsi) + '%'].filter(Boolean).join(' · '), 44), '', {
+    add('p' + i, 0, short(p.nama), clip([p.peran, pctOf(p.porsi) && pctOf(p.porsi) + '%'].filter(Boolean).join(' · '), 44), '', {
       kind: 'Orang · ' + (p.peran || 'pihak pengendali'),
       who: p.latar || '',
       role: [p.entitas && `Lewat ${p.entitas}.`, p.porsi && `Porsi: ${p.porsi}.`].filter(Boolean).join(' '),
@@ -43,8 +44,8 @@ export function buildRelasi(t, { profil = {}, aset = {}, pengendali = {}, item =
   })
 
   // Baris 1: kendaraan pengambilalihan (entitas para orang, atau nama pengendali di item).
-  const ents = [...new Set(people.map(p => short(p.entitas, 44)).filter(Boolean))].slice(0, 2)
-  if (!ents.length) ents.push(short(item?.ctrlName || item?.acquirer || pv.siapa, 44))
+  const ents = [...new Set(people.map(p => short(p.entitas)).filter(Boolean))].slice(0, 2)
+  if (!ents.length) ents.push(short(item?.ctrlName || item?.acquirer || pv.siapa))
   ents.forEach((e, i) => add('e' + i, 1, e, i === 0 ? clip(pv.grup || 'pengendali baru', 44) : 'pengendali baru', 'key', {
     kind: 'Pengendali baru',
     who: pv.siapa || '',
@@ -54,7 +55,7 @@ export function buildRelasi(t, { profil = {}, aset = {}, pengendali = {}, item =
     open: [], src: [pv.sumberJudul, pv.sumberTanggal].filter(Boolean).join(', '),
   }))
   people.forEach((p, i) => {
-    const e = ents.indexOf(short(p.entitas, 44))
+    const e = ents.indexOf(short(p.entitas))
     edges.push(['p' + i, 'e' + Math.max(0, e), 'own', /wakil/i.test(p.peran || '') ? 'wakil' : (pctOf(p.porsi) ? 'UBO ' + pctOf(p.porsi) + '%' : 'UBO')])
   })
 
@@ -70,16 +71,25 @@ export function buildRelasi(t, { profil = {}, aset = {}, pengendali = {}, item =
   })
   edges.push(['e0', 'em', 'own', ctrlPct || 'pengendali'])
   if (story?.oldName) {
-    add('old', 2, short(story.oldName, 34), story.oldInferred ? 'pengendali lama (perkiraan)' : 'pengendali lama', '', {
+    // Beberapa nama pengendali lama: tampilkan nama pertama + "dkk", nama lengkap di laci.
+    const olds = String(story.oldName).split(/,\s*/)
+    add('old', 2, short(olds[0]) + (olds.length > 1 ? ' dkk' : ''), story.oldInferred ? 'pengendali lama (perkiraan)' : 'pengendali lama', '', {
       kind: 'Pengendali lama', who: story.oldName, role: story.oldPct ? `Porsi sebelum pengambilalihan ±${String(story.oldPct).replace('.', ',')}%.` : '',
       trackTitle: 'Catatan', track: [], open: story.oldInferred ? ['Nama pengendali lama disimpulkan dari riwayat pemegang saham'] : [], src: 'Stockbit',
     })
     edges.push(['old', 'em', 'own', story.oldPct ? `dulu ${String(story.oldPct).replace('.', ',')}%` : 'dulu'])
+  } else {
+    add('old', 2, 'Pengendali lama', 'belum ada di data Stockbit', 'none', {
+      kind: 'Pengendali lama', who: 'Riwayat pemegang saham Stockbit belum menunjukkan pengendali sebelum pengambilalihan.',
+      role: '', trackTitle: 'Catatan', track: [], open: ['Nama dan porsi pengendali lama'], src: 'Stockbit',
+    })
   }
-  const af = pf.afiliasi || {}
+  const af = { ...(pf.afiliasi || {}) }  // salinan: pihakLawan bisa dikosongkan di bawah
   const affiliated = /afiliasi/i.test(af.hubungan || '') && !/tidak\s+(ter)?afiliasi/i.test(af.hubungan || '')
+  // "Tidak ada injeksi aset" / "Belum ada …" bukan nama pihak.
+  if (/^\s*(tidak|belum)\s+ada\b|^\s*-?\s*$/i.test(af.pihakLawan || '')) af.pihakLawan = ''
   if (af.pihakLawan) {
-    add('lawan', 2, short(String(af.pihakLawan).split(/,\s/)[0], 36), clip(af.karakteristik || 'pihak lawan transaksi', 46), affiliated ? 'void' : '', {
+    add('lawan', 2, short(af.pihakLawan), clip(af.karakteristik || 'pihak lawan transaksi', 46), affiliated ? 'void' : '', {
       kind: 'Pihak lawan transaksi', who: af.pihakLawan,
       role: af.hubungan || '', flag: affiliated ? 'Transaksi dengan pihak terafiliasi pengendali.' : '',
       trackTitle: 'Pemilik', track: [af.pemilikAset && ['Pemilik aset', af.pemilikAset], af.pengendaliPihakLawan && ['Pengendali', af.pengendaliPihakLawan]].filter(Boolean),
@@ -91,7 +101,7 @@ export function buildRelasi(t, { profil = {}, aset = {}, pengendali = {}, item =
   // Baris 3: aset yang diinjeksi dan masyarakat.
   if (as.aset?.nama) {
     const k = as.kjpp || {}
-    add('aset', 3, short(as.aset.nama, 36), clip([as.aset.sektor, k.status === 'terbit' ? 'KJPP terbit' : 'KJPP belum terbit'].filter(Boolean).join(' · '), 44), '', {
+    add('aset', 3, short(as.aset.nama), clip([as.aset.sektor, k.status === 'terbit' ? 'KJPP terbit' : 'KJPP belum terbit'].filter(Boolean).join(' · '), 44), '', {
       kind: 'Aset yang diinjeksi', who: as.aset.jenis || '', role: as.aset.deskripsi || '',
       flag: k.status === 'terbit' ? '' : 'Laporan penilai independen (KJPP) belum terbit.',
       trackTitle: 'Transaksi', track: [as.transaksi?.nilai && ['Nilai', as.transaksi.nilai], as.transaksi?.caraBayar && ['Cara bayar', as.transaksi.caraBayar], k.nilai && ['KJPP', k.nilai]].filter(Boolean),
@@ -99,6 +109,24 @@ export function buildRelasi(t, { profil = {}, aset = {}, pengendali = {}, item =
     })
     edges.push(['aset', 'em', 'plan', clip(as.transaksi?.nilai || 'injeksi', 30)])
     if (af.pihakLawan) edges.push(['lawan', 'aset', 'own', 'pemilik'])
+  } else if (sv.injectTarget) {
+    // Belum ada di aset-verified: pakai target injeksi dari story-verified (Stockbit Reports).
+    add('aset', 3, short(sv.injectTarget), clip([sv.injectType, sv.nominal].filter(Boolean).join(' · '), 44), '', {
+      kind: 'Aset yang diinjeksi', who: sv.injectTarget, role: sv.note || '',
+      flag: 'Data aset dan KJPP belum dicek; ringkasan dari laporan Stockbit.',
+      trackTitle: 'Transaksi', track: [sv.injectType && ['Skema', sv.injectType], sv.nominal && ['Nilai', sv.nominal], sv.target && ['Target', sv.target]].filter(Boolean),
+      open: ['Status KJPP', 'Laporan keuangan aset'], src: [sv.sourceTitle, sv.sourceDate].filter(Boolean).join(', '),
+    })
+    edges.push(['aset', 'em', 'plan', clip(sv.nominal || 'injeksi', 30)])
+  } else {
+    // Tidak ada aset yang disuntik: tetap tampil sebagai kotak keterangan supaya diagram tiap emiten sama bentuknya.
+    const why = pv.bukanPengambilAlih ? 'bukan pengambilalihan untuk backdoor'
+      : /^tetap/i.test(sv.baru || '') ? 'bisnis lama dipertahankan' : 'belum ada rencana yang diumumkan'
+    add('aset', 3, 'Tanpa injeksi aset', why, 'none', {
+      kind: 'Aset yang diinjeksi', who: 'Tidak ada aset yang disuntik ke emiten menurut data saat ini.',
+      role: sv.baru ? `Arah usaha: ${sv.baru}` : '', trackTitle: 'Catatan', track: sv.note ? [['—', sv.note]] : [],
+      open: ['Rencana injeksi aset di keterbukaan informasi berikutnya'], src: [sv.sourceTitle, sv.sourceDate].filter(Boolean).join(', '),
+    })
   }
   const pub = pandangan?.dilusi?.porsiPublikSekarang
   add('pub', 3, 'Masyarakat', pub != null ? `porsi publik ${String(pub).replace('.', ',')}%` : 'pemegang saham publik', '', {
