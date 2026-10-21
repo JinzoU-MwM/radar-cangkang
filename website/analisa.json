@@ -7,11 +7,11 @@
   "update": {
     "tesis": "Bacalah keterbukaan informasi seperti membaca niat pengendali: yang penting bukan banyaknya laporan, melainkan jenis laporannya. Uang dibuat oleh pihak yang membaca transaksi material dan perubahan kegiatan usaha lebih dulu, bukan oleh yang mengejar penjelasan volatilitas.",
     "poin": [
-      "Hierarki sinyal. Tertinggi: rencana transaksi material, perubahan kegiatan usaha, inbreng, prospektus PMHMETD, dan laporan penilai (KJPP). Menengah: pemanggilan RUPSLB, perubahan pengurus. Rendah/derau: penjelasan atas volatilitas dan permintaan penjelasan bursa — itu tanda harga sudah bergerak, bukan tanda nilai bertambah.",
+      "Hierarki sinyal. Tertinggi: rencana transaksi material, perubahan kegiatan usaha, inbreng, prospektus PMHMETD, dan laporan penilai (KJPP). Menengah: pemanggilan RUPSLB, perubahan pengurus. Rendah/noise: penjelasan atas volatilitas dan permintaan penjelasan bursa — itu tanda harga sudah bergerak, bukan tanda nilai bertambah.",
       "Dalam 30 hari terakhir ada 233 laporan; aktivitas terpadat di PACK, INPS, MKNT, FORU, MGLV, dan DOOH. Kepadatan laporan setelah PTW selesai biasanya berarti fase injeksi aset sedang disiapkan — fase yang menentukan apakah harga bertahan.",
       "Penempatan terbatas tanpa HMETD (INPS, MKNT) memberi saham baru kepada pihak tertentu tanpa hak pemegang saham publik. Selalu cek harga pelaksanaan terhadap harga pasar dan siapa pembelinya: jika di bawah pasar dan pembelinya afiliasi pengendali, publik yang menanggung dilusinya.",
       "Transaksi afiliasi atau material tanpa persetujuan RUPS (SOFA) sah bila di bawah ambang aturan, tetapi justru di situ tata kelola diuji. Baca nilai transaksi, pihak lawan, dan laporan penilainya sebelum percaya pada cerita perubahan usaha.",
-      "Pengumuman kepemilikan saham terkonsentrasi tinggi dan penundaan RUPSLB (BIKE) adalah dua bendera kuning yang muncul bersamaan: likuiditas tipis membuat harga mudah digerakkan, dan jadwal korporasi yang mundur menandakan dokumen belum siap."
+      "Pengumuman kepemilikan saham terkonsentrasi tinggi dan penundaan RUPSLB (BIKE) adalah dua sinyal waspada yang muncul bersamaan: likuiditas tipis membuat harga mudah digerakkan, dan jadwal korporasi yang mundur menandakan dokumen belum siap."
     ],
     "pantau": [
       { "t": "ULTJ", "txt": "Rencana transaksi material dengan RUPSLB — inbreng Frisian Flag Rp14,57 T. Ini merger usaha operasional, bukan cangkang; kuncinya suara pemegang saham independen dan kewajaran nilai." },
@@ -33,14 +33,14 @@
       "PTW yang sedang berjalan diperdagangkan di atas harga tender: NAYZ (Rp90 vs Rp75), DOOH (Rp290 vs Rp148), MBSS (Rp3.650 vs Rp2.915). Pasar sudah membayar di muka untuk cerita berikutnya; tidak ada ruang arbitrase tender di sini.",
       "Porsi publik di bawah 7,5% (PNGO 0,52%, FORU 1,63%) mewajibkan penjualan kembali saham ke publik (refloat). Refloat hampir selalu dilakukan dengan diskon — itu pasokan saham yang menekan harga, bukan katalis naik.",
       "Tidak semua nama di kolom pengendali adalah pengambil alih. Hasil pengecekan: di 11 emiten (ULTJ, AGAR, TRUK, ELIT, ASPI, BLUE, KDTN, PTMR, TGUK, IDEA, LOPI) nama yang tercatat adalah pengendali lama/penjual. Sebagian transaksinya belum efektif (AGAR, ASPI, IDEA masih negosiasi), ditahan OJK (BLUE, KDTN, PTMR), atau bukan backdoor sama sekali (ELIT, LOPI). Konfirmasi satu-satunya: pengumuman PTW dengan harga dan jadwal.",
-      "Progres tonggak bukan nilai. Emiten dengan progres tinggi tetapi tanpa injeksi aset bermakna (contoh: STAR, AMMS) justru turun paling dalam dari puncaknya."
+      "Progres tahapan bukan nilai. Emiten dengan progres tinggi tetapi tanpa injeksi aset bermakna (contoh: STAR, AMMS) justru turun paling dalam dari puncaknya."
     ],
     "pantau": [
       { "t": "MBSS", "txt": "Pembayaran PTW 15 Okt 2026. Setelah tender tuntas, harga kehilangan penopang — pantau perilaku harga pekan-pekan berikutnya." },
       { "t": "NAYZ", "txt": "PTW berjalan sampai 3 Nov, harga 20% di atas tender. Pengendali masuk di Rp23,5; inbreng 75% Bangkok Tellink maks. USD125 juta (keterbukaan 5 Okt 2026) ≈ 9–10× kapitalisasi — penentu berikutnya adalah laporan penilai dan harga HMETD." },
       { "t": "DOOH", "txt": "Harga hampir 2× harga tender. Injeksi 29,88% INET Rp2,01 T: nilai DOOH kini ikut bergantung pada harga INET." },
       { "t": "PNGO", "txt": "Di bawah PTW dan porsi publik 0,52% — wajib refloat. Kombinasi pasokan dan likuiditas tipis." },
-      { "t": "MKNT", "txt": "Utang pengendali dikonversi menjadi saham di Rp1/saham: publik terdilusi 99,46% dan porsi publik tinggal ±0,41%. Contoh paling ekstrem bahwa progres tonggak bisa berarti kerugian bagi publik." }
+      { "t": "MKNT", "txt": "Utang pengendali dikonversi menjadi saham di Rp1/saham: publik terdilusi 99,46% dan porsi publik tinggal ±0,41%. Contoh paling ekstrem bahwa progres tahapan bisa berarti kerugian bagi publik." }
     ],
     "aturan": [
       "Urutan aman membaca progres: PTW selesai → RUPSLB perubahan usaha → penilaian aset (KJPP) → inbreng/PMHMETD → laporan keuangan pertama dengan usaha baru. Harga yang mendahului urutan ini adalah spekulasi.",

@@ -14,3 +14,11 @@ __pycache__/
 # runtime watcher
 .stockbit-notify-stamp
 **/.stockbit-notify-stamp
+
+# brainstorm companion
+.superpowers/
+**/.radar.sqlite*
+website/dist/
+frontend/node_modules/
+.playwright-mcp/
+.serena/

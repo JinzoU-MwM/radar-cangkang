@@ -16,12 +16,12 @@ Mengumpulkan sinyal backdoor listing di satu tempat (keterbukaan informasi BEI v
 Bukan screener umum: seluruh sudut pandangnya adalah siklus pengambilalihan (pengendali baru, MTO, RUPSLB, rights issue/PMTHMETD, injeksi aset), dengan story tiap emiten yang diverifikasi manual dari laporan.
 
 ## Operating Context
-- Empat menu, urutan pentingnya: Potensi Emiten (skor + Analisa, Teknikal, Spekulasi) > Story Emiten > Progress Emiten > Update Emiten (berita).
-- Server lokal PowerShell (`website/serve.ps1`) mem-proxy Stockbit dengan token pribadi; data radar per browser (localStorage).
+- Tiga menu: Monitor (tabel semua emiten dalam siklus pengambilalihan) > Kandidat (buku sinyal calon cangkang) > Berita. Klik emiten membuka halaman emiten: Ringkasan, Story & Pengendali, Analisa, Teknikal, Spekulasi, Profil, Berita, dan panel Alur saham.
+- Server lokal Python (`website/server.py`) mem-proxy Stockbit dengan token pribadi dan menyimpan data radar tim di SQLite (`website/.radar.sqlite`), sama untuk semua perangkat.
 - Ada versi kembar sebagai artifact Claude (`versi-claude/radar-cangkang.html`) dengan database bersama.
 
 ## Capabilities and Constraints
-- Satu file `website/index.html` (HTML+CSS+JS inline), tanpa build step; harus tetap begitu.
+- Frontend Vue 3 di `frontend/`, dibangun dengan Vite ke `website/dist/` (`npm run build`); server hanya menyajikan hasil build.
 - Harus tetap jalan offline sebagian (data page Stockbit tanpa token) dan memberi status token.
 - Bahasa antarmuka: Indonesia.
 - Tema terang & gelap sudah ada (toggle).
@@ -33,4 +33,4 @@ Data nyata: `story-verified.json`, `pengendali-verified.json`, `pandangan-analis
 1. Kecepatan baca saat jam bursa mengalahkan dekorasi: yang berubah hari ini harus terlihat pertama.
 2. Setiap angka punya sumber dan tanggal.
 3. Penilaian (skor, sinyal) dibedakan tegas dari fakta (laporan, harga).
-4. Satu file, nol build, bisa dibuka siapa pun di jaringan tim.
+4. Bisa dibuka siapa pun di jaringan tim tanpa memasang apa pun di perangkatnya.
