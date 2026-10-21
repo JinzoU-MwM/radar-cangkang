@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { api } from '../../api.js'
-import { store } from '../../store.js'
+import { chText, meaningful } from '../../lib/diff.js'
+import { store, loadDiff } from '../../store.js'
 import { tlEvents, fmtDate } from '../../lib/domain.js'
 import { isBackdoorNews, backdoorTickers } from '../../lib/news.js'
 
@@ -18,29 +18,13 @@ const fresh = computed(() => {
   return store.updates.filter(u => u.date && u.date.slice(0, 10) >= day(-3) && isBackdoorNews(u, store.items, set))
     .sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6)
 })
-// Diff harian dari /api/diff: perubahan harga (≥ 3%), porsi pengendali, tonggak, tender, laporan baru.
-const MS_SHORT = { spa: 'PPJB', akuisisi: 'akuisisi efektif', to_umum: 'PTW diumumkan', to_selesai: 'PTW selesai', rupslb: 'RUPSLB',
-  rights: 'rights issue', kjpp: 'KJPP terbit', inbreng: 'injeksi efektif', bisnis: 'usaha baru' }
-const pct = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + '%'
-const rp = v => v == null ? '–' : Number(v).toLocaleString('id-ID')
-function chText(c) {
-  if (c.k === 'price') return `harga ${rp(c.from)} → ${rp(c.to)} (${pct(c.pct)})`
-  if (c.k === 'ctrl') return `pengendali ${c.from == null ? '–' : rp(c.from) + '%'} → ${rp(c.to)}%${c.name ? ' (' + c.name + ')' : ''}`
-  if (c.k === 'ms') return 'tahap: ' + c.added.map(m => MS_SHORT[m] || m).join(', ')
-  if (c.k === 'tender') return `harga tender ${rp(c.from)} → ${rp(c.to)}`
-  if (c.k === 'reports') return `${c.n} laporan baru`
-  if (c.k === 'new') return 'baru masuk radar'
-  return ''
-}
+// Diff harian dari /api/diff (dimuat di store, dipakai juga kartu Hari ini).
 const span = ref(1)
-const diff = ref(null), diffErr = ref('')
-watch(span, async d => {
-  diffErr.value = ''
-  try { diff.value = await api.get('/api/diff', { days: d }) } catch (e) { diffErr.value = e.message }
-}, { immediate: true })
-// Harga hanya ditampilkan bila bergerak ≥ 3%, supaya daftar berisi perubahan yang berarti.
+watch(span, d => loadDiff(d), { immediate: true })
+const diff = computed(() => store.diff[span.value])
+const diffErr = computed(() => diff.value?.error || '')
 const changed = computed(() => (diff.value?.items || [])
-  .map(x => ({ t: x.ticker, ch: x.changes.filter(c => c.k !== 'price' || Math.abs(c.pct) >= 3) }))
+  .map(x => ({ t: x.ticker, ch: meaningful(x.changes) }))
   .filter(x => x.ch.length)
   .sort((a, b) => b.ch.length - a.ch.length || a.t.localeCompare(b.t)))
 const baseTxt = computed(() => diff.value?.base ? fmtDate(diff.value.base) : '')

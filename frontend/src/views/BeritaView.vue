@@ -101,6 +101,7 @@ onMounted(() => autoRefresh('reports'))
 
     <Modal v-if="fOpen" labelledby="nfT" close-label="Tutup saringan" @close="fOpen = false">
       <template #title><h2 id="nfT" class="ftitle">Saring berita</h2></template>
+      <p class="small muted fnote">Angka di tiap pilihan = jumlah pengumuman bila pilihan itu dipakai, dengan saringan lain tetap.</p>
       <div class="fgroups">
         <div role="group" aria-label="Saring jenis" class="grp">
           <span class="lbl">Jenis</span>

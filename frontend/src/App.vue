@@ -27,6 +27,16 @@ const token = computed(() => {
   return { cls: 'ok', text: `Token berlaku s.d. ${until}` }
 })
 
+// Masalah sumber data (bukan mode publik): teks untuk kaki rail dan spanduk di HP.
+const dataWarn = computed(() => {
+  const st = store.status
+  if (st?.readOnly) return ''
+  if (store.ready && !st) return 'Server tidak terhubung'
+  if (st && !st.configured) return 'Data Stockbit belum diatur di server'
+  if (st && !st.tokenLoaded) return 'Data Stockbit tidak aktif: harga dan laporan bisa basi'
+  return token.value?.cls === 'bad' ? token.value.text : ''
+})
+
 // Peringatan sekali saat sisa token < 1 jam; diulang hanya setelah token diganti (sisa > 2 jam lagi).
 let tokenWarned = false
 watch([() => store.status?.tokenExp, now], ([exp, t]) => {
@@ -81,26 +91,34 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
         <b>Radar Backdoor</b>
         <span>Pengambilalihan emiten · BEI</span>
       </div>
-      <button type="button" class="jump" @click="jump = true">Buka emiten<kbd>Ctrl K</kbd></button>
+      <button type="button" class="jump" aria-label="Buka emiten (Ctrl K)" @click="jump = true"><span class="jl">Buka emiten</span><svg class="ji" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="m10.5 10.5 3.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg><kbd>Ctrl K</kbd></button>
       <RouterLink class="nav" to="/" :class="{ on: $route.name === 'monitor' || $route.name === 'emiten' }">Monitor <span class="cnt">{{ nMonitor }}</span></RouterLink>
       <RouterLink class="nav" to="/kandidat" active-class="on">Kandidat <span class="cnt">{{ nKandidat }}</span></RouterLink>
       <RouterLink class="nav" to="/berita" active-class="on">Berita <span class="cnt">{{ nBaru || '' }}</span></RouterLink>
-      <ChangelogPanel />
       <div class="foot">
+        <ChangelogPanel />
         <span v-if="store.status?.readOnly" class="tok">Versi publik · hanya baca</span>
-        <span v-else-if="token" class="tok" :class="token.cls">{{ token.text }}</span>
-        <span v-else-if="store.status && !store.status.configured" class="tok bad">Data Stockbit belum diatur di server</span>
-        <span v-else-if="store.status && !store.status.tokenLoaded" class="tok bad">Data Stockbit tidak aktif: harga dan laporan bisa basi</span>
-        <span v-else-if="store.ready && !store.status" class="tok bad">Server tidak terhubung</span>
+        <span v-else-if="token && token.cls !== 'bad'" class="tok" :class="token.cls">{{ token.text }}</span>
+        <span v-else-if="dataWarn" class="tok bad">{{ dataWarn }}</span>
         <span>Ctrl K buka emiten · / cari · 1–3 menu</span>
         <button type="button" class="theme" @click="toggleTheme">{{ theme === 'dark' ? 'Tema terang' : 'Tema gelap' }}</button>
       </div>
     </nav>
     <main class="content">
-      <p v-if="!store.ready" class="muted">Memuat data…</p>
+      <p v-if="dataWarn" class="mwarn" role="status">{{ dataWarn }}</p>
+      <div v-if="!store.ready" class="skel" aria-busy="true">
+        <span class="sr-only">Memuat data…</span>
+        <div class="sk sk-h"></div>
+        <div class="sk-row"><div v-for="i in 3" :key="i" class="sk sk-card"></div></div>
+        <div class="sk sk-bar"></div>
+        <div class="sk-tab"><div v-for="i in 8" :key="i" class="sk sk-line" :style="{ width: 100 - (i % 3) * 7 + '%' }"></div></div>
+      </div>
       <RouterView v-else />
     </main>
     <TickerJump v-if="jump" @close="jump = false" />
+    <RouterLink v-if="store.compare.length && $route.name !== 'bandingkan'" class="cmp-tray" :to="{ path: '/bandingkan', query: { t: store.compare.join(',') } }">
+      Bandingkan <b>{{ store.compare.join(' · ') }}</b> →
+    </RouterLink>
     <div class="toasts" aria-live="polite">
       <div v-for="t in store.toasts" :key="t.id" class="toast" :class="{ warn: t.warn }">{{ t.text }}</div>
     </div>
@@ -108,7 +126,7 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
 </template>
 
 <style scoped>
-.shell{display:flex;flex-wrap:wrap;min-height:100vh}
+.shell{display:flex;flex-wrap:wrap;align-content:flex-start;min-height:100vh}
 .rail{flex:1 1 216px;max-width:232px;background:var(--rail);color:var(--rail-ink);padding:22px 12px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh;box-sizing:border-box}
 .brand{padding:0 12px 18px;display:grid;gap:2px}
 .brand b{font-family:var(--f-display);font-size:24px;line-height:1;color:#fff}
@@ -119,14 +137,39 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
 .cnt{font-family:var(--f-display);font-weight:700}
 .jump{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 10px;padding:8px 12px;border:1px solid var(--rail-rule);border-radius:3px;background:none;color:var(--rail-mute);font:inherit;font-size:13px;cursor:pointer;text-align:left}
 .jump:hover{color:var(--rail-ink);border-color:var(--rail-mute)}
+.jump .ji{display:none}
 .jump kbd{font:600 11px var(--f-data);padding:1px 5px;border:1px solid var(--rail-rule);border-radius:3px}
 .foot{margin-top:auto;padding:12px;border-top:1px solid var(--rail-rule);display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--rail-mute)}
 .tok{font-weight:600}
 .tok.ok{color:#bfe6d1}.tok.warn{color:#ffd28a}.tok.bad{color:#ffb4a9}
 .theme{align-self:flex-start;background:none;border:1px solid var(--rail-rule);color:var(--rail-ink);border-radius:3px;padding:5px 10px;cursor:pointer}
 .content{flex:999 1 560px;min-width:0;padding:22px 28px 48px;box-sizing:border-box}
+.skel{display:flex;flex-direction:column;gap:18px}
+.sk{background:linear-gradient(90deg,var(--rule-2) 0 40%,var(--sheet-2) 50%,var(--rule-2) 60% 100%) 0 0/300% 100%;border-radius:3px;animation:sk 1.4s ease-in-out infinite}
+.sk-h{height:34px;width:38%}
+.sk-row{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.sk-card{height:150px}
+.sk-bar{height:34px;width:60%}
+.sk-tab{display:flex;flex-direction:column;gap:10px;padding:14px;background:var(--sheet);border:1px solid var(--rule)}
+.sk-line{height:28px}
+@keyframes sk{from{background-position:100% 0}to{background-position:0 0}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}}
+.mwarn{display:none}
+.cmp-tray{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:45;display:flex;gap:8px;align-items:center;padding:10px 16px;border-radius:999px;background:var(--accent);color:var(--accent-ink);text-decoration:none;font-weight:600;box-shadow:var(--shadow)}
+.cmp-tray b{font-family:var(--f-display);letter-spacing:.03em}
+.cmp-tray ~ .toasts{bottom:76px}
+@media (max-width:760px){.cmp-tray{left:14px;right:14px;transform:none;justify-content:center;font-size:14px}}
 .toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:50;max-width:380px}
 .toast{background:var(--ink);color:var(--paper);padding:10px 14px;border-radius:3px;box-shadow:var(--shadow)}
 .toast.warn{background:var(--strong)}
-@media (max-width:760px){.rail{position:static;height:auto;max-width:none;flex-basis:100%;flex-direction:row;flex-wrap:wrap;align-items:center;padding:10px 8px;gap:2px 4px}.brand{padding:0 8px 0 4px}.brand span{display:none}.brand b{font-size:20px}.nav{padding:8px 10px}.jump{order:9;margin:0;padding:6px 10px}.jump kbd{display:none}.foot{flex-basis:100%;margin:6px 0 0;padding:6px 12px 0}.foot>:not(.tok){display:none}.foot:not(:has(.tok)){display:none}.content{padding:16px}}
+@media (max-width:760px){
+  .rail{position:sticky;top:0;z-index:20;height:auto;max-width:none;flex-basis:100%;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:2px;padding:6px 8px;overflow-x:auto;scrollbar-width:none}
+  .brand{flex:none;padding:0 8px 0 4px}.brand span{display:none}.brand b{font-size:19px}
+  .nav{flex:none;padding:9px 10px;box-shadow:inset 0 -3px 0 transparent}.nav.on{box-shadow:inset 0 -3px 0 var(--now)}
+  .jump{order:0;flex:none;margin:0 4px 0 0;padding:7px 9px}.jump kbd,.jump .jl{display:none}.jump .ji{display:block}
+  .foot{display:none}
+  .content{padding:14px 14px 40px}
+  .mwarn{display:block;margin:0 0 12px;padding:8px 12px;background:var(--strong-bg);color:var(--strong);font-weight:600;font-size:13px;border-radius:3px}
+  .sk-row{grid-template-columns:1fr}.sk-card:nth-child(n+2){display:none}
+}
 </style>

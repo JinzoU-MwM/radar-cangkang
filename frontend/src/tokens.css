@@ -111,7 +111,8 @@ a.ticker:hover{text-decoration:underline}
 
 /* Saringan: tombol Saring + chip aktif di halaman, pilihan di panel modal. */
 .fgroups .grp{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.fgroups{display:flex;flex-direction:column;gap:16px;margin:14px 0 4px}
+.fgroups{display:flex;flex-direction:column;gap:16px;margin:4px 0 4px}
+.fnote{margin:0}
 .fgroups .grp > .lbl{flex-basis:100%}
 .ftitle{margin:0;font:700 22px var(--f-display)}
 .ffoot{display:flex;justify-content:space-between;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--rule-2)}

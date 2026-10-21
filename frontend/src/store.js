@@ -33,6 +33,10 @@ export const store = reactive({
   ready: false,
   // Kandidat otomatis dari /api/kandidat (pemindaian seluruh BEI di server).
   kandidat: { items: [], hidden: [], asOf: '', loading: true, error: '' },
+  // Emiten yang sedang dibandingkan (maks. 3), diingat di browser ini.
+  compare: ls.get('radar-cangkang.compare', []),
+  // Perubahan per emiten dari snapshot harian (/api/diff), per rentang hari: { 1: {...}, 7: {...} }.
+  diff: {},
   items: [],
   updates: [],
   verified: {},
@@ -358,4 +362,21 @@ export async function unhideKandidat(h) {
   // Data sinyalnya tidak ikut dikirim untuk yang tersembunyi: muat ulang daftar.
   kandidatReq = null
   await loadKandidat()
+}
+
+// Diff harian per rentang (1 = sejak kemarin, 7 = seminggu); dimuat sekali per sesi per rentang.
+const diffReq = {}
+export function loadDiff(days = 1) {
+  diffReq[days] ||= api.get('/api/diff', { days })
+    .then(r => { store.diff[days] = r })
+    .catch(e => { store.diff[days] = { error: e.message, items: [] }; diffReq[days] = null })
+  return diffReq[days]
+}
+export const diffOf = (t, days = 1) => (store.diff[days]?.items || []).find(x => x.ticker === t)?.changes || []
+
+export const COMPARE_MAX = 3
+export function toggleCompare(t) {
+  const c = store.compare
+  store.compare = c.includes(t) ? c.filter(x => x !== t) : [...c, t].slice(-COMPARE_MAX)
+  ls.set('radar-cangkang.compare', store.compare)
 }

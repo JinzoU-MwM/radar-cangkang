@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { store, itemOf, pandanganOf, storyOf, autoRefresh, loadStories } from '../store.js'
+import { store, itemOf, pandanganOf, storyOf, autoRefresh, loadStories, toggleCompare } from '../store.js'
 import { fmtDate, rp, scoreOf, statusOf, STATUS_LABEL } from '../lib/domain.js'
 import SikapTag from '../components/SikapTag.vue'
 import StageTrack from '../components/StageTrack.vue'
@@ -128,6 +128,9 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
           </p>
         </div>
         <div class="right">
+          <button v-if="item" type="button" class="btn" :aria-pressed="String(store.compare.includes(T))" @click="toggleCompare(T)">
+            {{ store.compare.includes(T) ? '✓ Dibandingkan' : '+ Bandingkan' }}
+          </button>
           <button type="button" class="btn primary" aria-haspopup="dialog" @click="openFlow()">
             <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="4" cy="4" r="2.2" /><circle cx="14" cy="4" r="2.2" /><circle cx="9" cy="14" r="2.2" /><path d="M5.5 5.6 8 12M12.5 5.6 10 12" /></svg>
             Alur saham

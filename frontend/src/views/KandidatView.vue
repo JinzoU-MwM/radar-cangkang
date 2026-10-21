@@ -54,6 +54,18 @@ const selCell = computed(() => selItem.value && cellOf(selItem.value, selSig.val
 const form = reactive({ d: today(), text: '', src: '' })
 const saving = ref(false)
 
+// Triase: lompat ke sel "belum dicek" berikutnya (baris lalu kolom, berputar ke awal), lewati sinyal otomatis.
+const manualSigs = SIGNALS.filter(s => !s.auto)
+const queue = computed(() => rows.value.flatMap(item => manualSigs.filter(s => cellOf(item, s).st === 'unk').map(s => ({ item, s }))))
+function pickNext() {
+  const q = queue.value
+  if (!q.length) { toast('Semua sinyal kandidat sudah dicek.'); return }
+  const order = rows.value.map(i => i.ticker)
+  const pos = x => order.indexOf(x.item.ticker) * 100 + manualSigs.indexOf(x.s)
+  const cur = sel.value ? order.indexOf(sel.value.t) * 100 + manualSigs.findIndex(s => s.id === sel.value.id) : -1
+  const nxt = q.find(x => pos(x) > cur) || q[0]
+  pick(nxt.item, nxt.s)
+}
 const evBox = ref(null)
 async function pick(item, s) {
   sel.value = { t: item.ticker, id: s.id }
@@ -83,6 +95,8 @@ async function record(st) {
   try {
     await saveItem(next)
     form.text = ''; form.src = ''
+    // Selesai mencatat satu sel: langsung ke sel belum dicek berikutnya.
+    pickNext()
   } catch (e) { toast('Gagal menyimpan temuan: ' + e.message, true) } finally { saving.value = false }
 }
 
@@ -148,6 +162,7 @@ async function promote(item) {
       <div class="legend-row">
         <h2 id="ledH">Buku sinyal</h2>
         <button type="button" class="pill" :aria-pressed="String(recentOnly)" @click="recentOnly = !recentOnly">Sinyal 7 hari terakhir<b>{{ nRecent }}</b></button>
+        <button v-if="!store.status?.readOnly" type="button" class="btn small" :disabled="!queue.length" @click="pickNext">Triase: cek berikutnya<b class="qn">{{ queue.length }}</b></button>
         <p v-if="auto.asOf" class="small muted asof">Pindaian otomatis {{ fmtDate(auto.asOf.slice(0, 10)) }} {{ auto.asOf.slice(11, 16) }} · {{ autoRows.length }} kandidat otomatis</p>
         <div class="legend small muted">
           <span><i class="sw fresh"></i> 7 hari terakhir</span>
@@ -201,7 +216,10 @@ async function promote(item) {
 
     <section v-if="selItem && selSig" ref="evBox" aria-labelledby="evH" class="rule-top sec ev-grid">
       <div>
-        <h2 id="evH">{{ sel.t }} · {{ selSig.label }}</h2>
+        <div class="evh">
+          <h2 id="evH"><RouterLink class="ticker" :to="'/emiten/' + sel.t">{{ sel.t }}</RouterLink> · {{ selSig.label }}</h2>
+          <button type="button" class="btn small" :disabled="!queue.length" @click="pickNext">Lewati, cek berikutnya ({{ queue.length }})</button>
+        </div>
         <div class="small muted sub">{{ selItem.name || 'Nama belum ada' }} · bobot {{ selSig.w }}</div>
         <div v-for="(e, i) in selCell.ev || []" :key="i" class="ev">
           <span class="ed">{{ e.d ? fmtDate(e.d) : 'tanpa tanggal' }}</span>
@@ -229,6 +247,9 @@ async function promote(item) {
 
 <style scoped>
 .kand{display:flex;flex-direction:column;gap:22px}
+.evh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.evh h2{margin:0}
+.qn{margin-left:6px;font-family:var(--f-display)}
 .head{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
 .add{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
 .fld{display:flex;flex-direction:column;gap:3px}
