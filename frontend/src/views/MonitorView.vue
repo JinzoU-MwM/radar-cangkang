@@ -11,6 +11,7 @@ import CycleChart from '../components/CycleChart.vue'
 import Timeline from '../components/monitor/Timeline.vue'
 import AgendaBlock from '../components/monitor/AgendaBlock.vue'
 import ProgressCells from '../components/monitor/ProgressCells.vue'
+import Modal from '../components/emiten/Modal.vue'
 import PotensiCells from '../components/monitor/PotensiCells.vue'
 import StoryCells from '../components/monitor/StoryCells.vue'
 
@@ -210,6 +211,22 @@ const rows = computed(() => {
     return (typeof x === 'string' ? x.localeCompare(y) : x - y) * s.dir
   })
 })
+// Saringan dibuka lewat panel; di halaman hanya tombol Saring + chip saringan aktif (klik = hapus).
+const fOpen = ref(false)
+const chips = computed(() => {
+  const out = []
+  if (deal.value) out.push({ key: 'deal', label: STATUS.find(x => x[0] === deal.value)[1], clear: () => { deal.value = '' } })
+  if (stage.value >= 0) out.push({ key: 'stage', label: 'Tahap ' + TRACK[stage.value], clear: () => { stage.value = -1 } })
+  if (sikap.value) out.push({ key: 'sikap', label: SIKAP.find(x => x[0] === sikap.value)[1], clear: () => { sikap.value = '' } })
+  if (special.value) out.push({ key: 'special', label: SPECIAL[special.value].label, clear: () => { special.value = '' } })
+  for (const k of inj.value) {
+    if (!INJ[k]) continue
+    const ptwTxt = k === 'ctrlIn' && ptw.value ? ' · ' + PTW.find(x => x[0] === ptw.value)[1] : ''
+    out.push({ key: 'inj-' + k, label: (k === 'prog' ? `Progress ${pg.value.lo}–${pg.value.hi}%` : INJ[k].label) + ptwTxt, clear: () => toggleInj(k) })
+  }
+  return out
+})
+function clearFilters() { deal.value = ''; stage.value = -1; sikap.value = ''; special.value = ''; inj.value = []; ptw.value = '' }
 const nProses = computed(() => all.value.filter(r => r.deal === 'proses').length)
 const countTxt = computed(() => rows.value.length === all.value.length
   ? `${nProses.value} proses · ${all.value.length - nProses.value} selesai` : `${rows.value.length} dari ${all.value.length} emiten`)
@@ -267,46 +284,15 @@ onMounted(() => autoRefresh('stockbit'))
 
     <AgendaBlock :note="agendaNote" />
 
-    <div class="filters">
-      <div role="group" aria-label="Saring status transaksi" class="grp">
-        <span class="lbl">Status</span>
-        <button v-for="p in dealPills" :key="p.id" type="button" class="pill" :aria-pressed="String(deal === p.id)" :disabled="!p.n && deal !== p.id" @click="deal = p.id">{{ p.label }}<b>{{ p.n }}</b></button>
-      </div>
-      <div role="group" aria-label="Saring tahap" class="grp">
-        <span class="lbl">Tahap</span>
-        <button v-for="p in stagePills" :key="p.i" type="button" class="pill" :aria-pressed="String(stage === p.i)" :disabled="!p.n && stage !== p.i" @click="stage = p.i">{{ p.label }}<b>{{ p.n }}</b></button>
-      </div>
-      <div role="group" aria-label="Saring sikap" class="grp">
-        <span class="lbl">Sikap</span>
-        <button v-for="p in sikapPills" :key="p.id" type="button" class="pill" :aria-pressed="String(sikap === p.id)" :disabled="!p.n && sikap !== p.id" @click="sikap = sikap === p.id ? '' : p.id">{{ p.label }}<b>{{ p.n }}</b></button>
-      </div>
-      <div role="group" aria-label="Saring kondisi khusus" class="grp">
-        <span class="lbl">Khusus</span>
-        <button v-for="p in specialPills" :key="p.id" type="button" class="pill" :aria-pressed="String(special === p.id)" :disabled="!p.n && special !== p.id" @click="special = special === p.id ? '' : p.id">{{ p.label }}<b>{{ p.n }}</b></button>
-      </div>
-      <div id="progInj" role="group" aria-label="Saring injeksi aset, bisa digabung" class="grp">
-        <span class="lbl">Injeksi</span>
-        <button type="button" class="pill" :aria-pressed="String(!inj.length)" @click="inj = []">Semua<b>{{ baseInj.length }}</b></button>
-        <template v-for="p in injPills" :key="p.k">
-          <button type="button" class="pill" :aria-pressed="String(p.on)" :title="p.tip" :disabled="!p.n && !p.on" @click="toggleInj(p.k)">
-            {{ p.k === 'prog' ? `Progress ${pg.lo}–${pg.hi}%` : p.label }}<b>{{ p.n }}</b>
-          </button>
-          <span v-if="p.k === 'ctrlIn' && p.on" class="sub" role="group" aria-label="Status PTW">
-            <button v-for="o in ptwPills" :key="o.id" type="button" class="pill sm" :aria-pressed="String(ptw === o.id)" @click="ptw = o.id">{{ o.label }}<b>{{ o.n }}</b></button>
-          </span>
-          <span v-if="p.k === 'prog'" class="range">
-            <label for="pglo" class="sr-only">Progress minimum (%)</label>
-            <input id="pglo" class="field" type="number" min="0" max="100" step="5" :value="pg.lo" @change="setPg('lo', $event.target.value)">
-            <span class="muted">–</span>
-            <label for="pghi" class="sr-only">Progress maksimum (%)</label>
-            <input id="pghi" class="field" type="number" min="0" max="100" step="5" :value="pg.hi" @change="setPg('hi', $event.target.value)">
-            <span class="muted small">%</span>
-          </span>
-        </template>
-      </div>
-    </div>
-
     <div class="bar-row">
+      <div class="fbar">
+        <button id="progInj" type="button" class="btn" :aria-expanded="String(fOpen)" aria-haspopup="dialog" @click="fOpen = true">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 2.5h12M3.5 7h7M5.5 11.5h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+          Saring<b v-if="chips.length" class="fcount">{{ chips.length }}</b>
+        </button>
+        <button v-for="c in chips" :key="c.key" type="button" class="pill chip" :aria-label="'Hapus saringan ' + c.label" @click="c.clear()">{{ c.label }} <span aria-hidden="true">×</span></button>
+        <button v-if="chips.length > 1" type="button" class="linkbtn small" @click="clearFilters">Hapus semua</button>
+      </div>
       <div role="group" aria-label="Tampilan tabel" class="seg">
         <span class="lbl">Tampilan</span>
         <button v-for="[id, label] in SETS" :key="id" type="button" :aria-pressed="String(set === id)" @click="setSet(id)">{{ label }}</button>
@@ -385,6 +371,51 @@ onMounted(() => autoRefresh('stockbit'))
         <span role="listitem" class="tag st-strong">Keyakinan tinggi · 65 ke atas</span>
       </div>
     </details>
+    <Modal v-if="fOpen" labelledby="fT" close-label="Tutup saringan" @close="fOpen = false">
+      <template #title><h2 id="fT" class="ftitle">Saring emiten</h2></template>
+      <div class="fgroups">
+        <div role="group" aria-label="Saring status transaksi" class="grp">
+          <span class="lbl">Status</span>
+          <button v-for="p in dealPills" :key="p.id" type="button" class="pill" :aria-pressed="String(deal === p.id)" :disabled="!p.n && deal !== p.id" @click="deal = p.id">{{ p.label }}<b>{{ p.n }}</b></button>
+        </div>
+        <div role="group" aria-label="Saring tahap" class="grp">
+          <span class="lbl">Tahap</span>
+          <button v-for="p in stagePills" :key="p.i" type="button" class="pill" :aria-pressed="String(stage === p.i)" :disabled="!p.n && stage !== p.i" @click="stage = p.i">{{ p.label }}<b>{{ p.n }}</b></button>
+        </div>
+        <div role="group" aria-label="Saring sikap" class="grp">
+          <span class="lbl">Sikap</span>
+          <button v-for="p in sikapPills" :key="p.id" type="button" class="pill" :aria-pressed="String(sikap === p.id)" :disabled="!p.n && sikap !== p.id" @click="sikap = sikap === p.id ? '' : p.id">{{ p.label }}<b>{{ p.n }}</b></button>
+        </div>
+        <div role="group" aria-label="Saring kondisi khusus" class="grp">
+          <span class="lbl">Khusus</span>
+          <button v-for="p in specialPills" :key="p.id" type="button" class="pill" :aria-pressed="String(special === p.id)" :disabled="!p.n && special !== p.id" @click="special = special === p.id ? '' : p.id">{{ p.label }}<b>{{ p.n }}</b></button>
+        </div>
+        <div role="group" aria-label="Saring injeksi aset, bisa digabung" class="grp">
+          <span class="lbl">Injeksi</span>
+          <button type="button" class="pill" :aria-pressed="String(!inj.length)" @click="inj = []">Semua<b>{{ baseInj.length }}</b></button>
+          <template v-for="p in injPills" :key="p.k">
+            <button type="button" class="pill" :aria-pressed="String(p.on)" :title="p.tip" :disabled="!p.n && !p.on" @click="toggleInj(p.k)">
+              {{ p.k === 'prog' ? `Progress ${pg.lo}–${pg.hi}%` : p.label }}<b>{{ p.n }}</b>
+            </button>
+            <span v-if="p.k === 'ctrlIn' && p.on" class="sub" role="group" aria-label="Status PTW">
+              <button v-for="o in ptwPills" :key="o.id" type="button" class="pill sm" :aria-pressed="String(ptw === o.id)" @click="ptw = o.id">{{ o.label }}<b>{{ o.n }}</b></button>
+            </span>
+            <span v-if="p.k === 'prog'" class="range">
+              <label for="pglo" class="sr-only">Progress minimum (%)</label>
+              <input id="pglo" class="field" type="number" min="0" max="100" step="5" :value="pg.lo" @change="setPg('lo', $event.target.value)">
+              <span class="muted">–</span>
+              <label for="pghi" class="sr-only">Progress maksimum (%)</label>
+              <input id="pghi" class="field" type="number" min="0" max="100" step="5" :value="pg.hi" @change="setPg('hi', $event.target.value)">
+              <span class="muted small">%</span>
+            </span>
+          </template>
+        </div>
+      </div>
+      <div class="ffoot">
+        <button type="button" class="btn" :disabled="!chips.length" @click="clearFilters">Hapus semua</button>
+        <button type="button" class="btn primary" @click="fOpen = false">Tampilkan {{ rows.length }} emiten</button>
+      </div>
+    </Modal>
   </div>
 </template>
 
@@ -396,7 +427,16 @@ onMounted(() => autoRefresh('stockbit'))
 .tools{display:flex;flex-wrap:wrap;gap:8px}
 .tools .field{width:240px;max-width:100%}
 .now{color:var(--now-ink)}
-.filters{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
+.fgroups{display:flex;flex-direction:column;gap:16px;margin:14px 0 4px}
+.fgroups .grp > .lbl{flex-basis:100%}
+.ftitle{margin:0;font:700 22px var(--f-display)}
+.ffoot{display:flex;justify-content:space-between;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--rule-2)}
+.fbar{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.fbar .btn{display:inline-flex;gap:6px;align-items:center}
+.fcount{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--now);color:#fff;font:700 12px var(--f-display)}
+.chip{background:var(--accent-soft);border-color:transparent}
+.chip span{margin-left:4px;font-weight:700}
+.linkbtn{background:none;border:0;padding:4px;color:var(--accent);text-decoration:underline;cursor:pointer}
 .grp{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .grp .lbl{margin-right:2px}
 .box{overflow:auto;max-height:72vh}
