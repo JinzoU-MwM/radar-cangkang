@@ -64,3 +64,15 @@ describe('layoutRows', () => {
     expect(layoutRows(rel)).toBe(rel)
   })
 })
+
+describe('jaringan lintas emiten', () => {
+  it('nama pihak dicocokkan tanpa bentuk badan hukum', async () => {
+    const { buildEntityIndex, entityKey } = await import('../relasiAuto.js')
+    const idx = buildEntityIndex({
+      MEJA: { nodes: [{ id: 'em', t: 'MEJA' }, { id: 'a', t: 'PT Triple Berkah Bersama' }] },
+      EPAC: { nodes: [{ id: 'b', t: 'Triple Berkah Bersama' }, { id: 'p', t: 'Masyarakat' }] },
+    })
+    expect([...idx.get(entityKey('PT. Triple Berkah Bersama'))].sort()).toEqual(['EPAC', 'MEJA'])
+    expect(idx.has('masyarakat')).toBe(false)
+  })
+})

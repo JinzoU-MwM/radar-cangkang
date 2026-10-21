@@ -177,7 +177,7 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
       </div>
     </template>
 
-    <OwnershipFlow v-if="flow" :ticker="T" :focus="flowFocus" @close="flow = false" />
+    <OwnershipFlow v-if="flow" :key="T" :ticker="T" :focus="flowFocus" @close="flow = false" />
   </div>
 </template>
 

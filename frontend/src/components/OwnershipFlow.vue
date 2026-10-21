@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { VueFlow, useVueFlow, BaseEdge, EdgeLabelRenderer } from '@vue-flow/core'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
-import { store, relasiOf } from '../store.js'
+import { store, relasiOf, alsoIn } from '../store.js'
 import { api } from '../api.js'
 
 const props = defineProps({
@@ -106,7 +106,7 @@ const sel = computed(() => {
     kind, other: byId.value[f === id ? to : f]?.t || (f === id ? to : f),
     text: (f === id ? 'ke ' : 'dari ') + REL[kind] + ': ' + label,
   }))
-  return { ...I, t: n.t, trackTitle: I.trackTitle || 'Rekam jejak', track: I.track || [], open: I.open || [], links }
+  return { ...I, t: n.t, trackTitle: I.trackTitle || 'Rekam jejak', track: I.track || [], open: I.open || [], links, also: id === 'em' ? [] : alsoIn(n.t, props.ticker) }
 })
 
 // Simpan posisi tengah semua node, ditunda supaya seretan beruntun jadi satu PUT.
@@ -224,6 +224,12 @@ onBeforeUnmount(() => {
             </div>
             <p v-if="!sel.links.length" class="muted">belum ada</p>
           </section>
+          <section v-if="sel.also.length" class="rule-top">
+            <h4 class="lbl">Juga muncul di emiten lain</h4>
+            <div class="also">
+              <RouterLink v-for="t in sel.also" :key="t" class="chip" :to="{ path: '/emiten/' + t, query: { flow: '1' } }">{{ t }}</RouterLink>
+            </div>
+          </section>
           <section class="rule-top">
             <h4 class="lbl">{{ sel.trackTitle }}</h4>
             <div v-for="([d, t], i) in sel.track" :key="i" class="row track">
@@ -315,4 +321,8 @@ onBeforeUnmount(() => {
 :deep(.vue-flow__node.dragging .card){box-shadow:var(--shadow);cursor:grabbing}
 :deep(.vue-flow__handle){display:none}
 :deep(.vue-flow__edge){pointer-events:none}
+
+.also{display:flex;flex-wrap:wrap;gap:6px}
+.also .chip{font:700 13px var(--f-display);letter-spacing:.03em;padding:3px 10px;border:1px solid var(--rule);border-radius:999px;color:var(--ink);text-decoration:none}
+.also .chip:hover{border-color:var(--ink)}
 </style>

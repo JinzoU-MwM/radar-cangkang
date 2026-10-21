@@ -171,3 +171,23 @@ export function layoutRows(rel) {
   }
   return { ...rel, nodes }
 }
+
+// Kunci pencocokan nama pihak lintas emiten: abaikan bentuk badan hukum dan tanda baca.
+export const entityKey = s => String(s || '').toLowerCase()
+  .replace(/\b(pt|tbk|ltd|pte|limited|holdings?|group|grup|inc|co)\b|[.,()]/g, ' ').replace(/\s+/g, ' ').trim()
+
+// Indeks pihak → daftar emiten tempat pihak itu muncul (selain kotak emiten dan Masyarakat).
+export function buildEntityIndex(relasi = {}) {
+  const idx = new Map()
+  for (const [t, v] of Object.entries(relasi)) {
+    if (t.startsWith('_') || !v?.nodes) continue
+    for (const n of v.nodes) {
+      if (n.id === 'em' || n.k === 'none' || /^masyarakat$/i.test(n.t)) continue
+      const k = entityKey(n.t)
+      if (k.length < 6) continue
+      if (!idx.has(k)) idx.set(k, new Set())
+      idx.get(k).add(t)
+    }
+  }
+  return idx
+}

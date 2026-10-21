@@ -5,7 +5,7 @@ import { api, loadJson } from './api.js'
 import { deriveStory } from './lib/story.js'
 import { syncReports, syncStockbit, syncTenders } from './lib/sync.js'
 import { stageOf } from './lib/domain.js'
-import { buildRelasi, layoutRows } from './lib/relasiAuto.js'
+import { buildRelasi, layoutRows, buildEntityIndex, entityKey } from './lib/relasiAuto.js'
 
 const LS_ITEMS = 'radar-cangkang.v1'
 const LS_UPD = 'radar-cangkang.updates.v1'
@@ -311,4 +311,11 @@ export async function getBenchmark(deals = benchmarkDeals()) {
       .finally(() => bmInflight.delete(deals)))
   }
   return bmInflight.get(deals)
+}
+
+// Emiten lain tempat pihak yang sama muncul (jaringan lintas emiten di panel Alur saham).
+let entIdx = null, entSrc = null
+export function alsoIn(title, ticker) {
+  if (entSrc !== store.relasi) { entIdx = buildEntityIndex(store.relasi); entSrc = store.relasi }
+  return [...(entIdx.get(entityKey(title)) || [])].filter(t => t !== ticker).sort()
 }
