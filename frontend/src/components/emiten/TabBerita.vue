@@ -15,7 +15,7 @@ const safe = url => /^https?:\/\//.test(url || '')
   <section class="rule-top">
     <div class="bar">
       <h2 class="lbl">Laporan dan berita {{ ticker }}</h2>
-      <button type="button" class="btn" :disabled="store.busy.reports" @click="userRefresh('reports')">
+      <button v-if="!store.status?.readOnly" type="button" class="btn" :disabled="store.busy.reports" @click="userRefresh('reports')">
         {{ store.busy.reports ? 'Memperbarui…' : 'Perbarui berita' }}
       </button>
     </div>

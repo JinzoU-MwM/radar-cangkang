@@ -28,7 +28,7 @@ const token = computed(() => {
 // Peringatan sekali saat sisa token < 1 jam; diulang hanya setelah token diganti (sisa > 2 jam lagi).
 let tokenWarned = false
 watch([() => store.status?.tokenExp, now], ([exp, t]) => {
-  if (!exp) return
+  if (!exp || store.status?.readOnly) return
   const left = exp * 1000 - t
   if (left > 0 && left < 3600e3 && !tokenWarned) {
     tokenWarned = true
@@ -78,7 +78,8 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
       <RouterLink class="nav" to="/berita" active-class="on">Berita <span class="cnt">{{ nBaru || '' }}</span></RouterLink>
       <ChangelogPanel />
       <div class="foot">
-        <span v-if="token" class="tok" :class="token.cls">{{ token.text }}</span>
+        <span v-if="store.status?.readOnly" class="tok">Versi publik · hanya baca</span>
+        <span v-else-if="token" class="tok" :class="token.cls">{{ token.text }}</span>
         <span v-else-if="store.status && !store.status.configured" class="tok">Stockbit: config belum diisi</span>
         <span>/ cari · 1–3 pindah menu</span>
         <button type="button" class="theme" @click="toggleTheme">{{ theme === 'dark' ? 'Tema terang' : 'Tema gelap' }}</button>

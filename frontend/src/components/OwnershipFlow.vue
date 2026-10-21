@@ -82,13 +82,13 @@ function onDragStop() {
       const c = center({ data: n.data, computedPosition: n.position })
       return [n.id, { x: Math.round(c.x), y: Math.round(c.y) }]
     }))
-    api.put('/api/layout/' + props.ticker, body).catch(e => console.warn('Gagal menyimpan tata letak', e))
+    if (!store.status?.readOnly) api.put('/api/layout/' + props.ticker, body).catch(e => console.warn('Gagal menyimpan tata letak', e))
   }, 400)
 }
 async function resetLayout() {
   clearTimeout(saveTimer)
   nodes.value = toNodes()
-  api.put('/api/layout/' + props.ticker, {}).catch(e => console.warn('Gagal menghapus tata letak', e))
+  if (!store.status?.readOnly) api.put('/api/layout/' + props.ticker, {}).catch(e => console.warn('Gagal menghapus tata letak', e))
   await nextTick()
   requestAnimationFrame(fit)
 }

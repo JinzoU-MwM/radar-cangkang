@@ -70,7 +70,7 @@ onMounted(() => autoRefresh('reports'))
           <option value="stockbit">Stockbit Reports</option>
           <option value="media">Media</option>
         </select>
-        <button type="button" class="btn primary" :disabled="store.busy.reports || !canRefresh"
+        <button v-if="!store.status?.readOnly" type="button" class="btn primary" :disabled="store.busy.reports || !canRefresh"
           :title="canRefresh ? 'Tarik laporan dan berita terbaru' : 'Sumber laporan dan berita belum aktif di server'" @click="userRefresh('reports')">
           {{ store.busy.reports ? 'Memperbarui…' : 'Perbarui berita' }}
         </button>

@@ -259,7 +259,7 @@ onMounted(() => autoRefresh('stockbit'))
       <div class="tools">
         <label for="mq" class="sr-only">Cari emiten</label>
         <input id="mq" v-model="q" data-search type="search" class="field" placeholder="Cari kode, pengendali, atau bisnis">
-        <button type="button" class="btn primary" :disabled="store.busy.stockbit || !canSync()" :title="syncTitle" @click="userRefresh('stockbit')">
+        <button v-if="!store.status?.readOnly" type="button" class="btn primary" :disabled="store.busy.stockbit || !canSync()" :title="syncTitle" @click="userRefresh('stockbit')">
           {{ store.busy.stockbit ? 'Memperbarui…' : 'Perbarui dari Stockbit' }}
         </button>
       </div>

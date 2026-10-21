@@ -72,6 +72,8 @@ function progressToast() {
 }
 
 export const itemOf = t => store.items.find(i => i.ticker === t)
+// Versi publik (domain lewat Cloudflare): server menolak penulisan dan tidak memanggil Stockbit.
+export const readOnly = () => !!store.status?.readOnly
 export const pandanganOf = t => store.pandangan[t] || null
 
 const storyMemo = new Map()
@@ -87,6 +89,7 @@ export function storyOf(t) {
 }
 
 export async function saveItem(item) {
+  if (readOnly()) return
   const i = store.items.findIndex(x => x.ticker === item.ticker)
   if (i >= 0) store.items[i] = item
   else store.items.push(item)
@@ -95,6 +98,7 @@ export async function saveItem(item) {
 
 // Simpan hanya item yang berubah supaya tidak menimpa suntingan anggota tim lain.
 export async function saveItems(list) {
+  if (readOnly()) return
   // Sinkron berjalan di atas salinan lama; story yang tersimpan selama sinkron
   // (loadStories) lebih baru dari salinan itu, jadi dipertahankan.
   const cur = new Map(store.items.map(i => [i.ticker, i]))
@@ -111,6 +115,7 @@ export async function saveItems(list) {
 }
 
 export async function saveUpdates(list) {
+  if (readOnly()) return
   const known = new Map(store.updates.map(u => [u.id, JSON.stringify(u)]))
   const changed = list.filter(u => known.get(u.id) !== JSON.stringify(u))
   store.updates = list
@@ -121,7 +126,7 @@ export async function saveUpdates(list) {
 // Data radar dari server. Kunjungan pertama setelah refaktor: kirim isi localStorage lama sekali.
 async function loadData() {
   let [items, updates] = await Promise.all([api.get('/api/items'), api.get('/api/updates')])
-  if (!items.length) {
+  if (!items.length && !readOnly()) {
     const oldItems = ls.get(LS_ITEMS, null)
     const oldUpd = ls.get(LS_UPD, []).filter(u => /^(sb-report-|news-)/.test(u.id))
     const payload = { items: oldItems && oldItems.length ? oldItems : SEED_ITEMS, updates: oldUpd }
@@ -144,8 +149,8 @@ export async function init() {
     ['story-verified.json', 'pandangan-analis.json', 'analisa.json', 'pengendali-verified.json', 'relasi-verified.json',
       'aset-verified.json', 'profil-pengendali.json', 'hsc.json', 'changelog.json'].map(loadJson))
   Object.assign(store, { verified, pandangan, analisa, pengendali, relasi, aset, profil, hsc: hsc.kode ? hsc : { kode: [] }, changelog })
+  await loadStatus()  // dulu: perlu tahu mode publik sebelum migrasi
   try { await loadData() } catch (e) { toast('Gagal memuat data dari server: ' + e.message, true) }
-  await loadStatus()
   try { store.features = await api.get('/api/features') } catch {}
   store.ready = true
   addEventListener('pagehide', () => ls.set(LS_SEEN, new Date().toISOString()))
@@ -158,7 +163,7 @@ export async function init() {
 
 export const canSync = () => {
   const s = store.status
-  return !!s && s.configured && !(s.needsToken && !s.tokenLoaded)
+  return !!s && !s.readOnly && s.configured && !(s.needsToken && !s.tokenLoaded)
 }
 
 export async function runSyncStockbit() {
