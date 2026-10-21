@@ -143,7 +143,7 @@ def cache_write(url: str, body: str) -> None:
 
 DATA_DB = ROOT / ".radar.sqlite"
 TICKER_RE = re.compile(r"^[A-Z]{4}$")
-MAX_BODY = 1_000_000
+MAX_BODY = 8_000_000
 _data_lock = threading.Lock()
 _data: sqlite3.Connection | None = None
 

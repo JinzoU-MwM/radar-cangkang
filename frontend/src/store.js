@@ -113,7 +113,8 @@ export async function saveUpdates(list) {
   const known = new Map(store.updates.map(u => [u.id, JSON.stringify(u)]))
   const changed = list.filter(u => known.get(u.id) !== JSON.stringify(u))
   store.updates = list
-  if (changed.length) await api.post('/api/updates', changed)
+  // Dikirim bertahap: sinkron berita bisa menghasilkan ribuan update sekaligus.
+  for (let i = 0; i < changed.length; i += 200) await api.post('/api/updates', changed.slice(i, i + 200))
 }
 
 // Data radar dari server. Kunjungan pertama setelah refaktor: kirim isi localStorage lama sekali.

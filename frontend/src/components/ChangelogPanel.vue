@@ -1,6 +1,6 @@
 <script setup>
-import { computed, nextTick, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, nextTick, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { store } from '../store.js'
 import { fmtDate, stageOf } from '../lib/domain.js'
 
@@ -12,6 +12,9 @@ const JENIS = { fitur: ['Fitur baru', 't-good'], tampilan: ['Tampilan', 't-calm'
 // Fitur yang sudah dibuang dari aplikasi; catatannya tidak ditampilkan.
 const HIDDEN = new Set(['2026-10-20-lan'])
 const router = useRouter()
+const route = useRoute()
+// Panel ditutup saat pindah halaman supaya tidak menutupi konten baru.
+watch(() => route.fullPath, () => { open.value = false })
 
 // Urut sesuai nomor poin permintaan (field "poin", mis. "8–9" → 8); catatan tanpa poin di akhir.
 const pn = i => (i.poin ? parseInt(i.poin, 10) : NaN) || 999
@@ -56,6 +59,8 @@ function close() { open.value = false; opener?.focus() }
 // Tautan "Buka" dari field `buka` lama (view/analisa/mode/anchor) ke rute baru.
 function target(b) {
   if (!b) return null
+  // Format baru: path rute Vue langsung (+ query, anchor).
+  if (b.route) return { path: b.route, query: b.query || {}, hash: b.anchor ? '#' + b.anchor : '' }
   if (b.analisa) return { path: '/emiten/' + b.analisa, query: { tab: b.mode === 'teknikal' || b.mode === 'spekulasi' ? b.mode : 'analisa' } }
   // Jangkar lama "feedQ" (kotak cari berita) = #nq di BeritaView.
   if (b.view === 'update') return { path: '/berita', hash: b.anchor === 'feedQ' ? '#nq' : '' }
