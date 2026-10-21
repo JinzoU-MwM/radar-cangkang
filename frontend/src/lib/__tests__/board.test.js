@@ -50,3 +50,15 @@ describe('pemegang ≥5% yang basi', () => {
     expect(by('PIMSF PULOGADUNG').below5).toBeUndefined()
   })
 })
+
+describe('newReason emiten radar tanpa tender', () => {
+  it('memakai sinyal dan peristiwa terbaru', () => {
+    const t = newReason({ ticker: 'APEX', stage: 'radar', flags: { rights: true },
+      signals: { rights: { st: 'on', d: '2026-10-07', ev: [{ d: '2026-10-07', text: 'Agenda PMTHMETD 218.090.317 saham Seri B nominal Rp325' }] } } })
+    expect(t).toBe('Rencana dilusi · Agenda PMTHMETD 218.090.317 saham Seri B nominal Rp325 (7 Okt 2026)')
+  })
+  it('jatuh ke catatan bila tidak ada peristiwa', () => {
+    expect(newReason({ ticker: 'FLMC', stage: 'radar', flags: { cangkang: true }, notes: 'Profil cangkang: rugi Rp23 M. Belum ada sinyal.' }))
+      .toBe('Profil cangkang · Profil cangkang: rugi Rp23 M.')
+  })
+})
