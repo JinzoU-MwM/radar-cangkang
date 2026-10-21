@@ -126,12 +126,6 @@
         "pattern": "emitennews\\.com/news/"
       },
       {
-        "name": "Bisnis.com",
-        "type": "html",
-        "url": "https://market.bisnis.com/bursa-saham",
-        "pattern": "bisnis\\.com/read/"
-      },
-      {
         "name": "detikFinance",
         "type": "rss",
         "url": "https://finance.detik.com/rss"
