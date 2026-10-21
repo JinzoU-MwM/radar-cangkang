@@ -129,6 +129,7 @@ async function resetLayout() {
   requestAnimationFrame(fit)
 }
 
+let fitTimer = 0
 const dlg = ref(null)
 let opener = null
 function onKey(e) {
@@ -146,9 +147,12 @@ onMounted(async () => {
   try { saved = (await api.get('/api/layout/' + props.ticker)) || {} } catch (e) { console.warn('Gagal memuat tata letak', e) }
   nodes.value = toNodes(saved)
   ready.value = true
+  // Muat langsung (bukan dari navigasi): ukuran kanvas kadang belum final saat nodes-initialized.
+  fitTimer = setTimeout(fit, 350)
 })
 onBeforeUnmount(() => {
   clearTimeout(saveTimer)
+  clearTimeout(fitTimer)
   opener?.focus?.()
 })
 </script>

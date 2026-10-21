@@ -58,6 +58,17 @@ describe('layoutRows', () => {
     expect(r.nodes.find(n => n.id === 'p')).toMatchObject({ x: 680, y: 120 })
     expect(r.nodes.every(n => Number.isFinite(n.x))).toBe(true)
   })
+  it('baris lebih dari 5 kotak dipecah jadi sub-baris', async () => {
+    const { layoutRows } = await import('../relasiAuto.js')
+    const people = Array.from({ length: 7 }, (_, i) => ({ id: 'p' + i, row: 0 }))
+    const r = layoutRows({ nodes: [...people, { id: 'em', row: 2 }, { id: 'x', row: 1 }] })
+    const ys = [...new Set(r.nodes.filter(n => n.row === 0).map(n => n.y))]
+    expect(ys).toHaveLength(2)
+    expect(r.nodes.filter(n => n.y === ys[0])).toHaveLength(5)
+    // baris berikutnya turun mengikuti jumlah sub-baris
+    expect(r.nodes.find(n => n.id === 'x').y).toBeGreaterThan(ys[1])
+    expect(r.nodes.find(n => n.id === 'em').x).toBe(680)
+  })
   it('relasi yang sudah berkoordinat tidak diubah', async () => {
     const { layoutRows } = await import('../relasiAuto.js')
     const rel = { nodes: [{ id: 'em', x: 10, y: 20 }] }

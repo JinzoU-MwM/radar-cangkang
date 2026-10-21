@@ -158,19 +158,33 @@ export function buildRelasi(t, { profil = {}, aset = {}, pengendali = {}, verifi
 export function layoutRows(rel) {
   if (!rel?.nodes || rel.nodes.every(n => Number.isFinite(n.x) && Number.isFinite(n.y))) return rel
   const nodes = rel.nodes.map(n => ({ ...n }))
+  let y = ROW_Y_RISET[0]
   for (let r = 0; r < 4; r++) {
-    let row = nodes.filter(n => (n.row ?? 3) === r)
+    const row = nodes.filter(n => (n.row ?? 3) === r)
+    // Baris > MAX_PER_ROW dipecah jadi beberapa sub-baris supaya diagram tidak melebar.
+    const subs = []
     if (r === 2) {
-      // Emiten di tengah: bagi kotak lain ke kiri dan kanan.
+      // Emiten di tengah sub-baris pertama, diapit maksimal 2 kotak tiap sisi; sisanya di bawah.
       const em = row.find(n => n.id === 'em'), rest = row.filter(n => n !== em)
-      row = em ? [...rest.slice(0, Math.floor(rest.length / 2)), em, ...rest.slice(Math.floor(rest.length / 2))] : row
-    }
-    // Jarak lega (≥ 400) supaya label garis antar-kotak bersebelahan tidak tertutup kotak.
-    const gap = Math.max(400, Math.min(460, 2000 / Math.max(1, row.length)))
-    row.forEach((n, i) => { n.x = 680 + (i - (row.length - 1) / 2) * gap; n.y = ROW_Y_RISET[r] })
+      const side = em ? Math.min(2, Math.floor(rest.length / 2)) : 0
+      const first = em ? [...rest.slice(0, side), em, ...rest.slice(side, side * 2)] : []
+      subs.push(...(first.length ? [first] : []), ...chunk(rest.slice(em ? side * 2 : 0), MAX_PER_ROW))
+    } else subs.push(...chunk(row, MAX_PER_ROW))
+    subs.forEach((sub, k) => {
+      // Jarak lega (≥ 400) supaya label garis antar-kotak bersebelahan tidak tertutup kotak;
+      // sub-baris ganjil digeser setengah jarak agar garis vertikal lewat di sela kotak.
+      const gap = Math.max(400, Math.min(460, 2000 / sub.length))
+      const shift = k % 2 ? gap / 2 : 0
+      sub.forEach((n, i) => { n.x = 680 + shift + (i - (sub.length - 1) / 2) * gap; n.y = y + k * SUB_ROW_GAP })
+    })
+    y += Math.max(0, subs.length - 1) * SUB_ROW_GAP + (ROW_Y_RISET[1] - ROW_Y_RISET[0])
   }
   return { ...rel, nodes }
 }
+
+const MAX_PER_ROW = 5
+const SUB_ROW_GAP = 190
+const chunk = (a, n) => Array.from({ length: Math.ceil(a.length / n) }, (_, i) => a.slice(i * n, i * n + n))
 
 // Kunci pencocokan nama pihak lintas emiten: abaikan bentuk badan hukum dan tanda baca.
 export const entityKey = s => String(s || '').toLowerCase()
