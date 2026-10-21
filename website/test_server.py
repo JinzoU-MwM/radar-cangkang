@@ -123,7 +123,7 @@ class DataApiTest(unittest.TestCase):
     def test_06_static_traversal_blocked(self):
         st, _ = self.call("GET", "/..%2fserver.py", ctype=None)
         self.assertEqual(st, 404)
-        for f in ("/server.py", "/tsa_refresh.py", "/test_server.py"):
+        for f in ("/server.py", "/tsa_refresh.py", "/test_server.py", "/tsa-signals.json"):
             st, _ = self.call("GET", f, ctype=None)
             self.assertEqual(st, 404, f)
 
