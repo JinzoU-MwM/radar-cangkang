@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { store, autoRefresh, userRefresh } from '../store.js'
 import { UTYPES, fmtDate } from '../lib/domain.js'
 import { isBackdoorNews, newsTake } from '../lib/news.js'
+import Modal from '../components/emiten/Modal.vue'
 
 const TAG = { good: 't-good', warn: 't-warn', bad: 't-strong', calm: 't-calm' }
 // Arah dampak tiap poin terhadap pemegang saham publik; bentuk SVG: segitiga naik, segitiga turun, bulat.
@@ -20,8 +21,21 @@ const src = ref('')
 const q = ref('')
 
 const feed = computed(() => store.updates.filter(u => isBackdoorNews(u, store.items)))
-const types = computed(() => [{ id: '', name: 'Semua', n: feed.value.length },
-  ...UTYPES.map(t => ({ ...t, n: feed.value.filter(u => u.type === t.id).length })).filter(t => t.n)])
+// Angka jenis mengikuti saringan sumber yang aktif (dan sebaliknya di srcs).
+const bySrc = computed(() => feed.value.filter(u => !src.value || srcOf(u) === src.value))
+const types = computed(() => [{ id: '', name: 'Semua', n: bySrc.value.length },
+  ...UTYPES.map(t => ({ ...t, n: bySrc.value.filter(u => u.type === t.id).length })).filter(t => t.n || t.id === type.value)])
+
+const SRC = [['', 'Semua sumber'], ['stockbit', 'Stockbit Reports'], ['media', 'Media']]
+const srcs = computed(() => SRC.map(([id, name]) => ({ id, name,
+  n: feed.value.filter(u => (!id || srcOf(u) === id) && (!type.value || u.type === type.value)).length })))
+// Saringan di panel; di halaman hanya tombol Saring + chip aktif (klik = hapus).
+const fOpen = ref(false)
+const chips = computed(() => [
+  type.value && { key: 'type', label: typeName(type.value), clear: () => { type.value = '' } },
+  src.value && { key: 'src', label: SRC.find(x => x[0] === src.value)[1], clear: () => { src.value = '' } },
+].filter(Boolean))
+function clearFilters() { type.value = ''; src.value = '' }
 
 const inItems = computed(() => new Set(store.items.map(i => i.ticker)))
 const nameOf = computed(() => new Map(store.items.map(i => [i.ticker, i.name || ''])))
@@ -64,12 +78,6 @@ onMounted(() => autoRefresh('reports'))
       <div class="tools">
         <label for="nq" class="sr-only">Cari berita</label>
         <input id="nq" v-model="q" data-search type="search" class="field" placeholder="Cari kode, nama, atau judul">
-        <label for="nsrc" class="sr-only">Sumber</label>
-        <select id="nsrc" v-model="src" class="field">
-          <option value="">Semua sumber</option>
-          <option value="stockbit">Stockbit Reports</option>
-          <option value="media">Media</option>
-        </select>
         <button v-if="!store.status?.readOnly" type="button" class="btn primary" :disabled="store.busy.reports || !canRefresh"
           :title="canRefresh ? 'Tarik laporan dan berita terbaru' : 'Sumber laporan dan berita belum aktif di server'" @click="userRefresh('reports')">
           {{ store.busy.reports ? 'Memperbarui…' : 'Perbarui berita' }}
@@ -77,10 +85,35 @@ onMounted(() => autoRefresh('reports'))
       </div>
     </header>
 
-    <div role="group" aria-label="Saring jenis" class="types">
-      <button v-for="t in types" :key="t.id" type="button" class="pill" :aria-pressed="String(type === t.id)" @click="type = t.id">{{ t.name }}<b>{{ t.n }}</b></button>
-      <span v-if="feed.length" class="muted small count">{{ list.length }} pengumuman</span>
+    <div class="bar-row">
+      <div class="fbar">
+        <button type="button" class="btn" :aria-expanded="String(fOpen)" aria-haspopup="dialog" @click="fOpen = true">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 2.5h12M3.5 7h7M5.5 11.5h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+          Saring<b v-if="chips.length" class="fcount">{{ chips.length }}</b>
+        </button>
+        <button v-for="c in chips" :key="c.key" type="button" class="pill chip" :aria-label="'Hapus saringan ' + c.label" @click="c.clear()">{{ c.label }} <span aria-hidden="true">×</span></button>
+        <button v-if="chips.length > 1" type="button" class="linkbtn small" @click="clearFilters">Hapus semua</button>
+      </div>
+      <span v-if="feed.length" class="muted small" aria-live="polite">{{ list.length }} pengumuman</span>
     </div>
+
+    <Modal v-if="fOpen" labelledby="nfT" close-label="Tutup saringan" @close="fOpen = false">
+      <template #title><h2 id="nfT" class="ftitle">Saring berita</h2></template>
+      <div class="fgroups">
+        <div role="group" aria-label="Saring jenis" class="grp">
+          <span class="lbl">Jenis</span>
+          <button v-for="t in types" :key="t.id" type="button" class="pill" :aria-pressed="String(type === t.id)" @click="type = t.id">{{ t.name }}<b>{{ t.n }}</b></button>
+        </div>
+        <div role="group" aria-label="Saring sumber" class="grp">
+          <span class="lbl">Sumber</span>
+          <button v-for="o in srcs" :key="o.id" type="button" class="pill" :aria-pressed="String(src === o.id)" :disabled="!o.n && src !== o.id" @click="src = o.id">{{ o.name }}<b>{{ o.n }}</b></button>
+        </div>
+      </div>
+      <div class="ffoot">
+        <button type="button" class="btn" :disabled="!chips.length" @click="clearFilters">Hapus semua</button>
+        <button type="button" class="btn primary" @click="fOpen = false">Tampilkan {{ list.length }} pengumuman</button>
+      </div>
+    </Modal>
 
     <section aria-label="Daftar berita" class="sheet list">
       <p v-if="!feed.length" class="muted empty">Belum ada berita. Tekan Perbarui berita untuk menarik laporan Stockbit dan media.</p>
@@ -126,8 +159,7 @@ onMounted(() => autoRefresh('reports'))
 .sub{margin:2px 0 0}
 .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .tools input{width:220px;max-width:100%}
-.tools select{padding:0 8px}
-.types{display:flex;flex-wrap:wrap;gap:8px}
+.bar-row{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
 .list{border-radius:4px}
 .empty{margin:0;padding:14px 16px}
 .gd{margin:0;padding:10px 16px 6px;background:var(--sheet-2);border-bottom:1px solid var(--rule-2);font-family:var(--f-display);font-size:12.5px}
@@ -146,7 +178,6 @@ a.title:hover{text-decoration:underline}
 .tone.pos{fill:var(--good)}
 .tone.neg{fill:var(--strong)}
 .an{color:var(--accent);font-weight:600;text-underline-offset:3px;align-self:center}
-.count{margin-left:auto;align-self:center}
 .sk{margin:0}
 .foot{margin:0;font-size:12px}
 @media (max-width:760px){
