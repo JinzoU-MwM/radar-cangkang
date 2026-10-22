@@ -123,7 +123,7 @@ describe('sudut pandang & radar', () => {
   it('narasi berangka', () => {
     const parts = deepView({ t: 'ABCD', mcap: 1e12, price: 100, tender: { price: 75 }, pv: { siapa: 'Masuk di Rp20/saham.' }, pa: { tesisSalahBila: ['KJPP rendah'], variabelKunci: ['RUPS'] } },
       { profil: { ringkas: 'Dikendalikan Budi.' }, aset: { aset: { nama: 'PT Tambang', sektor: 'batu bara' }, transaksi: { nilaiRp: 2e12 }, kjpp: { status: 'ditunjuk' } } })
-    expect(parts.map(p => p[0])).toEqual(['Siapa pengendalinya dan apa motifnya', 'Apa yang masuk dan berapa harganya', 'Siapa yang diuntungkan struktur transaksi', 'Yang bisa membuat tesis salah dan yang harus dipantau'])
+    expect(parts.map(p => p[0])).toEqual(['Pengendali dan motifnya', 'Aset yang masuk dan nilainya', 'Pihak yang diuntungkan oleh struktur transaksi', 'Kondisi yang menggugurkan tesis dan hal yang perlu dipantau'])
     expect(parts[1][1]).toMatch(/PT Tambang \(batu bara\) senilai Rp2 T, setara 2× kapitalisasi ABCD/)
     expect(parts[2][1]).toMatch(/^Pengendali masuk di Rp20 per saham, PTW Rp75, harga kini Rp100\./)
     expect(deepView({ t: 'X' })).toEqual([])
