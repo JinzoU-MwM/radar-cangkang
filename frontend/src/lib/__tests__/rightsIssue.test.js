@@ -81,3 +81,31 @@ describe('rincian aset injeksi', () => {
     expect(d.facts).toEqual([['Produksi', '>20 juta ton']])
   })
 })
+
+describe('presentasi analisa rights issue', () => {
+  it('membangun 9 slide tanpa ukuran negatif atau NaN', async () => {
+    const PptxGenJS = (await import('pptxgenjs')).default
+    const { buildRiDeck, riDeckFileName } = await import('../deck.js')
+    const { THEMES, SECTORS } = await import('../deckThemes.js')
+    const c = riCase(A, { aset: { ...aset, aset: { nama: 'PGGR', jenis: 'Tambang' }, tidakDitemukan: ['kjpp: belum'] }, sv })
+    const pres = buildRiDeck(PptxGenJS, { t: 'NINE', name: 'Techno9', date: '2026-10-22', sector: SECTORS[1], c, P: 81, U: 0 }, THEMES.batubara[0])
+    expect(pres.slides.length).toBe(9)
+    const json = JSON.stringify(pres.slides.map(s => s._slideObjects.map(o => o.options)))
+    expect(json).not.toMatch(/"[wh]":-|NaN/)
+    expect(riDeckFileName('NINE', '2026-10-22', { name: 'Arang & Amber' })).toBe('NINE_RightsIssue_2026-10-22_Arang-Amber.pptx')
+  })
+})
+
+describe('PDF analisa rights issue', () => {
+  it('9 halaman, sama dengan jumlah slide', async () => {
+    const PptxGenJS = (await import('pptxgenjs')).default
+    const { jsPDF } = await import('jspdf')
+    const { buildRiDeck } = await import('../deck.js')
+    const { deckToPdf } = await import('../deckPdf.js')
+    const { THEMES, SECTORS } = await import('../deckThemes.js')
+    const c = riCase(A, { aset: { ...aset, aset: { nama: 'PGGR' } }, sv })
+    const pres = buildRiDeck(PptxGenJS, { t: 'NINE', name: 'Techno9', date: '2026-10-22', sector: SECTORS[1], c, P: 81, U: 0 }, THEMES.batubara[1])
+    const doc = await deckToPdf(pres, jsPDF)
+    expect(doc.getNumberOfPages()).toBe(9)
+  })
+})

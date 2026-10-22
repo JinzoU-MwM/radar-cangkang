@@ -5,6 +5,7 @@ import { fmtDate } from './domain.js'
 import { PT_STATUS, ptStatusTxt, confLvl } from './patterns.js'
 import { phaseName } from './cycle.js'
 import { mergeBoard } from './profil.js'
+import { riCalc, riVerdict, noRights } from './rightsIssue.js'
 
 const W = 10, H = 5.625, M = 0.45, CW = W - 2 * M
 const TOP = 1.2, BOT = 4.6
@@ -37,14 +38,14 @@ const initials = s => String(s || '?').replace(/^(PT|CV)\.?\s+/i, '').trim().spl
 const yk = k => /terverifikasi/i.test(k || '') ? 'ok' : /indikasi/i.test(k || '') ? 'ind' : 'media'
 const YK_LABEL = { ok: 'terverifikasi', ind: 'indikasi', media: 'disebut media' }
 
-export function buildDeck(PptxGenJS, d, th) {
+// Perangkat gambar bersama (presentasi + helper slide) untuk semua jenis presentasi unduhan.
+function makeKit(PptxGenJS, d, th, title) {
   const pres = new PptxGenJS()
   pres.layout = 'LAYOUT_16x9'
   pres.author = 'Radar Backdoor'
   pres.company = 'Radar Backdoor'
-  pres.title = `${d.t} — Analisa Backdoor Listing`
+  pres.title = title
   const S = pres.shapes
-  const A = d.A || {}
   let page = 0
 
   // ---- perangkat gambar ----
@@ -100,9 +101,17 @@ export function buildDeck(PptxGenJS, d, th) {
     s.addShape(S.ROUNDED_RECTANGLE, { x, y, w: fw, h, rectRadius: h / 2, fill: { color }, line: { color, width: 0.25 } })
   }
 
+  return { pres, S, T, card, pill, dot, line, tone, sikapTone, scoreTone, dimTone, chartBase, slide, kpi, hbar, bump: () => ++page }
+}
+
+export function buildDeck(PptxGenJS, d, th) {
+  const K = makeKit(PptxGenJS, d, th, `${d.t} — Analisa Backdoor Listing`)
+  const { pres, S, T, card, pill, dot, line, tone, sikapTone, scoreTone, dimTone, chartBase, slide, kpi, hbar } = K
+  const A = d.A || {}
+
   // ===== 1. Sampul (gelap, motif sesuai sektor) =====
   {
-    const s = pres.addSlide(); page++
+    const s = pres.addSlide(); K.bump()
     s.background = { color: th.dark }
     coverArt(s, d.sector?.motif, th, S, dot, line)
     T(s, 'LAPORAN RISET EMITEN · BACKDOOR LISTING', { x: 0.7, y: 1.0, w: 5.2, h: 0.3, fontSize: 10, bold: true, color: th.accent2, charSpacing: 5 })
@@ -585,7 +594,7 @@ export function buildDeck(PptxGenJS, d, th) {
   // ===== 21. Kesimpulan (gelap) =====
   {
     const pa = d.pa || {}
-    const s = pres.addSlide(); page++
+    const s = pres.addSlide(); K.bump()
     s.background = { color: th.dark }
     coverArt(s, d.sector?.motif, th, S, dot, line, true)
     T(s, 'KESIMPULAN', { x: 0.7, y: 0.6, w: 5, h: 0.3, fontSize: 10, bold: true, color: th.accent2, charSpacing: 5 })
@@ -673,6 +682,243 @@ function coverArt(s, motif, th, S, dot, line, small = false) {
       ;[[0, 0], [1, -1], [-1, 1], [2, 1], [-2, -1]].forEach(([dx, dy], i) => dot(s, cx + dx * k, cy + dy * k, (i ? 0.12 : 0.3) * k, i ? b : a))
   }
 }
+
+// Presentasi khusus analisa penambahan modal (PMHMETD/PMTHMETD/merger), bukan presentasi analisa lengkap.
+// d: { t, name, date, sector, A, c, P, U } dengan c = riCase(...), P = harga pelaksanaan, U = % publik menebus
+// (0–100), sama seperti simulasi di layar.
+export function buildRiDeck(PptxGenJS, d, th) {
+  const c = d.c
+  const K = makeKit(PptxGenJS, d, th, `${d.t} — Analisa ${c.label}`)
+  const { pres, S, T, card, pill, dot, line, chartBase, slide, kpi, hbar } = K
+  const P = d.P, u = (d.U || 0) / 100
+  const r = riCalc(c, P, u)
+  const nr = noRights(c), det = c.detail
+  const pc = v => v == null || isNaN(v) ? '–' : id(v * 100, v < 0.1 ? 2 : 1) + '%'
+  const shS = v => v == null ? '–' : v >= 1e9 ? id(v / 1e9, 2) + ' miliar' : id(v / 1e6, 0) + ' jt'
+  const B = v => Math.round(v / 1e9 * 10) / 10
+  const verdict = riVerdict(c, r)
+  const STATUS = { rencana: 'Rencana', berjalan: 'Berjalan', tereksekusi: 'Sudah tereksekusi' }
+  const what = nr ? (c.kind === 'merger' ? 'penerbitan merger' : 'PMTHMETD') : 'rights issue'
+
+  // ===== 1. Sampul =====
+  {
+    const s = pres.addSlide(); K.bump()
+    s.background = { color: th.dark }
+    coverArt(s, d.sector?.motif, th, S, dot, line)
+    T(s, 'ANALISA PENAMBAHAN MODAL', { x: 0.7, y: 1.0, w: 5.2, h: 0.3, fontSize: 10, bold: true, color: th.accent2, charSpacing: 5 })
+    T(s, d.t, { x: 0.7, y: 1.35, w: 5.2, h: 1.2, fontFace: th.head, fontSize: 66, bold: true, color: 'FFFFFF', valign: 'middle' })
+    T(s, c.label.charAt(0).toUpperCase() + c.label.slice(1), { x: 0.7, y: 2.55, w: 5.6, h: 0.5, fontFace: th.head, fontSize: 24, color: 'FFFFFF', fit: 'shrink' })
+    T(s, d.name || '', { x: 0.7, y: 3.1, w: 5.2, h: 0.35, fontSize: 15, color: th.accent2 })
+    T(s, ['Nilai aset', 'Kebutuhan dana', 'Siapa menyetor', 'Per lot', 'Sensitivitas harga'].join('  •  '), { x: 0.7, y: 3.55, w: 5.6, h: 0.3, fontSize: 11, color: 'D7DEE6' })
+    const w0 = pill(s, 0.7, 4.0, STATUS[c.status], c.status === 'tereksekusi' ? th.good : th.accent, { size: 9 })
+    if (c.jadwal) T(s, short(c.jadwal, 70), { x: 0.85 + w0, y: 4.0, w: 5, h: 0.24, fontSize: 9.5, color: 'D7DEE6', valign: 'middle' })
+    T(s, `Data per ${fmtDate(d.date)}  |  Harga terakhir ${rpS(c.price)}  |  Simulasi harga pelaksanaan ${rpS(P)}`, { x: 0.7, y: 4.95, w: 7, h: 0.25, fontSize: 9.5, color: 'AAB6C2' })
+  }
+  if (!r) return pres
+
+  // ===== 2. Angka kunci =====
+  {
+    const s = slide('Angka kunci', `Nilai ${what} ${bigS(r.total)}`, verdict)
+    const w4 = (CW - 0.45) / 4
+    ;[
+      [c.inj ? bigS(c.inj) : '–', `Nilai transaksi injeksi aset${c.injTarget ? ' · ' + short(c.injTarget, 40) : ''}`, th.accent],
+      [bigS(r.total), `Nilai penerbitan · ${shS(r.N)} saham × ${rpS(P)}`, th.accent],
+      [bigS(r.tunai), r.aset ? `Dana tunai; ${bigS(r.aset)} disetor non-tunai` : 'Dana tunai (seluruhnya)', th.accent],
+      [rpS(P), `Harga pelaksanaan${r.disc != null ? ` · ${r.disc >= 0 ? 'premi' : 'diskon'} ${id(Math.abs(r.disc) * 100, 0)}% vs pasar` : ''}`, r.disc != null && r.disc < -0.3 ? th.bad : th.accent],
+    ].forEach(([v, l, col], i) => kpi(s, M + i * (w4 + 0.15), TOP, w4, 1.5, v, l, col))
+    ;[
+      [nr ? pc(r.newHolder) : `${id(r.ratio, 2)} : 1`, nr ? 'Porsi penerima saham baru' : 'Rasio HMETD per saham lama', th.ink],
+      [pc(r.dilusi), 'Dilusi bila tidak ikut menebus', th.warn],
+      [`${pc((c.float || 0) / 100)} → ${pc(r.pubAfter)}`, 'Porsi publik sekarang → setelah', r.pubAfter < 0.075 ? th.bad : th.ink],
+      [r.vsMcap != null ? id(r.vsMcap, 1) + '×' : '–', 'Nilai penerbitan dibanding kapitalisasi pasar', r.vsMcap >= 1 ? th.bad : th.ink],
+    ].forEach(([v, l, col], i) => kpi(s, M + i * (w4 + 0.15), TOP + 1.7, w4, 1.5, v, l, col))
+  }
+
+  // ===== 3. Rincian nilai aset injeksi =====
+  if (det && (det.nama || det.lo)) {
+    const kj = det.kjpp
+    const s = slide('Aset injeksi', short(det.nama || 'Rincian nilai aset injeksi', 52),
+      kj.status === 'terbit' ? `KJPP terbit${kj.nilai ? ': ' + bigS(kj.nilai) : ''}.` : kj.ket || 'Nilai aset belum diuji penilai independen.')
+    card(s, M, TOP, 3.3, 3.35, { fill: th.dark, line: th.dark })
+    T(s, det.spread ? 'NILAI INDIKATIF (BEDA ANTAR-SUMBER)' : 'NILAI TRANSAKSI', { x: M + 0.2, y: TOP + 0.18, w: 2.9, h: 0.22, fontSize: 8, bold: true, color: th.accent2, charSpacing: 2 })
+    T(s, det.spread ? `${bigS(det.lo)} – ${bigS(det.hi)}` : bigS(det.hi), { x: M + 0.2, y: TOP + 0.45, w: 2.9, h: 0.7, fontFace: th.head, fontSize: det.spread ? 19 : 26, bold: true, color: 'FFFFFF', valign: 'middle' })
+    if (det.spread) T(s, `Dipakai di hitungan: ${bigS(c.inj)}`, { x: M + 0.2, y: TOP + 1.15, w: 2.9, h: 0.25, fontSize: 9.5, color: th.accent2 })
+    T(s, short(det.nilaiText, 260), { x: M + 0.2, y: TOP + 1.5, w: 2.9, h: 1.75, fontSize: 9, color: 'D7DEE6' })
+    const cx = M + 3.5, cw = CW - 3.5
+    const boxes = [
+      ['Aset', [det.jenis, [det.lokasi, det.porsi].filter(Boolean).join(' · '), ...det.facts.map(([l, v]) => `${l}: ${typeof v === 'number' ? bigS(v) : v}`)].filter(Boolean).join(' · ')],
+      ['Cara bayar', det.cara],
+      ['Penilaian independen (KJPP)', `${KJPP_SHORT[kj.status] || 'Belum ada'}${kj.nama ? ' · ' + kj.nama : ''}${kj.nilai ? ' · ' + bigS(kj.nilai) : ''}`],
+    ].filter(b => b[1])
+    // Tinggi kotak mengikuti panjang teks (±95 karakter per baris pada lebar ini).
+    const lines = boxes.map(([, v]) => Math.min(3, Math.ceil(short(v, 280).length / 95)))
+    const room = det.gaps.length ? 2.3 : 3.35
+    const unit = (room - 0.1 * (boxes.length - 1) - 0.36 * boxes.length) / lines.reduce((a, b) => a + b, 0)
+    let by = TOP
+    boxes.forEach(([h, v], i) => {
+      const bh = 0.36 + lines[i] * Math.min(0.2, unit)
+      card(s, cx, by, cw, bh)
+      T(s, h.toUpperCase(), { x: cx + 0.15, y: by + 0.07, w: cw - 0.3, h: 0.2, fontSize: 7.5, bold: true, color: th.accent, charSpacing: 2 })
+      T(s, short(v, 280), { x: cx + 0.15, y: by + 0.28, w: cw - 0.3, h: bh - 0.32, fontSize: 8.5, color: th.ink, fit: 'shrink' })
+      by += bh + 0.1
+    })
+    if (det.gaps.length) {
+      const gy = Math.max(by + 0.05, TOP + 2.2)
+      T(s, 'BELUM DIUNGKAP KE PUBLIK', { x: cx, y: gy, w: cw, h: 0.2, fontSize: 7.5, bold: true, color: th.bad, charSpacing: 2 })
+      T(s, det.gaps.slice(0, 4).map((g, i, a) => ({ text: short(g, 95), options: { bullet: { indent: 10 }, breakLine: i < a.length - 1, paraSpaceAfter: 2 } })),
+        { x: cx, y: gy + 0.24, w: cw, h: TOP + 3.35 - gy - 0.24, fontSize: 8.5, color: th.muted })
+    }
+  }
+
+  // ===== 4. Komposisi penerbitan vs nilai aset; tahap I vs II =====
+  {
+    const take = c.laterInj ? `Tahap I ${bigS(r.total)} tunai bukan untuk membeli aset; aset ${bigS(c.laterInj)} dibayar ±${shS(r.injShares)} saham baru.`
+      : r.gap > (c.inj || 0) * 0.05 ? `Kekurangan ${bigS(r.gap)} harus ditutup utang, kas internal, atau tahap lanjutan.`
+        : r.aset >= r.total * 0.95 ? 'Seluruh penerbitan dibayar dengan aset (non-tunai).' : 'Nilai penerbitan menutup nilai aset.'
+    const s = slide('Kebutuhan dana', c.laterInj ? 'Tahap I Dana, Tahap II Aset' : 'Nilai Penerbitan vs Nilai Aset', take)
+    const cats = c.inj ? ['Nilai aset injeksi', 'Nilai penerbitan'] : ['Nilai penerbitan']
+    const series = [
+      { name: 'Non-tunai (inbreng/konversi utang)', labels: cats, values: c.inj ? [0, B(r.aset)] : [B(r.aset)] },
+      { name: 'Tunai', labels: cats, values: c.inj ? [0, B(r.tunai)] : [B(r.tunai)] },
+      ...(c.inj ? [{ name: 'Nilai aset', labels: cats, values: [B(c.inj), 0] }] : []),
+    ]
+    s.addChart(pres.charts.BAR, series, { ...chartBase(), x: M, y: TOP, w: c.laterInj ? 5.0 : CW, h: 3.3, barDir: 'bar', barGrouping: 'stacked',
+      chartColors: [th.warn, th.good, th.muted], showLegend: true, legendPos: 'b', valAxisLabelFormatCode: '#,##0' })
+    T(s, 'Rp miliar', { x: M, y: TOP + 3.32, w: 2, h: 0.2, fontSize: 8, color: th.muted })
+    if (c.laterInj) {
+      const x = M + 5.2, w = CW - 5.2
+      ;[
+        ['TAHAP I · ' + c.label.toUpperCase(), bigS(r.total), `${shS(r.N)} saham × ${rpS(P)}${c.jadwal ? ' · ' + short(c.jadwal, 40) : ''}`, 'Dana tunai, bukan untuk membeli aset.', th.accent],
+        ['TAHAP II · INJEKSI ASET', bigS(c.laterInj), `dibayar ±${shS(r.injShares)} saham baru pada ${rpS(P)}`, `Porsi publik bisa turun ke ${pc(r.pubAfterInj)}.`, r.pubAfterInj < 0.075 ? th.bad : th.accent],
+      ].forEach(([h, v, a, b, col], i) => {
+        const y = TOP + i * 1.7
+        card(s, x, y, w, 1.55)
+        T(s, h, { x: x + 0.18, y: y + 0.12, w: w - 0.3, h: 0.22, fontSize: 8, bold: true, color: th.accent, charSpacing: 2, fit: 'shrink' })
+        T(s, v, { x: x + 0.18, y: y + 0.36, w: w - 0.3, h: 0.5, fontFace: th.head, fontSize: 22, bold: true, color: col, valign: 'middle' })
+        T(s, a, { x: x + 0.18, y: y + 0.9, w: w - 0.3, h: 0.28, fontSize: 9, color: th.ink })
+        T(s, b, { x: x + 0.18, y: y + 1.17, w: w - 0.3, h: 0.28, fontSize: 9, color: th.muted })
+      })
+    }
+  }
+
+  // ===== 5. Siapa harus menyetor / penerima saham baru =====
+  if (!nr) {
+    const s = slide('Siapa menyetor', 'Siapa Harus Menyetor Dana',
+      `Bila publik menebus ${d.U || 0}%, pembeli siaga/pengendali harus menyerap ${bigS(r.standby)}; porsi pengendali ${id(c.ctrlPct || 0, 2)}% → ${pc(r.ctrlAfterAbsorb)}.`)
+    s.addChart(pres.charts.BAR, [{ name: 'Rp miliar', labels: ['Sisa publik diserap siaga', `Publik (${id(c.float || 0, 1)}%)`, `Pengendali (${id(c.ctrlPct || 0, 1)}%)`], values: [B(r.standby), B(r.pubPart), B(r.ctrlPart)] }],
+      { ...chartBase(), x: M, y: TOP, w: 5.4, h: 3.3, barDir: 'bar', chartColors: [th.accent], showValue: true, dataLabelPosition: 'outEnd', dataLabelFontSize: 9, dataLabelColor: th.ink, dataLabelFormatCode: '#,##0.0', valAxisLabelFormatCode: '#,##0', showLegend: false })
+    T(s, 'Rp miliar', { x: M, y: TOP + 3.32, w: 2, h: 0.2, fontSize: 8, color: th.muted })
+    const x = M + 5.6, w = CW - 5.6
+    card(s, x, TOP, w, 3.3)
+    T(s, 'PORSI PENGENDALI', { x: x + 0.2, y: TOP + 0.18, w: w - 0.4, h: 0.22, fontSize: 8, bold: true, color: th.accent, charSpacing: 2 })
+    ;[['Sekarang', (c.ctrlPct || 0) / 100, th.muted], ['Bila menyerap sisa publik', r.ctrlAfterAbsorb, th.accent]].forEach(([l, v, col], i) => {
+      const y = TOP + 0.6 + i * 1.15
+      T(s, l, { x: x + 0.2, y, w: w - 0.4, h: 0.25, fontSize: 9.5, color: th.muted })
+      T(s, pc(v), { x: x + 0.2, y: y + 0.25, w: w - 0.4, h: 0.45, fontFace: th.head, fontSize: 24, bold: true, color: col })
+      hbar(s, x + 0.2, y + 0.78, w - 0.4, v, col)
+    })
+  } else {
+    const s = slide('Penerima saham baru', c.kind === 'merger' ? 'Pemegang Saham Pihak yang Digabung' : 'Investor Baru',
+      `Penerima saham baru memegang ${pc(r.newHolder)}; porsi pengendali lama ${id(c.ctrlPct || 0, 2)}% → ${pc(r.ctrlAfterNr)}.`)
+    s.addChart(pres.charts.DOUGHNUT, [{ name: 'Porsi', labels: ['Pemegang lama', 'Penerima saham baru'], values: [Math.round((1 - r.newHolder) * 1000) / 10, Math.round(r.newHolder * 1000) / 10] }],
+      { x: M, y: TOP, w: 3.6, h: 3.3, holeSize: 58, chartColors: [th.line, th.accent], showPercent: true, showLegend: true, legendPos: 'b', legendFontFace: th.body, dataLabelColor: th.ink })
+    kpi(s, M + 3.9, TOP, CW - 3.9, 1.55, bigS(r.total), r.aset ? 'Nilai aset masuk (dibayar saham)' : 'Dana masuk', th.accent)
+    kpi(s, M + 3.9, TOP + 1.75, CW - 3.9, 1.55, `${id(c.ctrlPct || 0, 2)}% → ${pc(r.ctrlAfterNr)}`, 'Porsi pengendali lama sesudah penerbitan', th.warn)
+  }
+
+  // ===== 6. Untuk investor per 1 lot =====
+  {
+    const s = slide('Investor ritel', 'Dampak per 1 Lot (100 Saham)', r.hak != null
+      ? (r.hak > 0 ? `Nilai teoretis 1 HMETD ${rpS(r.hak)}.` : 'Harga tebus di atas TERP: HMETD secara teoretis tidak bernilai.')
+      : `Tanpa hak tebus; kepemilikan turun ${pc(r.dilusi)}.`)
+    const tiles = [
+      !nr && [id(r.perLot.hak, 1), 'HMETD diterima per lot'],
+      !nr && [rpS(r.perLot.dana), 'Dana untuk menebus semua hak'],
+      r.terp != null && [rpS(r.terp), `Harga teoretis setelah penerbitan (TERP) · ${pctS(r.terp / c.price - 1, 0)} vs pasar`],
+      !nr && r.hak != null && [r.hak > 0 ? rpS(r.hak) : 'Rp0', 'Nilai teoretis 1 HMETD'],
+      [pc(r.dilusi), 'Kepemilikan turun bila tidak ikut'],
+    ].filter(Boolean)
+    const n = tiles.length, w = (CW - 0.15 * (n - 1)) / n
+    tiles.forEach(([v, l], i) => kpi(s, M + i * (w + 0.15), TOP + 0.4, w, 2.2, v, l, i === n - 1 ? th.warn : th.accent))
+  }
+
+  // ===== 7. Sensitivitas harga pelaksanaan (kotak, bukan tabel, agar sama di PDF) =====
+  {
+    const base = c.price || P
+    const pts = [...new Set([c.nominal, base * 0.5, base * 0.75, c.price, c.ex, c.implied, P, base * 1.25]
+      .filter(v => v > 0).map(v => Math.round(v)))].sort((a, b) => a - b).slice(0, 8)
+    const rows = pts.map(p => [p, riCalc(c, p, u)]).filter(([, x]) => x)
+    const s = slide('Sensitivitas', 'Jika Harga Pelaksanaan Berubah', c.laterInj
+      ? `Makin rendah harga, makin banyak saham untuk membayar aset tahap II: pada ${rpS(P)} porsi publik akhir ${pc(r.pubAfterInj)}.`
+      : `Pada ${rpS(P)}: nilai penerbitan ${bigS(r.total)}, TERP ${r.terp != null ? rpS(r.terp) : '–'}.`)
+    // Kolom yang benar-benar berubah terhadap harga: bila jumlah saham baru tetap, yang berubah adalah dana,
+    // TERP, nilai HMETD, dan (bila ada) saham untuk injeksi tahap lanjutan.
+    const COLS = {
+      saham: ['Saham baru', x => shS(x.N)], nilai: ['Nilai penerbitan', x => bigS(x.total)], tunai: ['Dana tunai', x => bigS(x.tunai)],
+      terp: ['TERP', x => x.terp != null ? rpS(x.terp) : '–'], hak: ['Nilai 1 HMETD', x => x.hak != null ? rpS(Math.max(0, x.hak)) : '–'],
+      disc: ['vs pasar', x => x.disc != null ? pctS(x.disc, 0) : '–'], pub: ['Publik setelah', x => pc(x.pubAfter)],
+      inj: ['Saham utk aset tahap II', x => shS(x.injShares)], pubInj: ['Publik setelah tahap II', x => pc(x.pubAfterInj)],
+    }
+    const keys = c.laterInj ? ['nilai', 'tunai', 'terp', 'inj', 'pubInj'] : c.N ? ['nilai', 'tunai', 'terp', ...(nr ? [] : ['hak']), 'disc'] : ['saham', 'nilai', 'tunai', 'terp', 'pub']
+    const cols = ['Harga', ...keys.map(k => COLS[k][0])]
+    const warnCol = keys.includes('pubInj') ? 'pubInj' : keys.includes('pub') ? 'pub' : ''
+    const cw = CW / cols.length, rh = Math.min(0.42, 3.3 / (rows.length + 1))
+    s.addShape(S.ROUNDED_RECTANGLE, { x: M, y: TOP, w: CW, h: rh, rectRadius: 0.04, fill: { color: th.dark }, line: { color: th.dark, width: 0.5 } })
+    cols.forEach((h, i) => T(s, h, { x: M + i * cw + 0.1, y: TOP, w: cw - 0.2, h: rh, fontSize: 9, bold: true, color: 'FFFFFF', valign: 'middle', align: i ? 'right' : 'left' }))
+    rows.forEach(([p, x], k) => {
+      const y = TOP + (k + 1) * rh, cur = p === Math.round(P)
+      s.addShape(S.RECTANGLE, { x: M, y, w: CW, h: rh, fill: { color: cur ? th.accent2 : k % 2 ? th.bg : th.card, transparency: cur ? 55 : 0 }, line: { color: th.line, width: 0.5 } })
+      const tag = [p === c.nominal && 'nominal', p === Math.round(c.price || 0) && 'pasar', p === Math.round(c.ex || 0) && 'data', c.implied && p === Math.round(c.implied) && 'tersirat'].filter(Boolean).join(', ')
+      const low = warnCol && (warnCol === 'pubInj' ? x.pubAfterInj : x.pubAfter) < 0.075
+      ;[rpS(p) + (tag ? ` (${tag})` : ''), ...keys.map(k => COLS[k][1](x))]
+        .forEach((v, i) => T(s, v, { x: M + i * cw + 0.1, y, w: cw - 0.2, h: rh, fontSize: 9, bold: cur, color: low && keys[i - 1] === warnCol ? th.bad : th.ink, valign: 'middle', align: i ? 'right' : 'left' }))
+    })
+  }
+
+  // ===== 8. Porsi publik bertahap =====
+  {
+    const labels = ['Sekarang', 'Setelah penerbitan', ...(r.pubAfterInj != null ? ['Setelah injeksi tahap lanjutan'] : [])]
+    const vals = [c.float || 0, r.pubAfter * 100, ...(r.pubAfterInj != null ? [r.pubAfterInj * 100] : [])].map(v => Math.round(v * 100) / 100)
+    const low = Math.min(...vals) < 7.5
+    const s = slide('Porsi publik', 'Porsi Publik Setelah Penerbitan', low
+      ? 'Porsi publik bisa turun di bawah batas free float 7,5%: risiko likuiditas dan kewajiban menambah saham publik.'
+      : `Porsi publik ${id(vals[0], 2)}% → ${id(vals[vals.length - 1], 2)}%.`)
+    s.addChart(pres.charts.BAR, [{ name: 'Porsi publik (%)', labels, values: vals }], { ...chartBase(), x: M, y: TOP, w: 6.2, h: 3.3, barDir: 'col',
+      chartColors: [low ? th.bad : th.accent], showValue: true, dataLabelPosition: 'outEnd', dataLabelFontSize: 10, dataLabelColor: th.ink, dataLabelFormatCode: '0.0', showLegend: false, valAxisMinVal: 0, valAxisLabelFormatCode: '0' })
+    const x = M + 6.4, w = CW - 6.4
+    card(s, x, TOP, w, 3.3)
+    T(s, 'BATAS FREE FLOAT', { x: x + 0.2, y: TOP + 0.2, w: w - 0.4, h: 0.22, fontSize: 8, bold: true, color: th.accent, charSpacing: 2 })
+    T(s, '7,5%', { x: x + 0.2, y: TOP + 0.45, w: w - 0.4, h: 0.6, fontFace: th.head, fontSize: 30, bold: true, color: low ? th.bad : th.good })
+    T(s, nr ? 'Penerbitan tanpa hak tebus: porsi publik pasti turun.' : `Simulasi: publik menebus ${d.U || 0}%. Bila publik menebus penuh, porsinya tetap ${id(c.float || 0, 2)}%.`,
+      { x: x + 0.2, y: TOP + 1.15, w: w - 0.4, h: 1.0, fontSize: 9.5, color: th.muted })
+  }
+
+  // ===== 9. Kesimpulan (gelap) =====
+  {
+    const s = pres.addSlide(); K.bump()
+    s.background = { color: th.dark }
+    coverArt(s, d.sector?.motif, th, S, dot, line, true)
+    T(s, 'KESIMPULAN', { x: 0.7, y: 0.6, w: 5, h: 0.3, fontSize: 10, bold: true, color: th.accent2, charSpacing: 5 })
+    T(s, `${d.t}: ${c.label}`, { x: 0.7, y: 0.95, w: 6.2, h: 0.8, fontFace: th.head, fontSize: 30, bold: true, color: 'FFFFFF', valign: 'middle', fit: 'shrink' })
+    const pts = [
+      `Nilai ${what} ${bigS(r.total)} (${shS(r.N)} saham × ${rpS(P)}); dana tunai ${bigS(r.tunai)}.`,
+      c.inj ? `Aset injeksi ${det?.spread ? bigS(det.lo) + '–' + bigS(det.hi) : bigS(c.inj)}${c.laterInj ? `, dibayar ±${shS(r.injShares)} saham di tahap lanjutan` : ''}.` : null,
+      `Porsi publik ${pc((c.float || 0) / 100)} → ${pc(r.pubAfterInj ?? r.pubAfter)}${r.pubAfterInj != null ? ' setelah semua tahap' : ''}.`,
+      ...verdict.split(/(?<=\.)\s+/).filter(Boolean),
+      c.jadwal ? `Berikutnya: ${c.jadwal}.` : null,
+    ].filter(Boolean).slice(0, 5)
+    pts.forEach((p, i) => {
+      const y = 1.9 + i * 0.5
+      dot(s, 0.85, y + 0.15, 0.07, th.accent2)
+      T(s, short(p, 120), { x: 1.1, y, w: 5.6, h: 0.46, fontSize: 10.5, color: 'E8EEF3' })
+    })
+    T(s, short(c.notes.join(' '), 260), { x: 0.7, y: 4.5, w: 6.5, h: 0.5, fontSize: 8.5, color: 'AAB6C2' })
+    T(s, 'Simulasi berbasis data kurasi dan keterbukaan publik; angka indikatif sampai prospektus/KJPP terbit. Bukan rekomendasi beli/jual.', { x: 0.7, y: 5.05, w: 6.5, h: 0.3, fontSize: 8, color: 'AAB6C2' })
+  }
+  return pres
+}
+
+export const riDeckFileName = (t, date, theme) => `${t}_RightsIssue_${date}_${String(theme?.name || '').replace(/[^A-Za-z0-9]+/g, '-')}.pptx`
 
 // Nama berkas unduhan.
 export const deckFileName = (t, date, theme) => `${t}_Analisa_${date}_${String(theme?.name || '').replace(/[^A-Za-z0-9]+/g, '-')}.pptx`
