@@ -312,21 +312,21 @@ export function ctrlProsCons({ profil, pv, c, active = [], exited = [], radarTic
 export function deepView(a, { profil, aset, bm, verified, now } = {}) {
   const dl = a.pa?.dilusi || {}, k = aset?.kjpp || {}, out = []
   const who = profil?.ringkas || (a.pv?.siapa ? sentences(a.pv.siapa)[0] : '')
-  if (who) out.push(['Siapa pengendalinya dan apa motifnya', `${who}${a.pv?.rencana ? ' Rencana yang dinyatakan: ' + sentences(a.pv.rencana)[0] : ''}`])
+  if (who) out.push(['Pengendali dan motifnya', `${who}${a.pv?.rencana ? ' Rencana yang dinyatakan: ' + sentences(a.pv.rencana)[0] : ''}`])
   if (aset || a.sv?.injectType) {
     const val = aset?.transaksi?.nilaiRp ?? a.injRp, ratio = val && a.mcap ? val / a.mcap : null
     const kj = k.status === 'terbit' ? `Penilaian KJPP sudah terbit${k.nilaiRp ? ' (' + big(k.nilaiRp) + ')' : ''}.`
       : k.status === 'ditunjuk' ? 'KJPP sudah ditunjuk, laporannya belum terbit, jadi nilainya belum teruji.'
       : 'Belum ada penilai independen; nilainya masih klaim.'
     const hub = profil?.afiliasi?.hubungan ? ' Hubungan penjual: ' + sentences(profil.afiliasi.hubungan)[0] : ''
-    out.push(['Apa yang masuk dan berapa harganya', `${aset?.aset?.nama || a.sv?.injectTarget || a.sv?.injectType}${aset?.aset?.sektor ? ' (' + aset.aset.sektor + ')' : ''}${val ? ` senilai ${big(val)}` : ', nilainya belum diungkap'}${ratio ? `, setara ${x2(ratio)} kapitalisasi ${a.t}` : ''}. ${kj}${hub}`])
+    out.push(['Aset yang masuk dan nilainya', `${aset?.aset?.nama || a.sv?.injectTarget || a.sv?.injectType}${aset?.aset?.sektor ? ' (' + aset.aset.sektor + ')' : ''}${val ? ` senilai ${big(val)}` : ', nilainya belum diungkap'}${ratio ? `, setara ${x2(ratio)} kapitalisasi ${a.t}` : ''}. ${kj}${hub}`])
   }
   const entry = String(a.pv?.siapa || '').match(/Rp\s?([\d.,]+)\s*(?:\/|per)\s*saham/i)
   const benefit = [entry && `Pengendali masuk di Rp${entry[1]} per saham`, a.tender?.price && `PTW ${rp(a.tender.price)}`, a.price && `harga kini ${rp(a.price)}`].filter(Boolean).join(', ')
   if (benefit || dl.berlaku) {
     const dil = dl.berlaku && dl.porsiPublikSetelah != null
       ? ` Bila publik tidak ikut menebus, porsinya turun dari ${fmt(dl.porsiPublikSekarang ?? a.flt ?? 0, 1)}% ke ${fmt(dl.porsiPublikSetelah, 1)}%${dl.nilaiPerSaham ? `, dengan nilai buku per saham pasca-transaksi sekitar ${rp(dl.nilaiPerSaham)}` : ''}.` : ''
-    out.push(['Siapa yang diuntungkan struktur transaksi', `${benefit}${benefit ? '.' : ''}${dil} Selisih harga masuk pengendali dan harga pasar adalah keuntungan yang sudah dikunci pengendali sebelum aset terbukti.`.trim()])
+    out.push(['Pihak yang diuntungkan oleh struktur transaksi', `${benefit}${benefit ? '.' : ''}${dil} Selisih harga masuk pengendali dan harga pasar adalah keuntungan yang sudah dikunci pengendali sebelum aset terbukti.`.trim()])
   }
   const cy = cycleOf(a, { bm, aset, verified, now })
   if (cy) {
@@ -337,7 +337,7 @@ export function deepView(a, { profil, aset, bm, verified, now } = {}) {
     out.push(['Posisi dalam siklus backdoor', `${daysSince(a.d.tender.start, now)} hari sejak PTW dimulai; harga kini ${x2(a.deal.last / a.deal.p0)} harga saat PTW.`])
   }
   const salah = a.pa?.tesisSalahBila || [], kunci = a.pa?.variabelKunci || []
-  if (salah.length || kunci.length) out.push(['Yang bisa membuat tesis salah dan yang harus dipantau', `${salah.join('; ')}${kunci.length ? `${salah.length ? '. ' : ''}Pantau: ${kunci.join('; ')}` : ''}.`])
+  if (salah.length || kunci.length) out.push(['Kondisi yang menggugurkan tesis dan hal yang perlu dipantau', `${salah.join('; ')}${kunci.length ? `${salah.length ? '. ' : ''}Pantau: ${kunci.join('; ')}` : ''}.`])
   return out
 }
 
