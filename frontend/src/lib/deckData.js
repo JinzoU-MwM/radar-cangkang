@@ -7,6 +7,8 @@ import { progressOf, posisiOf, dealOf, MILESTONES } from './domain.js'
 import { indicators, taSignals, buildPlan, taVerdict } from './ta.js'
 import { analyzePatterns, bestBullPattern, polaPlan, levels, structure } from './patterns.js'
 import { sectorOf } from './deckThemes.js'
+import { riCase, riCalc, riRange, riFunding } from './rightsIssue.js'
+import { recommend } from './recommend.js'
 
 const safe = p => p.catch(() => null)
 
@@ -69,7 +71,7 @@ export async function collectDeck(t, { store, api, storyOf, getBenchmark, onStep
 
   const sector = sectorOf({ baru: story?.baru || verified[t]?.baru, aset: [aset?.aset?.sektor, aset?.aset?.nama].filter(Boolean).join(' '),
     sektor: profile?.sector, industri: profile?.industry, nama: item?.name || profile?.name })
-  return {
+  const out = {
     t, name: item?.name || profile?.name || A.p?.name || '', sector, date: new Date().toISOString().slice(0, 10),
     A, item, profile, reports, aset, profil, pv: store.pengendali?.[t] || null, pa: A.pa,
     pc: analysisProsCons(A, extra), deep: deepView(A, extra), cyc: cycleOf(A, extra),
@@ -77,4 +79,14 @@ export async function collectDeck(t, { store, api, storyOf, getBenchmark, onStep
     story, tech, sim, mech, mechLabel: mech ? MECH_LABEL[mech] : '', steps, kjpp: kjppStatus(aset?.kjpp), tx: txValue(aset, A.sv),
     milestones: MILESTONES,
   }
+  // Rights issue (bila ada rencana penambahan modal) pada harga awal analisa, lalu rekomendasi tindakan.
+  out.ri = riCase(A, { aset, sv: verified[t], item, pv: store.pengendali?.[t],
+    reports: [...(A.reps || []), ...(store.updates || []).filter(u => u.ticker === t)] })
+  if (out.ri) {
+    out.riP = riRange(out.ri).start
+    out.riR = riCalc(out.ri, out.riP, 0)
+    out.riF = riFunding(out.ri, out.riR)
+  }
+  out.rec = recommend(out)
+  return out
 }

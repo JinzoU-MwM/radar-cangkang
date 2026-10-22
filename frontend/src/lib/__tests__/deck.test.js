@@ -64,3 +64,20 @@ describe('buildDeck', () => {
     expect(deckFileName('ABCD', '2026-10-21', { name: 'Arang & Amber' })).toBe('ABCD_Analisa_2026-10-21_Arang-Amber.pptx')
   })
 })
+
+describe('buildDeck: rekomendasi & PDF', () => {
+  it('slide rekomendasi muncul kedua dan PDF sama jumlah halamannya', async () => {
+    const { recommend } = await import('../recommend.js')
+    const { jsPDF } = await import('jspdf')
+    const { deckToPdf } = await import('../deckPdf.js')
+    const d2 = { t: 'ABCD', name: 'PT Abcd Tbk', sector: SECTORS.find(s => s.id === 'umum'), date: '2026-10-22',
+      A: { score: 50, price: 100, dims: [{ k: 'Pengendali', s: 5, why: ['a.', 'b.'] }], p: { metrics: { pbv: 1.2, per: 10, equity: 1e11, cash: 1e10 } }, sv: {}, levels: [['Harga PTW', '', 120]], checks: ['x'], exits: ['y'] },
+      pa: { sikap: 'Netral', tesis: 'Kalimat pertama yang cukup panjang. Kalimat kedua yang juga cukup panjang.', variabelKunci: ['v'], tesisSalahBila: ['w'] },
+      pc: { pros: [], cons: [] }, deep: [], steps: [], milestones: [], reports: [] }
+    d2.rec = recommend(d2)
+    const pres = buildDeck(PptxGenJS, d2, Object.values(THEMES).flat()[0])
+    const titles = pres.slides.map(s => s._slideObjects.map(o => o.text?.[0]?.text || '').join(' '))
+    expect(titles[1]).toMatch(/REKOMENDASI/)
+    expect((await deckToPdf(pres, jsPDF)).getNumberOfPages()).toBe(pres.slides.length)
+  })
+})
