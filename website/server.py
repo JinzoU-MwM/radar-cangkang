@@ -629,6 +629,26 @@ def norm_name(s: str) -> str:
     return re.sub(r"[^A-Z0-9]", "", s)
 
 
+def holder_key(s: str) -> str:
+    """Kunci pemegang yang tahan urutan kata: keterbukaan kadang menulis nama yang sama dengan kata tertukar
+    (mis. "TRIPLE BERKAH BERSAMA" vs "TRIPLE BERSAMA BERKAH")."""
+    s = re.sub(r"\b(PT|TBK|LTD|PTE|LIMITED|INC)\b", " ", (s or "").upper())
+    return " ".join(sorted(re.sub(r"[^A-Z0-9]+", " ", s).split()))
+
+
+def canon_names(rows: list[dict]) -> list[dict]:
+    """Seragamkan nama pemegang dengan kunci sama (per emiten) ke ejaan yang paling sering muncul."""
+    count: dict = {}
+    for r in rows:
+        k = (r.get("ticker", ""), holder_key(r["name"]))
+        count.setdefault(k, {}).setdefault(r["name"], 0)
+        count[k][r["name"]] += 1
+    best = {k: max(v.items(), key=lambda x: x[1])[0] for k, v in count.items()}
+    for r in rows:
+        r["name"] = best[(r.get("ticker", ""), holder_key(r["name"]))]
+    return rows
+
+
 def parse_pct(s) -> float:
     return float(re.sub(r"[^\d.]", "", str(s)) or 0)
 
@@ -920,7 +940,7 @@ def get_insider(ticker: str, days: int = 180, fresh: bool = False) -> dict:
         if not j.get("data", {}).get("is_more") or (rows and min(r["date"] for r in rows) < cutoff):
             break
         time.sleep(0.2)
-    recent = [r for r in rows if r["date"] >= cutoff]
+    recent = canon_names([r for r in rows if r["date"] >= cutoff])
     groups: dict[str, list] = {}
     for r in recent:
         groups.setdefault(r["name"], []).append(r)
@@ -970,7 +990,7 @@ def merge_ksei(rows: list[dict]) -> list[dict]:
     besar. Gabungkan menjadi satu baris per pemegang per tanggal: porsi akhir = ujung rantai. Porsi awal 0 diganti
     porsi akhir tanggal KSEI sebelumnya (bila ada di data); rantai multi-rekening tanpa riwayat → prevUnknown=True."""
     out, groups = [], {}
-    for r in rows:
+    for r in canon_names(rows):
         if r["source"] != "KSEI":
             out.append(r)
             continue

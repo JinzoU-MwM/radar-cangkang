@@ -236,6 +236,15 @@ class KandidatTest(unittest.TestCase):
         self.assertEqual(f("Laporan Keuangan Interim"), [])
 
 
+class HolderNameTest(unittest.TestCase):
+    def test_urutan_kata_tertukar_digabung(self):
+        rows = [{"ticker": "MEJA", "name": "TRIPLE BERKAH BERSAMA"}, {"ticker": "MEJA", "name": "TRIPLE BERKAH BERSAMA"},
+                {"ticker": "MEJA", "name": "TRIPLE BERSAMA BERKAH"}, {"ticker": "MEJA", "name": "PT INTERRA DJAYA KARYA"}]
+        server.canon_names(rows)
+        self.assertEqual({r["name"] for r in rows}, {"TRIPLE BERKAH BERSAMA", "PT INTERRA DJAYA KARYA"})
+        self.assertEqual(server.holder_key("PT Triple Bersama Berkah Tbk"), server.holder_key("TRIPLE BERKAH BERSAMA"))
+
+
 class TsaSummaryTest(unittest.TestCase):
     """Data intel pasar tradersaham: helper tsa_summary (tanpa HTTP)."""
 
