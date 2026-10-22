@@ -100,5 +100,22 @@ export function newsTake(u, { items = [], pandangan = {} } = {}) {
     cls: /asimetri/i.test(pa.sikap) ? 'good' : /netral/i.test(pa.sikap) ? 'warn' : 'bad',
     ringkas: ringkas.slice(0, 140) + (ringkas.length > 140 ? '…' : ''),
   } : null
-  return { level, label: NEWS_LEVEL[level][0], cls: NEWS_LEVEL[level][1], points: pts.slice(0, 3), tones: t3, arah, nominalText, sikapLine, canAnalyze: !!d }
+  // Rincian untuk panel "penjelasan lengkap": semua poin yang cocok, alasan tingkat sinyal, hal yang perlu dipantau.
+  const all = [...(nominalText ? [{ text: nominalText, tone: tones[0] }] : []), ...hits.map(r => ({ text: r[2], tone: toneOf(r, text) }))]
+  const detail = { all: all.length ? all : [{ text: pts[0], tone: 0 }], levelWhy: LEVEL_WHY[level], watch: WATCH[u.type] || '', ringkas, sikap: pa?.sikap || '' }
+  return { level, label: NEWS_LEVEL[level][0], cls: NEWS_LEVEL[level][1], points: pts.slice(0, 3), tones: t3, arah, nominalText, sikapLine, canAnalyze: !!d, detail }
+}
+
+const LEVEL_WHY = [
+  'Tanggapan atas pergerakan harga atau permintaan bursa; bukan informasi nilai dan sering menjadi pertanda spekulasi.',
+  'Informasi administratif atau kinerja yang jarang menggerakkan harga saham backdoor.',
+  'Aksi korporasi atau pergerakan pemegang saham yang perlu dicermati, tetapi belum langsung mengubah nilai saham.',
+  'Menyangkut perubahan kendali, penawaran tender, injeksi aset, atau penerbitan saham baru yang langsung memengaruhi nilai saham.',
+]
+const WATCH = {
+  pengendali: 'Keterbukaan akuisisi final, harga per saham yang dibayar pengendali baru, dan pengumuman penawaran tender wajib.',
+  tender: 'Harga dan periode penawaran tender, serta porsi saham publik yang ikut dijual.',
+  rights: 'Pernyataan efektif OJK, harga pelaksanaan, tanggal cum-date, dan pihak pembeli siaga.',
+  rupslb: 'Hasil RUPSLB: persetujuan perubahan kegiatan usaha, pengurus, dan penambahan modal.',
+  uma: 'Jawaban emiten atas permintaan penjelasan bursa dan jadwal pembukaan suspensi.',
 }
