@@ -67,3 +67,17 @@ describe('merger dan inbreng', () => {
     expect(r.tunai).toBeCloseTo(7.88e9 * 2150 - 14.57e12)
   })
 })
+
+describe('rincian aset injeksi', () => {
+  it('kisaran nilai dari beberapa sumber (USD dan Rupiah)', async () => {
+    const { valuesOf, asetDetail } = await import('../rightsIssue.js')
+    const t = 'Indikatif USD150 juta (Rp2,51 triliun) menurut pengumuman Desember 2025; IDX Channel Oktober 2026 menyebut indikatif USD100 juta (Rp1,8 triliun). Konversi Rp16.500: USD150 juta = Rp2.475.000.000.000'
+    const v = valuesOf(t)
+    expect(Math.min(...v)).toBeCloseTo(1.65e12)
+    expect(Math.max(...v)).toBeCloseTo(2.51e12)
+    const d = asetDetail({ aset: { nama: 'PGGR', tambang: { produksi: '>20 juta ton', cadangan: null } }, transaksi: { nilai: t, caraBayar: 'Inbreng' },
+      kjpp: { status: 'belum' }, tidakDitemukan: ['kjpp: dua penilai independen belum diumumkan'] }, 2475e9)
+    expect(d).toMatchObject({ spread: true, cara: 'Inbreng', gaps: ['dua penilai independen belum diumumkan'] })
+    expect(d.facts).toEqual([['Produksi', '>20 juta ton']])
+  })
+})

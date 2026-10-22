@@ -13,6 +13,50 @@ const EFFECTIVE_RE = /(sudah|telah) (efektif|tereksekusi|dicatatkan|selesai)/i
 // Angka "nominal Rp10" pertama di teks: batas bawah harga pelaksanaan.
 const nominalOf = s => { const m = String(s || '').match(/nominal\s*Rp\s?([\d.]+)/i); return m ? +m[1].replace(/\./g, '') || null : null }
 
+// Semua angka nilai di teks bebas → Rupiah (USD dikonversi pada kurs asumsi). Dipakai untuk kisaran nilai aset
+// bila sumber berbeda-beda (mis. "USD150 juta (Rp2,51 triliun) ... USD100 juta (Rp1,8 triliun)").
+export const KURS_USD = 16500
+const UNIT = { triliun: 1e12, t: 1e12, miliar: 1e9, m: 1e9, juta: 1e6, jt: 1e6 }
+const numId = s => +String(s).replace(/\./g, '').replace(',', '.')
+export function valuesOf(text) {
+  const out = []
+  const s = String(text || '')
+  for (const m of s.matchAll(/(USD|US\$|\$)\s?([\d.,]+)\s*(triliun|miliar|juta|T|M|jt)?\b/gi)) {
+    const u = UNIT[String(m[3] || '').toLowerCase()] || 1
+    const v = numId(m[2]) * u * KURS_USD
+    if (v > 1e9) out.push(v)
+  }
+  for (const m of s.matchAll(/Rp\s?([\d.,]+)\s*(triliun|miliar|juta|T|M|jt)?\b/gi)) {
+    const u = UNIT[String(m[2] || '').toLowerCase()] || 1
+    const v = numId(m[1]) * u
+    if (v > 1e9) out.push(v)
+  }
+  return out
+}
+
+// Rincian aset injeksi dari aset-verified: kisaran nilai antar-sumber, profil aset, data tambang/keuangan yang
+// tersedia, cara bayar, status penilaian, dan data yang belum diungkap.
+const TAMBANG = { cadangan: 'Cadangan', sumberDaya: 'Sumber daya', kalori: 'Kalori', produksi: 'Produksi', iup: 'Izin/konsesi' }
+const KEU = { pendapatan: 'Pendapatan', ebitda: 'EBITDA', labaBersih: 'Laba bersih', totalAset: 'Total aset', ekuitas: 'Ekuitas', utang: 'Utang' }
+export function asetDetail(aset, inj) {
+  if (!aset) return null
+  const a = aset.aset || {}, t = aset.transaksi || {}, k = aset.kjpp || {}
+  // Hanya angka di sekitar nilai transaksi (0,5×–2×) yang dianggap versi lain dari nilai yang sama; angka komponen
+  // (biaya, sebagian aset, kurs) diabaikan agar kisaran tidak menyesatkan.
+  const vals = [...valuesOf(t.nilai).filter(v => !inj || (v >= inj * 0.5 && v <= inj * 2)), ...(inj ? [inj] : [])]
+  const lo = vals.length ? Math.min(...vals) : null, hi = vals.length ? Math.max(...vals) : null
+  const facts = [
+    ...Object.entries(TAMBANG).filter(([f]) => a.tambang?.[f]).map(([f, l]) => [l, a.tambang[f]]),
+    ...Object.entries(KEU).filter(([f]) => a.keuangan?.[f] != null).map(([f, l]) => [l + (a.keuangan.periode ? ` (${a.keuangan.periode})` : ''), a.keuangan[f]]),
+  ]
+  return {
+    nama: a.nama || '', jenis: a.jenis || '', lokasi: a.lokasi || '', porsi: a.porsi || '', deskripsi: a.deskripsi || '',
+    lo, hi, spread: lo && hi && hi > lo * 1.05, nilaiText: t.nilai || '', cara: t.caraBayar || '',
+    facts, kjpp: { status: k.status || '', nama: k.nama || '', nilai: k.nilaiRp || null, metode: k.metode || '', ket: k.kesimpulan || k.dasar || '' },
+    gaps: (aset.tidakDitemukan || []).map(g => String(g).replace(/^[\w.\/]+:\s*/, '')),
+  }
+}
+
 // Kasus penambahan modal untuk satu emiten, atau null bila tidak ada rencana yang relevan.
 // A: hasil buildAnalysis; ctx: { aset, sv, item, reports }.
 export function riCase(A, { aset = null, sv = null, item = null, reports = [] } = {}) {
@@ -53,6 +97,7 @@ export function riCase(A, { aset = null, sv = null, item = null, reports = [] } 
     kjpp: aset?.kjpp?.nilaiRp || null, kjppStatus: aset?.kjpp?.status || '',
     ctrlPct: A.ctrlPct ?? null, float: A.flt ?? dl.porsiPublikSekarang ?? null, mcap: A.mcap || null, equity: A.equity ?? null,
     notes: [k.dasar, dl.asumsi].filter(Boolean),
+    detail: asetDetail(aset, inj),
   }
 }
 
