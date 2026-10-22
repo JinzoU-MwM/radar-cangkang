@@ -4,6 +4,8 @@ import { api } from '../../api.js'
 import { store, getBenchmark } from '../../store.js'
 import { buildAnalysis, KURS } from '../../lib/analysis.js'
 import { fmt, fmtDate, rp, big, x2, pctTxt } from '../../lib/domain.js'
+import { riCase } from '../../lib/rightsIssue.js'
+import RightsIssue from './RightsIssue.vue'
 import { analysisProsCons, deepView, dilusi, radarGeom } from '../../lib/emitenExtra.js'
 import SikapTag from '../SikapTag.vue'
 import ProsCons from './ProsCons.vue'
@@ -91,6 +93,9 @@ const KC = [
   ['T', 'Publik menebus (%)', 5, '0 = publik tidak ikut'],
   ['H', 'Nilai aset diakui (%)', 5, 'uji skeptis atas penilaian'],
 ]
+// Analisa PMHMETD/PMTHMETD bila ada rencana penambahan modal.
+const ri = computed(() => A.value ? riCase(A.value, { aset: store.aset[props.ticker], sv: store.verified[props.ticker],
+  item: store.items.find(x => x.ticker === props.ticker), reports: A.value.reps }) : null)
 const holders = computed(() => (A.value?.holders || []).filter(h => Math.abs(h.change) >= 0.1 || A.value.isCtrlH(h)).slice(0, 8))
 // Infografis: radar enam dimensi, kelebihan vs kekurangan, sudut pandang mendalam.
 const extra = computed(() => ({ profil: store.profil[props.ticker], aset: store.aset[props.ticker], hsc: store.hsc?.kode || [],
@@ -247,6 +252,8 @@ const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
     <ProfilOrang v-if="extra.profil" :profil="extra.profil" :sb="A.p" />
     <ControllerTrack v-if="ctrl" :c="ctrl" :self="ticker" :old-ctrl="!!store.pengendali[ticker]?.bukanPengambilAlih" />
     <NetworkMap v-if="extra.profil" :focus="ticker" />
+
+    <RightsIssue v-if="ri" :c="ri" />
 
     <!-- Kalkulator dilusi. -->
     <section v-if="calcMode" class="rule-top">
