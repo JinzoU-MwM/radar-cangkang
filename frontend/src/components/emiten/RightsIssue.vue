@@ -5,8 +5,12 @@
 import { computed, ref, watch } from 'vue'
 import { fmt, rp, big } from '../../lib/domain.js'
 import { riCalc, riRange, riVerdict, noRights } from '../../lib/rightsIssue.js'
+import { store, storyOf } from '../../store.js'
+import { buildRiDeck, riDeckFileName } from '../../lib/deck.js'
+import { sectorOf, pickTheme } from '../../lib/deckThemes.js'
+import DeckDownload from './DeckDownload.vue'
 
-const props = defineProps({ c: { type: Object, required: true } })
+const props = defineProps({ c: { type: Object, required: true }, ticker: { type: String, default: '' }, name: { type: String, default: '' } })
 const range = computed(() => riRange(props.c))
 const P = ref(0), U = ref(0)
 watch(() => props.c, c => { P.value = riRange(c).start; U.value = 0 }, { immediate: true })
@@ -30,6 +34,19 @@ const bars = computed(() => {
 })
 const STATUS = { rencana: 'Rencana', berjalan: 'Berjalan', tereksekusi: 'Sudah tereksekusi' }
 const d = computed(() => props.c.detail)
+
+// Unduhan khusus analisa ini (bukan presentasi lengkap); memakai harga & penebusan simulasi yang sedang dipilih.
+const sector = computed(() => {
+  const t = props.ticker, it = store.items.find(x => x.ticker === t), a = store.aset?.[t]?.aset
+  return sectorOf({ baru: (it ? storyOf(t)?.baru : '') || store.verified?.[t]?.baru, aset: [a?.sektor, a?.nama].filter(Boolean).join(' '), nama: it?.name || props.name })
+})
+async function build({ PptxGenJS, choose, lastId, onStep }) {
+  const theme = pickTheme(sector.value.id, { lastId, choose })
+  const date = new Date().toISOString().slice(0, 10)
+  onStep('Menyusun slide')
+  const pres = buildRiDeck(PptxGenJS, { t: props.ticker, name: props.name, date, sector: sector.value, c: props.c, P: +P.value, U: +U.value }, theme)
+  return { pres, file: riDeckFileName(props.ticker, date, theme), theme, sector: sector.value.label }
+}
 </script>
 
 <template>
@@ -194,6 +211,13 @@ const d = computed(() => props.c.detail)
     </template>
     <p v-else class="small muted">Jumlah saham baru atau nilai dana belum diketahui dari keterbukaan; perhitungan menunggu prospektus.</p>
     <details v-if="c.notes.length" class="small muted src"><summary>Dasar angka</summary><p v-for="n in c.notes" :key="n">{{ n }}</p></details>
+
+    <div v-if="ticker" class="dl">
+      <h3 class="lbl">Unduh analisa {{ c.label }}</h3>
+      <p class="small muted">Khusus analisa ini (9 slide): angka kunci, rincian aset injeksi, kebutuhan dana & tahap, siapa menyetor,
+        dampak per lot, sensitivitas harga, porsi publik, kesimpulan. Memakai simulasi saat ini: harga {{ rp(P) }}<template v-if="!nr">, publik menebus {{ U }}%</template>.</p>
+      <DeckDownload :sector-id="sector.id" :build="build" label="analisa" />
+    </div>
   </section>
 </template>
 
@@ -227,6 +251,9 @@ const d = computed(() => props.c.detail)
 .st b.warn{color:var(--strong, #c0392b)}
 .arr{align-self:center;opacity:.5}
 .verdict{margin:6px 0}
+.dl{margin-top:14px;background:var(--sheet);border:1px solid var(--rule);padding:14px}
+.dl .lbl{margin:0 0 4px}
+.dl > p{margin:0 0 10px}
 .aset{margin-bottom:12px}
 .aset .lbl{margin:0 0 6px}
 .ag{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}

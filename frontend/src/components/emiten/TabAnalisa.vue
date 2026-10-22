@@ -253,7 +253,7 @@ const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
     <ControllerTrack v-if="ctrl" :c="ctrl" :self="ticker" :old-ctrl="!!store.pengendali[ticker]?.bukanPengambilAlih" />
     <NetworkMap v-if="extra.profil" :focus="ticker" />
 
-    <RightsIssue v-if="ri" :c="ri" />
+    <RightsIssue v-if="ri" :c="ri" :ticker="ticker" :name="A.p?.name || store.items.find(x => x.ticker === ticker)?.name || ''" />
 
     <!-- Kalkulator dilusi. -->
     <section v-if="calcMode" class="rule-top">
