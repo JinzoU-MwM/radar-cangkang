@@ -24,16 +24,18 @@ const route = useRoute()
 const router = useRouter()
 
 const TABS = [
+  // Urutan alur analisa: gambaran umum → perusahaan → pengendali → pergerakan → berita → nilai → waktu masuk
+  // → spekulasi → data pasar; Video dan Download merangkum semuanya (urutan presentasi mengikuti daftar ini).
   { id: 'ringkasan', name: 'Ringkasan' },
+  { id: 'profil', name: 'Profil' },
   { id: 'story', name: 'Story & Pengendali' },
   { id: 'insider', name: 'Insider Activity' },
+  { id: 'berita', name: 'Berita' },
   { id: 'analisa', name: 'Analisa' },
-  { id: 'video', name: 'Video' },
   { id: 'teknikal', name: 'Teknikal' },
   { id: 'spekulasi', name: 'Spekulasi' },
-  { id: 'profil', name: 'Profil' },
   { id: 'intel', name: 'Intel Pasar' },
-  { id: 'berita', name: 'Berita' },
+  { id: 'video', name: 'Video' },
   { id: 'download', name: 'Download' },
 ]
 
