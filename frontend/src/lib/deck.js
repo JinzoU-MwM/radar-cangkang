@@ -5,7 +5,7 @@ import { fmtDate } from './domain.js'
 import { PT_STATUS, ptStatusTxt, confLvl } from './patterns.js'
 import { phaseName } from './cycle.js'
 import { mergeBoard } from './profil.js'
-import { riCalc, riVerdict, noRights, riFunding } from './rightsIssue.js'
+import { riCalc, riVerdict, noRights, riFunding, asetDetail } from './rightsIssue.js'
 
 const W = 10, H = 5.625, M = 0.45, CW = W - 2 * M
 const TOP = 1.2, BOT = 4.6
@@ -398,6 +398,69 @@ const recTone = t => t === 'good' ? th.good : t === 'bad' ? th.bad : th.warn
     })
     const desc = [as.aset?.sektor && `Sektor: ${as.aset.sektor}`, as.aset?.porsi && `Porsi: ${short(as.aset.porsi, 40)}`, as.aset?.deskripsi && short(as.aset.deskripsi, 120)].filter(Boolean).join('  ·  ')
     if (desc) T(s, desc, { x: M, y: TOP + 2.75, w: CW, h: 0.55, fontSize: 9.5, color: th.muted })
+  }
+
+  // ===== 8b. Rincian nilai aset injeksi (kisaran antar-sumber, cara bayar, KJPP, data belum diungkap) =====
+  {
+    const inj = d.ri?.inj || d.aset?.transaksi?.nilaiRp || null
+    const det = d.ri?.detail || asetDetail(d.aset, inj)
+    if (det && (det.lo || det.nama)) {
+      const kj = det.kjpp
+      const s = slide('Aset injeksi', 'Rincian Nilai Aset Injeksi', det.spread
+        ? `Nilai aset masih indikatif, berkisar ${bigS(det.lo)} hingga ${bigS(det.hi)} menurut sumber yang berbeda; perhitungan memakai ${bigS(inj || det.hi)}.`
+        : kj.status === 'terbit' ? `Nilai aset telah dinilai KJPP${kj.nilai ? ' sebesar ' + bigS(kj.nilai) : ''}.` : 'Nilai aset belum diuji oleh penilai independen (KJPP).')
+      card(s, M, TOP, 3.3, 3.35, { fill: th.dark, line: th.dark })
+      T(s, det.spread ? 'NILAI INDIKATIF (BERBEDA ANTARSUMBER)' : 'NILAI TRANSAKSI', { x: M + 0.2, y: TOP + 0.18, w: 2.9, h: 0.22, fontSize: 8, bold: true, color: th.accent2, charSpacing: 2 })
+      T(s, det.spread ? `${bigS(det.lo)} – ${bigS(det.hi)}` : bigS(det.hi || inj), { x: M + 0.2, y: TOP + 0.45, w: 2.9, h: 0.7, fontFace: th.head, fontSize: det.spread ? 19 : 26, bold: true, color: 'FFFFFF', valign: 'middle' })
+      if (det.spread && inj) T(s, `Dipakai dalam perhitungan: ${bigS(inj)}`, { x: M + 0.2, y: TOP + 1.15, w: 2.9, h: 0.25, fontSize: 9.5, color: th.accent2 })
+      if (det.nilaiText) T(s, short(det.nilaiText, 260), { x: M + 0.2, y: TOP + 1.5, w: 2.9, h: 1.75, fontSize: 9, color: 'EAF2FA' })
+      const cx = M + 3.5, cw = CW - 3.5
+      const boxes = [
+        ['Aset', [det.nama, det.jenis, [det.lokasi, det.porsi].filter(Boolean).join(' · '), ...det.facts.map(([l, v]) => `${l}: ${typeof v === 'number' ? bigS(v) : v}`)].filter(Boolean).join(' · ')],
+        ['Cara bayar', det.cara],
+        ['Penilaian independen (KJPP)', `${KJPP_SHORT[kj.status] || 'Belum ada'}${kj.nama ? ' · ' + kj.nama : ''}${kj.nilai ? ' · ' + bigS(kj.nilai) : ''}${kj.ket ? '. ' + kj.ket : ''}`],
+      ].filter(b => b[1])
+      // Tinggi kotak mengikuti panjang teks (±95 karakter per baris pada lebar ini).
+      const lines = boxes.map(([, v]) => Math.min(3, Math.ceil(short(v, 280).length / 95)))
+      const room = det.gaps.length ? 2.3 : 3.35
+      const unit = (room - 0.1 * (boxes.length - 1) - 0.36 * boxes.length) / lines.reduce((a, b) => a + b, 0)
+      let by = TOP
+      boxes.forEach(([h, v], i) => {
+        const bh = 0.36 + lines[i] * Math.min(0.2, unit)
+        card(s, cx, by, cw, bh)
+        T(s, h.toUpperCase(), { x: cx + 0.15, y: by + 0.07, w: cw - 0.3, h: 0.2, fontSize: 7.5, bold: true, color: th.accent, charSpacing: 2 })
+        T(s, short(v, 280), { x: cx + 0.15, y: by + 0.28, w: cw - 0.3, h: bh - 0.32, fontSize: 8.5, color: th.ink, fit: 'shrink' })
+        by += bh + 0.1
+      })
+      if (det.gaps.length) {
+        const gy = Math.max(by + 0.05, TOP + 2.2)
+        T(s, 'BELUM DIUNGKAP KE PUBLIK', { x: cx, y: gy, w: cw, h: 0.2, fontSize: 7.5, bold: true, color: th.bad, charSpacing: 2 })
+        T(s, det.gaps.slice(0, 4).map((g, i, a) => ({ text: short(g, 95), options: { bullet: { indent: 10 }, breakLine: i < a.length - 1, paraSpaceAfter: 2 } })),
+          { x: cx, y: gy + 0.24, w: cw, h: TOP + 3.35 - gy - 0.24, fontSize: 8.5, color: th.muted })
+      }
+    }
+  }
+
+  // ===== 8c. Tahapan pendanaan (tahap I tunai) dan injeksi aset (tahap II dibayar saham) =====
+  if (d.ri?.laterInj && d.riR) {
+    const c = d.ri, r = d.riR, P = d.riP
+    const sh = v => v == null ? '–' : v >= 1e9 ? `${id(v / 1e9, 2)} miliar` : `${id(v / 1e6, 0)} jt`
+    const pc = v => v == null ? '–' : `${id(v * 100, v < 0.1 ? 2 : 1)}%`
+    const s = slide('Aset injeksi', 'Tahapan Pendanaan dan Injeksi Aset',
+      `Tahap I (${bigS(r.total)}) berupa dana tunai, bukan pembelian aset; aset ${bigS(c.laterInj)} dibayar dengan ±${sh(r.injShares)} saham baru pada tahap II.`)
+    ;[
+      [`TAHAP I · ${c.label.toUpperCase()}`, bigS(r.total), `${sh(r.N)} saham × ${rpS(P)}${c.jadwal ? ' · ' + short(c.jadwal, 40) : ''}`, 'Dana tunai untuk modal kerja dan kewajiban, bukan untuk membeli aset.', th.accent],
+      ['TAHAP II · INJEKSI ASET', bigS(c.laterInj), `Dibayar sekitar ${sh(r.injShares)} saham baru pada harga ${rpS(P)}`, `Porsi publik dapat turun dari ${id(c.float || 0, 1)}% menjadi ${pc(r.pubAfterInj)} bila publik tidak ikut menebus.`, r.pubAfterInj < 0.075 ? th.bad : th.accent],
+    ].forEach(([h, v, a, b, col], i) => {
+      const x = M + i * (CW / 2 + 0.1), w = CW / 2 - 0.1
+      card(s, x, TOP, w, 3.35)
+      s.addShape(S.RECTANGLE, { x, y: TOP, w, h: 0.08, fill: { color: col }, line: { color: col, width: 0 } })
+      T(s, h, { x: x + 0.25, y: TOP + 0.25, w: w - 0.5, h: 0.24, fontSize: 9, bold: true, color: th.accent, charSpacing: 2, fit: 'shrink' })
+      T(s, v, { x: x + 0.25, y: TOP + 0.6, w: w - 0.5, h: 0.75, fontFace: th.head, fontSize: 30, bold: true, color: col, valign: 'middle' })
+      T(s, a, { x: x + 0.25, y: TOP + 1.5, w: w - 0.5, h: 0.5, fontSize: 10.5, color: th.ink })
+      T(s, b, { x: x + 0.25, y: TOP + 2.1, w: w - 0.5, h: 1.0, fontSize: 10, color: th.muted })
+    })
+    T(s, '+', { x: M + CW / 2 - 0.15, y: TOP + 1.45, w: 0.3, h: 0.4, fontSize: 20, bold: true, color: th.muted, align: 'center', valign: 'middle' })
   }
 
   // ===== 9. Simulasi nilai KJPP (grafik) =====
