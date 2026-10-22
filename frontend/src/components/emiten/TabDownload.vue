@@ -23,7 +23,7 @@ const SLIDES = [
   ['Tesis analis', 'alasan sikap, kalimat demi kalimat'], ['Variabel kunci', 'yang dipantau & tesis salah bila'],
   ['Enam dimensi', 'grafik skor'], ['Rincian skor', 'alasan tiap dimensi & bobot'], ['Pengendali', 'struktur & aktor'],
   ['Kepemilikan', 'donat & arus pemegang'], ['Profil pengendali', 'latar & rekam jejak'], ['Pengurus', 'direksi & komisaris'],
-  ['Aset injeksi', 'nilai, KJPP, tahapan'], ['Penambahan modal', 'rights issue & dana tercapai?'], ['Pihak lawan', 'rantai kepemilikan'],
+  ['Aset injeksi', 'nilai, KJPP, tahapan'], ['Rincian nilai aset', 'kisaran antarsumber, cara bayar, KJPP'], ['Tahapan pendanaan', 'tahap I dana vs tahap II aset'], ['Penambahan modal', 'rights issue & dana tercapai?'], ['Pihak lawan', 'rantai kepemilikan'],
   ['Progres', 'tonggak transaksi'], ['Kronologi', 'jejak keterbukaan penting'], ['Valuasi & dilusi', 'sebelum → sesudah'],
   ['Fundamental', 'PBV, PER, ekuitas, kas, margin'], ['Harga 1 tahun', 'grafik & siklus'], ['Skenario', 'tangga harga'],
   ['Teknikal', 'meter sinyal'], ['Pola & level', 'support/resistance'], ['Rencana transaksi', 'masuk/keluar'],
