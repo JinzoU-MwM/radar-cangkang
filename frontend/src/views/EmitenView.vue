@@ -16,6 +16,7 @@ import TabBerita from '../components/emiten/TabBerita.vue'
 import TabIntel from '../components/emiten/TabIntel.vue'
 import TabDownload from '../components/emiten/TabDownload.vue'
 import TabInsider from '../components/emiten/TabInsider.vue'
+import TabVideo from '../components/emiten/TabVideo.vue'
 import { api } from '../api.js'
 
 const props = defineProps({ ticker: { type: String, required: true } })
@@ -27,6 +28,7 @@ const TABS = [
   { id: 'story', name: 'Story & Pengendali' },
   { id: 'insider', name: 'Insider Activity' },
   { id: 'analisa', name: 'Analisa' },
+  { id: 'video', name: 'Video' },
   { id: 'teknikal', name: 'Teknikal' },
   { id: 'spekulasi', name: 'Spekulasi' },
   { id: 'profil', name: 'Profil' },
@@ -179,6 +181,7 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
         <TabStory v-else-if="tab === 'story'" :ticker="T" @flow="openFlow" />
         <TabInsider v-else-if="tab === 'insider'" :ticker="T" />
         <TabAnalisa v-else-if="tab === 'analisa'" :ticker="T" />
+        <TabVideo v-else-if="tab === 'video'" :ticker="T" />
         <TabTeknikal v-else-if="tab === 'teknikal'" :ticker="T" />
         <TabSpekulasi v-else-if="tab === 'spekulasi'" :ticker="T" @goto="pick" />
         <TabProfil v-else-if="tab === 'profil'" :ticker="T" />
