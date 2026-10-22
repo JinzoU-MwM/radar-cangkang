@@ -16667,120 +16667,360 @@
   "asOf": "2026-10-22",
   "nodes": [
    {
+    "id": "koh",
+    "row": 0,
+    "t": "Koh Hui Ling",
+    "s": "Direktur NINE · asisten pribadi Poh sejak 1996",
+    "k": "",
+    "l": [
+     "pengurus"
+    ],
+    "lp": {
+     "pengurus": [
+      20,
+      120
+     ]
+    }
+   },
+   {
     "id": "poh",
     "row": 0,
     "t": "Poh Kay Ping",
     "s": "UBO Poh Holdings · Komut NINE · ±41% Tian Poh (2022)",
-    "k": ""
+    "k": "",
+    "l": [
+     "kendali",
+     "pengurus",
+     "aset"
+    ],
+    "lp": {
+     "pengurus": [
+      480,
+      120
+     ],
+     "aset": [
+      800,
+      120
+     ]
+    }
+   },
+   {
+    "id": "teo",
+    "row": 0,
+    "t": "Teo Bee Cheng",
+    "s": "Dirut NINE sejak 7 Mei 2026 · GM PGGR Mongolia sejak 2011",
+    "l": [
+     "pengurus",
+     "aset"
+    ],
+    "lp": {
+     "pengurus": [
+      100,
+      400
+     ],
+     "aset": [
+      20,
+      120
+     ]
+    }
    },
    {
     "id": "heddy",
     "row": 0,
     "t": "Heddy Kandou",
     "s": "pengendali lama · jual bertahap @Rp38 lalu @Rp19",
-    "k": ""
+    "k": "",
+    "l": [
+     "arus"
+    ]
    },
    {
     "id": "nop",
     "row": 0,
     "t": "Noprian Fadli",
     "s": "pemegang 12% (Des 2024) · jual @Rp19 Mar 2025 · kini Komisaris",
-    "k": ""
+    "k": "",
+    "l": [
+     "arus",
+     "pengurus"
+    ],
+    "lp": {
+     "pengurus": [
+      1180,
+      120
+     ]
+    }
+   },
+   {
+    "id": "nuz",
+    "row": 0,
+    "t": "Nuzwan Gufron",
+    "s": "Dirut NINE s.d. 7 Mei 2026 · mitra Triple B",
+    "l": [
+     "pengurus"
+    ],
+    "lp": {
+     "pengurus": [
+      1180,
+      680
+     ]
+    }
    },
    {
     "id": "tpr",
     "row": 1,
     "t": "Tian Poh Resources Ltd",
     "s": "Australia · delisting ASX Agu 2023 · induk PGGR",
-    "k": ""
+    "k": "",
+    "l": [
+     "aset"
+    ],
+    "lp": {
+     "aset": [
+      340,
+      400
+     ]
+    }
    },
    {
     "id": "pohh",
     "row": 1,
     "t": "Poh Holdings Pte Ltd",
     "s": "Singapura · 35,85% (773,35 jt saham) · rata-rata ±Rp15,4",
-    "k": "key"
+    "k": "key",
+    "l": [
+     "kendali",
+     "arus"
+    ]
    },
    {
     "id": "pii",
     "row": 1,
     "t": "PT Poh Investment Indonesia",
     "s": "pelaksana MTO Rp131",
-    "k": ""
+    "k": "",
+    "l": [
+     "kendali",
+     "arus"
+    ]
    },
    {
     "id": "em",
     "row": 2,
     "t": "NINE",
     "s": "Techno9 Indonesia · harga Rp73 (21 Okt 2026) · ekuitas Rp26 M",
-    "k": "main"
+    "k": "main",
+    "lp": {
+     "pengurus": [
+      800,
+      680
+     ],
+     "aset": [
+      800,
+      680
+     ]
+    }
    },
    {
     "id": "pggr",
     "row": 2,
     "t": "Poh Golden Ger Resources",
-    "s": "anak 100% Tian Poh · 2 konsesi batu bara Mongolia",
-    "k": "void"
+    "s": "anak 100% Tian Poh · nilai buku aset nol (impairment 2020)",
+    "k": "void",
+    "l": [
+     "aset"
+    ],
+    "lp": {
+     "aset": [
+      340,
+      680
+     ]
+    }
    },
    {
     "id": "pres",
     "row": 2,
     "t": "Poh Resources Pte Ltd",
     "s": "rencana backdoor awal · tidak terdengar lagi",
-    "k": "void"
+    "k": "void",
+    "l": [
+     "aset"
+    ],
+    "lp": {
+     "aset": [
+      1260,
+      680
+     ]
+    }
    },
    {
     "id": "djoni",
     "row": 3,
     "t": "Djoni",
     "s": "5,10% (110 jt saham) · identitas belum jelas",
-    "k": "none"
+    "k": "none",
+    "l": [
+     "kendali",
+     "arus"
+    ]
    },
    {
     "id": "mong",
     "row": 3,
-    "t": "Tambang batu bara Mongolia",
-    "s": "opsi ±USD100–150 jt · rights issue tahap II",
-    "k": ""
+    "t": "Nuurst (MV17349X)",
+    "s": "batu bara termal · resource 478,3 Mt JORC 2012 · belum produksi",
+    "k": "",
+    "l": [
+     "aset"
+    ],
+    "lp": {
+     "aset": [
+      180,
+      960
+     ]
+    }
    },
    {
     "id": "pub",
     "row": 3,
     "t": "Masyarakat",
     "s": "58,98% · terdilusi bila rights issue",
-    "k": ""
-   },
-   {
-    "id": "nuz",
-    "row": 0,
-    "t": "Nuzwan Gufron",
-    "s": "Dirut NINE s.d. 7 Mei 2026 · mitra Triple B"
-   },
-   {
-    "id": "teo",
-    "row": 0,
-    "t": "Teo Bee Cheng",
-    "s": "Dirut NINE sejak 7 Mei 2026 · eks Tian Poh?"
-   },
-   {
-    "id": "bbb",
-    "row": 1,
-    "t": "PT Bisnis Bersama Berkah",
-    "s": "Triple B Advisory · klien NINE · 0,07%"
+    "k": "",
+    "l": [
+     "kendali",
+     "arus"
+    ]
    },
    {
     "id": "aof",
     "row": 1,
     "t": "Advance Opportunities Fund",
     "s": "Cayman · bridging loan · 15,88% → 6,30% (Jun 2025)",
-    "k": ""
+    "k": "",
+    "l": [
+     "arus"
+    ]
    },
    {
     "id": "sii",
     "row": 3,
     "t": "PT Sembilan Investasi Indonesia",
     "s": "anak usaha 99% · berdiri 22 Sep 2026",
-    "k": ""
+    "k": "",
+    "l": [
+     "kendali"
+    ]
+   },
+   {
+    "id": "irw",
+    "row": 0,
+    "t": "Irwan Dharma Kusuma",
+    "s": "Direktur NINE sejak 2018 · bertahan dari rezim Heddy",
+    "k": "",
+    "l": [
+     "pengurus"
+    ],
+    "lp": {
+     "pengurus": [
+      560,
+      960
+     ]
+    }
+   },
+   {
+    "id": "boas",
+    "row": 0,
+    "t": "Boas P. Panjaitan",
+    "s": "Direktur NINE sejak 7 Mei 2026 · tautan Poh tidak ditemukan",
+    "k": "",
+    "l": [
+     "pengurus"
+    ],
+    "lp": {
+     "pengurus": [
+      1040,
+      960
+     ]
+    }
+   },
+   {
+    "id": "ven",
+    "row": 0,
+    "t": "Venantius Agung Passinoraga",
+    "s": "Komisaris Independen NINE · Direktur MEJA",
+    "k": "",
+    "l": [
+     "pengurus"
+    ],
+    "lp": {
+     "pengurus": [
+      800,
+      400
+     ]
+    }
+   },
+   {
+    "id": "meja",
+    "row": 1,
+    "t": "Harta Djaya Karya (MEJA)",
+    "s": "emiten · Triple B 39,31% · Komut Noprian",
+    "k": "",
+    "l": [
+     "pengurus"
+    ],
+    "lp": {
+     "pengurus": [
+      1180,
+      400
+     ]
+    }
+   },
+   {
+    "id": "bbb",
+    "row": 1,
+    "t": "PT Bisnis Bersama Berkah",
+    "s": "Triple B Advisory · klien NINE · 0,07%",
+    "l": [
+     "pengurus"
+    ],
+    "lp": {
+     "pengurus": [
+      1500,
+      400
+     ]
+    }
+   },
+   {
+    "id": "swf",
+    "row": 1,
+    "t": "Swifter Limited",
+    "s": "milik Poh · 17,47% Tian Poh (Feb 2022)",
+    "k": "",
+    "l": [
+     "aset"
+    ],
+    "lp": {
+     "aset": [
+      800,
+      400
+     ]
+    }
+   },
+   {
+    "id": "hua",
+    "row": 3,
+    "t": "Huabei Kuangye (MV17471X)",
+    "s": "semi-soft coking · 61 Mt standar Tiongkok · bukan JORC",
+    "k": "",
+    "l": [
+     "aset"
+    ],
+    "lp": {
+     "aset": [
+      500,
+      960
+     ]
+    }
    }
   ],
   "edges": [
@@ -16806,7 +17046,7 @@
     "heddy",
     "pohh",
     "plan",
-    "CSPA 23 Jan 2025"
+    "773,35 jt dalam 3 tahap (Mei–Sep 2025)"
    ],
    [
     "nop",
@@ -16836,13 +17076,7 @@
     "pggr",
     "mong",
     "own",
-    "100% konsesi"
-   ],
-   [
-    "em",
-    "mong",
-    "plan",
-    "opsi beli 9 bulan"
+    "100% (Modun Resources LLC)"
    ],
    [
     "pohh",
@@ -16872,13 +17106,20 @@
     "teo",
     "em",
     "role",
-    "Direktur Utama"
+    "Direktur Utama",
+    [
+     "pengurus"
+    ]
    ],
    [
     "poh",
     "em",
     "role",
-    "Komisaris Utama"
+    "Komisaris Utama",
+    [
+     "kendali",
+     "pengurus"
+    ]
    ],
    [
     "nop",
@@ -16932,7 +17173,7 @@
     "poh",
     "tpr",
     "own",
-    "41,20% (Feb 2022)"
+    "23,71% langsung (Feb 2022)"
    ],
    [
     "tpr",
@@ -16945,6 +17186,102 @@
     "sii",
     "own",
     "99%"
+   ],
+   [
+    "em",
+    "pggr",
+    "plan",
+    "opsi aset USD100–150 jt"
+   ],
+   [
+    "pggr",
+    "hua",
+    "own",
+    "100% (Huabei Kuangye LLC)"
+   ],
+   [
+    "poh",
+    "swf",
+    "own",
+    "milik/kendali"
+   ],
+   [
+    "swf",
+    "tpr",
+    "own",
+    "17,47% (Feb 2022)"
+   ],
+   [
+    "teo",
+    "pggr",
+    "role",
+    "GM Mongolia sejak 2011"
+   ],
+   [
+    "koh",
+    "em",
+    "role",
+    "Direktur"
+   ],
+   [
+    "koh",
+    "poh",
+    "role",
+    "asisten pribadi sejak 1996"
+   ],
+   [
+    "irw",
+    "em",
+    "role",
+    "Direktur sejak 2018"
+   ],
+   [
+    "boas",
+    "em",
+    "role",
+    "Direktur"
+   ],
+   [
+    "ven",
+    "em",
+    "role",
+    "Komisaris Independen"
+   ],
+   [
+    "ven",
+    "meja",
+    "role",
+    "Direktur sejak 8 Apr 2026"
+   ],
+   [
+    "nop",
+    "meja",
+    "role",
+    "Komut"
+   ],
+   [
+    "bbb",
+    "meja",
+    "own",
+    "39,31%"
+   ],
+   [
+    "poh",
+    "pres",
+    "own",
+    "dikendalikan (media)",
+    [
+     "aset"
+    ]
+   ],
+   [
+    "em",
+    "pres",
+    "void",
+    "inbreng USD200 jt batal",
+    [
+     "aset"
+    ]
    ]
   ],
   "info": {
@@ -16955,6 +17292,10 @@
     "flag": "Pembeli saham, Komut NINE dan pemegang terbesar induk pemilik aset injeksi adalah orang yang sama. Pemegang lain Tian Poh (Swifter Limited 17,47%, Tian Guangru 14,23% per Feb 2022) ikut menikmati nilai inbreng.",
     "trackTitle": "Rekam jejak",
     "track": [
+     [
+      "1996–2010",
+      "Deputy CEO Poh Tiong Choon Logistics (SGX)"
+     ],
      [
       "2005",
       "Mulai berinvestasi di Mongolia (ASX 31 Mar 2022)"
@@ -16988,12 +17329,12 @@
       "Menandatangani pengumuman pengambilalihan NINE sebagai Direktur Poh Holdings (PHPL202509001)"
      ]
     ],
-    "note": "Pengumuman ASX 31 Mar 2022 menyebut Poh Kay Ping MD/CEO Tian Poh Resources dan pendiri PGGR. Konsesi emas di Kamboja disebut media; belum ada sumber primer. Tian Poh disuspensi atas permintaan sendiri sejak 11 Agu 2021 dan dikeluarkan dari ASX 11 Agu 2023 (Listing Rule 17.12, suspensi dua tahun).",
+    "note": "Pengumuman ASX 31 Mar 2022 menyebut Poh Kay Ping MD/CEO Tian Poh Resources dan pendiri PGGR. Konsesi emas di Kamboja disebut media; belum ada sumber primer. Tian Poh disuspensi atas permintaan sendiri sejak 11 Agu 2021 dan dikeluarkan dari ASX 11 Agu 2023 (Listing Rule 17.12, suspensi dua tahun). Pendidikan: Diploma Teknik Mesin Singapore Polytechnic; BSc University of San Francisco (1985); MBA Oklahoma City University (1995). Riset 22 Okt 2026: nama Poh Kay Ping, Poh Holdings, PGGR dan Techno9 tidak ditemukan di daftar OFAC SDN maupun daftar sanksi konsolidasi PBB.",
     "open": [
      "Kepemilikan Poh Kay Ping di Tian Poh setelah delisting (data terakhir Feb 2022)",
      "Status opsi PGGR setelah 9 bulan"
     ],
-    "src": "Bisnis.com, AKIpress, Mining Monthly, Jakarta Globe, CV di techno9indonesia.com (Mar 2026), ASX 31 Mar 2022, risalah RUPSLB II NINE; pengumuman Poh Holdings 17 Sep 2025 (techno9indonesia.com); Market Index (Morningstar) 28 Feb 2022; delisted.com.au"
+    "src": "Bisnis.com, AKIpress, Mining Monthly, Jakarta Globe, CV di techno9indonesia.com (Mar 2026), ASX 31 Mar 2022, risalah RUPSLB II NINE; pengumuman Poh Holdings 17 Sep 2025 (techno9indonesia.com); Market Index (Morningstar) 28 Feb 2022; delisted.com.au; laporan tahunan NINE 2025"
    },
    "heddy": {
     "kind": "Orang · Indonesia",
@@ -17051,7 +17392,7 @@
       "Merry Kandou (Direktur) diberhentikan; kesamaan marga belum berarti hubungan keluarga"
      ]
     ],
-    "note": "Koreksi v4: selisih ±110 jt saham Agu 2025 terjelaskan, yaitu 110,007 jt saham yang dibeli Poh Holdings pada 27 Mei 2025 (962,67 − 110,01 = 852,66 jt, cocok dengan laporan Jul 2025). Total Poh 110.007.000 + 250.000.000 + 413.345.631 = 773.352.631 saham, cocok persis. Penerima 100 jt saham 22 Agu 2025 tidak disebut. Bila termasuk tahap ketiga, sisa Heddy 189,31 jt; bila tidak, 89,31 jt (hitungan). Per data pemegang ≥1% Okt 2026 (Stockbit), nama Heddy tidak tercantum. Katadata (9 Jan 2026) menulis utang Heddy kepada PGGR; pengumuman Poh menulis utang perseroan. Yang dipakai adalah pengumuman Poh.",
+    "note": "Koreksi v4: selisih ±110 jt saham Agu 2025 terjelaskan, yaitu 110,007 jt saham yang dibeli Poh Holdings pada 27 Mei 2025 (962,67 − 110,01 = 852,66 jt, cocok dengan laporan Jul 2025). Total Poh 110.007.000 + 250.000.000 + 413.345.631 = 773.352.631 saham, cocok persis. Penerima 100 jt saham 22 Agu 2025 tidak disebut. Bila termasuk tahap ketiga, sisa Heddy 189,31 jt; bila tidak, 89,31 jt (hitungan). Per data pemegang ≥1% Okt 2026 (Stockbit), nama Heddy tidak tercantum. Katadata (9 Jan 2026) menulis utang Heddy kepada PGGR; pengumuman Poh menulis utang perseroan. Yang dipakai adalah pengumuman Poh. Heddy juga menyewakan kantor ke NINE dan menjadi penjamin utang (pihak berelasi, laporan tahunan 2025).",
     "open": [
      "Penerima 100 jt saham 22 Agu 2025",
      "Sisa saham setelah 17 Sep 2025 dan kapan dilepas",
@@ -17094,6 +17435,10 @@
      [
       "7 Mei 2026",
       "RUPSLB II: diberhentikan sebagai Komut, diangkat Komisaris (masa jabatan sampai RUPST 2030)"
+     ],
+     [
+      "Des 2025",
+      "Akuisisi MEJA lewat Triple B (39,31%); kini Komisaris Utama MEJA"
      ],
      [
       "Mei 2026",
@@ -17188,7 +17533,7 @@
     "kind": "Emiten BEI",
     "who": "PT Techno9 Indonesia Tbk. Pendapatan 2025 Rp2,35 M, rugi Rp9,95 M. IPO 5 Des 2022 di Rp75.",
     "role": "Target ambil alih; rencana rights issue dua tahap dan inbreng tambang.",
-    "flag": "Pengurus seluruhnya dirombak 7 Mei 2026: Dirut Teo Bee Cheng, direksi Irwan Dharma Kusuma, Boas P. Panjaitan, Koh Hui Ling; Komut Poh Kay Ping, Komisaris Noprian Fadli, Komisaris Independen Venantius Agung Passinoraga. Tiga RUPS 2026 gagal kuorum di putaran pertama.",
+    "flag": "Dewan 7 Mei 2026: Komut Poh Kay Ping, Komisaris Noprian Fadli, Komisaris Independen Venantius (Direktur MEJA); Dirut Teo Bee Cheng (GM PGGR Mongolia), Direktur Koh Hui Ling (asisten pribadi Poh), Irwan Dharma Kusuma (sejak 2018), Boas P. Panjaitan. Tiga kursi orang Poh. Tiga RUPS 2026 gagal kuorum di putaran pertama.",
     "trackTitle": "Kronologi",
     "track": [
      [
@@ -17256,7 +17601,7 @@
       "RUPSLB PMHMETD I (recording date 26 Okt 2026)"
      ]
     ],
-    "note": "Dua angka rights issue: 2,157 miliar (RUPSLB 7 Mei 2026, 100% modal) dan 2,443 miliar (pengumuman 12 Okt 2026, melampaui saham beredar sehingga memerlukan RUPSLB 18 Nov 2026). Rencana PMHMETD I @Rp37 tahun 2025 (pembeli siaga AOF) tidak terlaksana. Pendapatan 2024 Rp9 M (70% dari PT Integra Kreasitama Solusindo pada paruh kedua 2024); utang BCA Rp1,7 M per Mar 2025. Perseroan juga menyebut rencana surat utang.",
+    "note": "Dua angka rights issue: 2,157 miliar (RUPSLB 7 Mei 2026, 100% modal) dan 2,443 miliar (pengumuman 12 Okt 2026, melampaui saham beredar sehingga memerlukan RUPSLB 18 Nov 2026). Rencana PMHMETD I @Rp37 tahun 2025 (pembeli siaga AOF) tidak terlaksana. Pendapatan 2024 Rp9 M (70% dari PT Integra Kreasitama Solusindo pada paruh kedua 2024); utang BCA Rp1,7 M per Mar 2025. Perseroan juga menyebut rencana surat utang. Laporan tahunan 2025 masih memuat struktur pemegang saham lama (Heddy 79,97%) dan menulis Boas sebagai Direktur Utama.",
     "open": [
      "Harga pelaksanaan dan pembeli siaga PMHMETD I (belum ditunjuk per 21 Okt 2026)",
      "Kreditur yang dilunasi dari 25% dana PMHMETD I",
@@ -17269,7 +17614,7 @@
     "kind": "Badan hukum · Singapura",
     "who": "Poh Golden Ger Resources Pte Ltd (UEN 201024850E, berdiri 23 Nov 2010), 48 Pandan Road, Singapura. Anak 100% Tian Poh Resources Ltd; anak usaha di Mongolia: Poh Golden Ger Resources Mongolia LLC dan Huabei Kuangye LLC.",
     "role": "Penjual aset yang hendak diinjeksi; dikendalikan Poh Kay Ping lewat Tian Poh.",
-    "flag": "Valuasi USD150 jt (Des 2025) lalu USD100 jt (Okt 2026) tanpa penilai bernama. Tidak ada data keuangan.",
+    "flag": "Nilai buku aset di pemiliknya nol: Tian Poh menghapus seluruh biaya eksplorasi (impairment AUD4,0 jt, FY2020) karena proyek tidak berkembang. Valuasi USD150 jt (Des 2025) lalu USD100 jt (Okt 2026) tanpa penilai bernama.",
     "trackTitle": "Kronologi",
     "track": [
      [
@@ -17279,6 +17624,10 @@
      [
       "2017",
       "MoU gasifikasi dengan Mongolia"
+     ],
+     [
+      "2020",
+      "Tian Poh impairment penuh aset eksplorasi; 2021 net liabilities AUD4,62 jt, keraguan going concern"
      ],
      [
       "28 Des 2025",
@@ -17296,7 +17645,7 @@
      "Persetujuan ODI Tiongkok untuk mitra EPC+F",
      "Nama dua penilai"
     ],
-    "src": "Indonesia Business Post 29 Des 2025, Stockbit Reports, Warta Ekonomi (perkembangan akuisisi tambang), ASX 31 Mar 2022; recordowl (ACRA) Jun 2026; pohgroup.com; Katadata 9 Jan 2026; Periskop 22 Okt 2026"
+    "src": "Indonesia Business Post 29 Des 2025, Stockbit Reports, Warta Ekonomi (perkembangan akuisisi tambang), ASX 31 Mar 2022; recordowl (ACRA) Jun 2026; pohgroup.com; Katadata 9 Jan 2026; Periskop 22 Okt 2026; laporan tahunan Tian Poh 2020–2021"
    },
    "pres": {
     "kind": "Badan hukum · Singapura",
@@ -17350,22 +17699,40 @@
    },
    "mong": {
     "kind": "Aset",
-    "who": "Dua konsesi batu bara di Mongolia, dipasarkan dengan proyeksi lebih dari 20 jt ton per tahun. Mitra EPC+F: perusahaan swasta Inner Mongolia berdiri 1998, karyawan lebih dari 1.000, aset lebih dari USD500 jt, minat investasi lebih dari USD100 jt.",
-    "role": "Aset yang direncanakan masuk lewat rights issue tahap II.",
-    "flag": "Belum beroperasi penuh; produksi bergantung kontraktor EPC+F dan persetujuan ODI Tiongkok.",
+    "who": "Izin tambang Nuurst MV17349X, dipegang Modun Resources LLC; 120 km tenggara Ulaanbaatar, 6 km dari rel Trans-Mongolia.",
+    "role": "Izin utama dalam aset PGGR yang ditawarkan ke NINE.",
+    "flag": "Dibeli Tian Poh dari Modun Resources pada 2015 seharga A$2,21 juta. Resource 478,3 Mt (326,1 measured, 103,8 indicated, 48,4 inferred) adalah resource, bukan cadangan; belum ada produksi atau studi kelayakan publik.",
     "trackTitle": "Kronologi",
     "track": [
      [
+      "2013",
+      "Studi awal: pit 84,7 Mt ROM, target 3 Mtpa, capex USD30–40 jt"
+     ],
+     [
+      "2015",
+      "Dibeli Tian Poh dari Modun A$2,21 juta"
+     ],
+     [
+      "2020",
+      "Seluruh biaya eksplorasi Tian Poh diimpairment (AUD4,0 jt)"
+     ],
+     [
+      "31 Jan 2022",
+      "Resource direstasi ke JORC 2012"
+     ],
+     [
       "Jan 2026",
-      "Framework agreement dengan kontraktor EPC+F"
+      "Framework agreement dengan kontraktor EPC+F (tanpa nama)"
      ]
     ],
-    "note": "",
+    "note": "Kualitas: sub-bituminous, 4.768 kcal/kg adb (3.701 ar), moisture 30%, ash 18,9%, sulfur 1,08%. CV Poh (Mar 2026) mengklaim PPA 2×200 MW dengan pemerintah Mongolia bersama China Nuclear Engineering & Construction; klaim ini belum ditemukan di sumber lain.",
     "open": [
-     "Cadangan dan sumber daya",
-     "Laporan keuangan"
+     "Cadangan dan studi kelayakan",
+     "Nama dan komitmen kontraktor EPC+F",
+     "Persetujuan ODI Tiongkok",
+     "Bukti PPA 2×200 MW (klaim CV)"
     ],
-    "src": "Stockbit Reports 5 Jan 2026, Bisnis.com 6 Jan 2026, Warta Ekonomi"
+    "src": "Mining Weekly 11 Agu 2015; laporan tahunan Tian Poh 2016–2021; ASX 2022; Stockbit Reports 5 Jan 2026 (riset/nine/04, 11)"
    },
    "pub": {
     "kind": "Pemegang saham",
@@ -17413,21 +17780,39 @@
    },
    "teo": {
     "kind": "Orang · Singapura (dugaan)",
-    "who": "Direktur Utama NINE sejak 7 Mei 2026. Direksi baru lain: Irwan Dharma Kusuma (tetap), Boas P. Panjaitan, Koh Hui Ling.",
-    "role": "Pengelola NINE atas penunjukan Poh Kay Ping; mengganti Nuzwan Gufron.",
-    "flag": "Nama sama dengan VP/GM Mongolia Tian Poh Resources; bila orang yang sama, Dirut berasal dari perusahaan Poh Kay Ping dan kuasa penuh berada di grup penjual aset.",
+    "who": "Teo Bee Cheng, Direktur Utama NINE sejak 7 Mei 2026. General Director Poh Golden Ger Resources Mongolia LLC sejak Jan 2011 (operasional 9 konsesi eksplorasi dan perizinan); VP & GM Mongolia Tian Poh (2016–2021). Lulusan Finance, University of San Francisco.",
+    "role": "Memimpin NINE sebagai pembeli aset sambil menjalankan operasi Mongolia milik penjual (PGGR).",
+    "flag": "Dirut pembeli adalah pegawai penjual aset. Ia di lingkaran Poh sejak 2000 (IT Poh Tiong Choon Logistics), jadi posisinya di kedua sisi transaksi pihak berelasi.",
     "trackTitle": "Rekam jejak",
     "track": [
      [
+      "1989–1999",
+      "GM Cairnhill Trading Co., Manila (impor urea)"
+     ],
+     [
+      "2000–2004",
+      "Asisten Manajer TI, Poh Tiong Choon Logistics"
+     ],
+     [
+      "2005–2008",
+      "General Director Capital Gold Mine LLC, Ulaanbaatar"
+     ],
+     [
+      "Jan 2011",
+      "General Director PGGR Mongolia LLC"
+     ],
+     [
+      "2016–2021",
+      "VP & GM Mongolia, Tian Poh"
+     ],
+     [
       "7 Mei 2026",
-      "Diangkat Dirut; masa jabatan sampai RUPST 2030"
+      "Dirut NINE; masa jabatan sampai RUPST 2030"
      ]
     ],
-    "note": "Equilar dan Bloomberg memuat Teo Bee Cheng sebagai Vice President dan GM Mongolia Tian Poh Resources Ltd; hanya kecocokan nama, belum dipastikan. Putaran 4 tidak menemukan sumber lain yang memuat nama ini.",
-    "open": [
-     "Apakah sama dengan eksekutif Tian Poh Resources"
-    ],
-    "src": "risalah RUPSLB II NINE 7 Mei 2026, Equilar, Bloomberg"
+    "note": "Koreksi v5: identitas dengan eksekutif Tian Poh terkonfirmasi.",
+    "open": [],
+    "src": "CV pengurus di techno9indonesia.com (CV_NEW.pdf, Mar 2026); laporan tahunan NINE 2025; laporan tahunan Tian Poh 2016/2017/2021; Bloomberg"
    },
    "bbb": {
     "kind": "Badan hukum · Indonesia",
@@ -17552,8 +17937,337 @@
      "Rencana usaha dan kaitannya dengan aset tambang"
     ],
     "src": "IQPlus via CGS iTrade 28 Sep 2026, Stockbit Reports 25 Sep 2026"
+   },
+   "koh": {
+    "kind": "Orang · Singapura",
+    "who": "Koh Hui Ling, Direktur NINE sejak RUPSLB II 7 Mei 2026.",
+    "role": "Asisten pribadi Poh Kay Ping sejak 1996 (Poh Tiong Choon Contractors, lalu PTC Logistics hingga 2018), di PGGR sejak Nov 2010 dan Tian Poh sejak Nov 2014. Mengerjakan pembukuan semua perusahaan milik Poh serta penggajian.",
+    "flag": "Direktur NINE adalah asisten pribadi pengendali yang memegang pembukuan perusahaan-perusahaan Poh, termasuk PGGR selaku penjual aset. Bersama Poh dan Teo, tiga kursi dewan diisi orang Poh.",
+    "trackTitle": "Rekam jejak",
+    "track": [
+     [
+      "1996",
+      "PA Poh Kay Ping di Poh Tiong Choon Contractors"
+     ],
+     [
+      "2000–2018",
+      "Poh Tiong Choon Logistics"
+     ],
+     [
+      "Nov 2010",
+      "PA Poh di PGGR"
+     ],
+     [
+      "Nov 2014",
+      "PA Poh di Tian Poh Resources"
+     ],
+     [
+      "7 Mei 2026",
+      "Diangkat Direktur NINE"
+     ]
+    ],
+    "note": "Pelatihan: kesekretariatan perusahaan (Chartered Secretaries Institute of Singapore/ACRA) dan pembukuan; tanpa pengalaman board yang diungkap.",
+    "open": [],
+    "src": "CV pengurus di techno9indonesia.com (CV_NEW.pdf, Mar 2026); laporan tahunan NINE 2025"
+   },
+   "irw": {
+    "kind": "Orang · Indonesia",
+    "who": "Irwan Dharma Kusuma, Direktur NINE (Sales & IT) sejak 2018. Sarjana Komputer Binus (2006); karier TI di PT Quartee Technologies hingga VP (2017).",
+    "role": "Satu-satunya direktur lama yang bertahan setelah RUPSLB II 7 Mei 2026.",
+    "flag": "",
+    "trackTitle": "Rekam jejak",
+    "track": [
+     [
+      "2018",
+      "Direktur NINE di bawah Heddy Kandou"
+     ],
+     [
+      "2023",
+      "Tercatat di laporan auditan bersama Heddy dan Merry Kandou"
+     ],
+     [
+      "7 Mei 2026",
+      "Tetap Direktur"
+     ]
+    ],
+    "note": "Koreksi v5: sebelumnya ditulis sebagai bagian perombakan total; ia direktur lama.",
+    "open": [],
+    "src": "Laporan keuangan NINE 2023; laporan tahunan NINE 2025 (riset/nine/13)"
+   },
+   "boas": {
+    "kind": "Orang · Indonesia",
+    "who": "Boas P. Panjaitan, Direktur NINE sejak 7 Mei 2026. Presiden Direktur PT Solugen Inovatif Abadi sejak 2025; Komisaris PT Industri Sandang Nusantara (Persero) 2013–2016 (Plt. Direktur Utama 2014–2015); Komisaris PT Barata Indonesia (Persero) 2008–2013; PT Sucofindo (Persero) 1998–2007; Wakil Rektor Universitas Bung Karno 2017–2023.",
+    "role": "Direktur; tautan dengan Poh atau Noprian tidak ditemukan.",
+    "flag": "",
+    "trackTitle": "Rekam jejak",
+    "track": [
+     [
+      "1998–2007",
+      "PT Sucofindo (Persero)"
+     ],
+     [
+      "2007–2010",
+      "Staf Khusus Dewan Pertimbangan Presiden"
+     ],
+     [
+      "2008–2013",
+      "Komisaris PT Barata Indonesia (Persero)"
+     ],
+     [
+      "2013–2016",
+      "Komisaris PT Industri Sandang Nusantara (Persero)"
+     ],
+     [
+      "7 Mei 2026",
+      "Direktur NINE"
+     ]
+    ],
+    "note": "Laporan tahunan NINE 2025 hlm. 42 menulisnya \"Direktur Utama\"; jabatan resminya Direktur. Pernah menjadi staf khusus lembaga kepresidenan (bukan PEP formal).",
+    "open": [],
+    "src": "CV pengurus di techno9indonesia.com (CV_NEW.pdf, Mar 2026); laporan tahunan NINE 2025"
+   },
+   "ven": {
+    "kind": "Orang · Indonesia",
+    "who": "Venantius Agung Passinoraga, Komisaris Independen dan Ketua Komite Audit NINE (anggota: Rudy Handoko, Ernawati Sitepu, keduanya komisaris lama). Akuntan STAN; 15 tahun di BPK RI.",
+    "role": "Diangkat Direktur PT Harta Djaya Karya Tbk (MEJA) sejak 8 Apr 2026, emiten yang dikendalikan Noprian Fadli lewat Triple B; sebulan kemudian Komisaris Independen NINE, tempat Noprian juga Komisaris.",
+    "flag": "Komisaris independen NINE adalah direktur di emiten milik komisaris NINE lain. Independensi formal ada, independensi substantif lemah.",
+    "trackTitle": "Rekam jejak",
+    "track": [
+     [
+      "1995–2014",
+      "Auditor BPK RI"
+     ],
+     [
+      "Feb 2026",
+      "Komite Audit Danantara"
+     ],
+     [
+      "8 Apr 2026",
+      "Direktur MEJA"
+     ],
+     [
+      "7 Mei 2026",
+      "Komisaris Independen NINE"
+     ]
+    ],
+    "note": "Ejaan nama di media bervariasi (Passinoraga/Passionoraga).",
+    "open": [],
+    "src": "Keterbukaan MEJA 004/HDK/SP/IV/2026 (IDX); Kontan; interra.co.id; laporan tahunan NINE 2025"
+   },
+   "meja": {
+    "kind": "Emiten BEI",
+    "who": "PT Harta Djaya Karya Tbk (MEJA). Triple B 39,31% (tabel pihak berelasi Triple B); Komisaris Utama Noprian Fadli.",
+    "role": "Titik interlock: Venantius (Komisaris Independen NINE) adalah direkturnya.",
+    "flag": "",
+    "trackTitle": "Kronologi",
+    "track": [
+     [
+      "Des 2025",
+      "Diambil alih jaringan Noprian (lihat diagram MEJA)"
+     ],
+     [
+      "8 Apr 2026",
+      "Venantius diangkat Direktur"
+     ]
+    ],
+    "note": "Detail kasus MEJA ada di diagram MEJA.",
+    "open": [],
+    "src": "Keterbukaan MEJA 004/HDK/SP/IV/2026; tripleb-advisory.com"
+   },
+   "swf": {
+    "kind": "Badan hukum",
+    "who": "Swifter Limited, dimiliki atau dikendalikan Poh Kay Ping.",
+    "role": "Pemegang 17,47% Tian Poh (Feb 2022); underwriter rights issue Tian Poh 2017 dan pemegang convertible notes RMB10 juta.",
+    "flag": "Porsi langsung Poh 23,71% ditambah Swifter 17,47% membentuk kepemilikan substansial ±41,20% di induk PGGR.",
+    "trackTitle": "Kronologi",
+    "track": [
+     [
+      "2017",
+      "Underwriter rights issue Tian Poh"
+     ],
+     [
+      "28 Feb 2022",
+      "17,47% Tian Poh"
+     ]
+    ],
+    "note": "",
+    "open": [
+     "Domisili dan pemegang saham"
+    ],
+    "src": "Laporan tahunan Tian Poh 2017; Market Index 28 Feb 2022 (riset/nine/13)"
+   },
+   "hua": {
+    "kind": "Aset",
+    "who": "Izin tambang Huabei Kuangye MV17471X (30 tahun), Bayankhongor, Mongolia; dipegang Huabei Kuangye LLC, anak PGGR.",
+    "role": "Kemungkinan izin kedua dari \"dua konsesi\" yang ditawarkan ke NINE; cakupan opsi tidak dirinci.",
+    "flag": "Resource 61 Mt semi-soft coking memakai standar Tiongkok, bukan JORC; 19 lubang bor historis.",
+    "trackTitle": "Kronologi",
+    "track": [
+     [
+      "2015",
+      "Disebut sebagai proyek paling maju Tian Poh (Mining Frontier)"
+     ]
+    ],
+    "note": "Jarak 270 km jalan ke Ceke; jalur rel baru direncanakan.",
+    "open": [
+     "Konversi ke JORC",
+     "Termasuk opsi NINE atau tidak"
+    ],
+    "src": "Mining Frontier 2015; laporan tahunan Tian Poh 2021 (riset/nine/04)"
    }
-  }
+  },
+  "transfers": [
+   {
+    "tgl": "2 Des 2024",
+    "dari": "heddy",
+    "ke": "nop",
+    "saham": "258.840.000",
+    "harga": "Rp38",
+    "nilai": "±Rp9,84 M",
+    "ket": "Pembeli tidak diungkap; jumlahnya persis 12%, porsi Noprian sesudahnya (indikasi). Heddy 63,95% → 51,95%",
+    "src": "EmitenNews 6 Apr 2025"
+   },
+   {
+    "tgl": "11 Mar 2025",
+    "dari": "pub",
+    "ke": "djoni",
+    "saham": "10.000.000",
+    "harga": "Rp254,35",
+    "nilai": "±Rp2,54 M",
+    "ket": "Djoni menjadi 110 jt (5,10%), harga pasar",
+    "src": "Bloomberg Technoz 18 Mar 2025"
+   },
+   {
+    "tgl": "19 Mar 2025",
+    "dari": "nop",
+    "ke": "aof",
+    "saham": "86.264.050",
+    "harga": "Rp19",
+    "nilai": "Rp1,64 M",
+    "ket": "Sesuai amandemen CSPA 12 Mar 2025; Noprian 12% → 8%",
+    "src": "Berdaulat 26 Mar 2025; EmitenNews 6 Apr 2025"
+   },
+   {
+    "tgl": "Mar 2025",
+    "dari": "heddy",
+    "ke": "aof",
+    "saham": "±105.300.000",
+    "harga": "Rp19",
+    "nilai": "±Rp2,0 M",
+    "ket": "Heddy 51,95% → 47,07%; penerima AOF (hitungan dari saldo)",
+    "src": "EmitenNews 6 Apr 2025"
+   },
+   {
+    "tgl": "26 Mar 2025",
+    "dari": "nop",
+    "ke": "aof",
+    "saham": "105.263.158",
+    "harga": "Rp19",
+    "nilai": "±Rp2,0 M",
+    "ket": "Noprian → 67,3 jt (3,12%). Media menyebut pembeli Poh Group, tetapi Poh baru tercatat Mei 2025 dan AOF 15,83% per 26 Mar (hitungan)",
+    "src": "EmitenNews 6 Apr 2025; IDNFinancials"
+   },
+   {
+    "tgl": "26 Mar 2025",
+    "dari": "heddy",
+    "ke": "aof",
+    "saham": "52.631.579",
+    "harga": "Rp19",
+    "nilai": "±Rp1,0 M",
+    "ket": "Heddy 47,07% → 44,63% (962,67 jt); penerima AOF (hitungan)",
+    "src": "EmitenNews 6 Apr 2025; IDNFinancials"
+   },
+   {
+    "tgl": "10 Apr 2025",
+    "dari": "pub",
+    "ke": "aof",
+    "saham": "1.156.900",
+    "harga": "Rp144",
+    "nilai": "±Rp0,17 M",
+    "ket": "AOF 342,58 jt (15,88%)",
+    "src": "CGS iTrade (IQPlus) 11 Apr 2025"
+   },
+   {
+    "tgl": "14–15 Apr 2025",
+    "dari": "aof",
+    "ke": "pub",
+    "saham": "33.500.000",
+    "harga": "Rp136–141",
+    "nilai": "±Rp4,7 M",
+    "ket": "AOF 319,08 jt (14,79%)",
+    "src": "Kontan 16 Apr 2025"
+   },
+   {
+    "tgl": "Apr–Mei 2025",
+    "dari": "aof",
+    "ke": "pub",
+    "saham": "±77.100.000",
+    "harga": "Rp113–121",
+    "nilai": "",
+    "ket": "Bersih; AOF 241,96 jt (11,22%). Termasuk 42,6 jt @Rp113–121",
+    "src": "Bisnis.com 19 Mei 2025; Neraca"
+   },
+   {
+    "tgl": "27 Mei 2025",
+    "dari": "heddy",
+    "ke": "pohh",
+    "saham": "110.007.000",
+    "harga": "Rp19",
+    "nilai": "Rp2,09 M",
+    "ket": "Tahap pertama; Poh 5,10%. Penjual dari saldo Heddy 962,67 → 852,66 jt (hitungan)",
+    "src": "Pasardana 28 Mei 2025"
+   },
+   {
+    "tgl": "Mei–12 Jun 2025",
+    "dari": "aof",
+    "ke": "pub",
+    "saham": "±106.100.000",
+    "harga": "Rp83–89",
+    "nilai": "",
+    "ket": "Bersih; AOF 135,82 jt (6,30%). Termasuk 12,3 jt @Rp89 (3–4 Jun) dan 15 jt @Rp83 (11–12 Jun)",
+    "src": "Warta Ekonomi Jun 2025; Bisnis.com 9 Jun 2025"
+   },
+   {
+    "tgl": "23 Jul 2025",
+    "dari": "heddy",
+    "ke": "pohh",
+    "saham": "250.000.000",
+    "harga": "Rp19",
+    "nilai": "Rp4,75 M",
+    "ket": "Poh 360,01 jt (16,69%); Heddy 602,66 jt",
+    "src": "Indopremier 28 Jul 2025"
+   },
+   {
+    "tgl": "22 Agu 2025",
+    "dari": "heddy",
+    "ke": null,
+    "saham": "100.000.000",
+    "harga": "Rp19",
+    "nilai": "±Rp1,9 M",
+    "ket": "Pasar negosiasi; penerima tidak disebut. Indopremier menyebut pembayaran tahap Poh pada hari yang sama, tetapi Poh masih 360 jt per 31 Agu",
+    "src": "IDX Channel 26 Agu 2025"
+   },
+   {
+    "tgl": "17 Sep 2025",
+    "dari": "heddy",
+    "ke": "pohh",
+    "saham": "413.345.631",
+    "harga": "Rp12,23",
+    "nilai": "Rp5,05 M",
+    "ket": "Tahap ketiga; awal Rp19 (Rp7,85 M) dipotong Rp2,8 M untuk utang perseroan. Poh 35,85%, rata-rata ±Rp15,4",
+    "src": "pengumuman Poh Holdings PHPL202509001"
+   },
+   {
+    "tgl": "19 Des 2025–18 Jan 2026",
+    "dari": "pub",
+    "ke": "pii",
+    "saham": "53.300",
+    "harga": "Rp131",
+    "nilai": "±Rp6,98 jt",
+    "ket": "Tender wajib; 8 pemegang menjual. Maksimum 1,29 miliar saham (Rp168,79 M) praktis tidak terpakai",
+    "src": "EmitenNews 28 Jan 2026"
+   }
+  ]
  },
  "OLIV": {
   "asOf": "2026-10-21",
