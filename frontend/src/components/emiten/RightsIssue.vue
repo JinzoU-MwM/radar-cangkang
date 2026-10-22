@@ -29,6 +29,7 @@ const bars = computed(() => {
   return { aset: x.aset / m * 100, tunai: x.tunai / m * 100, inj: (props.c.inj || 0) / m * 100 }
 })
 const STATUS = { rencana: 'Rencana', berjalan: 'Berjalan', tereksekusi: 'Sudah tereksekusi' }
+const d = computed(() => props.c.detail)
 </script>
 
 <template>
@@ -59,6 +60,59 @@ const STATUS = { rencana: 'Rencana', berjalan: 'Berjalan', tereksekusi: 'Sudah t
         <span class="lbl">Harga pelaksanaan</span>
         <b>{{ rp(P) }}</b>
         <em class="small muted">{{ pSrc }}<template v-if="r.disc != null"> · {{ r.disc >= 0 ? 'premi' : 'diskon' }} {{ fmt(Math.abs(r.disc) * 100, 0) }}% vs pasar {{ rp(c.price) }}</template></em>
+      </div>
+    </div>
+
+    <!-- Rincian nilai aset injeksi: kisaran antar-sumber, profil aset, cara bayar, penilaian, data belum diungkap. -->
+    <div v-if="d && (d.nama || d.lo)" class="aset">
+      <h3 class="lbl">Rincian nilai aset injeksi</h3>
+      <div class="ag">
+        <div class="ac val">
+          <span class="small muted">Nilai {{ d.spread ? 'indikatif (beda antar-sumber)' : 'transaksi' }}</span>
+          <b>{{ d.spread ? `${big(d.lo)} – ${big(d.hi)}` : big(d.hi) }}</b>
+          <span v-if="d.spread" class="small muted">Dipakai di hitungan: {{ big(c.inj) }}</span>
+          <span v-if="d.nilaiText" class="small">{{ d.nilaiText }}</span>
+        </div>
+        <div v-if="d.nama" class="ac">
+          <span class="small muted">Aset</span>
+          <b class="nm">{{ d.nama }}</b>
+          <span v-if="d.jenis" class="small">{{ d.jenis }}</span>
+          <span class="small muted">{{ [d.lokasi, d.porsi].filter(Boolean).join(' · ') }}</span>
+        </div>
+        <div v-if="d.cara" class="ac">
+          <span class="small muted">Cara bayar</span>
+          <span class="small">{{ d.cara }}</span>
+        </div>
+        <div class="ac">
+          <span class="small muted">Penilaian independen (KJPP)</span>
+          <b :class="d.kjpp.status === 'terbit' ? 'ok' : 'wait'">{{ d.kjpp.status === 'terbit' ? (d.kjpp.nilai ? big(d.kjpp.nilai) : 'Terbit') : d.kjpp.status === 'ditunjuk' ? 'Penilai ditunjuk' : 'Belum ada' }}</b>
+          <span v-if="d.kjpp.nama" class="small">{{ d.kjpp.nama }}<template v-if="d.kjpp.metode"> · {{ d.kjpp.metode }}</template></span>
+          <span v-if="d.kjpp.ket" class="small muted">{{ d.kjpp.ket }}</span>
+        </div>
+      </div>
+      <dl v-if="d.facts.length" class="facts">
+        <div v-for="[l, v] in d.facts" :key="l"><dt class="small muted">{{ l }}</dt><dd class="small">{{ typeof v === 'number' ? big(v) : v }}</dd></div>
+      </dl>
+      <div v-if="d.gaps.length" class="gaps">
+        <span class="small muted">Belum diungkap ke publik:</span>
+        <span v-for="g in d.gaps" :key="g" class="tag t-warn">{{ g }}</span>
+      </div>
+    </div>
+
+    <!-- Tahap I (dana) vs tahap II (aset) agar tidak tertukar. -->
+    <div v-if="r && c.laterInj" class="tahap">
+      <div class="tc">
+        <span class="lbl">Tahap I · {{ c.label }}</span>
+        <b>{{ big(r.total) }}</b>
+        <span class="small">{{ sh(r.N) }} saham × {{ rp(P) }}<template v-if="c.jadwal"> · {{ c.jadwal }}</template></span>
+        <span class="small muted">Dana tunai, bukan untuk membeli aset.</span>
+      </div>
+      <span class="arr" aria-hidden="true">+</span>
+      <div class="tc">
+        <span class="lbl">Tahap II · injeksi aset</span>
+        <b>{{ big(c.laterInj) }}</b>
+        <span class="small">dibayar ±{{ sh(r.injShares) }} saham baru pada {{ rp(P) }}</span>
+        <span class="small muted">Porsi publik bisa turun ke {{ pct(r.pubAfterInj, 1) }}.</span>
       </div>
     </div>
 
@@ -173,6 +227,22 @@ const STATUS = { rencana: 'Rencana', berjalan: 'Berjalan', tereksekusi: 'Sudah t
 .st b.warn{color:var(--strong, #c0392b)}
 .arr{align-self:center;opacity:.5}
 .verdict{margin:6px 0}
+.aset{margin-bottom:12px}
+.aset .lbl{margin:0 0 6px}
+.ag{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.ac{background:var(--sheet);border:1px solid var(--rule);padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.ac.val b{font-size:20px}
+.ac .nm{font-size:14px}
+.ac b.ok{color:var(--good)}
+.ac b.wait{color:var(--warn, #c98a1b)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:4px 12px;margin:8px 0 0}
+.facts div{display:flex;flex-direction:column}
+.facts dd{margin:0}
+.gaps{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;margin-top:8px}
+.tahap{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;margin-bottom:12px}
+.tc{flex:1 1 240px;background:var(--sheet);border:1px solid var(--rule);padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.tc b{font-size:20px}
+.tc .lbl{margin:0}
 .src p{margin:4px 0}
 @media (max-width:760px){ .fund .row{grid-template-columns:1fr 90px}.fund .row .track{grid-column:1/-1;grid-row:2} }
 </style>
