@@ -1439,6 +1439,183 @@ def news_loop() -> None:
         time.sleep(NEWS_GAP)
 
 
+# ------------------------------------------------------------------- POV ----
+# Sudut pandang (POV) akun Stockbit yang diprioritaskan + akun trending: saham yang mereka incar, gaya analisa,
+# horizon, dan nada (bullish/bearish). Hanya posting ide publik yang dianalisis; tidak ada data pribadi.
+
+POV_PRIORITY = ["kakdr", "zeinihzafahrozi", "majoindonangega", "athira", "PMFernandoR"]
+POV_PAGES, POV_DAYS, POV_TRENDING = 5, 60, 5
+POV_NOT_STOCK = {"IHSG", "LQ45", "IDXV", "IDXG", "JII7"}
+POV_STYLE = [
+    ("Teknikal", r"support|resist|breakout|break out|breakdown|\bma ?\d+|\bema\b|\brsi\b|macd|stoch|fibo|pola|pattern|candle|doji|hammer|trendline|channel|pullback|retest|double (top|bottom)|bollinger|volume|chart"),
+    ("Bandarmologi", r"bandar|broker|akumulasi|\bakum|distribusi|\bdistri|\basing\b|foreign|net ?buy|net ?sell|antri|order ?book|haka|haki|tektok|guyur|serok|mark ?up|goreng|big ?player|whale|\bbid\b|\boffer\b"),
+    ("Fundamental", r"laba|rugi|pendapatan|revenue|net ?profit|\bper\b|\bpbv\b|\broe\b|dividen|dividend|laporan keuangan|\blk\b|kinerja|margin|valuasi|undervalue|overvalue|cash ?flow|ekuitas|\beps\b"),
+    ("Aksi korporasi", r"right ?issue|\bri\b|hmetd|pmhmetd|pmthmetd|private placement|akuisisi|backdoor|back door|tender|\bmto\b|\bptw\b|inbreng|pengendali|\brups|stock split|buyback|merger|\bipo\b|cum ?date|ex ?date|waran"),
+    ("Momentum", r"\bara\b|\barb\b|scalp|day ?trade|fast ?trade|\bcuan|\btp\b|take profit|cut ?loss|\bcl\b|terbang|to the moon|nanjak|meroket|jebol|\bhit\b|\bgas\b"),
+    ("Makro & sentimen", r"ihsg|indeks|bi ?rate|suku bunga|the fed|\bfed\b|inflasi|rupiah|dolar|global|wall street|nasdaq|msci|sentimen|makro|komoditas|batu ?bara|nikel|\bcpo\b|emas"),
+]
+POV_HORIZON = [
+    ("jangka sangat pendek (scalping/harian)", r"scalp|day ?trade|fast ?trade|intraday|sesi \d|hari ini|besok"),
+    ("jangka pendek-menengah (swing)", r"swing|minggu|beberapa hari|short term|jangka pendek"),
+    ("jangka panjang (investasi)", r"jangka panjang|long term|value investing|dividen|tahunan|bertahun"),
+]
+POV_BULL = r"\bbuy\b|\bbeli|akum|\bhold|\btp\b|target|naik|breakout|rebound|bullish|serok|haka|mantap|\bgas\b|terbang|\bara\b|undervalue|cuan|reversal|uptrend|lanjut"
+POV_BEAR = r"\bjual|\bsell|\bcl\b|cut ?loss|distribusi|turun|breakdown|bearish|hindari|hati-hati|hati2|waspada|\barb\b|guyur|jebol|overvalue|keluar|downtrend|nyangkut|bubar"
+
+
+def stockbit_post_api(url: str, body: dict, fresh: bool = False) -> dict:
+    """POST ke API Stockbit (token Bearer) dengan cache seperti GET; kunci cache = URL + isi permintaan."""
+    token = get_token()
+    if not token:
+        raise NoToken()
+    key = url + "#" + json.dumps(body, sort_keys=True)
+
+    def fetch():
+        req = urllib.request.Request(url, data=json.dumps(body).encode(), method="POST", headers={
+            "Authorization": f"Bearer {token}", "Accept": "application/json", "Content-Type": "application/json",
+            "Origin": "https://stockbit.com", "Referer": "https://stockbit.com/", "User-Agent": UA_BROWSER})
+        for i in range(3):
+            try:
+                with urllib.request.urlopen(req, timeout=40) as r:
+                    return r.read().decode("utf-8", "replace")
+            except urllib.error.HTTPError as e:
+                if e.code not in (502, 503, 504) or i == 2:
+                    raise
+                time.sleep(2 + 3 * i)
+    return json.loads(cached_text(key, fetch, fresh))
+
+
+def pov_posts(user: str, fresh: bool = False) -> list[dict]:
+    """Posting ide utama (bukan balasan) satu akun, terbaru dulu, maks. POV_PAGES halaman dalam POV_DAYS hari."""
+    cutoff = (datetime.now() - timedelta(days=POV_DAYS)).strftime("%Y-%m-%d")
+    out, cursor = [], 0
+    for _ in range(POV_PAGES):
+        j = stockbit_post_api(f"https://exodus.stockbit.com/stream/v3/user/{user}",
+                              {"category": "STREAM_CATEGORY_MAIN_IDEAS", "last_stream_id": cursor, "limit": 20}, fresh)
+        d = j.get("data") or {}
+        page = d.get("stream") or []
+        out += page
+        if not page or (d.get("pagination") or {}).get("is_last_page") or str(page[-1].get("created_at") or "")[:10] < cutoff:
+            break
+        cursor = (d.get("pagination") or {}).get("next_cursor") or page[-1].get("stream_id")
+        time.sleep(0.3)
+    return [p for p in out if str(p.get("created_at") or "")[:10] >= cutoff]
+
+
+def pov_user(user: str, radar: set, fresh: bool = False) -> dict:
+    prof = stockbit_api(f"https://exodus.stockbit.com/user/profile/{user}", fresh).get("data") or {}
+    posts = pov_posts(user, fresh)
+    style = {k: 0 for k, _ in POV_STYLE}
+    hor = {k: 0 for k, _ in POV_HORIZON}
+    tick: dict = {}
+    likes, chars = 0, 0
+    latest = []
+    for p in posts:
+        txt = re.sub(r"\s+", " ", str(p.get("content_original") or p.get("content") or "")).strip()
+        low = txt.lower()
+        chars += len(txt)
+        likes += int(p.get("total_likes") or 0)
+        for k, rx in POV_STYLE:
+            if re.search(rx, low):
+                style[k] += 1
+        for k, rx in POV_HORIZON:
+            if re.search(rx, low):
+                hor[k] += 1
+        bull, bear = bool(re.search(POV_BULL, low)), bool(re.search(POV_BEAR, low))
+        day = str(p.get("created_at") or "")[:10]
+        for t in [x for x in (p.get("topics") or []) if TICKER_RE.match(str(x)) and x not in POV_NOT_STOCK]:
+            e = tick.setdefault(t, {"t": t, "n": 0, "bull": 0, "bear": 0, "last": day, "sample": "", "url": ""})
+            e["n"] += 1
+            e["bull"] += bull and not bear
+            e["bear"] += bear and not bull
+            e["last"] = max(e["last"], day)
+            if not e["sample"] and len(txt) >= 15:
+                e["sample"], e["url"] = txt[:220], f"https://stockbit.com/post/{p.get('stream_id')}"
+        if len(latest) < 5 and len(txt) >= 20:
+            latest.append({"d": day, "text": txt[:240], "topics": p.get("topics") or [], "url": f"https://stockbit.com/post/{p.get('stream_id')}"})
+    n = len(posts)
+    days = None
+    if n:
+        d0 = datetime.strptime(str(posts[-1]["created_at"])[:10], "%Y-%m-%d")
+        d1 = datetime.strptime(str(posts[0]["created_at"])[:10], "%Y-%m-%d")
+        days = max(1, (d1 - d0).days + 1)
+    tickers = sorted(tick.values(), key=lambda e: (-e["n"], e["t"]))
+    for e in tickers:
+        e["radar"] = e["t"] in radar
+        e["nada"] = "bullish" if e["bull"] > e["bear"] else "bearish" if e["bear"] > e["bull"] else "netral"
+    st = sorted(({"k": k, "n": v, "pct": round(v / n * 100) if n else 0} for k, v in style.items()), key=lambda x: -x["n"])
+    hz = max(hor.items(), key=lambda x: x[1])
+    stats = prof.get("statistics") or {}
+    return {
+        "username": user, "url": f"https://stockbit.com/{user}", "followers": int(stats.get("follower_count") or 0),
+        "posts": n, "from": str(posts[-1]["created_at"])[:10] if n else None, "to": str(posts[0]["created_at"])[:10] if n else None,
+        "perDay": round(n / days, 1) if days else 0, "avgLikes": round(likes / n, 1) if n else 0, "avgChars": round(chars / n) if n else 0,
+        "styles": st, "horizon": hz[0] if hz[1] >= 3 else "", "tickers": tickers[:12], "latest": latest,
+        "radarHits": [e["t"] for e in tickers if e["radar"]],
+    }
+
+
+_pov_memo: tuple | None = None
+_pov_lock = threading.Lock()
+
+
+def get_pov(fresh: bool = False) -> dict:
+    """Hasil POV disimpan di memori (dihitung ulang tiap 6 jam oleh pov_loop); versi publik hanya membaca."""
+    global _pov_memo
+    with _pov_lock:
+        if _pov_memo and (is_public_request() or (not fresh and time.time() - _pov_memo[0] < 6 * 3600)):
+            return _pov_memo[1]
+        if is_public_request():
+            return {"asOf": None, "users": [], "consensus": [], "errors": [{"source": "POV", "error": "Data POV sedang disiapkan."}]}
+        radar = {i["ticker"] for i in items_all()}
+        users, errors = [], []
+        trending, tfol = [], {}
+        try:
+            tl = stockbit_api("https://exodus.stockbit.com/user/trending?key=1W", fresh).get("data") or []
+            trending = [x["username"] for x in tl]
+            tfol = {x["username"]: int((x.get("statistics") or {}).get("follower_count") or 0) for x in tl}
+        except Exception as e:
+            errors.append({"source": "Trending", "error": str(e)[:120]})
+        names = POV_PRIORITY + [u for u in trending if u.lower() not in {p.lower() for p in POV_PRIORITY}][:POV_TRENDING]
+        for u in names:
+            try:
+                r = pov_user(u, radar, fresh)
+                r["priority"] = u in POV_PRIORITY
+                r["trending"] = u in trending
+                r["followers"] = r["followers"] or tfol.get(u, 0)
+                users.append(r)
+            except Exception as e:
+                errors.append({"source": u, "error": str(e)[:120]})
+        # Konsensus: saham yang dibahas oleh ≥2 akun.
+        agg: dict = {}
+        for u in users:
+            for e in u["tickers"]:
+                a = agg.setdefault(e["t"], {"t": e["t"], "users": [], "n": 0, "bull": 0, "bear": 0, "radar": e["radar"], "last": e["last"]})
+                a["users"].append(u["username"])
+                a["n"] += e["n"]
+                a["bull"] += e["bull"]
+                a["bear"] += e["bear"]
+                a["last"] = max(a["last"], e["last"])
+        cons = sorted((a for a in agg.values() if len(a["users"]) >= 2), key=lambda a: (-len(a["users"]), -a["n"]))
+        for a in cons:
+            a["nada"] = "bullish" if a["bull"] > a["bear"] else "bearish" if a["bear"] > a["bull"] else "netral"
+        res = {"asOf": datetime.now().isoformat(timespec="seconds"), "users": users, "consensus": cons[:20], "errors": errors}
+        _pov_memo = (time.time(), res)
+        return res
+
+
+def pov_loop() -> None:
+    """Hitung POV di latar belakang (setelah start, lalu tiap 6 jam) supaya halaman publik tidak menunggu."""
+    time.sleep(90)
+    while True:
+        if get_token():
+            try:
+                get_pov(fresh=True)
+            except Exception as e:
+                print(f"[pov] gagal: {e}", file=sys.stderr)
+        time.sleep(6 * 3600 + 120)
+
+
 def _kandidat(cfg: dict, fresh: bool = False) -> dict:
     bd = cfg.get("backdoor") or {}
     skip = {i["ticker"] for i in items_all() if i.get("stage") != "radar"} | set(bd.get("include") or []) \
@@ -1771,6 +1948,8 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:
                 days = 1
             self.reply_json(get_diff(days))
+        elif path == "api/pov":
+            self.reply_json(get_pov(fresh and not is_public_request()))
         elif path == "api/kandidat":
             if not self.guard_token():
                 res = get_kandidat(cfg, fresh)
@@ -2063,6 +2242,7 @@ def main() -> int:
     daemon.start()
     threading.Thread(target=kandidat_loop, daemon=True).start()
     threading.Thread(target=news_loop, daemon=True).start()
+    threading.Thread(target=pov_loop, daemon=True).start()
     threading.Thread(target=snapshot_loop, daemon=True).start()
     threading.Thread(target=tsa_loop, daemon=True).start()
     print(f"Radar Backdoor berjalan di http://localhost:{args.port}")

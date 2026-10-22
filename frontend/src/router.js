@@ -7,6 +7,7 @@ export const router = createRouter({
     { path: '/kandidat', name: 'kandidat', component: () => import('./views/KandidatView.vue') },
     { path: '/berita', name: 'berita', component: () => import('./views/BeritaView.vue') },
     { path: '/intel', name: 'intel', component: () => import('./views/IntelView.vue') },
+    { path: '/pov', name: 'pov', component: () => import('./views/PovView.vue') },
     { path: '/bandingkan', name: 'bandingkan', component: () => import('./views/CompareView.vue') },
     { path: '/emiten/:ticker', name: 'emiten', component: () => import('./views/EmitenView.vue'), props: true },
     // Tautan lama versi vanilla (#update, #progress, #potensi, #story); #analisa dan lainnya jatuh ke catch-all.
