@@ -16,6 +16,8 @@ export function sentences(s) {
   return out.filter(Boolean)
 }
 const first = (s, n = 1) => sentences(s).slice(0, n).join(' ')
+// Judul huruf kapital semua (gaya keterbukaan BEI) dijadikan huruf kalimat agar wajar dibacakan.
+const calmCase = t => { const x = String(t || ''); return x === x.toUpperCase() && /[A-Z]{4,}/.test(x) ? x.charAt(0) + x.slice(1).toLowerCase() : x }
 const lower1 = s => { const t = String(s || ''); return t && !/^[A-Z]{2,}/.test(t) ? t.charAt(0).toLowerCase() + t.slice(1) : t }
 const cap = s => { const t = String(s || '').trim(); return t ? t.charAt(0).toUpperCase() + t.slice(1) : t }
 
@@ -203,6 +205,18 @@ export function buildVideo(d, mode = 'ringkas') {
   const deep = (d.deep || []).slice(0, 4)
   if (full && deep.length) add('pembahasan', 'Pembahasan', 'Pembahasan temuan utama', { type: 'list', items: deep.map(x => x[0]) },
     deep.map(x => `${x[0]}: ${first(x[1], 1)}`))
+
+  // 11c. Perkembangan berita terkini
+  const ns = d.newsSum, nr = d.newsRecent || []
+  if (ns && nr.length) add('berita', 'Berita terkini', 'Perkembangan berita terkini', {
+    type: 'list', items: nr.slice(0, full ? 4 : 3).map(({ u }) => `${fmtDate(String(u.date || '').slice(0, 10))}: ${String(u.title).length > 80 ? String(u.title).slice(0, 78) + '…' : u.title}`),
+  }, [
+    `Keterbukaan material terakhir terbit pada ${fmtDate(String(nr[0].u.date || '').slice(0, 10))}, berjudul ${calmCase(nr[0].u.title).replace(/\.$/, '')}.`,
+    full && ns.paras[1] ? ns.paras[1] : null,
+    ns.paras.find(p => /^Inti/.test(p)) || null,
+    ns.verdict,
+    ...(d.pa?.pembaruan || []).slice(0, full ? 2 : 1),
+  ])
 
   // 12. Rekomendasi
   const rc = d.rec

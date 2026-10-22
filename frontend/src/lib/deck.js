@@ -155,6 +155,7 @@ export function buildDeck(PptxGenJS, d, th) {
     T(s, topics.join('  •  '), { x: 0.7, y: 3.55, w: 5.4, h: 0.3, fontSize: 11, color: 'EAF2FA' })
     pill(s, 0.7, 4.0, d.sector?.label || 'Umum', th.accent, { size: 9 })
     T(s, `Data per ${fmtDate(d.date)}  |  Harga terakhir ${rpS(A.price)}${A.priceDate ? ' (' + fmtDate(A.priceDate) + ')' : ''}`, { x: 0.7, y: 4.95, w: 6, h: 0.25, fontSize: 9.5, color: 'DCE7F3' })
+    if (d.pa?.asOf) T(s, `Narasi analis per ${fmtDate(d.pa.asOf)}${d.pa.hargaAcuan ? ' pada harga acuan ' + rpS(d.pa.hargaAcuan) : ''}`, { x: 0.7, y: 5.2, w: 6, h: 0.22, fontSize: 8.5, color: 'DCE7F3' })
   }
 
 const recTone = t => t === 'good' ? th.good : t === 'bad' ? th.bad : th.warn
@@ -579,6 +580,32 @@ const recTone = t => t === 'good' ? th.good : t === 'bad' ? th.bad : th.warn
         dot(s, M + 1.32, y + rh / 2, 0.07, i === rows.length - 1 ? th.accent : th.card, { line: th.accent, lw: 1.25 })
         T(s, short(calmTitle(r.title, d.name), 150), { x: M + 1.55, y, w: CW - 1.6, h: rh, fontSize: 9, color: th.ink, valign: 'middle' })
       })
+    }
+  }
+
+  // ===== 11c. Perkembangan berita terkini & kesimpulannya =====
+  if (d.newsSum && (d.newsRecent || []).length) {
+    const ns = d.newsSum, rows = d.newsRecent
+    const s = slide('Berita terkini', 'Perkembangan Berita Terkini', ns.verdict)
+    const lw = 5.75, rh = Math.min(0.68, 3.35 / rows.length)
+    rows.forEach(({ u, take }, i) => {
+      const y = TOP + i * rh
+      card(s, M, y, lw, rh - 0.08, { flat: true })
+      T(s, fmtDate(String(u.date || '').slice(0, 10)), { x: M + 0.12, y: y + 0.05, w: 1.0, h: 0.22, fontSize: 8, bold: true, color: th.accent })
+      pill(s, M + 1.12, y + 0.05, take.label, take.level >= 3 ? th.good : take.level === 2 ? th.warn : th.muted, { size: 7, h: 0.2 })
+      T(s, short(calmTitle(u.title, d.name), 95), { x: M + 0.12, y: y + 0.27, w: lw - 0.24, h: 0.2, fontSize: 9, bold: true, color: th.ink })
+      if (rh > 0.6) T(s, short(take.points[0] || '', 120), { x: M + 0.12, y: y + 0.45, w: lw - 0.24, h: 0.18, fontSize: 7.5, color: th.muted })
+    })
+    const rx = M + lw + 0.2, rw = CW - lw - 0.2
+    const pb = (d.pa?.pembaruan || []).slice(0, 2)
+    const h1 = pb.length ? 1.95 : 3.35
+    card(s, rx, TOP, rw, h1)
+    T(s, 'KESIMPULAN BERITA', { x: rx + 0.15, y: TOP + 0.1, w: rw - 0.3, h: 0.22, fontSize: 8, bold: true, color: th.accent, charSpacing: 2 })
+    T(s, ns.paras.slice(0, 3).map(x => short(x, 170)).join('\n\n'), { x: rx + 0.15, y: TOP + 0.36, w: rw - 0.3, h: h1 - 0.45, fontSize: 8.5, color: th.ink, fit: 'shrink' })
+    if (pb.length) {
+      card(s, rx, TOP + 2.05, rw, 1.3, { fill: th.dark, line: th.dark })
+      T(s, `PEMBARUAN ANALISA ${fmtDate(d.pa.asOf).toUpperCase()}`, { x: rx + 0.15, y: TOP + 2.13, w: rw - 0.3, h: 0.22, fontSize: 7.5, bold: true, color: th.accent2, charSpacing: 2 })
+      T(s, pb.map(x => short(x, 185)).join('\n'), { x: rx + 0.15, y: TOP + 2.37, w: rw - 0.3, h: 0.92, fontSize: 7.5, color: 'FFFFFF', fit: 'shrink' })
     }
   }
 

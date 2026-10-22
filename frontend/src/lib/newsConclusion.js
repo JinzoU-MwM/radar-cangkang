@@ -42,7 +42,8 @@ export function newsConclusion(list, { ticker = '', now = Date.now() } = {}) {
   // 3. Perkembangan material 30 hari terakhir.
   const recent = dated.filter(u => u.type && u.type !== 'lainnya' && now - Date.parse(day(u)) <= 30 * DAY)
   const points = recent.slice(0, 3).map(u => `${fmtDate(day(u))}: ${u.title}`)
-  const inti = intiOf(recent.find(u => intiOf(u)) || {})
+  // Inti dari keterbukaan terbaru (30 hari) yang memiliki ringkasan, apa pun jenisnya.
+  const inti = intiOf(dated.find(u => now - Date.parse(day(u)) <= 30 * DAY && intiOf(u)) || {})
   if (inti) paras.push(`Inti keterbukaan material terakhir: ${inti.replace(/\.?$/, '.')}`)
 
   // 4. Kesimpulan.
