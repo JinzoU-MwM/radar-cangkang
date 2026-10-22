@@ -1,18 +1,27 @@
 <script setup>
 import { computed } from 'vue'
 import { store, userRefresh } from '../../store.js'
-import { UTYPES, fmtDate } from '../../lib/domain.js'
+import { fmtDate } from '../../lib/domain.js'
 import { newsConclusion } from '../../lib/newsConclusion.js'
+import NewsItem from '../NewsItem.vue'
 
 const props = defineProps({ ticker: { type: String, required: true } })
 const list = computed(() => store.updates.filter(u => u.ticker === props.ticker)
-  .sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))))
-const typeName = id => (UTYPES.find(t => t.id === id) || { name: 'Lainnya' }).name
-const isNew = u => store.seenAt && (u.updatedAt || u.date || '') > store.seenAt
+  .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))))
+// Dikelompokkan per tanggal, sama seperti halaman Berita.
+const groups = computed(() => {
+  const out = []
+  for (const u of list.value) {
+    const d = String(u.date || '').slice(0, 10)
+    let g = out[out.length - 1]
+    if (!g || g.d !== d) out.push(g = { d, label: d ? fmtDate(d) : 'Tanpa tanggal', rows: [] })
+    g.rows.push(u)
+  }
+  return out
+})
 const sum = computed(() => newsConclusion(list.value, { ticker: props.ticker }))
 // Server memperbarui berita otomatis tiap 2 jam (newsAt = waktu pembaruan terakhir).
 const newsAt = computed(() => store.status?.newsAt ? new Date(store.status.newsAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '')
-const safe = url => /^https?:\/\//.test(url || '')
 </script>
 
 <template>
@@ -25,21 +34,11 @@ const safe = url => /^https?:\/\//.test(url || '')
     </div>
     <p v-if="newsAt" class="muted small">Diperbarui otomatis tiap 2 jam; pembaruan terakhir {{ newsAt }}.</p>
     <p v-if="!list.length" class="muted">Belum ada laporan atau berita untuk {{ ticker }}.</p>
-    <div v-else class="scroll">
-      <table class="ledger">
-        <thead><tr><th class="lbl">Tanggal</th><th class="lbl">Judul</th><th class="lbl">Sumber</th><th class="lbl">Jenis</th></tr></thead>
-        <tbody>
-          <tr v-for="u in list" :key="u.id">
-            <td class="dt" :class="{ fresh: isNew(u) }">{{ u.date ? fmtDate(String(u.date).slice(0, 10)) : 'belum ada' }}</td>
-            <td>
-              <a v-if="safe(u.url)" :href="u.url" target="_blank" rel="noopener">{{ u.title }}</a>
-              <template v-else>{{ u.title }}</template>
-            </td>
-            <td class="muted">{{ u.source || (/^sb-report-/.test(u.id) ? 'Stockbit Reports' : 'belum ada') }}</td>
-            <td><span class="tag t-calm">{{ typeName(u.type) }}</span></td>
-          </tr>
-        </tbody>
-      </table>
+    <div v-else class="sheet list">
+      <div v-for="g in groups" :key="g.d">
+        <h3 class="lbl gd">{{ g.label }}</h3>
+        <NewsItem v-for="u in g.rows" :key="u.id" :u="u" :show-ticker="false" />
+      </div>
     </div>
     <div v-if="sum" class="concl" :class="'c-' + sum.tone">
       <h3 class="lbl">Kesimpulan akhir</h3>
@@ -50,17 +49,17 @@ const safe = url => /^https?:\/\//.test(url || '')
       </template>
       <p class="verdict">{{ sum.verdict }}</p>
     </div>
+    <p v-if="list.length" class="muted foot">Latar oranye = belum dilihat sejak terakhir buka. Tingkat sinyal, arah dampak, dan poin dibaca otomatis dari judul dan ringkasan. Penanda poin: segitiga naik hijau = positif bagi pemegang saham publik, segitiga turun merah = negatif atau risiko, bulat kuning = perlu dicermati.</p>
   </section>
 </template>
 
 <style scoped>
 .bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
 .lbl{margin:0}
-.scroll{overflow-x:auto;background:var(--sheet);border:1px solid var(--rule)}
-.dt{white-space:nowrap}
-.dt.fresh{color:var(--now-ink);font-weight:600}
-td a{font-weight:600}
+.list{border-radius:4px}
+.gd{margin:0;padding:10px 16px 6px;background:var(--sheet-2);border-bottom:1px solid var(--rule-2);font-family:var(--f-display);font-size:12.5px}
 .small{font-size:12px;margin:0 0 8px}
+.foot{margin:10px 0 0;font-size:12px}
 .concl{margin-top:14px;padding:12px 14px;background:var(--sheet);border:1px solid var(--rule);border-left:3px solid var(--rule-2)}
 .concl.c-now{border-left-color:var(--now-ink)}
 .concl.c-warn{border-left-color:#ca8a04}
@@ -68,10 +67,4 @@ td a{font-weight:600}
 .concl p{margin:0 0 6px;line-height:1.55}
 .concl ul{margin:0 0 8px;padding-left:18px}
 .concl .verdict{font-weight:600;margin:8px 0 0}
-@media (max-width:760px){
-  .ledger thead{display:none}
-  .ledger tr{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:8px 10px;border-bottom:1px solid var(--rule-2)}
-  .ledger td{border:0;padding:0;background:none!important}
-  .ledger td:nth-child(2){grid-column:1/-1}
-}
 </style>
