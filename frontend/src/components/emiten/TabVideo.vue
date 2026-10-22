@@ -22,11 +22,15 @@ const voices = ref([]), voiceName = ref('')
 function loadVoices() {
   if (!synth) return
   const all = synth.getVoices().filter(v => /^id(-|_|$)/i.test(v.lang))
-  // Utamakan suara alami (Google/Microsoft Online) bila tersedia.
-  voices.value = all.sort((a, b) => (/(online|natural|google)/i.test(b.name) ? 1 : 0) - (/(online|natural|google)/i.test(a.name) ? 1 : 0))
+  // Utamakan suara laki-laki (Edge: Ardi Online; Windows: Andika), lalu suara alami lainnya.
+  const rank = v => (MALE.test(v.name) ? 0 : 2) + (/(online|natural)/i.test(v.name) ? 0 : 1)
+  voices.value = all.sort((a, b) => rank(a) - rank(b))
   if (!voices.value.some(v => v.name === voiceName.value)) voiceName.value = voices.value[0]?.name || ''
 }
+const MALE = /\b(ardi|andika|male|pria|laki)\b/i
 const voice = computed(() => voices.value.find(v => v.name === voiceName.value) || null)
+// Bila hanya tersedia suara wanita (mis. "Google Bahasa Indonesia"), nada diturunkan agar terdengar lebih berat.
+const pitch = computed(() => voice.value && !MALE.test(voice.value.name) ? 0.7 : 1)
 
 async function load() {
   loading.value = true; error.value = ''; stop()
@@ -60,7 +64,7 @@ function speak() {
   if (!playing.value || !text) return
   if (synth && voice.value) {
     const u = new SpeechSynthesisUtterance(speakable(text))
-    u.lang = voice.value.lang; u.voice = voice.value; u.rate = rate.value
+    u.lang = voice.value.lang; u.voice = voice.value; u.rate = rate.value; u.pitch = pitch.value
     u.onend = () => { if (my === token && playing.value) timer = setTimeout(next, 250) }
     u.onerror = () => { if (my === token && playing.value) timer = setTimeout(next, lineSecs(text, rate.value) * 1000) }
     synth.speak(u)
