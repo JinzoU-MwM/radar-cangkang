@@ -19,12 +19,16 @@ const guess = computed(() => {
 })
 
 const SLIDES = [
-  ['Ringkasan', 'skor & sikap analis'], ['Enam dimensi', 'grafik skor'], ['Kepemilikan', 'donat & arus pemegang'],
-  ['Pengendali', 'profil & rekam jejak'], ['Aset injeksi', 'nilai, KJPP, tahapan'], ['Pihak lawan', 'rantai kepemilikan'],
-  ['Progres', 'tonggak transaksi'], ['Valuasi & dilusi', 'sebelum → sesudah'], ['Harga 1 tahun', 'grafik & siklus'],
-  ['Skenario', 'tangga harga'], ['Teknikal', 'meter sinyal'], ['Pola & level', 'support/resistance'],
-  ['Rencana transaksi', 'masuk/keluar'], ['Kelebihan vs kekurangan', 'red flag & katalis'], ['Pandangan mendalam', 'temuan kunci'],
-  ['Kesimpulan', 'syarat & sinyal keluar'],
+  ['Rekomendasi', 'tindakan, area beli, batas risiko, target, porsi'], ['Ringkasan', 'skor & sikap analis'],
+  ['Tesis analis', 'alasan sikap, kalimat demi kalimat'], ['Variabel kunci', 'yang dipantau & tesis salah bila'],
+  ['Enam dimensi', 'grafik skor'], ['Rincian skor', 'alasan tiap dimensi & bobot'], ['Pengendali', 'struktur & aktor'],
+  ['Kepemilikan', 'donat & arus pemegang'], ['Profil pengendali', 'latar & rekam jejak'], ['Pengurus', 'direksi & komisaris'],
+  ['Aset injeksi', 'nilai, KJPP, tahapan'], ['Penambahan modal', 'rights issue & dana tercapai?'], ['Pihak lawan', 'rantai kepemilikan'],
+  ['Progres', 'tonggak transaksi'], ['Kronologi', 'jejak keterbukaan penting'], ['Valuasi & dilusi', 'sebelum → sesudah'],
+  ['Fundamental', 'PBV, PER, ekuitas, kas, margin'], ['Harga 1 tahun', 'grafik & siklus'], ['Skenario', 'tangga harga'],
+  ['Teknikal', 'meter sinyal'], ['Pola & level', 'support/resistance'], ['Rencana transaksi', 'masuk/keluar'],
+  ['Kelebihan vs kekurangan', 'red flag & katalis'], ['Pandangan mendalam', 'temuan kunci'], ['Daftar pantau', 'harus terjadi vs sinyal keluar'],
+  ['Rencana aksi', 'bila terkonfirmasi / sekarang / bila gagal'], ['Kesimpulan', 'rekomendasi & skor'], ['Lampiran', 'sumber & celah data'],
 ]
 
 async function build({ PptxGenJS, choose, lastId, onStep }) {
