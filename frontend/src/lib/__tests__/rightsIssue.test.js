@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { riCase, riCalc, riRange, riVerdict } from '../rightsIssue.js'
+import { riCase, riCalc, riRange, riVerdict, riPriceNeeded, riScenarios, riExercise, asetLaba } from '../rightsIssue.js'
 
 // Data mirip NINE: PMHMETD I 2,44 miliar saham, asumsi harga Rp81, aset tambang ±Rp2,475 T lewat inbreng tahap II.
 const A = {
@@ -41,8 +41,8 @@ describe('riCalc', () => {
   it('publik menebus penuh menjaga porsinya', () => {
     expect(riCalc(c, 81, 1).pubAfter).toBeCloseTo(0.5891)
   })
-  it('rentang slider mulai dari nominal', () => {
-    expect(riRange(c)).toMatchObject({ lo: 10, start: 81 })
+  it('rentang slider tidak dibatasi nominal', () => {
+    expect(riRange(c)).toMatchObject({ lo: 1, start: 81, hi: 405 })
     expect(riVerdict(c, r)).toMatch(/kapitalisasi pasar/)
   })
 })
@@ -83,13 +83,13 @@ describe('rincian aset injeksi', () => {
 })
 
 describe('presentasi analisa rights issue', () => {
-  it('membangun 9 slide tanpa ukuran negatif atau NaN', async () => {
+  it('membangun 12 slide tanpa ukuran negatif atau NaN', async () => {
     const PptxGenJS = (await import('pptxgenjs')).default
     const { buildRiDeck, riDeckFileName } = await import('../deck.js')
     const { THEMES, SECTORS } = await import('../deckThemes.js')
     const c = riCase(A, { aset: { ...aset, aset: { nama: 'PGGR', jenis: 'Tambang' }, tidakDitemukan: ['kjpp: belum'] }, sv })
     const pres = buildRiDeck(PptxGenJS, { t: 'NINE', name: 'Techno9', date: '2026-10-22', sector: SECTORS[1], c, P: 81, U: 0 }, THEMES.batubara[0])
-    expect(pres.slides.length).toBe(9)
+    expect(pres.slides.length).toBe(12)
     const json = JSON.stringify(pres.slides.map(s => s._slideObjects.map(o => o.options)))
     expect(json).not.toMatch(/"[wh]":-|NaN/)
     expect(riDeckFileName('NINE', '2026-10-22', { name: 'Arang & Amber' })).toBe('NINE_RightsIssue_2026-10-22_Arang-Amber.pptx')
@@ -97,7 +97,7 @@ describe('presentasi analisa rights issue', () => {
 })
 
 describe('PDF analisa rights issue', () => {
-  it('9 halaman, sama dengan jumlah slide', async () => {
+  it('12 halaman, sama dengan jumlah slide', async () => {
     const PptxGenJS = (await import('pptxgenjs')).default
     const { jsPDF } = await import('jspdf')
     const { buildRiDeck } = await import('../deck.js')
@@ -106,7 +106,7 @@ describe('PDF analisa rights issue', () => {
     const c = riCase(A, { aset: { ...aset, aset: { nama: 'PGGR' } }, sv })
     const pres = buildRiDeck(PptxGenJS, { t: 'NINE', name: 'Techno9', date: '2026-10-22', sector: SECTORS[1], c, P: 81, U: 0 }, THEMES.batubara[1])
     const doc = await deckToPdf(pres, jsPDF)
-    expect(doc.getNumberOfPages()).toBe(9)
+    expect(doc.getNumberOfPages()).toBe(12)
   })
 })
 
@@ -133,5 +133,57 @@ describe('riFunding: apakah dana terkumpul', () => {
     const c = riCase(A, { aset, sv, pv: { rencana: 'Rights issue disetujui 21 Mei 2026, dengan AIC sebagai pembeli siaga.' } })
     expect(c.funding.standby).toBe('ya')
     expect(riFunding(c, riCalc(c, 50)).reasons.some(x => x.s > 0 && /pembeli siaga/.test(x.t))).toBe(true)
+  })
+})
+
+describe('riPriceNeeded', () => {
+  const c = { kind: 'PMHMETD', cash: 100e9, V: 0, price: 100, nominal: 10, Nmax: 2e9 }
+  it('harga pasar minimum pada diskon 10/20/30% dan selisih ke harga kini', () => {
+    const n = riPriceNeeded(c, 80)
+    expect(n.need.map(x => Math.round(x.price))).toEqual([89, 100, 114])
+    expect(n.ref).toBe(100)
+    expect(n.status).toBe('cukup')
+    expect(n.pMin).toBe(50)
+  })
+  it('harga pelaksanaan di bawah minimum: saham maksimum tidak cukup', () => {
+    const n = riPriceNeeded(c, 40)
+    expect(n.short.kurang).toBe(20e9)
+  })
+  it('tanpa dana tunai tidak dihitung', () => {
+    expect(riPriceNeeded({ ...c, cash: 0, V: 50e9 }, 80)).toBeNull()
+  })
+})
+
+describe('riScenarios', () => {
+  it('harga RI = setoran ÷ saham baru; harga dibutuhkan = harga RI ÷ 0,8', () => {
+    const s = riScenarios({ S0: 1e9, price: 100, nominal: 10, V: 0, cash: 100e9 }, null)
+    const r1 = s.rows.find(x => x.ratio === 1)
+    expect(r1.P).toBe(100); expect(r1.need).toBe(125); expect(r1.terp).toBe(100); expect(r1.dilusi).toBe(0.5)
+    const r20 = s.rows.find(x => x.ratio === 20)
+    expect(r20.bawahNominal).toBe(true)
+    expect(s.rows.some(x => x.tag === 'harga RI = harga kini')).toBe(true)
+  })
+})
+
+describe('riExercise', () => {
+  it('contoh NAYZ: rasio 1:1, A = seluruh nilai, B = tunai saja; inbreng melalui HMETD → A konsisten', () => {
+    const e = riExercise({ S0: 2.55e9, kind: 'campuran', V: 1.79e12, cash: 0.448e12, nominal: 10, price: 77 }, 1)
+    expect(e.A.up).toBe(878)
+    expect(e.B.up).toBe(176)
+    expect(e.consistent).toBe('A')
+  })
+})
+
+describe('asetLaba', () => {
+  it('menyetahunkan laba 7 bulan, menghitung laba porsi dan PER implisit', () => {
+    const l = asetLaba({ aset: { porsiPersen: 100, nilaiTransaksiRp: 14.57e12, keuangan: { periode: '31 Jul 2026 (7 bulan)', pendapatanRp: 7.79e12, labaBersihRp: 439.5e9, ekuitasRp: 4.18e12 } } }, { S1: 18.28e9, P: 2150 })
+    expect(l.f).toBeCloseTo(12 / 7)
+    expect(Math.round(l.labaThn / 1e9)).toBe(753)
+    expect(l.per).toBeCloseTo(19.3, 1)
+    expect(l.eps).toBeGreaterThan(40)
+  })
+  it('tanpa laba & pendapatan → null; aset rugi ditandai', () => {
+    expect(asetLaba({ aset: { keuangan: {} } })).toBeNull()
+    expect(asetLaba({ aset: { keuangan: { labaBersihRp: -12e9, periode: '4 bulan' } } }).rugi).toBe(true)
   })
 })
