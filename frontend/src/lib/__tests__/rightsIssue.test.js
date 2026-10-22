@@ -109,3 +109,29 @@ describe('PDF analisa rights issue', () => {
     expect(doc.getNumberOfPages()).toBe(9)
   })
 })
+
+describe('riFunding: apakah dana terkumpul', () => {
+  it('keterbukaan hasil pelaksanaan = sudah tercapai', async () => {
+    const { riFunding } = await import('../rightsIssue.js')
+    const c = riCase({ ...A, pa: { kalkulator: { kasSegar: 28e9, hargaPelaksanaan: 427, dasar: 'PMTHMETD diserap PIMSF' } } },
+      { reports: [{ date: '2026-07-17', title: 'Hasil Pelaksanaan Penambahan Modal Tanpa Hak Memesan Efek Terlebih Dahulu (PMTHMETD)' }] })
+    const f = riFunding(c, riCalc(c, 427))
+    expect(f).toMatchObject({ key: 'done', label: 'Sudah tercapai' })
+    expect(f.last.date).toBe('2026-07-17')
+  })
+  it('asumsi analis bukan komitmen pembeli siaga; harga di atas pasar menurunkan skor', async () => {
+    const { riFunding } = await import('../rightsIssue.js')
+    const c = riCase(A, { aset, sv, reports: [{ date: '2026-10-12', title: 'Keterbukaan Informasi sehubungan dengan Rencana Penambahan Modal dengan HMETD' }] })
+    expect(c.funding.standby).toBe('')
+    const f = riFunding(c, riCalc(c, 81))
+    expect(f.key).toBe('doubt')
+    expect(f.reasons.some(x => /di atas harga pasar/.test(x.t))).toBe(true)
+    expect(f.last.title).toMatch(/Rencana Penambahan Modal/)
+  })
+  it('pembeli siaga yang disebut tegas menaikkan skor', async () => {
+    const { riFunding } = await import('../rightsIssue.js')
+    const c = riCase(A, { aset, sv, pv: { rencana: 'Rights issue disetujui 21 Mei 2026, dengan AIC sebagai pembeli siaga.' } })
+    expect(c.funding.standby).toBe('ya')
+    expect(riFunding(c, riCalc(c, 50)).reasons.some(x => x.s > 0 && /pembeli siaga/.test(x.t))).toBe(true)
+  })
+})

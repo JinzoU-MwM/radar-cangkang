@@ -4,7 +4,8 @@
 // penebusan publik bisa digeser untuk simulasi; nilai awal dari data kurasi.
 import { computed, ref, watch } from 'vue'
 import { fmt, rp, big } from '../../lib/domain.js'
-import { riCalc, riRange, riVerdict, noRights } from '../../lib/rightsIssue.js'
+import { riCalc, riRange, riVerdict, noRights, riFunding } from '../../lib/rightsIssue.js'
+import { fmtDate } from '../../lib/domain.js'
 import { store, storyOf } from '../../store.js'
 import { buildRiDeck, riDeckFileName } from '../../lib/deck.js'
 import { sectorOf, pickTheme } from '../../lib/deckThemes.js'
@@ -16,6 +17,8 @@ const P = ref(0), U = ref(0)
 watch(() => props.c, c => { P.value = riRange(c).start; U.value = 0 }, { immediate: true })
 const r = computed(() => riCalc(props.c, +P.value, (+U.value || 0) / 100))
 const verdict = computed(() => riVerdict(props.c, r.value))
+// Apakah dana kemungkinan terkumpul (mengikuti simulasi harga & penebusan yang dipilih).
+const fund = computed(() => riFunding(props.c, r.value))
 const nr = computed(() => noRights(props.c))
 const pct = (v, d = 1) => v == null ? '–' : fmt(v * 100, d) + '%'
 const sh = v => v == null ? '–' : v >= 1e9 ? fmt(v / 1e9, 2) + ' miliar' : fmt(v / 1e6, 0) + ' jt'
@@ -208,6 +211,24 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
       </div>
 
       <p v-if="verdict" class="verdict"><b>Kesimpulan:</b> {{ verdict }}</p>
+
+      <!-- Pengumpulan dana: tercapai atau tidak, berdasarkan keterbukaan terakhir. -->
+      <div v-if="fund" class="fund-ok" :class="fund.tone">
+        <div class="fh">
+          <span class="small muted">Pengumpulan dana</span>
+          <b>{{ fund.label }}</b>
+        </div>
+        <p class="small last">
+          <template v-if="fund.last">Keterbukaan terakhir: <b>{{ fmtDate(fund.last.date) }}</b> · {{ fund.last.title }}</template>
+          <template v-else>Belum ada keterbukaan resmi tentang penambahan modal; penilaian memakai data kurasi.</template>
+        </p>
+        <ul class="why">
+          <li v-for="(x, i) in fund.reasons" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
+            <span class="ic" aria-hidden="true">{{ x.s > 0 ? '+' : x.s < 0 ? '−' : '·' }}</span>{{ x.t }}
+          </li>
+        </ul>
+        <p v-if="fund.key !== 'done'" class="small muted">Penilaian mengikuti simulasi harga {{ rp(P) }}<template v-if="!nr"> dan publik menebus {{ U }}%</template>; berubah bila slider digeser.</p>
+      </div>
     </template>
     <p v-else class="small muted">Jumlah saham baru atau nilai dana belum diketahui dari keterbukaan; perhitungan menunggu prospektus.</p>
     <details v-if="c.notes.length" class="small muted src"><summary>Dasar angka</summary><p v-for="n in c.notes" :key="n">{{ n }}</p></details>
@@ -251,6 +272,22 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
 .st b.warn{color:var(--strong, #c0392b)}
 .arr{align-self:center;opacity:.5}
 .verdict{margin:6px 0}
+.fund-ok{border:1px solid var(--rule);border-left:4px solid var(--rule-2);background:var(--sheet);padding:10px 12px;margin:8px 0}
+.fund-ok.good{border-left-color:var(--good)}
+.fund-ok.warn{border-left-color:var(--warn, #c98a1b)}
+.fund-ok.strong{border-left-color:var(--strong, #c0392b)}
+.fh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.fh b{font-size:18px}
+.fund-ok.good .fh b{color:var(--good)}
+.fund-ok.warn .fh b{color:var(--warn, #c98a1b)}
+.fund-ok.strong .fh b{color:var(--strong, #c0392b)}
+.fund-ok .last{margin:4px 0 6px}
+.why{list-style:none;margin:0 0 6px;padding:0;display:grid;gap:3px}
+.why li{display:grid;grid-template-columns:18px 1fr;font-size:13px}
+.why .ic{font-weight:700;text-align:center}
+.why li.p .ic{color:var(--good)}
+.why li.n .ic{color:var(--strong, #c0392b)}
+.why li.z .ic{opacity:.5}
 .dl{margin-top:14px;background:var(--sheet);border:1px solid var(--rule);padding:14px}
 .dl .lbl{margin:0 0 4px}
 .dl > p{margin:0 0 10px}
