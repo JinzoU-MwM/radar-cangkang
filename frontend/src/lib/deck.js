@@ -75,7 +75,13 @@ function makeKit(PptxGenJS, d, th, title) {
   let page = 0
 
   // ---- perangkat gambar ----
-  const T = (s, text, o) => s.addText(prose(text), { isTextBox: true, margin: 0, fontFace: th.body, color: th.ink, fontSize: 12, valign: 'top', ...o })
+  // Teks satu warna (tidak warna-warni): warna penanda (aksen, positif, waspada, negatif) menjadi tinta gelap;
+  // sorotan muda (accent2 dan warna terang lain), yang hanya dipakai di panel berwarna, menjadi putih.
+  // Warna tema tetap dipakai pada bentuk (panel, batang, garis), bukan pada teks.
+  const LIGHT = new Set(['FFFFFF', 'F8FAFC', 'EAF2FA', 'DCE7F3', 'BBF7D0', 'FDE68A', th.accent2])
+  const mono = c => !c || c === th.ink || c === th.muted ? c : LIGHT.has(c) ? 'FFFFFF' : th.ink
+  const monoRuns = v => Array.isArray(v) ? v.map(r => (r && typeof r === 'object' && r.options?.color ? { ...r, options: { ...r.options, color: mono(r.options.color) } } : r)) : v
+  const T = (s, text, o = {}) => s.addText(monoRuns(prose(text)), { isTextBox: true, margin: 0, fontFace: th.body, color: th.ink, fontSize: 12, valign: 'top', ...o, ...(o.color ? { color: mono(o.color) } : {}) })
   const shadow = () => ({ type: 'outer', blur: 3, offset: 1, angle: 90, color: '000000', opacity: 0.1 })
   const card = (s, x, y, w, h, o = {}) => s.addShape(S.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.07,
     fill: { color: o.fill || th.card, transparency: o.tr || 0 }, line: { color: o.line || o.fill || th.line, width: 0.75 }, shadow: o.flat ? undefined : shadow() })
@@ -158,7 +164,7 @@ const recTone = t => t === 'good' ? th.good : t === 'bad' ? th.bad : th.warn
     const s = slide('Rekomendasi', 'Rekomendasi Investasi', rc.holder)
     card(s, M, TOP, 3.35, 3.35, { fill: th.dark, line: th.dark })
     T(s, 'TINDAKAN', { x: M + 0.2, y: TOP + 0.18, w: 3, h: 0.22, fontSize: 8, bold: true, color: th.accent2, charSpacing: 3 })
-    T(s, rc.label, { x: M + 0.2, y: TOP + 0.42, w: 2.95, h: 0.85, fontFace: th.head, fontSize: 20, bold: true, color: col === th.warn ? th.accent2 : col, valign: 'middle', fit: 'shrink' })
+    T(s, rc.label, { x: M + 0.2, y: TOP + 0.42, w: 2.95, h: 0.85, fontFace: th.head, fontSize: 20, bold: true, color: 'FFFFFF', valign: 'middle', fit: 'shrink' })
     ;[['Porsi maksimal', rc.porsi], ['Profil risiko', rc.profil], ['Horizon', short(rc.horizon, 64)]].forEach(([k, v], i) => {
       const y = TOP + 1.38 + i * 0.64
       T(s, k.toUpperCase(), { x: M + 0.2, y, w: 2.95, h: 0.2, fontSize: 7.5, bold: true, color: th.accent2, charSpacing: 2 })
@@ -1156,7 +1162,7 @@ export function buildRiDeck(PptxGenJS, d, th) {
       const fx = 6.95, fw = W - fx - 0.4
       s.addShape(S.ROUNDED_RECTANGLE, { x: fx, y: 0.6, w: fw, h: 4.35, rectRadius: 0.08, fill: { color: 'FFFFFF', transparency: 92 }, line: { color: fc, width: 1.5 } })
       T(s, 'PENGUMPULAN DANA', { x: fx + 0.18, y: 0.75, w: fw - 0.36, h: 0.22, fontSize: 8, bold: true, color: th.accent2, charSpacing: 3 })
-      T(s, fund.label, { x: fx + 0.18, y: 1.0, w: fw - 0.36, h: 0.62, fontFace: th.head, fontSize: 17, bold: true, color: fc, valign: 'middle', fit: 'shrink' })
+      T(s, fund.label, { x: fx + 0.18, y: 1.0, w: fw - 0.36, h: 0.62, fontFace: th.head, fontSize: 17, bold: true, color: 'FFFFFF', valign: 'middle', fit: 'shrink' })
       T(s, fund.last ? `Keterbukaan terakhir ${fmtDate(fund.last.date)}: ${short(fund.last.title, 90)}` : 'Belum ada keterbukaan resmi tentang penambahan modal.',
         { x: fx + 0.18, y: 1.66, w: fw - 0.36, h: 0.62, fontSize: 8, color: 'DCE7F3' })
       const rs = [...fund.reasons].sort((a, b) => Math.abs(b.s) - Math.abs(a.s)).slice(0, 5)
