@@ -9,6 +9,8 @@ import { analyzePatterns, bestBullPattern, polaPlan, levels, structure } from '.
 import { sectorOf } from './deckThemes.js'
 import { riCase, riCalc, riRange, riFunding } from './rightsIssue.js'
 import { recommend } from './recommend.js'
+import { newsTake } from './news.js'
+import { newsConclusion } from './newsConclusion.js'
 
 const safe = p => p.catch(() => null)
 
@@ -88,5 +90,11 @@ export async function collectDeck(t, { store, api, storyOf, getBenchmark, onStep
     out.riF = riFunding(out.ri, out.riR)
   }
   out.rec = recommend(out)
+  // Berita terkini (Stockbit Reports + media, diperbarui server tiap 2 jam) dan kesimpulannya.
+  const news = (store.updates || []).filter(u => u.ticker === t && u.title)
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
+  out.newsSum = newsConclusion(news, { ticker: t })
+  out.newsRecent = news.filter(u => u.type && u.type !== 'lainnya' || /penjelasan|suspensi|gembok|hentikan/i.test(u.title)).slice(0, 5)
+    .map(u => ({ u, take: newsTake(u, { items: store.items || [], pandangan: store.pandangan || {} }) }))
   return out
 }
