@@ -57,9 +57,37 @@ export function asetDetail(aset, inj) {
   }
 }
 
+// Keterbukaan terkait penambahan modal (bukan laporan penggunaan dana IPO).
+const RI_REP = /HMETD|rights? issue|penambahan modal|PMTHMETD|PMHMETD|prospektus|pernyataan efektif|pembeli siaga|private placement|penempatan terbatas|penawaran umum terbatas/i
+const NOT_RI = /penggunaan dana hasil penawaran umum(?! terbatas)/i
+const REP_DONE = /hasil (pelaksanaan )?(penambahan modal|PMTHMETD|PMHMETD|penawaran umum terbatas|private placement)|penambahan jumlah saham setelah|(private placement|rights? issue|PMTHMETD|PMHMETD)[^.]*\btuntas\b|pencatatan saham (baru )?hasil/i
+const REP_EXEC = /prospektus|pernyataan efektif|jadwal (pelaksanaan|perdagangan)|perdagangan HMETD/i
+const RUPS_OK = /risalah RUPS|hasil RUPS|ringkasan risalah/i
+const STANDBY_NO = /(belum ada|tanpa|tidak ada|belum ditunjuk|belum menunjuk)\s+(adanya\s+)?pembeli siaga/gi
+
+// Keterbukaan terakhir, tahap proses, dan sinyal pembeli siaga untuk menilai apakah dana bisa terkumpul.
+function fundingFacts(reports, texts) {
+  const reps = (reports || []).filter(x => RI_REP.test(x.title || '') && !NOT_RI.test(x.title || ''))
+    .map(x => ({ date: String(x.date || '').slice(0, 10), title: String(x.title || '').replace(/\s+/g, ' ').trim() }))
+    .sort((a, b) => b.date.localeCompare(a.date))
+  // Persetujuan RUPS harus sesudah pengumuman rencana terakhir (risalah RUPS lama tidak dihitung).
+  const plan = reps.find(x => !REP_DONE.test(x.title) && !REP_EXEC.test(x.title))?.date || ''
+  const rupsOk = (reports || []).some(x => RUPS_OK.test(x.title || '') && plan && String(x.date || '').slice(0, 10) > plan) ||
+    /(telah |sudah )?disetujui (dalam |oleh )?RUPS|RUPSLB[^.]{0,60}menyetujui/i.test(texts)
+  const stage = reps.some(x => REP_DONE.test(x.title)) ? 'tereksekusi'
+    : reps.some(x => REP_EXEC.test(x.title)) || /cum[- ]?date|pernyataan efektif/i.test(texts) ? 'pelaksanaan' : rupsOk ? 'disetujui' : 'rencana'
+  // Pembeli siaga: "belum ada/tanpa pembeli siaga" = tidak; penyebutan lain = ada/direncanakan.
+  const noSb = STANDBY_NO.test(texts); STANDBY_NO.lastIndex = 0
+  const rest = texts.replace(STANDBY_NO, ' ')
+  // Kalimat asumsi/syarat ("pengendali atau pembeli siaga menyerap", "pantau komitmen ...") bukan komitmen.
+  const sbSentence = (rest.match(/[^.]*(pembeli siaga|standby buyer)[^.]*\./gi) || [])
+    .find(x => !/asumsi|diasumsikan|\batau pembeli siaga|pantau|\bbila\b|\bjika\b|kemungkinan|seandainya/i.test(x))
+  return { last: reps[0] || null, nReps: reps.length, stage, rupsOk, standby: sbSentence ? 'ya' : noSb ? 'tidak' : '', standbyText: (sbSentence || '').trim() }
+}
+
 // Kasus penambahan modal untuk satu emiten, atau null bila tidak ada rencana yang relevan.
 // A: hasil buildAnalysis; ctx: { aset, sv, item, reports }.
-export function riCase(A, { aset = null, sv = null, item = null, reports = [] } = {}) {
+export function riCase(A, { aset = null, sv = null, item = null, reports = [], pv = null } = {}) {
   if (!A) return null
   const pa = A.pa || {}, dl = pa.dilusi || {}, k = pa.kalkulator || {}
   const sigEv = (item?.signals?.rights?.ev || []).map(e => e.text)
@@ -98,8 +126,77 @@ export function riCase(A, { aset = null, sv = null, item = null, reports = [] } 
     ctrlPct: A.ctrlPct ?? null, float: A.flt ?? dl.porsiPublikSekarang ?? null, mcap: A.mcap || null, equity: A.equity ?? null,
     notes: [k.dasar, dl.asumsi].filter(Boolean),
     detail: asetDetail(aset, inj),
+    // Sumber keterbukaan di data kurasi (story-verified) ikut dihitung bila tidak ada di daftar laporan.
+    funding: fundingFacts([...(reports || []), ...(sv?.sourceTitle ? [{ date: sv.sourceDate, title: sv.sourceTitle }] : [])], [spec, pv && [pv.siapa, pv.grup, pv.rencana, pv.catatan].join(' '), pa.tesis, pa.ringkas, ...sigEv].filter(Boolean).join(' ')),
+    // Perubahan bersih porsi pengendali 365 hari (keterbukaan ≥5%); negatif = pengendali menjual.
+    ctrlNet: typeof A.isCtrlH === 'function' ? (A.holders || []).filter(A.isCtrlH).reduce((s, h) => s + (h.change || 0), 0) : null,
+    avgVal: A.avgVal ?? null,
   }
 }
+
+// Penilaian: apakah dana penambahan modal kemungkinan terkumpul, berdasarkan keterbukaan terakhir dan struktur
+// transaksi. Mengembalikan { key, label, tone, score, reasons: [{ s: +1|-1|0, t }], last }.
+export function riFunding(c, r) {
+  if (!c || !r) return null
+  const f = c.funding || {}
+  const why = []
+  const add = (s, t) => why.push({ s, t })
+  const done = c.status === 'tereksekusi' || f.stage === 'tereksekusi'
+  if (done) {
+    add(1, f.last && REP_DONE.test(f.last.title) ? `Keterbukaan hasil pelaksanaan sudah terbit (${f.last.title}).` : 'Penambahan modal sudah tereksekusi; saham baru sudah tercatat.')
+    if (c.kind === 'PMTHMETD' || c.kind === 'merger') add(1, 'Penyerap saham baru sudah ditentukan sejak awal (bukan dana publik).')
+    return { key: 'done', label: 'Sudah tercapai', tone: 'good', score: 9, reasons: why, last: f.last }
+  }
+  let sc = 0
+  const plus = (n, t) => { sc += n; add(n > 0 ? 1 : n < 0 ? -1 : 0, t) }
+  const asetShare = r.total > 0 ? r.aset / r.total : 0
+  const nonCash = asetShare >= 0.95
+  const tunaiMcap = c.mcap ? r.tunai / c.mcap : null
+  if (asetShare >= 0.8) plus(2, `${nonCash ? 'Hampir seluruh' : Math.round(asetShare * 100) + '%'} penerbitan disetor aset (${bigTxt(r.aset)}) oleh pemilik aset, bukan dana pasar.`)
+  if (!nonCash && tunaiMcap != null) {
+    if (tunaiMcap > 3) plus(-3, `Dana tunai ${fx(tunaiMcap)} kapitalisasi pasar: terlalu besar untuk diserap pasar tanpa penyandang dana kuat.`)
+    else if (tunaiMcap > 1) plus(-2, `Dana tunai ${fx(tunaiMcap)} kapitalisasi pasar: besar dibanding nilai emiten.`)
+    else if (tunaiMcap > 0.3) plus(0, `Dana tunai ${Math.round(tunaiMcap * 100)}% kapitalisasi pasar: moderat.`)
+    else plus(1, `Dana tunai hanya ${Math.round(tunaiMcap * 100)}% kapitalisasi pasar: relatif kecil.`)
+  }
+  if (c.kind !== 'PMTHMETD' && c.kind !== 'merger' && !nonCash) {
+    if (f.standby === 'ya') plus(2, `Ada pembeli siaga/komitmen penyerapan: ${shortTxt(f.standbyText, 160)}`)
+    else if (f.standby === 'tidak') plus(-2, 'Belum ada pembeli siaga: bila publik tidak menebus, dana tidak terjamin.')
+    else plus(-1, 'Pembeli siaga belum diungkap di keterbukaan.')
+  } else if (c.kind === 'PMTHMETD' && !nonCash) {
+    plus(f.standby === 'ya' || /diserap|investor/i.test(c.notes.join(' ')) ? 1 : 0, 'PMTHMETD: dana bergantung pada investor yang ditunjuk, bukan publik.')
+  }
+  if (r.disc != null && !nonCash) {
+    if (r.disc > 0.05) plus(-2, `Harga pelaksanaan ${Math.round(r.disc * 100)}% di atas harga pasar: publik cenderung tidak menebus.`)
+    else if (r.disc < -0.2) plus(1, `Harga pelaksanaan diskon ${Math.round(-r.disc * 100)}% dari pasar: menarik untuk ditebus.`)
+  }
+  if (c.ctrlNet != null && c.ctrlNet < -1) plus(-1, `Pengendali justru mengurangi porsi ${Math.abs(c.ctrlNet).toFixed(1).replace('.', ',')} poin dalam setahun.`)
+  else if (c.ctrlNet != null && c.ctrlNet > 1) plus(1, `Pengendali menambah porsi ${c.ctrlNet.toFixed(1).replace('.', ',')} poin dalam setahun.`)
+  // RUPS yang dijadwalkan di masa depan berarti rencana belum disetujui.
+  const rupsLater = /RUPS/i.test(c.jadwal || '') && (dateIn(c.jadwal) || '') > new Date().toISOString().slice(0, 10)
+  if (f.stage === 'pelaksanaan') plus(1, 'Sudah masuk tahap pelaksanaan (prospektus/pernyataan efektif).')
+  else if (f.rupsOk && !rupsLater) plus(1, 'Rencana sudah disetujui RUPS.')
+  else plus(0, `Belum disetujui RUPS${c.jadwal ? ` (${shortTxt(c.jadwal, 60)})` : ''}; rencana masih bisa berubah atau batal.`)
+  if (c.inj && c.kjppStatus === 'belum' && (c.V || c.laterInj)) plus(-1, 'Nilai aset belum dinilai KJPP: jadwal bisa mundur.')
+  if (!f.last) plus(-1, 'Belum ada keterbukaan resmi tentang penambahan modal di Stockbit Reports.')
+  const key = sc >= 3 ? 'likely' : sc >= 0 ? 'maybe' : 'doubt'
+  return {
+    key, score: sc, last: f.last, reasons: why,
+    label: { likely: 'Kemungkinan besar tercapai', maybe: 'Bisa tercapai, bersyarat', doubt: 'Diragukan tercapai' }[key],
+    tone: { likely: 'good', maybe: 'warn', doubt: 'strong' }[key],
+  }
+}
+// Tanggal pertama "18 November 2026" / "18 Nov 2026" di teks → YYYY-MM-DD.
+const BULAN = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des']
+function dateIn(s) {
+  const m = String(s || '').match(/(\d{1,2})\s+(jan|feb|mar|apr|mei|jun|jul|agu|ags|sep|okt|nov|des)\w*\s+(\d{4})/i)
+  if (!m) return null
+  const mo = BULAN.indexOf(m[2].toLowerCase().replace('ags', 'agu')) + 1
+  return `${m[3]}-${String(mo).padStart(2, '0')}-${m[1].padStart(2, '0')}`
+}
+const bigTxt = v => v >= 1e12 ? `Rp${(v / 1e12).toLocaleString('id-ID', { maximumFractionDigits: 2 })} T` : `Rp${(v / 1e9).toLocaleString('id-ID', { maximumFractionDigits: 1 })} M`
+const fx = v => v.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + '×'
+const shortTxt = (s, n) => { const t = String(s || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, t.lastIndexOf(' ', n - 1) > n * 0.6 ? t.lastIndexOf(' ', n - 1) : n - 1) + '…' : t }
 
 export const noRights = c => c?.kind === 'PMTHMETD' || c?.kind === 'merger'
 

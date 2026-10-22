@@ -95,7 +95,9 @@ const KC = [
 ]
 // Analisa PMHMETD/PMTHMETD bila ada rencana penambahan modal.
 const ri = computed(() => A.value ? riCase(A.value, { aset: store.aset[props.ticker], sv: store.verified[props.ticker],
-  item: store.items.find(x => x.ticker === props.ticker), reports: A.value.reps }) : null)
+  item: store.items.find(x => x.ticker === props.ticker), pv: store.pengendali[props.ticker],
+  // Semua keterbukaan & berita emiten (bukan hanya 8 terakhir) untuk menilai tahap dan keterbukaan terakhir.
+  reports: [...A.value.reps, ...store.updates.filter(u => u.ticker === props.ticker)] }) : null)
 const holders = computed(() => (A.value?.holders || []).filter(h => Math.abs(h.change) >= 0.1 || A.value.isCtrlH(h)).slice(0, 8))
 // Infografis: radar enam dimensi, kelebihan vs kekurangan, sudut pandang mendalam.
 const extra = computed(() => ({ profil: store.profil[props.ticker], aset: store.aset[props.ticker], hsc: store.hsc?.kode || [],

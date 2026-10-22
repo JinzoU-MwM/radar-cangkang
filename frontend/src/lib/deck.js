@@ -5,7 +5,7 @@ import { fmtDate } from './domain.js'
 import { PT_STATUS, ptStatusTxt, confLvl } from './patterns.js'
 import { phaseName } from './cycle.js'
 import { mergeBoard } from './profil.js'
-import { riCalc, riVerdict, noRights } from './rightsIssue.js'
+import { riCalc, riVerdict, noRights, riFunding } from './rightsIssue.js'
 
 const W = 10, H = 5.625, M = 0.45, CW = W - 2 * M
 const TOP = 1.2, BOT = 4.6
@@ -697,6 +697,7 @@ export function buildRiDeck(PptxGenJS, d, th) {
   const shS = v => v == null ? '–' : v >= 1e9 ? id(v / 1e9, 2) + ' miliar' : id(v / 1e6, 0) + ' jt'
   const B = v => Math.round(v / 1e9 * 10) / 10
   const verdict = riVerdict(c, r)
+  const fund = riFunding(c, r)
   const STATUS = { rencana: 'Rencana', berjalan: 'Berjalan', tereksekusi: 'Sudah tereksekusi' }
   const what = nr ? (c.kind === 'merger' ? 'penerbitan merger' : 'PMTHMETD') : 'rights issue'
 
@@ -897,13 +898,26 @@ export function buildRiDeck(PptxGenJS, d, th) {
   {
     const s = pres.addSlide(); K.bump()
     s.background = { color: th.dark }
-    coverArt(s, d.sector?.motif, th, S, dot, line, true)
     T(s, 'KESIMPULAN', { x: 0.7, y: 0.6, w: 5, h: 0.3, fontSize: 10, bold: true, color: th.accent2, charSpacing: 5 })
-    T(s, `${d.t}: ${c.label}`, { x: 0.7, y: 0.95, w: 6.2, h: 0.8, fontFace: th.head, fontSize: 30, bold: true, color: 'FFFFFF', valign: 'middle', fit: 'shrink' })
+    if (fund) {
+      // Pengumpulan dana: tercapai atau tidak, dengan keterbukaan terakhir dan alasan utama.
+      const fc = { good: th.good, warn: th.warn, strong: th.bad }[fund.tone] || th.accent2
+      const fx = 6.95, fw = W - fx - 0.4
+      s.addShape(S.ROUNDED_RECTANGLE, { x: fx, y: 0.6, w: fw, h: 4.35, rectRadius: 0.08, fill: { color: 'FFFFFF', transparency: 92 }, line: { color: fc, width: 1.5 } })
+      T(s, 'PENGUMPULAN DANA', { x: fx + 0.18, y: 0.75, w: fw - 0.36, h: 0.22, fontSize: 8, bold: true, color: th.accent2, charSpacing: 3 })
+      T(s, fund.label, { x: fx + 0.18, y: 1.0, w: fw - 0.36, h: 0.62, fontFace: th.head, fontSize: 17, bold: true, color: fc, valign: 'middle', fit: 'shrink' })
+      T(s, fund.last ? `Keterbukaan terakhir ${fmtDate(fund.last.date)}: ${short(fund.last.title, 90)}` : 'Belum ada keterbukaan resmi tentang penambahan modal.',
+        { x: fx + 0.18, y: 1.66, w: fw - 0.36, h: 0.62, fontSize: 8, color: 'AAB6C2' })
+      const rs = [...fund.reasons].sort((a, b) => Math.abs(b.s) - Math.abs(a.s)).slice(0, 5)
+      T(s, rs.map((x, i) => ({ text: `${x.s > 0 ? '+ ' : x.s < 0 ? '− ' : '· '}${short(x.t, 95)}`, options: { color: x.s > 0 ? th.good : x.s < 0 ? 'F2A7A0' : 'D7DEE6', breakLine: i < rs.length - 1, paraSpaceAfter: 4 } })),
+        { x: fx + 0.18, y: 2.32, w: fw - 0.36, h: 2.55, fontSize: 8.5 })
+    } else coverArt(s, d.sector?.motif, th, S, dot, line, true)
+    T(s, `${d.t}: ${c.label}`, { x: 0.7, y: 0.95, w: 6.0, h: 0.8, fontFace: th.head, fontSize: 30, bold: true, color: 'FFFFFF', valign: 'middle', fit: 'shrink' })
     const pts = [
       `Nilai ${what} ${bigS(r.total)} (${shS(r.N)} saham × ${rpS(P)}); dana tunai ${bigS(r.tunai)}.`,
       c.inj ? `Aset injeksi ${det?.spread ? bigS(det.lo) + '–' + bigS(det.hi) : bigS(c.inj)}${c.laterInj ? `, dibayar ±${shS(r.injShares)} saham di tahap lanjutan` : ''}.` : null,
       `Porsi publik ${pc((c.float || 0) / 100)} → ${pc(r.pubAfterInj ?? r.pubAfter)}${r.pubAfterInj != null ? ' setelah semua tahap' : ''}.`,
+      fund ? `Pengumpulan dana: ${fund.label.toLowerCase()}.` : null,
       ...verdict.split(/(?<=\.)\s+/).filter(Boolean),
       c.jadwal ? `Berikutnya: ${c.jadwal}.` : null,
     ].filter(Boolean).slice(0, 5)
