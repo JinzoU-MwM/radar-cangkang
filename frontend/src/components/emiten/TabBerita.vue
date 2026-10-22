@@ -2,12 +2,16 @@
 import { computed } from 'vue'
 import { store, userRefresh } from '../../store.js'
 import { UTYPES, fmtDate } from '../../lib/domain.js'
+import { newsConclusion } from '../../lib/newsConclusion.js'
 
 const props = defineProps({ ticker: { type: String, required: true } })
 const list = computed(() => store.updates.filter(u => u.ticker === props.ticker)
   .sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))))
 const typeName = id => (UTYPES.find(t => t.id === id) || { name: 'Lainnya' }).name
 const isNew = u => store.seenAt && (u.updatedAt || u.date || '') > store.seenAt
+const sum = computed(() => newsConclusion(list.value, { ticker: props.ticker }))
+// Server memperbarui berita otomatis tiap 2 jam (newsAt = waktu pembaruan terakhir).
+const newsAt = computed(() => store.status?.newsAt ? new Date(store.status.newsAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '')
 const safe = url => /^https?:\/\//.test(url || '')
 </script>
 
@@ -19,6 +23,7 @@ const safe = url => /^https?:\/\//.test(url || '')
         {{ store.busy.reports ? 'Memperbarui…' : 'Perbarui berita' }}
       </button>
     </div>
+    <p v-if="newsAt" class="muted small">Diperbarui otomatis tiap 2 jam; pembaruan terakhir {{ newsAt }}.</p>
     <p v-if="!list.length" class="muted">Belum ada laporan atau berita untuk {{ ticker }}.</p>
     <div v-else class="scroll">
       <table class="ledger">
@@ -36,6 +41,15 @@ const safe = url => /^https?:\/\//.test(url || '')
         </tbody>
       </table>
     </div>
+    <div v-if="sum" class="concl" :class="'c-' + sum.tone">
+      <h3 class="lbl">Kesimpulan akhir</h3>
+      <p v-for="(p, i) in sum.paras" :key="i">{{ p }}</p>
+      <template v-if="sum.points.length">
+        <p class="muted small">Keterbukaan material 30 hari terakhir:</p>
+        <ul><li v-for="(p, i) in sum.points" :key="i">{{ p }}</li></ul>
+      </template>
+      <p class="verdict">{{ sum.verdict }}</p>
+    </div>
   </section>
 </template>
 
@@ -46,6 +60,14 @@ const safe = url => /^https?:\/\//.test(url || '')
 .dt{white-space:nowrap}
 .dt.fresh{color:var(--now-ink);font-weight:600}
 td a{font-weight:600}
+.small{font-size:12px;margin:0 0 8px}
+.concl{margin-top:14px;padding:12px 14px;background:var(--sheet);border:1px solid var(--rule);border-left:3px solid var(--rule-2)}
+.concl.c-now{border-left-color:var(--now-ink)}
+.concl.c-warn{border-left-color:#ca8a04}
+.concl h3{margin:0 0 8px}
+.concl p{margin:0 0 6px;line-height:1.55}
+.concl ul{margin:0 0 8px;padding-left:18px}
+.concl .verdict{font-weight:600;margin:8px 0 0}
 @media (max-width:760px){
   .ledger thead{display:none}
   .ledger tr{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:8px 10px;border-bottom:1px solid var(--rule-2)}

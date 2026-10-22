@@ -1358,6 +1358,87 @@ def kandidat_loop() -> None:
         time.sleep(6 * 3600 + 60)
 
 
+# Pembaruan berita di server: situs publik bersifat baca-saja sehingga tidak bisa memicu sinkron dari browser.
+NEWS_GAP = 2 * 3600
+NEWS_STATE: dict = {"at": None, "added": 0, "addedNews": 0, "errors": []}
+# Tonggak yang menandakan emiten sudah keluar dari tahap penyaringan (sama dengan MS_STAGE di frontend).
+MS_KEYS = ("bisnis", "inbreng", "kjpp", "rights", "rupslb", "to_selesai", "to_umum", "akuisisi", "spa")
+
+
+def backdoor_tickers() -> list[str]:
+    out = []
+    for it in items_all():
+        ms = it.get("ms") or {}
+        if any(ms.get(k) for k in MS_KEYS) or (it.get("stage") or "radar") != "radar":
+            out.append(it["ticker"])
+    return out
+
+
+def iso_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+def sync_updates(cfg: dict, delay: float = 0.4) -> dict:
+    """Setara syncReports di browser: keterbukaan Stockbit per emiten backdoor + berita media,
+    digabung ke tabel updates berdasarkan id (stempel updatedAt laporan lama dipertahankan)."""
+    old = {str(u["id"]): u for u in updates_all()}
+    changed, errors, added, added_news = [], [], 0, 0
+    codes = [t for t in backdoor_tickers() if TICKER_RE.match(t)]
+    if cfg.get("reports") and get_token():
+        for t in codes:
+            try:
+                for it in get_reports(cfg["reports"], t, fresh=True, max_pages=1):
+                    prev = old.get(it["id"])
+                    if prev is None:
+                        added += 1
+                        new = {**it, "updatedAt": iso_now()}
+                    else:
+                        new = {**prev, **it, "updatedAt": prev.get("updatedAt") or iso_now()}
+                    if new != prev:
+                        changed.append(new)
+                        old[it["id"]] = new
+            except Exception as e:
+                errors.append({"source": t, "error": str(e)[:120]})
+                if "401" in str(e):
+                    break
+            time.sleep(delay)
+    if cfg.get("news"):
+        try:
+            res = get_news(cfg["news"], codes, fresh=True)
+            for it in res["items"]:
+                prev = old.get(it["id"])
+                if prev is None:
+                    added_news += 1
+                    new = {**it, "updatedAt": iso_now()}
+                else:
+                    # Tanggal artikel HTML = tanggal pertama kali terlihat; jangan ditimpa.
+                    new = {**prev, **it, "date": prev.get("date") or it["date"]}
+                if new != prev:
+                    changed.append(new)
+                    old[it["id"]] = new
+            errors += res["errors"]
+        except Exception as e:
+            errors.append({"source": "Berita media", "error": str(e)[:120]})
+    if changed:
+        updates_put(changed)
+    NEWS_STATE.update({"at": iso_now(), "added": added, "addedNews": added_news, "errors": errors[:5]})
+    return NEWS_STATE
+
+
+def news_loop() -> None:
+    """Segarkan laporan dan berita tiap NEWS_GAP detik supaya tab Berita di situs publik tetap terbaru."""
+    time.sleep(60)
+    while True:
+        cfg = load_config()
+        if cfg:
+            try:
+                r = sync_updates(cfg)
+                print(f"[berita] {r['added']} laporan, {r['addedNews']} berita baru", file=sys.stderr)
+            except Exception as e:
+                print(f"[berita] gagal: {e}", file=sys.stderr)
+        time.sleep(NEWS_GAP)
+
+
 def _kandidat(cfg: dict, fresh: bool = False) -> dict:
     bd = cfg.get("backdoor") or {}
     skip = {i["ticker"] for i in items_all() if i.get("stage") != "radar"} | set(bd.get("include") or []) \
@@ -1644,6 +1725,7 @@ class Handler(BaseHTTPRequestHandler):
                 "tenders": bool(cfg.get("tenders", {}).get("url")) if cfg else False,
                 "stockbit1h": stats_1h(),
                 "readOnly": is_public_request(),
+                "newsAt": NEWS_STATE["at"],
             })
         elif path == "api/tenders":
             self.api_tenders(cfg, fresh)
@@ -1980,6 +2062,7 @@ def main() -> int:
     daemon = threading.Thread(target=srv.serve_forever, daemon=False)
     daemon.start()
     threading.Thread(target=kandidat_loop, daemon=True).start()
+    threading.Thread(target=news_loop, daemon=True).start()
     threading.Thread(target=snapshot_loop, daemon=True).start()
     threading.Thread(target=tsa_loop, daemon=True).start()
     print(f"Radar Backdoor berjalan di http://localhost:{args.port}")
