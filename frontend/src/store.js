@@ -45,6 +45,7 @@ export const store = reactive({
   pengendali: {},
   relasi: {},
   aset: {},        // aset-verified.json: aset injeksi, KJPP, mekanisme transaksi per emiten
+  riDoc: {},       // ri-dokumen.json: fakta penambahan modal & kewajaran aset dari dokumen asli (lampiran PDF)
   profil: {},      // profil-pengendali.json: orang di balik pengendali per emiten
   hsc: { kode: [] }, // hsc.json: saham konsentrasi kepemilikan tinggi (dikeluarkan dari IHSG)
   changelog: {},   // changelog.json: panel Pembaruan
@@ -157,10 +158,10 @@ async function loadStatus() {
 }
 
 export async function init() {
-  const [verified, pandangan, analisa, pengendali, relasi, aset, profil, hsc, changelog] = await Promise.all(
+  const [verified, pandangan, analisa, pengendali, relasi, aset, profil, hsc, changelog, riDoc] = await Promise.all(
     ['story-verified.json', 'pandangan-analis.json', 'analisa.json', 'pengendali-verified.json', 'relasi-verified.json',
-      'aset-verified.json', 'profil-pengendali.json', 'hsc.json', 'changelog.json'].map(loadJson))
-  Object.assign(store, { verified, pandangan, analisa, pengendali, relasi, aset, profil, hsc: hsc.kode ? hsc : { kode: [] }, changelog })
+      'aset-verified.json', 'profil-pengendali.json', 'hsc.json', 'changelog.json', 'ri-dokumen.json'].map(loadJson))
+  Object.assign(store, { verified, pandangan, analisa, pengendali, relasi, aset, profil, hsc: hsc.kode ? hsc : { kode: [] }, changelog, riDoc })
   await loadStatus()  // dulu: perlu tahu mode publik sebelum migrasi
   try { await loadData() } catch (e) { toast('Gagal memuat data dari server: ' + e.message, true) }
   try { store.features = await api.get('/api/features') } catch {}

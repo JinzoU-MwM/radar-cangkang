@@ -82,13 +82,14 @@ export async function collectDeck(t, { store, api, storyOf, getBenchmark, onStep
     milestones: MILESTONES,
   }
   // Rights issue (bila ada rencana penambahan modal) pada harga awal analisa, lalu rekomendasi tindakan.
-  out.ri = riCase(A, { aset, sv: verified[t], item, pv: store.pengendali?.[t],
+  out.ri = riCase(A, { aset, sv: verified[t], item, pv: store.pengendali?.[t], doc: store.riDoc?.[t],
     reports: [...(A.reps || []), ...(store.updates || []).filter(u => u.ticker === t)] })
   if (out.ri) {
     out.riP = riRange(out.ri).start
     out.riR = riCalc(out.ri, out.riP, 0)
     out.riF = riFunding(out.ri, out.riR)
   }
+  out.riDoc = store.riDoc?.[t] || null
   out.rec = recommend(out)
   // Berita terkini (Stockbit Reports + media, diperbarui server tiap 2 jam) dan kesimpulannya.
   const news = (store.updates || []).filter(u => u.ticker === t && u.title)

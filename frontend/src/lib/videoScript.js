@@ -3,6 +3,7 @@
 // dengan tab Analisa dan presentasi unduhan. mode: 'ringkas' (±4 menit) atau 'lengkap' (±10 menit).
 import { fmtDate } from './domain.js'
 import { phaseName } from './cycle.js'
+import { riPriceNeeded, asetLaba, labaSebelumSesudah, riLayak } from './rightsIssue.js'
 
 const id = (v, d = 0) => v == null || isNaN(v) ? '–' : (+v).toLocaleString('id-ID', { maximumFractionDigits: d })
 const rp = v => v == null || isNaN(v) ? '–' : 'Rp' + id(Math.round(v))
@@ -102,6 +103,8 @@ export function buildVideo(d, mode = 'ringkas') {
   // 5. Aset injeksi
   const det = d.ri?.detail, inj = d.ri?.inj || d.aset?.transaksi?.nilaiRp || null
   const asetNama = det?.nama || d.aset?.aset?.nama || A.sv?.injectTarget
+  const kw = (d.ri?.doc || d.riDoc)?.kewajaran
+  const lbA = asetLaba(d.ri?.doc || d.riDoc)
   if (asetNama || inj) add('aset', 'Aset injeksi', 'Aset yang akan diinjeksikan', {
     type: 'kpis', items: [
       det?.spread ? [`${big(det.lo)} – ${big(det.hi)}`, 'Nilai aset (indikatif, berbeda antarsumber)'] : inj ? [big(inj), 'Nilai transaksi aset'] : null,
@@ -114,11 +117,18 @@ export function buildVideo(d, mode = 'ringkas') {
     inj && A.mcap ? `Nilai tersebut setara ${id(inj / A.mcap, 1)} kali kapitalisasi pasar ${d.t} saat ini.` : null,
     det?.kjpp?.status === 'terbit' ? `Penilai independen telah menerbitkan nilai${det.kjpp.nilai ? ' sebesar ' + big(det.kjpp.nilai) : ''}.` : 'Nilai aset tersebut belum diuji oleh penilai independen, sehingga masih berupa klaim.',
     full && det?.cara ? `Cara pembayarannya adalah ${det.cara.charAt(0).toLowerCase() + det.cara.slice(1)}.` : null,
+    // Kewajaran nilai aset menurut dokumen asli (ri-dokumen.json).
+    kw ? `Berdasarkan dokumen keterbukaan, nilai aset ini dinilai ${kw.putusan}. ${kw.ringkas || ''}` : null,
+    ...(kw?.alasan || []).slice(0, full ? 3 : 1),
+    lbA ? (lbA.rugi ? `Menurut laporan keuangannya, aset ini masih merugi ${big(-lbA.laba)}${lbA.periode ? ' pada periode ' + lbA.periode : ''}, sehingga harganya tidak ditopang laba.`
+      : lbA.labaThn != null ? `Laba bersih aset setahun sekitar ${big(lbA.labaThn)}${lbA.per != null ? `, sehingga harga transaksi setara ${id(lbA.per, 1)} kali laba porsi yang diambil` : ''}.` : null)
+      : (d.ri?.doc || d.riDoc) ? 'Laba aset belum diungkap dalam dokumen, sehingga nilai transaksi belum dapat diuji terhadap laba.' : null,
   ])
 
   // 6. Penambahan modal (rights issue)
   if (d.ri && d.riR) {
-    const c = d.ri, r = d.riR, f = d.riF
+    const c = d.ri, r = d.riR, f = d.riF, nd = riPriceNeeded(c, d.riP)
+    const lbR = c.doc ? asetLaba(c.doc, { S1: r.S1, P: d.riP }) : null, ls = labaSebelumSesudah(c, r, lbR), ly = riLayak(c, r, lbR, ls)
     add('ri', 'Penambahan modal', c.label, {
       type: 'compare', from: { v: c.float || 0, l: 'Porsi publik sekarang' }, to: { v: r.pubAfter * 100, l: 'Bila publik tidak menebus' },
       extra: r.pubAfterInj != null ? { v: r.pubAfterInj * 100, l: 'Setelah injeksi tahap lanjutan' } : null,
@@ -127,6 +137,8 @@ export function buildVideo(d, mode = 'ringkas') {
       `Perusahaan merencanakan ${c.label} dengan nilai penerbitan sekitar ${big(r.total)}, yaitu ${id(r.N / 1e9, 2)} miliar saham pada harga ${rp(d.riP)}.`,
       c.laterInj ? `Dana tahap pertama ini berupa uang tunai dan tidak digunakan untuk membeli aset; aset senilai ${big(c.laterInj)} akan dibayar dengan saham baru pada tahap berikutnya.` : null,
       `Bila pemegang saham publik tidak ikut menebus, porsi publik turun dari ${pct(c.float, 1)} menjadi ${pct(r.pubAfter * 100, 1)}${r.pubAfterInj != null ? `, dan dapat turun hingga ${pct(r.pubAfterInj * 100, 1)} setelah injeksi aset` : ''}.`,
+      ly ? `Kesimpulan investasinya: ${ly.label.toLowerCase()}.${ls ? (ls.akresi ? ' Laba per saham emiten naik setelah aset masuk.' : ' Laba per saham emiten justru turun setelah penerbitan.') : ''}` : null,
+      nd ? `Agar dana tunai ${big(nd.cash)} tercapai, harga saham sebaiknya berada di atas ${rp(Math.ceil(nd.ref))}, yaitu harga pelaksanaan ${rp(d.riP)} ditambah diskon dua puluh persen${nd.gap != null ? (nd.gap > 0 ? `; harga saat ini masih perlu naik ${id(nd.gap * 100, 0)} persen` : '; harga saat ini sudah memenuhi syarat tersebut') : ''}.` : null,
       f ? `Berdasarkan keterbukaan informasi terakhir${f.last ? ' pada ' + fmtDate(f.last.date) : ''}, peluang terkumpulnya dana dinilai ${f.label.toLowerCase()}.` : null,
       f ? first(f.reasons.filter(x => x.s < 0).map(x => x.t).join(' '), full ? 3 : 2) : null,
     ])

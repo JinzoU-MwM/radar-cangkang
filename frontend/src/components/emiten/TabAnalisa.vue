@@ -6,6 +6,7 @@ import { buildAnalysis, KURS, W } from '../../lib/analysis.js'
 import { fmt, fmtDate, rp, big, x2, pctTxt } from '../../lib/domain.js'
 import { riCase } from '../../lib/rightsIssue.js'
 import RightsIssue from './RightsIssue.vue'
+import RiDokumen from './RiDokumen.vue'
 import { analysisProsCons, deepView, dilusi, radarGeom } from '../../lib/emitenExtra.js'
 import SikapTag from '../SikapTag.vue'
 import ProsCons from './ProsCons.vue'
@@ -101,7 +102,7 @@ const KC = [
 ]
 // Analisa PMHMETD/PMTHMETD bila ada rencana penambahan modal.
 const ri = computed(() => A.value ? riCase(A.value, { aset: store.aset[props.ticker], sv: store.verified[props.ticker],
-  item: store.items.find(x => x.ticker === props.ticker), pv: store.pengendali[props.ticker],
+  item: store.items.find(x => x.ticker === props.ticker), pv: store.pengendali[props.ticker], doc: store.riDoc?.[props.ticker],
   // Semua keterbukaan & berita emiten (bukan hanya 8 terakhir) untuk menilai tahap dan keterbukaan terakhir.
   reports: [...A.value.reps, ...store.updates.filter(u => u.ticker === props.ticker)] }) : null)
 const holders = computed(() => (A.value?.holders || []).filter(h => Math.abs(h.change) >= 0.1 || A.value.isCtrlH(h)).slice(0, 8))
@@ -292,6 +293,12 @@ const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
     <NetworkMap v-if="extra.profil" :focus="ticker" />
 
     <RightsIssue v-if="ri" :c="ri" :ticker="ticker" :name="A.p?.name || store.items.find(x => x.ticker === ticker)?.name || ''" />
+    <!-- Tanpa penambahan modal menurut dokumen, kewajaran transaksi aset tetap ditampilkan. -->
+    <section v-else-if="store.riDoc?.[ticker]" class="rule-top">
+      <h2>Transaksi aset menurut dokumen</h2>
+      <p class="small muted">{{ store.riDoc[ticker].status || 'Belum ada rencana penambahan modal' }}; simulasi rights issue tidak ditampilkan.</p>
+      <RiDokumen :doc="store.riDoc[ticker]" />
+    </section>
 
     <!-- Kalkulator dilusi. -->
     <section v-if="calcMode" class="rule-top">

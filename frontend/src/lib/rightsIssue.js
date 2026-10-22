@@ -87,8 +87,12 @@ function fundingFacts(reports, texts) {
 
 // Kasus penambahan modal untuk satu emiten, atau null bila tidak ada rencana yang relevan.
 // A: hasil buildAnalysis; ctx: { aset, sv, item, reports }.
-export function riCase(A, { aset = null, sv = null, item = null, reports = [], pv = null } = {}) {
+export function riCase(A, { aset = null, sv = null, item = null, reports = [], pv = null, doc = null } = {}) {
   if (!A) return null
+  // doc = fakta dari dokumen asli (ri-dokumen.json); bila ada, angkanya didahulukan atas asumsi narasi.
+  const dk = doc && typeof doc === 'object' && !Array.isArray(doc) ? doc : null
+  // Dokumen menyatakan belum ada penambahan modal: asumsi rights issue di narasi diabaikan.
+  if (dk && (!dk.jenis || /batal/i.test(dk.status || ''))) return null
   const pa = A.pa || {}, dl = pa.dilusi || {}, k = pa.kalkulator || {}
   const sigEv = (item?.signals?.rights?.ev || []).map(e => e.text)
   // Hanya keterbukaan setahun terakhir; narasi yang menyangkal ("tanpa rights issue") diabaikan.
@@ -102,27 +106,44 @@ export function riCase(A, { aset = null, sv = null, item = null, reports = [], p
   const merger = MERGER_RE.test(cara)
   const isH = PMH_RE.test(evidence)
   const isT = PMT_RE.test(evidence) || (inbreng && !PMH_RE.test(spec))
-  const inj = aset?.transaksi?.nilaiRp || A.injRp || null
-  const N = dl.berlaku ? dl.sahamBaru || null : null
-  const V = k.nilaiDibayarSaham || 0, cash = k.kasSegar || 0
+  const dHp = dk?.hargaPelaksanaan || {}, dSet = dk?.setoran || {}, dAs = dk?.aset || {}
+  const exDoc = dHp.nilai > 0 && /resmi|indikatif/i.test(dHp.status || '') ? dHp.nilai : null
+  const inj = dAs.nilaiTransaksiRp || aset?.transaksi?.nilaiRp || A.injRp || null
+  // Setoran dari dokumen: aset (inbreng/konversi) dan tunai dalam penerbitan ini. 0 = dinyatakan tidak ada;
+  // null = belum diungkap (memakai asumsi narasi). Bila harga resmi dan saham maksimum diketahui, porsi tunai
+  // yang tidak disebut = nilai penerbitan maksimum − aset.
+  const numOr = v => typeof v === 'number' && isFinite(v) ? v : null
+  const vDoc = numOr(dSet.asetRp), cDoc = numOr(dSet.tunaiRp)
+  const fromDoc = vDoc != null || cDoc != null
+  const Nmax = dk?.sahamBaruMaks > 0 ? dk.sahamBaruMaks : null
+  const total0 = exDoc && Nmax ? exDoc * Nmax : null
+  const V = vDoc ?? (k.nilaiDibayarSaham || 0)
+  const cash = cDoc ?? (total0 != null && vDoc != null ? Math.max(0, total0 - V) : k.kasSegar || 0)
+  // Jumlah saham baru = setoran ÷ harga (dibatasi maksimum dokumen); tanpa setoran: maksimum dokumen/asumsi narasi.
+  const N = dk && (V + cash) > 0 ? null : Nmax || (dl.berlaku ? dl.sahamBaru || null : null)
   // Perlu bukti konkret: jumlah saham baru, kas, nilai setoran, atau jenis penambahan modal + nilai aset.
-  if (!N && !cash && !V && !((isT || isH) && inj)) return null
-  const kind = merger ? 'merger' : isH && isT ? 'campuran' : isT ? 'PMTHMETD' : 'PMHMETD'
-  const S0 = dl.sahamSekarang || A.shares || null
+  if (!dk && !N && !cash && !V && !((isT || isH) && inj)) return null
+  const dKind = /^(PMHMETD|PMTHMETD|campuran|merger)$/.test(dk?.jenis || '') ? dk.jenis : dk?.jenis === 'inbreng' ? 'PMHMETD' : null
+  const kind = dKind || (merger ? 'merger' : isH && isT ? 'campuran' : isT ? 'PMTHMETD' : 'PMHMETD')
+  const S0 = dk?.sahamBeredar || dl.sahamSekarang || A.shares || null
   const price = A.price || null
-  const exAssumed = /asumsi/i.test(`${k.dasar || ''} ${dl.asumsi || ''}`)
-  const nominal = nominalOf(spec) || nominalOf(repT.join(' '))
-  const done = !!k.sudahTereksekusi || EFFECTIVE_RE.test(`${dl.asumsi || ''} ${k.dasar || ''}`) || (DONE_RE.test(repT.slice(0, 15).join(' ')) && !N)
-  // Harga pelaksanaan: resmi/asumsi data → tersirat (nilai aset ÷ saham baru) → harga pasar.
-  const implied = !k.hargaPelaksanaan && inj && N ? inj / N : null
+  const exAssumed = exDoc ? false : /asumsi/i.test(`${k.dasar || ''} ${dl.asumsi || ''}`) || !!dk
+  const nominal = dk?.nominal || nominalOf(spec) || nominalOf(repT.join(' '))
+  const dStat = String(dk?.status || '')
+  const done = /tereksekusi/i.test(dStat) || (!dk && (!!k.sudahTereksekusi || EFFECTIVE_RE.test(`${dl.asumsi || ''} ${k.dasar || ''}`) || (DONE_RE.test(repT.slice(0, 15).join(' ')) && !N)))
+  // Dokumen belum menetapkan harga: asumsi narasi tetap dipakai sebagai titik awal simulasi (bertanda asumsi).
+  const ex = exDoc || k.hargaPelaksanaan || null
+  // Harga pelaksanaan: resmi/indikatif dokumen → asumsi narasi → tersirat (nilai aset ÷ saham baru) → harga pasar.
+  const implied = !ex && inj && N ? inj / N : null
   return {
     kind, label: { PMTHMETD: 'PMTHMETD (private placement)', campuran: 'PMHMETD & PMTHMETD', merger: 'penerbitan saham merger', PMHMETD: 'PMHMETD (rights issue)' }[kind],
-    status: done ? 'tereksekusi' : item?.ms?.rights ? 'berjalan' : 'rencana',
-    jadwal: sv?.target || '', S0, N, price, ex: k.hargaPelaksanaan || null, exAssumed, implied, nominal,
-    V, cash, inj, injCara: aset?.transaksi?.caraBayar || '', injTarget: sv?.injectTarget || aset?.aset?.nama || '', inbreng,
+    status: done ? 'tereksekusi' : item?.ms?.rights || /RUPS|efektif|pendaftaran/i.test(dStat) ? 'berjalan' : 'rencana',
+    jadwal: sv?.target || '', S0, N, Nmax, price, ex, exAssumed, implied, nominal,
+    V, cash, inj, injCara: aset?.transaksi?.caraBayar || '', injTarget: dAs.nama || sv?.injectTarget || aset?.aset?.nama || '', inbreng: inbreng || vDoc > 0,
     // Aset dibayar saham pada tahap terpisah (bukan bagian dari saham baru N), mis. NINE tahap II.
-    laterInj: inbreng && inj && !V && N && !implied && kind !== 'merger' ? inj : null,
-    kjpp: aset?.kjpp?.nilaiRp || null, kjppStatus: aset?.kjpp?.status || '',
+    laterInj: !fromDoc && inbreng && inj && !V && (N || cash) && !implied && kind !== 'merger' ? inj : null,
+    kjpp: dAs.kjpp?.nilaiRp || aset?.kjpp?.nilaiRp || null, kjppStatus: dAs.kjpp?.status || aset?.kjpp?.status || '',
+    doc: dk,
     ctrlPct: A.ctrlPct ?? null, float: A.flt ?? dl.porsiPublikSekarang ?? null, mcap: A.mcap || null, equity: A.equity ?? null,
     notes: [k.dasar, dl.asumsi].filter(Boolean),
     detail: asetDetail(aset, inj),
@@ -131,8 +152,185 @@ export function riCase(A, { aset = null, sv = null, item = null, reports = [], p
     // Perubahan bersih porsi pengendali 365 hari (keterbukaan ≥5%); negatif = pengendali menjual.
     ctrlNet: typeof A.isCtrlH === 'function' ? (A.holders || []).filter(A.isCtrlH).reduce((s, h) => s + (h.change || 0), 0) : null,
     avgVal: A.avgVal ?? null,
+    // Laba bersih emiten 12 bulan terakhir (sebelum aset masuk).
+    labaEmiten: A.p?.metrics?.netIncomeTtm ?? null,
   }
 }
+
+// Harga saham yang dibutuhkan agar dana tunai rights issue tercapai. Publik hanya rasional menebus bila harga pasar
+// di atas harga pelaksanaan; rights issue lazim diberi diskon 10–30% terhadap harga pasar.
+// - pMin: harga pelaksanaan terendah agar seluruh setoran (aset + tunai) muat dalam saham maksimum dokumen
+//   (tanpa batas saham: nilai nominal).
+// - need: harga pasar minimum pada diskon 10/20/30% untuk harga pelaksanaan simulasi P (dan untuk pMin).
+// - gap: kenaikan harga yang masih dibutuhkan dari harga kini ke patokan diskon 20%.
+export const RI_DISKON = [0.1, 0.2, 0.3]
+export function riPriceNeeded(c, P) {
+  if (!c || !(P > 0) || noRights(c)) return null
+  // Porsi tunai: dari data; bila jumlah saham tetap (harga resmi), sisa nilai penerbitan setelah inbreng.
+  const cash = c.cash || (c.N ? Math.max(0, c.N * P - (c.V || 0)) : 0), total = (c.V || 0) + cash
+  if (!(cash > 0)) return null
+  const nom = c.nominal || 1
+  const pMin = Math.max(nom, c.Nmax ? total / c.Nmax : nom)
+  const at = p => RI_DISKON.map(d => ({ d, price: p / (1 - d) }))
+  const ref = P / (1 - 0.2)
+  const now = c.price || null
+  const gap = now ? ref / now - 1 : null
+  // Harga pelaksanaan simulasi di bawah pMin: saham maksimum tidak cukup untuk seluruh setoran.
+  const short = c.Nmax && P < pMin ? { maxDana: c.Nmax * P, kurang: total - c.Nmax * P } : null
+  return {
+    cash, pMin, minNeed: pMin / (1 - 0.2), need: at(P), ref, now, gap, short,
+    status: now == null ? 'tidak diketahui' : now >= ref ? 'cukup' : now > P ? 'tipis' : 'kurang',
+  }
+}
+
+// Simulasi skenario: untuk setoran tetap (aset + tunai), rasio saham baru per saham lama menentukan harga RI;
+// harga RI menentukan harga saham yang dibutuhkan (diskon 20%) dan harga teoretis setelah RI (TERP).
+// Dana = saham baru × harga RI, sehingga harga RI = setoran ÷ (rasio × saham beredar).
+export const RI_RASIO = [0.25, 0.5, 1, 2, 3, 5, 10, 20]
+export function riScenarios(c, P = null) {
+  if (!c || !(c.S0 > 0)) return null
+  // Setoran tetap: jumlah saham × harga resmi bila keduanya ada; selain itu aset + tunai (atau nilai aset).
+  const total = c.N && c.ex ? c.N * c.ex : (c.V || 0) + (c.cash || 0) || c.inj || 0
+  if (!(total > 0)) return null
+  const S0 = c.S0, now = c.price || null, nom = c.nominal || null
+  const row = (N, tag) => {
+    const p = total / N
+    const need = p / (1 - 0.2)
+    return {
+      tag, ratio: N / S0, N, P: p, dana: total, need, naik: now ? need / now - 1 : null,
+      terp: now ? (S0 * now + total) / (S0 + N) : null, dilusi: N / (S0 + N),
+      bawahNominal: nom != null && p < nom, lewatMaks: !!(c.Nmax && N > c.Nmax),
+    }
+  }
+  const rows = RI_RASIO.map(r => row(r * S0, ''))
+  // Baris acuan: harga RI = harga kini, dan harga RI simulasi yang sedang dipilih.
+  if (now) rows.push(row(total / now, 'harga RI = harga kini'))
+  if (P > 0) rows.push(row(total / P, 'simulasi pilihan'))
+  if (c.Nmax) rows.push(row(c.Nmax, 'saham maksimum dokumen'))
+  rows.sort((a, b) => a.N - b.N)
+  return { total, tunai: Math.max(0, total - (c.V || 0)), aset: Math.min(c.V || 0, total), S0, now, nom, rows }
+}
+
+// Dasar perhitungan harga pelaksanaan: harga = target dana ÷ (rasio HMETD × saham beredar).
+// Skenario A = seluruh nilai penerbitan (aset + tunai); B = porsi tunai saja. B hanya konsisten bila aset
+// dibayar dengan saham terpisah; bila inbreng juga melalui HMETD yang sama, semua saham baru terbit pada satu harga (A).
+export function riExercise(c, ratio = 1) {
+  if (!c || !(c.S0 > 0) || !(ratio > 0)) return null
+  const total = c.N && c.ex ? c.N * c.ex : (c.V || 0) + (c.cash || 0) || c.inj || 0
+  if (!(total > 0)) return null
+  const aset = Math.min(c.V || 0, total), tunai = Math.max(0, total - aset)
+  const N = ratio * c.S0
+  const sc = target => {
+    const P = target / N, up = Math.ceil(P)
+    return { target, P, up, check: up * N, belowNominal: c.nominal ? up < c.nominal : false, need: up / 0.8, naik: c.price ? up / 0.8 / c.price - 1 : null }
+  }
+  const sameIssue = aset > 0 && c.kind !== 'PMTHMETD' && c.kind !== 'merger'
+  return {
+    ratio, S0: c.S0, N, total, aset, tunai, nominal: c.nominal || null, price: c.price || null,
+    kurs: c.doc?.kurs?.nilai ? c.doc.kurs : null, A: sc(total), B: tunai > 0 && aset > 0 ? sc(tunai) : null,
+    // Skenario yang konsisten dengan struktur dokumen.
+    consistent: aset > 0 ? (sameIssue ? 'A' : 'B') : 'A',
+  }
+}
+
+// Faktor penyetahunan dari teks periode laporan: "(6 bulan)" → ×2, "1H"/"semester" → ×2, "Q1"/"3 bulan" → ×4.
+export function annualFactor(periode) {
+  const s = String(periode || '')
+  const m = s.match(/(\d{1,2})\s*bulan/i)
+  if (m && +m[1] > 0 && +m[1] < 12) return 12 / +m[1]
+  if (/\b(1H|H1|semester)\b/i.test(s)) return 2
+  if (/\bQ[1-4]\b|kuartal|triwulan/i.test(s)) return 4
+  return 1
+}
+
+// Perhitungan laba aset injeksi dari laporan keuangan di dokumen: laba & pendapatan disetahunkan, margin, ROE,
+// laba porsi yang diambil, PER implisit (nilai transaksi ÷ laba porsi), dan laba per saham emiten setelah
+// penerbitan (post = { S1: saham setelah penerbitan, P: harga RI }).
+export function asetLaba(doc, post = {}) {
+  const a = doc?.aset || {}, ke = a.keuangan || {}
+  const laba = typeof ke.labaBersihRp === 'number' ? ke.labaBersihRp : null
+  const pend = typeof ke.pendapatanRp === 'number' ? ke.pendapatanRp : null
+  if (laba == null && pend == null) return null
+  const f = annualFactor(ke.periode)
+  const porsi = a.porsiPersen > 0 ? a.porsiPersen / 100 : null
+  // Laba/pendapatan 12 bulan terakhir dari dokumen (bila ada) didahulukan atas penyetahunan periode parsial.
+  const ltmL = typeof ke.labaSetahunRp === 'number' ? ke.labaSetahunRp : null, ltmP = typeof ke.pendapatanSetahunRp === 'number' ? ke.pendapatanSetahunRp : null
+  const labaThn = ltmL ?? (laba != null ? laba * f : null), pendThn = ltmP ?? (pend != null ? pend * f : null)
+  const labaPorsi = labaThn != null ? labaThn * (porsi ?? 1) : null
+  const nilai = a.nilaiTransaksiRp || null
+  return {
+    periode: ke.periode || '', f: ltmL != null ? 1 : f, ltm: ltmL != null ? ke.setahunKet || '12 bulan terakhir' : '', laba, pend, labaThn, pendThn, porsi,
+    margin: laba != null && pend > 0 ? laba / pend : null,
+    roe: labaThn != null && ke.ekuitasRp > 0 ? labaThn / ke.ekuitasRp : null,
+    labaPorsi, nilai,
+    per: nilai && labaPorsi > 0 ? nilai / labaPorsi : null,
+    ps: nilai && pendThn > 0 ? nilai / (pendThn * (porsi ?? 1)) : null,
+    eps: labaPorsi != null && post.S1 > 0 ? labaPorsi / post.S1 : null,
+    epsYield: labaPorsi != null && post.S1 > 0 && post.P > 0 ? labaPorsi / post.S1 / post.P : null,
+    rugi: laba != null && laba < 0, catatan: ke.catatan || '',
+  }
+}
+
+// Laba emiten sebelum vs setelah aset masuk: laba setahun, jumlah saham, laba per saham (EPS), dan PER.
+// Sebelum = laba emiten TTM ÷ saham beredar pada harga kini; setelah = (laba emiten + laba porsi aset) ÷ saham
+// setelah penerbitan pada harga teoretis (TERP).
+export function labaSebelumSesudah(c, r, lb) {
+  if (!c || !r || c.labaEmiten == null || !lb || lb.labaPorsi == null) return null
+  const before = { laba: c.labaEmiten, saham: c.S0, eps: c.labaEmiten / c.S0, harga: c.price || null }
+  const lAfter = c.labaEmiten + lb.labaPorsi
+  const after = { laba: lAfter, saham: r.S1, eps: lAfter / r.S1, harga: r.terp || null }
+  before.per = before.harga && before.eps > 0 ? before.harga / before.eps : null
+  after.per = after.harga && after.eps > 0 ? after.harga / after.eps : null
+  const dEps = before.eps !== 0 ? after.eps / Math.abs(before.eps) - (before.eps > 0 ? 1 : -1) : null
+  return { before, after, dLaba: lAfter - c.labaEmiten, dEps, akresi: after.eps > before.eps }
+}
+
+// Kesimpulan layak investasi atau tidak: skor dari kewajaran aset, KJPP, afiliasi, laba aset, perubahan EPS,
+// harga kini vs harga teoretis, pembeli siaga, dan status transaksi. Mengembalikan { key, label, tone, score, reasons }.
+export function riLayak(c, r, lb, ls) {
+  if (!c) return null
+  const why = [], d = c.doc || {}, kw = d.kewajaran?.putusan || ''
+  let sc = 0
+  const plus = (n, t) => { sc += n; why.push({ s: Math.sign(n), t }) }
+  const adaAset = (c.V || 0) > 0 || (c.inj || 0) > 0
+  if (/^wajar/i.test(kw)) plus(2, 'Nilai aset dinilai wajar berdasarkan dokumen.')
+  else if (/cenderung mahal/i.test(kw)) plus(-1, 'Nilai aset cenderung mahal dibanding laba/ekuitasnya.')
+  else if (/tidak wajar/i.test(kw)) plus(-3, 'Nilai aset tidak wajar: harga jauh di atas dasar nilai yang terukur.')
+  else if (/belum dapat dinilai/i.test(kw)) plus(-1, 'Kewajaran aset belum dapat dinilai: data inti (laba, KJPP) belum diungkap.')
+  if (adaAset) {
+    const kj = d.aset?.kjpp?.status || c.kjppStatus || ''
+    if (/terbit/i.test(kj)) plus(1, 'Penilai independen (KJPP) sudah menerbitkan laporan.')
+    else plus(-1, 'Belum ada laporan penilai independen (KJPP).')
+    if (d.aset?.afiliasi === true) plus(-1, 'Aset dibeli dari pihak terafiliasi pengendali.')
+  }
+  if (lb) {
+    if (lb.rugi) plus(-2, 'Aset yang masuk masih merugi.')
+    else if (lb.per != null) plus(lb.per <= 15 ? 1 : lb.per > 40 ? -1 : 0, `PER implisit transaksi ${lb.per.toLocaleString('id-ID', { maximumFractionDigits: 1 })}×${lb.per <= 15 ? ' (wajar)' : lb.per > 40 ? ' (mahal)' : ''}.`)
+  } else if (adaAset) plus(-1, 'Laba aset belum diungkap.')
+  if (ls) plus(ls.akresi ? 1 : -1, ls.akresi ? 'Laba per saham emiten naik setelah aset masuk (akresi).' : 'Laba per saham emiten turun setelah penerbitan (dilutif).')
+  if (r?.terp && c.price) {
+    const prem = c.price / r.terp - 1
+    if (prem > 0.3) plus(-1, `Harga kini ${Math.round(prem * 100)}% di atas harga teoretis setelah RI: risiko turun setelah cum date.`)
+    else if (prem < -0.1) plus(1, 'Harga kini di bawah harga teoretis setelah RI.')
+  }
+  // Pembeli siaga hanya menentukan bila porsi tunai berarti (> 30% penerbitan); sisanya disetor pemilik aset.
+  const tunaiShare = r?.total > 0 ? (r.tunai || 0) / r.total : 1
+  if ((c.cash || 0) > 0 && tunaiShare > 0.3 && c.kind !== 'PMTHMETD' && c.kind !== 'merger' && c.status !== 'tereksekusi') {
+    const sb = d.pembeliSiaga?.ada
+    if (sb === true) plus(1, 'Ada pembeli siaga untuk dana tunai.')
+    else plus(-1, 'Belum ada pembeli siaga: dana tunai tidak terjamin.')
+  }
+  if (c.status === 'tereksekusi') plus(1, 'Transaksi sudah tereksekusi; risiko batal tidak ada.')
+  const key = sc >= 2 ? 'layak' : sc >= -1 ? 'spekulatif' : 'tidak'
+  return {
+    key, score: sc, reasons: why,
+    label: { layak: 'Layak dipertimbangkan', spekulatif: 'Spekulatif: hanya porsi kecil, tunggu konfirmasi', tidak: 'Tidak layak investasi saat ini' }[key],
+    tone: { layak: 'good', spekulatif: 'warn', tidak: 'strong' }[key],
+  }
+}
+
+// Warna putusan kewajaran aset injeksi dari dokumen (wajar/cenderung mahal/tidak wajar/belum dapat dinilai).
+export const kewajaranTone = p => /^wajar/i.test(p || '') ? 'good' : /tidak wajar/i.test(p || '') ? 'bad' : 'warn'
 
 // Penilaian: apakah dana penambahan modal kemungkinan terkumpul, berdasarkan keterbukaan terakhir dan struktur
 // transaksi. Mengembalikan { key, label, tone, score, reasons: [{ s: +1|-1|0, t }], last }.
@@ -203,8 +401,9 @@ export const noRights = c => c?.kind === 'PMTHMETD' || c?.kind === 'merger'
 // Hitungan pada harga pelaksanaan P dan tingkat penebusan publik u (0–1).
 export function riCalc(c, P, u = 0) {
   if (!c || !(P > 0) || !(c.S0 > 0)) return null
-  // Saham baru: dari data; bila belum ada, (setoran aset + tunai, atau nilai aset) ÷ P.
-  const N = c.N || ((c.V || 0) + (c.cash || 0) || c.inj || 0) / P
+  // Saham baru: dari data; bila belum ada, (setoran aset + tunai, atau nilai aset) ÷ P, dibatasi maksimum dokumen.
+  const N0 = c.N || ((c.V || 0) + (c.cash || 0) || c.inj || 0) / P
+  const N = c.Nmax && !c.N ? Math.min(N0, c.Nmax) : N0
   if (!(N > 0)) return null
   const S0 = c.S0, S1 = S0 + N, total = N * P
   const aset = Math.min(c.V || (c.kind === 'merger' ? total : 0), total), tunai = total - aset
@@ -226,12 +425,13 @@ export function riCalc(c, P, u = 0) {
   }
 }
 
-// Rentang slider harga pelaksanaan: dari nominal (atau 10% harga) sampai 150% dari harga tertinggi yang relevan.
+// Rentang slider harga pelaksanaan: tidak dibatasi nominal (Rp1 sampai 5× harga tertinggi yang relevan);
+// harga di luar rentang tetap bisa diketik langsung.
 export function riRange(c) {
-  const start = c?.ex || c?.implied || c?.price || 100
+  const start = Math.max(c?.nominal || 1, c?.ex || c?.implied || c?.price || 100)
   const top = Math.max(c?.price || 0, start)
-  const lo = Math.max(1, Math.floor(Math.min(c?.nominal || top * 0.1, start)))
-  const hi = Math.max(lo + 1, Math.round(top * 1.5))
+  const lo = 1
+  const hi = Math.max(lo + 1, Math.round(top * 5))
   return { lo, hi, step: hi > 2000 ? 5 : 1, start: Math.round(start) }
 }
 
