@@ -14,8 +14,11 @@ import ProfilOrang from './ProfilOrang.vue'
 import ControllerTrack from './ControllerTrack.vue'
 import NetworkMap from '../NetworkMap.vue'
 import { errText } from './ta/useOhlc.js'
+import { dokumenBaru } from '../../lib/docWatch.js'
 
 const props = defineProps({ ticker: String })
+// Keterbukaan material yang terbit setelah analisa dokumen terakhir (otomatis dari sinkron Stockbit Reports).
+const docNew = computed(() => dokumenBaru(props.ticker, store.updates, store.riDoc?.[props.ticker]))
 const loading = ref(true), error = ref(''), A = shallowRef(null), bm = shallowRef(null), ctrl = shallowRef(null)
 // Rincian hitung: klik skor = tabel bobot; klik dimensi = langkah nilai dimensi itu.
 const showCalc = ref(false), openDim = ref('')
@@ -120,6 +123,11 @@ const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
   <p v-if="loading" class="load muted">Menganalisa {{ ticker }}: memuat profil, harga, dan keterbukaan informasi dari Stockbit…</p>
   <div v-else-if="error" class="err"><strong>Analisa {{ ticker }} gagal dimuat</strong><span>{{ error }}. Pastikan website dibuka lewat jalankan-radar.sh dan token Stockbit masih berlaku.</span></div>
   <div v-else-if="A" class="an">
+    <aside v-if="docNew.length" class="docnew" role="status">
+      <b>{{ docNew.length }} keterbukaan material belum masuk analisa dokumen</b>
+      <span class="muted small">{{ store.riDoc?.[ticker]?.asOf ? 'terbit setelah analisa dokumen ' + fmtDate(store.riDoc[ticker].asOf) : 'emiten belum punya analisa dokumen (120 hari terakhir)' }}</span>
+      <ul class="small"><li v-for="u in docNew.slice(0, 6)" :key="u.id">{{ fmtDate(String(u.date).slice(0, 10)) }} · <a v-if="u.url" :href="u.url" target="_blank" rel="noopener">{{ u.title }}</a><template v-else>{{ u.title }}</template></li></ul>
+    </aside>
     <!-- Skor & sikap: satu baris tegas. -->
     <section class="verdict rule-top">
       <p class="vline">
@@ -379,6 +387,8 @@ const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
 </template>
 
 <style scoped>
+.docnew{border:1px solid var(--warn);border-left-width:4px;padding:8px 12px;margin:0 0 12px;display:flex;flex-direction:column;gap:2px}
+.docnew ul{margin:4px 0 0;padding-left:18px}
 .load{padding:18px 0}
 .err{display:flex;flex-direction:column;gap:4px;padding:14px 0;border-top:2px solid var(--strong)}
 .err strong{color:var(--strong)}
