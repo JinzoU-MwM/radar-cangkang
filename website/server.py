@@ -1143,6 +1143,35 @@ def convert_reports(res: dict, ticker: str, cfg_reports: dict) -> list[dict]:
                     "url": f"https://stockbit.com/post/{s.get('stream_id')}"})
     return out
 
+def convert_sb_news(res: dict, ticker: str, days: int = 365) -> list[dict]:
+    """Berita StockbitNews yang ditandai Stockbit untuk satu emiten (sumber asli: katadata, emitennews, dst.)."""
+    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    out = []
+    for s in res.get("data", {}).get("stream") or []:
+        title = str(s.get("title") or "").strip()
+        date = str(s.get("created_at") or "")[:10]
+        if not title or date < cutoff:
+            continue
+        body = re.sub(r"\s+", " ", str(s.get("content") or "")).strip().rstrip(".").removesuffix("...").strip()
+        # Cuplikan Stockbit terpotong ("..."): simpan sampai kalimat lengkap terakhir.
+        cut = max(body.rfind(". "), body.rfind("! "), body.rfind("? "))
+        if body and body[-1] not in ".!?" and cut > 40:
+            body = body[:cut + 1]
+        src = (s.get("news_feed") or {}).get("label") or (s.get("news_feed") or {}).get("source") or ""
+        out.append({"id": f"sb-news-{s.get('stream_id')}", "date": date, "ticker": ticker, "type": news_type(title),
+                    "title": title, "summary": body[:400] if len(body) > 20 else "",
+                    "source": "StockbitNews" + (f" · {src}" if src else ""),
+                    "url": f"https://stockbit.com/post/{s.get('stream_id')}"})
+    return out
+
+
+def get_sb_news(cfg_reports: dict, ticker: str, fresh: bool = False) -> list[dict]:
+    """Satu halaman (30 terbaru) berita StockbitNews per emiten: endpoint sama dengan laporan, kategori NEWS."""
+    url = re.sub(r"category=[A-Z_]+", "category=STREAM_CATEGORY_NEWS", cfg_reports["url"])
+    url = re.sub(r"&report_type=[A-Z_]+", "", url).replace("{ticker}", ticker)
+    return convert_sb_news(stockbit_api(url, fresh), ticker, int(cfg_reports.get("days") or 365))
+
+
 def get_reports(cfg_reports: dict, ticker: str, fresh: bool = False, max_pages: int | None = None) -> list[dict]:
     """Keterbukaan informasi satu emiten dari stream Stockbit (beberapa halaman, sampai batas hari)."""
     max_pages = max_pages or int(cfg_reports.get("maxPages") or 1)
@@ -1387,7 +1416,8 @@ def sync_updates(cfg: dict, delay: float = 0.4) -> dict:
     if cfg.get("reports") and get_token():
         for t in codes:
             try:
-                for it in get_reports(cfg["reports"], t, fresh=True, max_pages=1):
+                # Keterbukaan (Stockbit Reports) + berita StockbitNews yang ditandai untuk emiten ini.
+                for it in get_reports(cfg["reports"], t, fresh=True, max_pages=1) + get_sb_news(cfg["reports"], t, fresh=True):
                     prev = old.get(it["id"])
                     if prev is None:
                         added += 1

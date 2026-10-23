@@ -20,7 +20,7 @@ export const isBackdoorNews = (u, items = [], set = backdoorTickers(items)) => {
   const text = `${u.title} ${u.summary || ''}`
   if (!u.ticker) return BACKDOOR_TOPIC.test(text)
   if (!set.has(u.ticker)) return false
-  if (/^sb-report-/.test(u.id)) return true                 // Stockbit Reports selalu milik emiten itu
+  if (/^sb-(report|news)-/.test(u.id)) return true         // Stockbit Reports & StockbitNews sudah ditandai Stockbit untuk emiten itu
   if (!tickerInContext(u.ticker, text, items)) return false  // berita media: kode harus benar-benar merujuk ke emiten
   return !MARKET_WRAP.test(u.title) || BACKDOOR_TOPIC.test(text)
 }
