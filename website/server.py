@@ -148,6 +148,52 @@ def tts_usage(add: int = 0) -> dict:
         return u
 
 
+_tts_key_tries: dict = {}
+
+
+def tts_try_key(key: str, region: str) -> bool:
+    """Uji kunci Azure dengan satu kalimat pendek (tanpa menyimpan)."""
+    ssml = f"<speak version='1.0' xml:lang='id-ID'><voice name='{TTS_VOICE}'>Tes suara.</voice></speak>".encode()
+    req = urllib.request.Request(f"https://{region}.tts.speech.microsoft.com/cognitiveservices/v1", data=ssml, method="POST", headers={
+        "Ocp-Apim-Subscription-Key": key, "Content-Type": "application/ssml+xml",
+        "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3", "User-Agent": "radar-backdoor"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return r.status == 200 and len(r.read()) > 500
+    except Exception:
+        return False
+
+
+def tts_set_key(body, public: bool, ip: str) -> tuple[int, dict]:
+    """Pasang kunci Azure dari halaman Video. Publik: hanya sekali (saat belum ada kunci), maks. 5 percobaan/jam."""
+    if not isinstance(body, dict):
+        return 400, {"error": "Data tidak valid."}
+    key = str(body.get("key") or "").strip()
+    region = str(body.get("region") or "southeastasia").strip().lower()
+    if not re.fullmatch(r"[A-Za-z0-9]{20,100}", key) or not re.fullmatch(r"[a-z0-9]{3,30}", region):
+        return 400, {"error": "Format KEY 1 atau region tidak sesuai."}
+    if public and tts_config():
+        return 403, {"error": "Suara pria sudah aktif. Mengganti kunci hanya bisa dari jaringan server."}
+    now = time.time()
+    with _tts_lock:
+        tries = [t for t in _tts_key_tries.get(ip, []) if t > now - 3600]
+        if len(tries) >= 5:
+            return 429, {"error": "Terlalu banyak percobaan. Coba lagi dalam satu jam."}
+        _tts_key_tries[ip] = tries + [now]
+    if not tts_try_key(key, region):
+        return 400, {"error": "Kunci ditolak Azure. Periksa KEY 1 dan region (mis. southeastasia)."}
+    old = os.umask(0o077)
+    try:
+        TTS_KEY_FILE.write_text(f"{key}\n{region}\n", encoding="utf-8")
+    finally:
+        os.umask(old)
+    try:
+        os.chmod(TTS_KEY_FILE, 0o600)
+    except OSError:
+        pass
+    return 200, {"ok": True}
+
+
 def tts_audio(text: str, ip: str = "") -> bytes | None:
     """MP3 untuk satu kalimat (dari cache bila ada). None = TTS tidak tersedia (frontend memakai suara browser)."""
     text = re.sub(r"\s+", " ", text or "").strip()[:TTS_MAX_TEXT]
@@ -2030,6 +2076,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def handle_write(self, method: str) -> None:
         try:
+            # Pasang kunci suara pria dari halaman Video (lihat tts_set_key: publik hanya sekali).
+            if urllib.parse.urlparse(self.path).path.strip("/") == "api/tts-key" and method == "POST" and self.is_local():
+                code, res = tts_set_key(self.read_json(), self.is_public(), self.headers.get("Cf-Connecting-Ip") or self.client_address[0])
+                self.reply_json(res, code)
+                return
             if self.is_public():
                 self.reply_json({"error": "Versi publik hanya baca."}, 403)
                 return

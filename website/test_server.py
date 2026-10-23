@@ -227,6 +227,21 @@ class CacheTest(unittest.TestCase):
 
 
 class KandidatTest(unittest.TestCase):
+    def test_tts_set_key_guards(self):
+        old_cfg, old_try = server.tts_config, server.tts_try_key
+        try:
+            server.tts_try_key = lambda k, r: False
+            self.assertEqual(server.tts_set_key({"key": "pendek"}, True, "1.1.1.1")[0], 400)          # format salah
+            server.tts_config = lambda: ("x" * 32, "southeastasia")
+            self.assertEqual(server.tts_set_key({"key": "A" * 32}, True, "1.1.1.2")[0], 403)          # publik tidak boleh mengganti
+            server.tts_config = lambda: None
+            self.assertEqual(server.tts_set_key({"key": "A" * 32}, True, "1.1.1.3")[0], 400)          # ditolak Azure, tidak disimpan
+            for _ in range(5):
+                server.tts_set_key({"key": "A" * 32}, True, "1.1.1.4")
+            self.assertEqual(server.tts_set_key({"key": "A" * 32}, True, "1.1.1.4")[0], 429)          # batas percobaan
+        finally:
+            server.tts_config, server.tts_try_key = old_cfg, old_try
+
     def test_tts_cache_and_fallback(self):
         import tempfile
         from pathlib import Path
