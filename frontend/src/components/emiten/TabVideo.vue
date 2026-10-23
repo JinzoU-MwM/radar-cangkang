@@ -37,6 +37,18 @@ const browserVoice = computed(() => voices.value.find(v => !v.server) || null)
 const ttsUrl = text => '/api/tts?t=' + encodeURIComponent(speakable(text))
 let audio = null
 
+// Aktifkan suara pria: pemilik menempel KEY 1 Azure Speech; server mengujinya lalu menyimpannya.
+const keyForm = ref({ open: false, key: '', region: 'southeastasia', busy: false, msg: '', ok: false })
+async function pasangKunci() {
+  const k = keyForm.value
+  k.busy = true; k.msg = ''
+  try {
+    await api.post('/api/tts-key', { key: k.key.trim(), region: k.region.trim() })
+    store.status = await api.get('/api/status')
+    k.ok = true; k.key = ''; k.msg = 'Suara pria aktif. Tekan putar untuk mendengar.'
+  } catch (e) { k.msg = e?.message || String(e) } finally { k.busy = false }
+}
+
 async function load() {
   loading.value = true; error.value = ''; stop()
   try {
@@ -228,6 +240,16 @@ const rpS = v => v == null ? '–' : 'Rp' + Math.round(v).toLocaleString('id-ID'
         </label>
         <button type="button" class="btn" @click="fullscreen">Layar penuh</button>
       </div>
+      <div v-if="!serverTts" class="keybox small">
+        <button v-if="!keyForm.open && !keyForm.ok" type="button" class="linkbtn" @click="keyForm.open = true">Aktifkan suara pria "Ardi" (Azure Speech)</button>
+        <form v-if="keyForm.open && !keyForm.ok" class="kf" @submit.prevent="pasangKunci">
+          <span class="muted">Tempel KEY 1 dari portal.azure.com › Speech service › Keys and Endpoint. Kunci diuji ke Azure lalu disimpan di server; tidak ditampilkan lagi.</span>
+          <input v-model="keyForm.key" type="password" autocomplete="off" placeholder="KEY 1" class="field sm" required>
+          <input v-model="keyForm.region" type="text" placeholder="region" class="field sm" style="width:140px">
+          <button type="submit" class="btn" :disabled="keyForm.busy || !keyForm.key">{{ keyForm.busy ? 'Menguji…' : 'Pasang' }}</button>
+        </form>
+        <p v-if="keyForm.msg" :class="keyForm.ok ? 'c-good' : 'c-strong'">{{ keyForm.msg }}</p>
+      </div>
       <p v-if="!serverTts && voices.length && !MALE.test(voices[0].name)" class="small muted">Suara pria server belum aktif; perangkat ini hanya memiliki suara wanita. Buka di Microsoft Edge untuk suara pria "Ardi".</p>
       <p v-if="!voices.length" class="small muted">Perangkat ini belum memiliki suara Bahasa Indonesia, sehingga video berjalan tanpa suara (teks tetap tampil). Gunakan Chrome atau Edge terbaru, atau pasang paket suara Indonesia di pengaturan sistem.</p>
 
@@ -245,6 +267,7 @@ const rpS = v => v == null ? '–' : 'Rp' + Math.round(v).toLocaleString('id-ID'
 </template>
 
 <style scoped>
+.keybox{margin:6px 0}.kf{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}
 .bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
 .lbl{margin:0}.grp{display:flex;gap:6px}
 .stage{position:relative;aspect-ratio:16/9;background:#f4f9fb;border:1px solid var(--rule);overflow:hidden;cursor:pointer;color:#1f2937}
