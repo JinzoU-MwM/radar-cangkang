@@ -7,6 +7,7 @@ import { phaseName } from './cycle.js'
 import { mergeBoard } from './profil.js'
 import { riCalc, riVerdict, noRights, riFunding, asetDetail, riPriceNeeded, riScenarios, asetLaba, labaSebelumSesudah, riLayak, riExercise } from './rightsIssue.js'
 import { valuasiSim, bandarView } from './valuasi.js'
+import { sentences } from './analysis.js'
 
 const W = 10, H = 5.625, M = 0.45, CW = W - 2 * M
 const TOP = 1.2, BOT = 4.6
@@ -18,18 +19,49 @@ export const rpS = v => v == null || isNaN(v) ? '–' : 'Rp' + id(Math.round(v))
 export const bigS = v => v == null || isNaN(v) ? '–' : v < 0 ? '−' + bigS(-v) : v >= 1e12 ? `Rp${id(v / 1e12, 2)} T` : v >= 1e9 ? `Rp${id(v / 1e9, 1)} M` : `Rp${id(v / 1e6, 0)} jt`
 const pctS = (v, d = 0) => v == null || isNaN(v) ? '–' : `${v > 0 ? '+' : ''}${id(v * 100, d)}%`
 const xS = v => v == null || isNaN(v) ? '–' : id(v, 2) + '×'
-// Teks ringkas: utuh bila muat; kalimat pertama bila muat; selain itu dipotong di batas anak kalimat
-// (koma, titik koma, titik dua, tanda pisah), baru di batas kata — tidak pernah di tengah kata.
+// Teks ringkas tanpa kalimat terpotong: utuh bila muat; bila tidak, kalimat-kalimat lengkap pertama yang muat;
+// bila kalimat pertama saja sudah lebih panjang, kalimat itu tetap ditampilkan utuh (kotak teks mengecilkan huruf).
+// Teks sangat panjang tanpa batas kalimat (> 2,5× batas) berhenti di batas anak kalimat yang utuh.
 export function short(s, n = 90) {
   const t = String(s || '').replace(/\s+/g, ' ').trim()
   if (t.length <= n) return t
-  const sent = t.match(/^(.+?[.!?])(\s|$)/)
-  if (sent && sent[1].length <= n && sent[1].length >= 20) return sent[1]
-  const head = t.slice(0, n - 1)
-  const clause = [...head.matchAll(/[;:,)](?=\s)|\s[—–-](?=\s)/g)].map(m => m.index).filter(i => i >= n * 0.45).pop()
-  if (clause) return head.slice(0, clause).replace(/[,;:\s—–-]+$/, '') + '…'
+  // Kalimat lengkap (singkatan seperti "maks." atau "Pte." tidak dianggap akhir kalimat), lalu anak kalimat
+  // yang dipisah titik koma: keduanya pernyataan utuh, jadi aman dipakai tanpa elipsis.
+  const sents = sentences(t)
+  let out = ''
+  for (const x of sents) { const next = out ? out + ' ' + x : x; if (next.length > n) break; out = next }
+  if (out) return out
+  const parts = sents[0].split(/;\s+/)
+  for (const x of parts) { const next = out ? out + '; ' + x : x; if (next.length > n) break; out = next }
+  if (out && out.length >= n * 0.35) return /[.!?]$/.test(out) ? out : out + '.'
+  if (sents[0].length <= n * 2.5) return sents[0]
+  // Sangat panjang tanpa batas kalimat: berhenti di batas anak kalimat (koma, titik koma, titik dua, atau
+  // sebelum kurung) yang tanda kurungnya seimbang, sehingga yang tampil tetap frasa utuh tanpa elipsis.
+  const head = t.slice(0, Math.round(n * 2.5))
+  const cuts = [...head.matchAll(/[,;:](?=\s)|\s(?=\()/g)].map(m => m.index)
+    .filter(i => i >= n * 0.6 && (head.slice(0, i).match(/\(/g) || []).length === (head.slice(0, i).match(/\)/g) || []).length)
+  if (cuts.length) return head.slice(0, cuts.pop()).replace(/[,;:\s]+$/, '')
   const sp = head.lastIndexOf(' ')
-  return (sp > n * 0.5 ? head.slice(0, sp) : head).replace(/[,;:\s]+$/, '') + '…'
+  return (sp > n ? head.slice(0, sp) : head).replace(/[,;:\s]+$/, '') + '…'
+}
+// Faktor pengecil huruf (0,6–1) agar teks muat di kotaknya. Perkiraan: lebar rata-rata huruf ±0,5 em,
+// tinggi baris 1,2× ukuran huruf; poin daftar diberi jarak antarparagraf. Tanpa ukuran kotak: tidak diubah.
+function fitScale(text, o) {
+  if (!o.w || !o.h || o.fit === 'none') return 1
+  const size = o.fontSize || 12
+  // Huruf judul (serif) dan huruf tebal lebih lebar dari huruf isi.
+  const em = 0.5 + (o.fontFace ? 0.08 : 0) + (o.bold ? 0.03 : 0)
+  const paras = Array.isArray(text)
+    ? text.reduce((acc, r) => { acc[acc.length - 1] += String(r?.text ?? r ?? ''); if (r?.options?.breakLine) acc.push(''); return acc }, [''])
+    : String(text ?? '').split('\n')
+  const need = k => {
+    const cpl = Math.max(1, Math.floor(o.w * 72 / (size * k * em)))
+    const lines = paras.reduce((a, p) => a + Math.max(1, Math.ceil(p.length / cpl)), 0)
+    return lines * size * k * 1.2 / 72 + (paras.length - 1) * (Array.isArray(text) ? 0.06 : 0)
+  }
+  let k = 1
+  while (k > 0.6 && need(k) > o.h + 0.02) k -= 0.05
+  return k
 }
 // Nama badan usaha tanpa keterangan dalam kurung (termasuk kurung terpotong) dan tanpa "melalui …".
 const entName = s => String(s || '').replace(/\s*\(.*$/, '').replace(/^\s*(grup|melalui)\s+/i, '').replace(/\s+(melalui|via)\s.*$/i, '').trim()
@@ -83,7 +115,12 @@ function makeKit(PptxGenJS, d, th, title) {
   const LIGHT = new Set(['FFFFFF', 'F8FAFC', 'EAF2FA', 'DCE7F3', 'BBF7D0', 'FDE68A', th.accent2])
   const mono = c => !c || c === th.ink || c === th.muted ? c : LIGHT.has(c) ? 'FFFFFF' : th.ink
   const monoRuns = v => Array.isArray(v) ? v.map(r => (r && typeof r === 'object' && r.options?.color ? { ...r, options: { ...r.options, color: mono(r.options.color) } } : r)) : v
-  const T = (s, text, o = {}) => s.addText(monoRuns(prose(text)), { isTextBox: true, margin: 0, fontFace: th.body, color: th.ink, fontSize: 12, valign: 'top', ...o, ...(o.color ? { color: mono(o.color) } : {}) })
+  const T = (s, text, o = {}) => {
+    const t = monoRuns(prose(text)), k = fitScale(t, o)
+    const runs = k < 1 && Array.isArray(t) ? t.map(r => (r?.options?.fontSize ? { ...r, options: { ...r.options, fontSize: Math.round(r.options.fontSize * k * 2) / 2 } } : r)) : t
+    return s.addText(runs, { isTextBox: true, margin: 0, fontFace: th.body, color: th.ink, valign: 'top', fit: 'shrink', ...o,
+      fontSize: Math.round((o.fontSize || 12) * k * 2) / 2, ...(o.color ? { color: mono(o.color) } : {}) })
+  }
   const shadow = () => ({ type: 'outer', blur: 3, offset: 1, angle: 90, color: '000000', opacity: 0.1 })
   const card = (s, x, y, w, h, o = {}) => s.addShape(S.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.07,
     fill: { color: o.fill || th.card, transparency: o.tr || 0 }, line: { color: o.line || o.fill || th.line, width: 0.75 }, shadow: o.flat ? undefined : shadow() })
@@ -139,13 +176,42 @@ function makeKit(PptxGenJS, d, th, title) {
     s.addShape(S.ROUNDED_RECTANGLE, { x, y, w: fw, h, rectRadius: h / 2, fill: { color }, line: { color, width: 0.25 } })
   }
 
-  return { pres, S, T, card, pill, dot, line, tone, sikapTone, scoreTone, dimTone, chartBase, slide, kpi, hbar, bump: () => ++page, setSec: v => { sec = v } }
+  // Lingkaran ikon berisi simbol sederhana (motif visual yang diulang di semua slide).
+  function icon(s, cx, cy, r, glyph, color, ink = 'FFFFFF') {
+    dot(s, cx, cy, r, color)
+    T(s, glyph, { x: cx - r, y: cy - r, w: 2 * r, h: 2 * r, fontSize: Math.round(r * 46), bold: true, color: ink, align: 'center', valign: 'middle' })
+  }
+  // Alur kartu kiri ke kanan (mis. bisnis lama → pengendali → aset → bisnis baru): ikon, judul, isi singkat, panah.
+  function flow(s, y, h, items) {
+    const n = items.length, gap = 0.36, w = (CW - gap * (n - 1)) / n
+    items.forEach((it, i) => {
+      const x = M + i * (w + gap), dark = !!it.dark
+      card(s, x, y, w, h, dark ? { fill: th.dark, line: th.dark } : {})
+      icon(s, x + 0.34, y + 0.34, 0.2, it.icon || String(i + 1), dark ? th.accent2 : (it.color || th.accent), dark ? th.dark : 'FFFFFF')
+      T(s, it.title, { x: x + 0.62, y: y + 0.12, w: w - 0.72, h: 0.44, fontSize: 11, bold: true, color: dark ? 'FFFFFF' : th.ink, valign: 'middle', fit: 'shrink' })
+      T(s, it.text || '–', { x: x + 0.16, y: y + 0.66, w: w - 0.3, h: h - (it.tag ? 1.04 : 0.74), fontSize: 9.5, color: dark ? 'EAF2FA' : th.ink, fit: 'shrink' })
+      if (it.tag) T(s, it.tag, { x: x + 0.16, y: y + h - 0.36, w: w - 0.3, h: 0.26, fontSize: 8.5, bold: true, color: dark ? th.accent2 : th.accent, fit: 'shrink' })
+      if (i < n - 1) line(s, x + w + 0.04, y + h / 2, gap - 0.08, 0, th.muted, { arrow: true, w: 1.75 })
+    })
+  }
+  // Kartu poin: ikon + judul, lalu maksimal beberapa poin singkat (bukan paragraf).
+  function pointCard(s, x, y, w, h, glyph, color, title, pts, o = {}) {
+    card(s, x, y, w, h)
+    icon(s, x + 0.36, y + 0.34, 0.2, glyph, color)
+    T(s, title, { x: x + 0.66, y: y + 0.12, w: w - 0.8, h: 0.44, fontSize: 12, bold: true, valign: 'middle' })
+    const list = (pts || []).filter(Boolean).slice(0, o.max || 4)
+    T(s, list.length ? list.map((t, i, a) => ({ text: short(t, o.n || 90), options: { bullet: { indent: 12 }, breakLine: i < a.length - 1, paraSpaceAfter: 6 } })) : (o.empty || 'Tidak ada yang menonjol.'),
+      { x: x + 0.22, y: y + 0.66, w: w - 0.4, h: h - 0.76, fontSize: o.size || 10.5, color: list.length ? th.ink : th.muted, fit: 'shrink' })
+  }
+
+  return { pres, S, T, card, pill, dot, line, tone, sikapTone, scoreTone, dimTone, chartBase, slide, kpi, hbar, icon, flow, pointCard, bump: () => ++page, setSec: v => { sec = v } }
 }
 
 export function buildDeck(PptxGenJS, d, th) {
   const K = makeKit(PptxGenJS, d, th, `${d.t}: Kajian Analitis Backdoor Listing`)
-  const { pres, S, T, card, pill, dot, line, tone, sikapTone, scoreTone, dimTone, chartBase, slide, kpi, hbar } = K
+  const { pres, S, T, card, pill, dot, line, tone, sikapTone, scoreTone, dimTone, chartBase, slide, kpi, hbar, icon, flow, pointCard } = K
   const A = d.A || {}
+  const hasDoc = !!(d.ri?.doc || d.riDoc)
 
   const recTone = t => t === 'good' ? th.good : t === 'bad' ? th.bad : th.warn
 
@@ -167,24 +233,46 @@ export function buildDeck(PptxGenJS, d, th) {
 
   // ---------- Bagian: Profil (struktur karya ilmiah: kesimpulan di akhir) ----------
   K.setSec('Profil')
-  // ===== 12b. Fundamental (angka laporan keuangan & valuasi) =====
+  // ===== 12b. Profil perusahaan: angka kunci, pemegang saham utama, potensi target harga =====
   {
-    const m = A.p?.metrics || {}, st = A.p?.stats || {}
+    const m = A.p?.metrics || {}, st = A.p?.stats || {}, p = d.profile || A.p || {}
     const tiles = [
-      [m.pbv != null ? id(m.pbv, 2) + '×' : null, `PBV · nilai buku/saham ${rpS(m.bvps)}`, m.pbv > 3 ? th.bad : th.ink],
-      [m.per != null ? id(m.per, 1) + '×' : null, `PER · EPS tahunan ${m.epsAnn != null ? id(m.epsAnn, 2) : '–'}`, m.per < 0 ? th.bad : th.ink],
-      [m.equity != null ? bigS(m.equity) : null, 'Ekuitas', m.equity < 0 ? th.bad : th.ink],
-      [m.cash != null ? bigS(m.cash) : null, `Kas${st.marketCap ? ' · ' + id(m.cash / st.marketCap * 100, 1) + '% kapitalisasi' : ''}`, th.ink],
-      [m.assets != null ? bigS(m.assets) : null, 'Total aset', th.ink],
-      [m.revGrowth ? pctId(m.revGrowth) : null, 'Pertumbuhan pendapatan (YoY)', /^-/.test(m.revGrowth || '') ? th.bad : th.good],
-      [m.netMargin ? pctId(m.netMargin) : null, 'Margin laba bersih', /^-/.test(m.netMargin || '') ? th.bad : th.good],
-      [m.ret1y ? pctId(m.ret1y) : null, `Kinerja harga 1 tahun · 52 minggu ${rpS(m.low52)}–${rpS(m.high52)}`, /^-/.test(m.ret1y || '') ? th.bad : th.good],
+      [st.marketCap || A.mcap ? bigS(st.marketCap || A.mcap) : null, `Kapitalisasi pasar${st.freeFloat != null ? ' · free float ' + id(st.freeFloat, 1) + '%' : ''}`, th.ink],
+      [m.pbv != null ? id(m.pbv, 2) + '×' : null, `PBV · nilai buku ${rpS(m.bvps)}/saham`, m.pbv > 3 ? th.bad : th.ink],
+      [m.netMargin ? pctId(m.netMargin) : m.per != null ? id(m.per, 1) + '×' : null, m.netMargin ? 'Margin laba bersih' : 'PER', /^-/.test(m.netMargin || '') || m.per < 0 ? th.bad : th.good],
+      [m.ret1y ? pctId(m.ret1y) : null, `Harga 1 tahun · ${rpS(m.low52)}–${rpS(m.high52)}`, /^-/.test(m.ret1y || '') ? th.bad : th.good],
     ].filter(t => t[0] != null)
-    if (tiles.length >= 4) {
+    const holders = (p.shareholders || []).map(h => ({ ...h, pct: parseFloat(String(h.pct).replace(',', '.')) })).filter(h => h.pct > 0).slice(0, 5)
+    const lv = priceLevels(d)
+    if (tiles.length >= 2 || holders.length || lv.length) {
       const nw = d.pa?.nilaiWajar
-      const s = slide('Fundamental', 'Indikator Keuangan dan Valuasi', nw ? `Nilai wajar kasar berada pada rentang ${rpS(nw.bawah)}–${rpS(nw.atas)}, dibandingkan harga saat ini ${rpS(A.price)}. ${nw.metode || ''}` : '')
-      const w4 = (CW - 0.45) / 4, rowsN = Math.ceil(tiles.length / 4), h = rowsN > 1 ? 1.6 : 2.0
-      tiles.slice(0, 8).forEach(([v, l, col], i) => kpi(s, M + (i % 4) * (w4 + 0.15), TOP + Math.floor(i / 4) * (h + 0.15), w4, h, v, l, col))
+      const s = slide('Profil perusahaan', 'Profil Perusahaan dan Fundamental', nw ? `Nilai wajar kasar ${rpS(nw.bawah)}–${rpS(nw.atas)}, harga kini ${rpS(A.price)}.` : p.sector ? `Sektor ${p.sector}${p.industry ? ' · ' + p.industry : ''}; harga kini ${rpS(A.price)}.` : '')
+      const w4 = (CW - 0.15 * (tiles.length - 1)) / tiles.length
+      tiles.forEach(([v, l, col], i) => kpi(s, M + i * (w4 + 0.15), TOP, w4, 1.0, v, l, col))
+      const y = TOP + 1.15, h = 2.2, hw = CW / 2 - 0.1
+      // Pemegang saham utama: nama + batang porsi.
+      card(s, M, y, hw, h)
+      icon(s, M + 0.36, y + 0.32, 0.18, '●', th.accent)
+      T(s, 'Pemegang saham utama', { x: M + 0.64, y: y + 0.14, w: hw - 0.8, h: 0.36, fontSize: 11.5, bold: true, valign: 'middle' })
+      holders.forEach((x, i) => {
+        const ry = y + 0.6 + i * 0.31
+        T(s, short(x.name, 30), { x: M + 0.2, y: ry, w: 2.15, h: 0.24, fontSize: 9, bold: !!x.pengendali, valign: 'middle' })
+        hbar(s, M + 2.4, ry + 0.06, hw - 3.25, x.pct / 100, x.pengendali ? th.accent : th.muted, 0.12)
+        T(s, id(x.pct, 1) + '%', { x: M + hw - 0.8, y: ry, w: 0.65, h: 0.24, fontSize: 9.5, bold: true, align: 'right', valign: 'middle' })
+      })
+      if ((p.beneficiary || []).length) T(s, 'Pemilik manfaat: ' + short(p.beneficiary.join(', '), 70), { x: M + 0.2, y: y + h - 0.36, w: hw - 0.4, h: 0.26, fontSize: 9, bold: true, color: th.accent })
+      if (!holders.length) T(s, 'Data pemegang saham belum tersedia.', { x: M + 0.2, y: y + 0.65, w: hw - 0.4, h: 0.3, fontSize: 9.5, color: th.muted })
+      // Potensi target harga: level acuan dibanding harga kini.
+      const rx = M + hw + 0.2
+      card(s, rx, y, hw, h)
+      icon(s, rx + 0.36, y + 0.32, 0.18, '▲', th.good)
+      T(s, 'Potensi target harga', { x: rx + 0.64, y: y + 0.14, w: hw - 0.8, h: 0.36, fontSize: 11.5, bold: true, valign: 'middle' })
+      lv.slice(-5).forEach(([l, v], i) => {
+        const ry = y + 0.6 + i * 0.31, ch = A.price ? v / A.price - 1 : null
+        T(s, l, { x: rx + 0.2, y: ry, w: hw - 2.2, h: 0.24, fontSize: 9, valign: 'middle' })
+        T(s, rpS(v), { x: rx + hw - 2.0, y: ry, w: 0.95, h: 0.24, fontSize: 9.5, bold: true, align: 'right', valign: 'middle' })
+        T(s, ch == null ? '' : pctS(ch), { x: rx + hw - 1.0, y: ry, w: 0.85, h: 0.24, fontSize: 9.5, bold: true, color: ch >= 0 ? th.good : th.bad, align: 'right', valign: 'middle' })
+      })
     }
   }
 
@@ -209,8 +297,8 @@ export function buildDeck(PptxGenJS, d, th) {
       if (x.independen) pill(s, cx + 0.22 + tw, cy + 0.88, 'independen', th.good, { size: 7.5, h: 0.2 })
       let y = cy + 1.16
       if ((x.rangkap || []).length) { T(s, 'Rangkap: ' + short(x.rangkap[0], rows === 1 ? 70 : 30), { x: cx + 0.15, y, w: cw - 0.3, h: rows === 1 ? 0.42 : 0.22, fontSize: 7.5, color: th.warn, bold: true }); y += rows === 1 ? 0.48 : 0.24 }
-      if (rows === 1 && x.latar) T(s, short(x.latar, 170), { x: cx + 0.15, y, w: cw - 0.3, h: cy + ch - y - 0.1, fontSize: 8, color: th.muted })
-      else if (rows > 1 && x.hubungan && y < cy + ch - 0.25) T(s, short(x.hubungan, 34), { x: cx + 0.15, y, w: cw - 0.3, h: 0.22, fontSize: 7.5, color: th.muted })
+      if (rows === 1 && x.latar) T(s, short(x.latar, 110), { x: cx + 0.15, y, w: cw - 0.3, h: cy + ch - y - 0.1, fontSize: 8, color: th.muted })
+      else if (rows > 1 && x.hubungan && String(x.hubungan).length <= 60 && y < cy + ch - 0.25) T(s, x.hubungan, { x: cx + 0.15, y, w: cw - 0.3, h: 0.22, fontSize: 7.5, color: th.muted })
     })
   }
 
@@ -253,8 +341,8 @@ export function buildDeck(PptxGenJS, d, th) {
     })
   }
 
-  // ===== 6. Profil pengendali per orang (maks. 2 slide) =====
-  for (const o of (d.profil?.pengendali || []).slice(0, 2)) {
+  // ===== 6. Profil pengendali (1 slide; dilewati bila slide pengendali dari dokumen tersedia) =====
+  for (const o of hasDoc ? [] : (d.profil?.pengendali || []).slice(0, 1)) {
     const rj = (o.rekamJejak || []).slice(0, 5)
     const s = slide('Profil pengendali', short(o.nama, 44), o.karakteristik || o.risiko)
     card(s, M, TOP, 3.55, 3.35)
@@ -277,48 +365,32 @@ export function buildDeck(PptxGenJS, d, th) {
       dot(s, tx + 0.12, y + 0.1, 0.08, c)
       T(s, `${r.kode ? r.kode + ' · ' : ''}${short(entName(r.entitas), 44)}`, { x: tx + 0.32, y, w: tw - 2.0, h: 0.22, fontSize: 10, bold: true })
       T(s, short(String(r.periode || '').replace(/\s*\(.*$/, ''), 26), { x: tx + tw - 1.7, y, w: 1.7, h: 0.22, fontSize: 8.5, color: th.muted, align: 'right' })
-      T(s, short(r.hasil, 120), { x: tx + 0.32, y: y + 0.22, w: tw - 0.35, h: 0.36, fontSize: 8.5, color: th.muted })
+      T(s, short(r.hasil, 80), { x: tx + 0.32, y: y + 0.22, w: tw - 0.35, h: 0.36, fontSize: 8.5, color: th.muted })
     })
   }
 
   // Pengendali, key person, dan riwayat hukum dari dokumen (bagian Story & Pengendali, bukan Analisa).
   personSlide(K, th, d.ri?.doc || d.riDoc)
 
-  // ===== 10. Pihak lawan & rantai kepemilikan (diagram) =====
-  const af = d.profil?.afiliasi
-  if (af?.pihakLawan) {
-    const s = slide('Pihak lawan', 'Pihak Pengendali Aset Target', af.hubungan)
-    const chain = (af.strukturKepemilikan || []).slice().sort((a, b) => (a.lapis || 0) - (b.lapis || 0))
-    const lay = [...new Set(chain.map(c => c.lapis ?? 0))].slice(0, 4)
-    const lw = 5.6, colW = lay.length ? lw / lay.length : lw
-    if (lay.length) {
-      lay.forEach((lv, i) => {
-        const items = chain.filter(c => (c.lapis ?? 0) === lv).slice(0, 3)
-        const x = M + i * colW
-        T(s, `Lapis ${lv}`, { x, y: TOP, w: colW - 0.3, h: 0.22, fontSize: 9, bold: true, color: th.accent, align: 'center' })
-        items.forEach((c, j) => {
-          const y = TOP + 0.3 + j * 1.0
-          card(s, x, y, colW - 0.3, 0.85)
-          T(s, short(c.pemilik || '–', 40), { x: x + 0.08, y: y + 0.06, w: colW - 0.46, h: 0.45, fontSize: 9, bold: true, align: 'center', valign: 'middle', fit: 'shrink' })
-          T(s, short(`${c.porsi ? c.porsi + ' di ' : 'di '}${c.entitas || ''}`, 44), { x: x + 0.08, y: y + 0.5, w: colW - 0.46, h: 0.32, fontSize: 7.5, color: th.muted, align: 'center' })
-        })
-        if (i) line(s, x - 0.28, TOP + 0.72, 0.24, 0, th.muted, { arrow: true, w: 1.5 })
-      })
-    } else {
-      card(s, M, TOP + 0.3, lw, 1.1)
-      T(s, short(af.pihakLawan, 80), { x: M + 0.2, y: TOP + 0.4, w: lw - 0.4, h: 0.45, fontSize: 12, bold: true })
-      T(s, 'Pengendali/UBO: ' + short(af.pengendaliPihakLawan || 'belum ada', 80), { x: M + 0.2, y: TOP + 0.88, w: lw - 0.4, h: 0.45, fontSize: 9.5, color: th.muted })
+  // ===== 10. Transformasi bisnis: bisnis lama → pengendali baru → aset injeksi → bisnis baru (alur) =====
+  {
+    const st = d.story || {}, sv = A.sv || {}, pv = d.pv || {}, af = d.profil?.afiliasi || {}
+    const lama = st.lama, baru = st.baru || sv.baru
+    const inj = [sv.injectType, sv.injectTarget].filter(Boolean).join(' · ') || st.inject || d.aset?.aset?.nama
+    const nominal = sv.nominal || st.nominal, target = sv.target || st.target
+    if (lama || baru || inj) {
+      const who = pv.siapa || A.ctrlName || d.item?.acquirer
+      const s = slide('Transformasi bisnis', 'Dari Bisnis Lama ke Bisnis Baru', target ? `Target: ${target}` : baru ? `Arah bisnis baru: ${baru}` : 'Arah bisnis baru belum diungkap.')
+      flow(s, TOP, 1.6, [
+        { title: 'Bisnis lama', text: short(lama || 'belum diketahui', 90), tag: st.oldName ? 'Pengendali lama: ' + short(st.oldName, 26) : '' },
+        { title: 'Pengendali baru', text: short(String(who || 'belum diketahui').replace(/\s*\(.*?\)/g, ''), 80), tag: A.ctrlPct != null ? `Porsi ${id(A.ctrlPct, 1)}%` : '' },
+        { title: 'Aset injeksi', text: short(inj || 'belum diungkap', 90), tag: nominal ? 'Nilai ' + (typeof nominal === 'number' ? bigS(nominal) : short(String(nominal), 24)) : af.pihakLawan ? 'Pihak lawan: ' + short(af.pihakLawan, 24) : '' },
+        { icon: '★', title: 'Bisnis baru', text: short(baru || 'belum diungkap', 90), tag: target ? short(target, 32) : '', dark: true },
+      ])
+      const rencana = points(pv.rencana, 3), catatan = points(pv.catatan, 3)
+      pointCard(s, M, TOP + 1.75, CW / 2 - 0.1, 1.6, '→', th.accent, 'Rencana pengendali', rencana, { max: 2, n: 120, size: 9.5, empty: 'Rencana belum diungkap.' })
+      pointCard(s, M + CW / 2 + 0.1, TOP + 1.75, CW / 2 - 0.1, 1.6, '!', th.warn, 'Yang perlu dicermati', catatan.length ? catatan : [st.lamaNote, af.hubungan].filter(Boolean), { max: 2, n: 120, size: 9.5 })
     }
-    const rx = M + 5.85, rw = CW - 5.85
-    card(s, rx, TOP, rw, 3.35, { fill: th.dark, line: th.dark })
-    T(s, 'Temuan tidak langsung', { x: rx + 0.2, y: TOP + 0.15, w: rw - 0.4, h: 0.3, fontSize: 12, bold: true, color: 'FFFFFF' })
-    const hid = (af.temuanTersembunyi || []).slice(0, 3)
-    hid.forEach((h, i) => {
-      const y = TOP + 0.55 + i * 0.92, k = yk(h.keyakinan)
-      pill(s, rx + 0.2, y, YK_LABEL[k], k === 'ok' ? th.good : k === 'ind' ? th.muted : th.warn, { size: 7.5, h: 0.2 })
-      T(s, short(h.temuan, 105), { x: rx + 0.2, y: y + 0.24, w: rw - 0.4, h: 0.62, fontSize: 9, color: 'F8FAFC' })
-    })
-    if (!hid.length) T(s, 'Tidak ada temuan hubungan tidak langsung.', { x: rx + 0.2, y: TOP + 0.6, w: rw - 0.4, h: 0.4, fontSize: 10, color: 'DCE7F3' })
   }
 
   // ===== 11. Progres transaksi (donat + langkah) =====
@@ -337,47 +409,6 @@ export function buildDeck(PptxGenJS, d, th) {
       T(s, short(m.label, 70), { x: lx + 0.8, y, w: 3.7, h: rowH, fontSize: 9.5, color: ok ? th.ink : th.muted, valign: 'middle', bold: ok })
       if (ok && a) T(s, fmtDate(String(a).slice(0, 10)), { x: lx + 4.55, y, w: CW - 3.2 - 4.55, h: rowH, fontSize: 8, color: th.muted, valign: 'middle', align: 'right' })
     })
-  }
-
-  // ===== 11b. Kronologi keterbukaan & peristiwa penting =====
-  {
-    const KEY = /(transaksi material|kegiatan usaha|inbreng|HMETD|penilai|akuisisi|pengambilalihan|tender|RUPS|private placement|penempatan|pengendali|perjanjian|penambahan modal|hasil)/i
-    const NOISE = /bukti iklan|panggilan RUPS|pemberitahuan RUPS|penggunaan dana hasil|public expose|laporan bulanan|volatilitas/i
-    const seen = new Set()
-    const evs = (d.reports || []).filter(r => r.date && KEY.test(r.title || '') && !NOISE.test(r.title || ''))
-      .filter(r => { const k = String(r.title).toLowerCase().slice(0, 60); if (seen.has(k)) return false; seen.add(k); return true }).slice(0, 9)
-    if (evs.length >= 3) {
-      const s = slide('Kronologi', 'Kronologi Keterbukaan Informasi', `Tercatat ${evs.length} keterbukaan informasi penting, dengan yang terbaru pada ${fmtDate(String(evs[0].date).slice(0, 10))}.`)
-      const rows = [...evs].reverse(), rh = 3.35 / rows.length
-      line(s, M + 1.32, TOP + 0.05, 0, 3.25, th.line, { w: 2 })
-      rows.forEach((r, i) => {
-        const y = TOP + i * rh
-        T(s, fmtDate(String(r.date).slice(0, 10)), { x: M, y, w: 1.15, h: rh, fontSize: 8.5, bold: true, color: th.accent, valign: 'middle', align: 'right' })
-        dot(s, M + 1.32, y + rh / 2, 0.07, i === rows.length - 1 ? th.accent : th.card, { line: th.accent, lw: 1.25 })
-        T(s, short(calmTitle(r.title, d.name), 150), { x: M + 1.55, y, w: CW - 1.6, h: rh, fontSize: 9, color: th.ink, valign: 'middle' })
-      })
-    }
-  }
-
-  // ---------- Bagian: Insider Activity (struktur karya ilmiah: kesimpulan di akhir) ----------
-  K.setSec('Insider Activity')
-  // ===== 5. Kepemilikan & pergerakan pemegang saham (grafik) =====
-  const hold = (A.holders || []).filter(h => Math.abs(h.change || 0) >= 0.1).slice(0, 7)
-  if (A.ctrlPct != null || hold.length) {
-    const s = slide('Kepemilikan', 'Komposisi dan Perubahan Pemegang Saham', d.pa?.pengendaliBergerak || (hold[0] ? `${short(hold[0].name, 40)} ${pctS((hold[0].change || 0) / 100, 2)} poin dalam setahun` : ''))
-    const ctrl = +A.ctrlPct || 0, pub = A.flt != null ? +A.flt : Math.max(0, 100 - ctrl), other = Math.max(0, 100 - ctrl - pub)
-    s.addChart(pres.charts.DOUGHNUT, [{ name: 'Kepemilikan', labels: ['Pengendali', 'Publik', 'Lainnya'], values: [ctrl, pub, other] }], {
-      x: M, y: TOP, w: 3.6, h: 3.3, holeSize: 58, chartColors: [th.accent, th.accent2, th.line], showPercent: true, showLegend: true, legendPos: 'b',
-      dataLabelColor: 'FFFFFF', dataLabelFontSize: 10, legendFontSize: 9, legendFontFace: th.body, dataLabelFontFace: th.body, showTitle: true, title: 'Struktur kepemilikan (%)',
-      titleFontSize: 11, titleColor: th.ink, titleFontFace: th.body })
-    if (hold.length) {
-      const labels = hold.map(h => short(h.name, 26)), up = hold.map(h => h.change > 0 ? +h.change.toFixed(2) : 0), dn = hold.map(h => h.change < 0 ? +h.change.toFixed(2) : 0)
-      s.addChart(pres.charts.BAR, [{ name: 'Menambah', labels, values: up }, { name: 'Mengurangi', labels, values: dn }], {
-        ...chartBase(), x: M + 3.8, y: TOP, w: CW - 3.8, h: 3.3, barDir: 'bar', barGrouping: 'stacked', chartColors: [th.good, th.bad], showLegend: true, legendPos: 'b', catAxisLabelPos: 'low',
-        showValue: false, showTitle: true, title: 'Perubahan porsi pemegang ≥5% dalam 365 hari (poin %)', titleFontSize: 11, titleColor: th.ink, titleFontFace: th.body, valAxisLabelFormatCode: '0.0' })
-    } else {
-      T(s, 'Tidak ada pergerakan pemegang 5% ke atas dalam setahun.', { x: M + 4, y: TOP + 1.4, w: CW - 4, h: 0.4, fontSize: 12, color: th.muted, align: 'center' })
-    }
   }
 
   // ---------- Bagian: Berita (struktur karya ilmiah: kesimpulan di akhir) ----------
@@ -412,30 +443,17 @@ export function buildDeck(PptxGenJS, d, th) {
   K.setSec('Analisa')
   // ===== 2b. Tesis analis (lengkap, per kalimat bernomor) =====
   if (d.pa?.tesis) {
-    const pts = String(d.pa.tesis).split(/(?<=[.;])\s+(?=[A-Z0-9])/).map(x => x.trim()).filter(x => x.length > 15).slice(0, 6)
+    const pts = String(d.pa.tesis).split(/(?<=[.;])\s+(?=[A-Z0-9])/).map(x => x.trim()).filter(x => x.length > 15).slice(0, 4)
     const s = slide('Tesis analis', 'Dasar Penilaian Analis', d.pa.ringkas || '')
     const cols = pts.length > 3 ? 2 : 1, rows = Math.ceil(pts.length / cols)
     const cw = (CW - 0.2 * (cols - 1)) / cols, ch = (3.35 - 0.12 * (rows - 1)) / rows
     pts.forEach((p, i) => {
       const x = M + (i % cols) * (cw + 0.2), y = TOP + Math.floor(i / cols) * (ch + 0.12)
       card(s, x, y, cw, ch)
-      dot(s, x + 0.3, y + 0.3, 0.17, th.accent)
-      T(s, String(i + 1), { x: x + 0.13, y: y + 0.13, w: 0.34, h: 0.34, fontSize: 10, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle' })
-      T(s, short(p, 230), { x: x + 0.6, y: y + 0.12, w: cw - 0.75, h: ch - 0.2, fontSize: 9.5, color: th.ink, valign: 'middle', fit: 'shrink' })
+      icon(s, x + 0.32, y + ch / 2, 0.19, String(i + 1), th.accent)
+      T(s, short(p, 150), { x: x + 0.6, y: y + 0.12, w: cw - 0.75, h: ch - 0.2, fontSize: 11, color: th.ink, valign: 'middle', fit: 'shrink' })
     })
   }
-  if ((d.pa?.variabelKunci || []).length || (d.pa?.tesisSalahBila || []).length) {
-    const s = slide('Variabel kunci', 'Variabel Kunci dan Kondisi Gugurnya Tesis', d.pa?.likuiditas || d.pa?.pengendaliBergerak || '')
-    ;[['Variabel kunci yang dipantau', d.pa?.variabelKunci || [], th.accent], ['Tesis salah bila', d.pa?.tesisSalahBila || [], th.bad]].forEach(([h, list, col], k) => {
-      const x = M + k * (CW / 2 + 0.1), w = CW / 2 - 0.1
-      card(s, x, TOP, w, 3.35)
-      s.addShape(S.RECTANGLE, { x, y: TOP, w: 0.08, h: 3.35, fill: { color: col }, line: { color: col, width: 0 } })
-      T(s, h.toUpperCase(), { x: x + 0.25, y: TOP + 0.15, w: w - 0.4, h: 0.22, fontSize: 8, bold: true, color: col, charSpacing: 2 })
-      T(s, list.length ? list.slice(0, 5).map((t, i, a) => ({ text: short(t, 170), options: { bullet: { indent: 12 }, breakLine: i < a.length - 1, paraSpaceAfter: 6 } })) : 'belum ada',
-        { x: x + 0.25, y: TOP + 0.48, w: w - 0.45, h: 2.75, fontSize: 10, color: th.ink })
-    })
-  }
-
   // ===== 3. Skor enam dimensi =====
   if ((A.dims || []).length) {
     const dims = A.dims
@@ -456,24 +474,8 @@ export function buildDeck(PptxGenJS, d, th) {
     T(s, short(A.stance?.t || '', 60), { x: cx - 1.35, y: cy + 1.3, w: 2.7, h: 0.5, fontSize: 10.5, bold: true, align: 'center', color: th.ink })
   }
 
-  // ===== 3b. Rincian skor: alasan per dimensi =====
-  if ((A.dims || []).length) {
-    const WB = { 'Pengendali': 25, 'Substansi aset': 25, 'Posisi harga': 20, 'Struktur & likuiditas': 10, 'Katalis': 10, 'Fundamental': 10 }
-    const s = slide('Skor analisis', 'Uraian Skor per Dimensi', `Skor total ${A.score}/100 merupakan rata-rata tertimbang dari keenam dimensi.`)
-    const rh = 3.35 / A.dims.length
-    A.dims.forEach((dm, i) => {
-      const y = TOP + i * rh
-      s.addShape(S.RECTANGLE, { x: M, y, w: CW, h: rh - 0.06, fill: { color: i % 2 ? th.bg : th.card }, line: { color: th.line, width: 0.5 } })
-      T(s, dm.k, { x: M + 0.15, y, w: 1.75, h: rh - 0.06, fontSize: 10, bold: true, color: th.ink, valign: 'middle' })
-      T(s, `${id(dm.s, 1)}`, { x: M + 1.9, y, w: 0.5, h: rh - 0.06, fontFace: th.head, fontSize: 16, bold: true, color: dimTone(dm.s), valign: 'middle', align: 'right' })
-      hbar(s, M + 2.5, y + rh / 2 - 0.1, 0.9, dm.s / 10, dimTone(dm.s), 0.12)
-      T(s, `bobot ${WB[dm.k] || '–'}%`, { x: M + 2.5, y: y + rh / 2 + 0.06, w: 0.9, h: 0.18, fontSize: 7, color: th.muted })
-      T(s, clip(dm.why, 230), { x: M + 3.55, y, w: CW - 3.7, h: rh - 0.06, fontSize: 8.5, color: th.ink, valign: 'middle', fit: 'shrink' })
-    })
-  }
-
   // ===== 8. Aset injeksi & mekanisme (langkah bergambar) =====
-  if (d.aset || A.sv?.injectType) {
+  if (!d.ri && (d.aset || A.sv?.injectType)) {
     const as = d.aset || {}, mcap = A.mcap
     const s = slide('Aset injeksi', short(as.aset?.nama || A.sv?.injectTarget || A.sv?.injectType || 'Rencana injeksi aset', 50), (d.deep.find(x => /^Aset yang masuk/.test(x[0])) || [])[1])
     const k = [[bigS(d.tx), 'Nilai transaksi/aset', th.accent], [d.tx && mcap ? xS(d.tx / mcap) : '–', 'Terhadap kapitalisasi pasar', th.accent],
@@ -494,7 +496,7 @@ export function buildDeck(PptxGenJS, d, th) {
 
   // ===== 8b. Rincian nilai aset injeksi (kisaran antar-sumber, cara bayar, KJPP, data belum diungkap) =====
   // Dilewati bila fakta dokumen tersedia: slide Kewajaran & Fakta dokumen sudah memuat nilainya.
-  if (!(d.ri?.doc || d.riDoc)) {
+  if (!d.ri && !hasDoc) {
     const inj = d.ri?.inj || d.aset?.transaksi?.nilaiRp || null
     const det = d.ri?.detail || asetDetail(d.aset, inj)
     if (det && (det.lo || det.nama)) {
@@ -539,7 +541,7 @@ export function buildDeck(PptxGenJS, d, th) {
   if (!d.ri) docSlides(K, th, d.riDoc)
 
   // ===== 9. Simulasi nilai KJPP (grafik) =====
-  if (d.sim?.rows?.length) {
+  if (!d.ri && d.sim?.rows?.length) {
     const sm = d.sim
     const s = slide('Valuasi aset', 'Simulasi Nilai Wajar terhadap Harga Transaksi', sm.verdict?.t)
     const labels = [...sm.rows.map(r => short(r.k, 32)), 'Harga transaksi']
@@ -556,7 +558,7 @@ export function buildDeck(PptxGenJS, d, th) {
   {
     const pa = d.pa || {}, nw = pa.nilaiWajar || {}, dl = pa.dilusi || {}
     const pts = [['Harga kini', A.price], ['Harga PTW', A.tender?.price], ['Nilai wajar bawah', nw.bawah], ['Nilai wajar atas', nw.atas], ['Nilai/saham pasca transaksi', dl.nilaiPerSaham]].filter(x => x[1] > 0)
-    if (pts.length >= 2) {
+    if (pts.length >= 2 && !d.ri) {
       const s = slide('Valuasi dan dilusi', 'Perbandingan Harga dengan Patokan Nilai', nw.metode || dl.catatan)
       s.addChart(pres.charts.BAR, [{ name: 'Rp per saham', labels: pts.map(x => x[0]), values: pts.map(x => Math.round(x[1])) }], { ...chartBase(), x: M, y: TOP, w: 5.6, h: 3.35,
         barDir: 'col', chartColors: [th.accent], showValue: true, dataLabelPosition: 'outEnd', dataLabelFontSize: 9, dataLabelColor: th.ink, showLegend: false, valAxisLabelFormatCode: '#,##0',
@@ -575,41 +577,22 @@ export function buildDeck(PptxGenJS, d, th) {
     }
   }
 
-  // ===== 18. Red flags vs catalysts =====
-  if (d.pc && (d.pc.pros.length || d.pc.cons.length)) {
-    const { pros, cons } = d.pc
-    const s = slide('Temuan', 'Faktor Pendukung dan Faktor Risiko', `Teridentifikasi ${pros.length} faktor pendukung dan ${cons.length} faktor risiko${cons.length > pros.length ? '; faktor risiko lebih dominan' : ''}.`)
-    ;[[cons, 'Red flags (tanda bahaya)', th.bad, '!'], [pros, 'Catalysts (pemicu positif)', th.good, '✓']].forEach(([list, head, c, ic], k) => {
-      const x = M + k * (CW / 2 + 0.08), w = CW / 2 - 0.08
-      card(s, x, TOP, w, 3.35)
-      s.addShape(S.ROUNDED_RECTANGLE, { x, y: TOP, w, h: 0.5, rectRadius: 0.07, fill: { color: c }, line: { color: c, width: 0.5 } })
-      dot(s, x + 0.32, TOP + 0.25, 0.15, 'FFFFFF')
-      T(s, ic, { x: x + 0.17, y: TOP + 0.1, w: 0.3, h: 0.3, fontSize: 11, bold: true, color: c, align: 'center', valign: 'middle' })
-      T(s, head, { x: x + 0.6, y: TOP, w: w - 0.7, h: 0.5, fontSize: 12.5, bold: true, color: 'FFFFFF', valign: 'middle' })
-      // Judul tebal + rincian singkat abu-abu; rincian dibuang bila poin banyak agar tetap muat.
-      const items = list.slice(0, 7), detail = items.length <= 5, runs = []
-      items.forEach((p, i) => {
-        const last = i === items.length - 1, hasD = detail && !!p.d
-        runs.push({ text: short(p.t, 62), options: { bold: true, bullet: { indent: 12 }, breakLine: hasD || !last, paraSpaceAfter: hasD ? 0 : 6 } })
-        if (hasD) runs.push({ text: short(p.d, 95), options: { fontSize: 8.5, color: th.muted, indentLevel: 1, breakLine: !last, paraSpaceAfter: 6 } })
-      })
-      T(s, runs.length ? runs : 'Tidak ada yang menonjol.', { x: x + 0.2, y: TOP + 0.65, w: w - 0.4, h: 2.6, fontSize: 10 })
-    })
-  }
-
-  // ===== 19. Sudut pandang mendalam (ubin bernomor) =====
-  if ((d.deep || []).length) {
-    const items = d.deep.slice(0, 6)
-    const s = slide('Pembahasan', 'Pembahasan Temuan Utama', items[items.length - 1]?.[1])
-    const cols = 3, cw = (CW - 0.3) / cols, ch = items.length > 3 ? 1.6 : 3.2
-    items.forEach(([h, t], i) => {
-      const x = M + (i % cols) * (cw + 0.15), y = TOP + Math.floor(i / cols) * (ch + 0.12)
-      card(s, x, y, cw, ch)
-      dot(s, x + 0.3, y + 0.3, 0.17, th.accent)
-      T(s, String(i + 1), { x: x + 0.13, y: y + 0.13, w: 0.34, h: 0.34, fontSize: 11, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle' })
-      T(s, h, { x: x + 0.58, y: y + 0.12, w: cw - 0.7, h: 0.38, fontSize: 9.5, bold: true, fit: 'shrink' })
-      T(s, short(t, ch > 2 ? 420 : 220), { x: x + 0.15, y: y + 0.55, w: cw - 0.3, h: ch - 0.65, fontSize: 8.5, color: th.muted })
-    })
+  // ===== 18. Kasus naik vs kasus turun (sama dengan tab Analisa), poin singkat =====
+  {
+    const bull = (A.bull || []).length ? A.bull : (d.pc?.pros || []).map(p => p.t)
+    const bear = (A.bear || []).length ? A.bear : (d.pc?.cons || []).map(p => p.t)
+    if (bull.length || bear.length) {
+      const notes = (A.notes || []).slice(0, 2)
+      const s = slide('Kasus naik dan turun', 'Pendorong Kenaikan dan Risiko Penurunan', `Terdapat ${bull.length} pendorong kenaikan dan ${bear.length} risiko penurunan${bear.length > bull.length ? '; risiko lebih dominan' : ''}.`)
+      const h = notes.length ? 2.6 : 3.35
+      pointCard(s, M, TOP, CW / 2 - 0.1, h, '▲', th.good, 'Kasus naik', bull, { max: 5, n: 130 })
+      pointCard(s, M + CW / 2 + 0.1, TOP, CW / 2 - 0.1, h, '!', th.bad, 'Kasus turun dan tanda bahaya', bear, { max: 5, n: 130 })
+      if (notes.length) {
+        card(s, M, TOP + 2.75, CW, 0.6, { fill: th.dark, line: th.dark })
+        T(s, 'CATATAN ANALIS', { x: M + 0.2, y: TOP + 2.75, w: 1.6, h: 0.6, fontSize: 8, bold: true, color: th.accent2, charSpacing: 2, valign: 'middle' })
+        T(s, notes.map(x => short(x, 95)).join('   ·   '), { x: M + 1.85, y: TOP + 2.75, w: CW - 2.0, h: 0.6, fontSize: 9.5, color: 'FFFFFF', valign: 'middle', fit: 'shrink' })
+      }
+    }
   }
 
   // ---------- Bagian: Rights Issue (isi sama dengan analisa rights issue di website) ----------
@@ -660,47 +643,6 @@ export function buildDeck(PptxGenJS, d, th) {
     const rx = M + 5.5, rw = CW - 5.5
     ;[['Resistance terdekat', sig.res, th.bad], ['Support terdekat', sig.sup, th.good], ['Batas invalidasi', sig.stop, th.warn]].forEach(([l, v, c], i) =>
       kpi(s, rx, TOP + i * 1.12, rw, 1.0, rpS(v), `${l}${v && d.tech.bars ? ' · ' + pctS(v / d.tech.bars[d.tech.bars.length - 1].c - 1, 1) : ''}`, c))
-  }
-
-  // ===== 16. Pola chart, candlestick, divergensi =====
-  if (d.tech?.PA) {
-    const PA = d.tech.PA, act = PA.active.slice(0, 3)
-    const st = d.tech.struct
-    const s = slide('Pola grafik', act.length ? `Teridentifikasi ${act.length} Pola Grafik Aktif` : 'Tidak Terdapat Pola Grafik Aktif', st?.sig ? `Struktur harga ${st.sig[0].toLowerCase()}${st.why?.[0] ? ': ' + st.why[0][1] : ''}` : '')
-    const cw = (CW - 0.3) / 3
-    act.forEach((p, i) => {
-      const x = M + i * (cw + 0.15), y = TOP, bull = p.bias > 0, c = bull ? th.good : th.bad
-      card(s, x, y, cw, 2.35)
-      s.addShape(S.ROUNDED_RECTANGLE, { x, y, w: cw, h: 0.5, rectRadius: 0.07, fill: { color: c }, line: { color: c, width: 0.5 } })
-      T(s, p.name, { x: x + 0.15, y, w: cw - 0.3, h: 0.5, fontSize: 12, bold: true, color: 'FFFFFF', valign: 'middle', fit: 'shrink' })
-      T(s, `${bull ? 'Bullish' : 'Bearish'} · ${ptStatusTxt(p)}`, { x: x + 0.15, y: y + 0.6, w: cw - 0.3, h: 0.22, fontSize: 9, bold: true, color: c })
-      const rows = [['Level pemicu', rpS(p.trigNow)], ['Target', rpS(p.target)], ['Invalidasi', rpS(p.inv)]]
-      rows.forEach(([k, v], j) => { T(s, k, { x: x + 0.15, y: y + 0.92 + j * 0.3, w: 1.3, h: 0.25, fontSize: 9, color: th.muted }); T(s, v, { x: x + cw - 1.35, y: y + 0.92 + j * 0.3, w: 1.2, h: 0.25, fontSize: 10, bold: true, align: 'right' }) })
-      T(s, `Keyakinan ${p.conf}% · ${confLvl(p.conf)}`, { x: x + 0.15, y: y + 1.85, w: cw - 0.3, h: 0.2, fontSize: 8.5, bold: true })
-      hbar(s, x + 0.15, y + 2.08, cw - 0.3, p.conf / 100, p.conf >= 70 ? th.good : p.conf >= 50 ? th.warn : th.bad, 0.12)
-    })
-    if (!act.length) {
-      // Tanpa pola aktif: tampilkan level kunci (Fibonacci & volume profile) agar slide tetap bermakna.
-      const lv = d.tech.lv || {}, vp = lv.vp || {}, c0 = d.tech.bars[d.tech.bars.length - 1].c
-      const keys = [[`Fib ${lv.below?.lbl || ''}`.trim(), lv.below?.p, 'support Fibonacci terdekat', th.good], [`Fib ${lv.above?.lbl || ''}`.trim(), lv.above?.p, 'resistance Fibonacci terdekat', th.bad],
-        ['POC', vp.pocP, 'harga dengan volume terbesar', th.accent], ['VAL – VAH', vp.val && vp.vah ? null : undefined, 'area nilai 70% volume', th.accent]].filter(k => k[1] !== undefined)
-      T(s, 'Belum ada pola chart aktif. Level kunci yang dipantau:', { x: M, y: TOP, w: CW, h: 0.25, fontSize: 10.5, bold: true, color: th.muted })
-      keys.forEach(([k, v, l, c], i) => {
-        const w = CW / keys.length - 0.12, x = M + i * (w + 0.16)
-        const val = k === 'VAL – VAH' ? `${rpS(vp.val)}–${rpS(vp.vah)}` : rpS(v)
-        kpi(s, x, TOP + 0.35, w, 1.15, val, `${k} · ${l}${v ? ' · ' + pctS(v / c0 - 1, 1) : ''}`, c)
-      })
-      const why = (st?.why || []).slice(0, 2)
-      why.forEach(([w, t], i) => T(s, [{ text: w > 0 ? '▲ ' : '▼ ', options: { color: w > 0 ? th.good : th.bad, bold: true } }, { text: short(t, 110) }], { x: M, y: TOP + 1.65 + i * 0.3, w: CW, h: 0.28, fontSize: 9.5 }))
-    }
-    // Candlestick & divergensi terbaru sebagai chip.
-    const chips = [...PA.candles.slice(-4).reverse().filter(k => k.bias).map(k => ({ t: `${k.n} · ${fmtDate(d.tech.bars[k.i].d)}`, c: k.bias > 0 ? th.good : th.bad })),
-      ...PA.divs.filter(v => v.active).slice(0, 2).map(v => ({ t: `Divergensi ${v.name.toLowerCase()} ${v.ind}`, c: v.bias > 0 ? th.good : th.bad }))].slice(0, 6)
-    if (chips.length) {
-      T(s, 'Sinyal pendukung terbaru', { x: M, y: TOP + 2.5, w: CW, h: 0.22, fontSize: 9.5, bold: true, color: th.accent })
-      let cx = M, cy = TOP + 2.8
-      chips.forEach(ch => { const w = Math.min(4.3, 0.2 + ch.t.length * 0.062); if (cx + w > M + CW) { cx = M; cy += 0.3 } pill(s, cx, cy, ch.t, ch.c, { size: 8, w, h: 0.24 }); cx += w + 0.1 })
-    }
   }
 
   // ===== 17. Trading plan (tangga harga) =====
@@ -764,31 +706,6 @@ export function buildDeck(PptxGenJS, d, th) {
 
   // ---------- Bagian: Penutup (struktur karya ilmiah: kesimpulan di akhir) ----------
   K.setSec('Penutup')
-  // ===== 2. Ringkasan =====
-  {
-    const pa = d.pa || {}
-    const s = slide('Ringkasan eksekutif', `Ringkasan Eksekutif ${d.t}: ${short(pa.sikap || A.stance?.t || 'Hasil Kajian', 34)}`, pa.ringkas || A.thesis)
-    const k = [
-      [rpS(A.price), `Harga terakhir${A.priceDate ? ' ' + fmtDate(A.priceDate) : ''}${A.tender?.price ? ' · ' + pctS(A.price / A.tender.price - 1) + ' vs PTW' : ''}`, th.accent],
-      [bigS(A.mcap), `Kapitalisasi pasar · porsi publik ${A.flt != null ? id(A.flt, 1) + '%' : '–'}`, th.accent],
-      [d.prog ? `${d.prog.pct}%` : '–', d.pos ? `Progres transaksi · ${short(d.pos.now, 48)}` : 'Progres transaksi', th.accent],
-      [A.score != null ? `${A.score}/100` : '–', `Skor analisis · ${short(A.stance?.t || '', 50)}`, scoreTone(A.score)],
-    ]
-    k.forEach(([v, l, c], i) => kpi(s, M + (i % 2) * 2.15, TOP + Math.floor(i / 2) * 1.72, 2.0, 1.58, v, l, c))
-    const px = M + 4.45, pw = CW - 4.45
-    card(s, px, TOP, pw, 3.3, { fill: th.dark, line: th.dark })
-    T(s, 'Sikap analis', { x: px + 0.25, y: TOP + 0.2, w: 2, h: 0.3, fontFace: th.head, fontSize: 15, bold: true, color: 'FFFFFF' })
-    pill(s, px + 2.0, TOP + 0.23, pa.sikap || 'belum ada', sikapTone(pa.sikap), { size: 9 })
-    // Empat poin: arti skor, pendorong terkuat, risiko terbesar, langkah berikutnya (label tebal + isi singkat).
-    const pts = [['Skor', A.stance?.t], ['Pendorong', (A.bull || [])[0]], ['Risiko', (A.bear || [])[0]],
-      d.pos?.next ? ['Berikutnya', d.pos.next] : A.rr != null ? ['Imbal-risiko', `${id(A.rr, 1)} : 1`] : null].filter(p => p && p[1])
-    pts.forEach(([k, v], i) => {
-      const y = TOP + 0.72 + i * 0.64
-      T(s, k.toUpperCase(), { x: px + 0.25, y, w: pw - 0.45, h: 0.2, fontSize: 8, bold: true, color: th.accent2, charSpacing: 2 })
-      T(s, short(v, 100), { x: px + 0.25, y: y + 0.2, w: pw - 0.45, h: 0.42, fontSize: 10.5, color: 'F8FAFC' })
-    })
-  }
-
   // ===== 1b. Rekomendasi (tindakan, area harga, porsi, alasan) =====
   if (d.rec) {
     const rc = d.rec, col = recTone(rc.tone)
@@ -816,28 +733,8 @@ export function buildDeck(PptxGenJS, d, th) {
     })
     card(s, x, TOP + 1.5, w, 1.85)
     T(s, 'ALASAN UTAMA', { x: x + 0.18, y: TOP + 1.6, w: w - 0.36, h: 0.2, fontSize: 7.5, bold: true, color: th.accent, charSpacing: 2 })
-    T(s, rc.why.slice(0, 4).map((r, i, a) => ({ text: `${r.s > 0 ? 'Pendukung: ' : r.s < 0 ? 'Risiko: ' : 'Catatan: '}${short(r.t, 150)}`, options: { color: r.s > 0 ? th.good : r.s < 0 ? th.bad : th.ink, breakLine: i < a.length - 1, paraSpaceAfter: 3 } })),
+    T(s, rc.why.slice(0, 4).map((r, i, a) => ({ text: `${r.s > 0 ? 'Pendukung: ' : r.s < 0 ? 'Risiko: ' : 'Catatan: '}${short(r.t, 95)}`, options: { color: r.s > 0 ? th.good : r.s < 0 ? th.bad : th.ink, breakLine: i < a.length - 1, paraSpaceAfter: 3 } })),
       { x: x + 0.18, y: TOP + 1.84, w: w - 0.36, h: 1.45, fontSize: 9 })
-  }
-
-  // ===== 20. Yang harus terjadi vs sinyal keluar =====
-  {
-    const pa = d.pa || {}
-    const good = [...(A.checks || []), ...(pa.variabelKunci || [])].slice(0, 5), bad = [...(A.exits || []), ...(pa.tesisSalahBila || [])].slice(0, 5)
-    if (good.length || bad.length) {
-      const s = slide('Indikator pemantauan', 'Syarat Keberhasilan dan Sinyal Keluar', 'Bukti pelaksanaan transaksi perlu dipantau; posisi sebaiknya dilepas apabila salah satu sinyal keluar muncul.')
-      ;[[good, 'Yang harus terjadi agar tesis benar', th.good, '✓'], [bad, 'Sinyal keluar / tesis salah bila', th.bad, '✕']].forEach(([list, head, c, ic], k) => {
-        const x = M + k * (CW / 2 + 0.08), w = CW / 2 - 0.08
-        T(s, head, { x, y: TOP, w, h: 0.3, fontSize: 12, bold: true, color: c })
-        list.forEach((t, i) => {
-          const y = TOP + 0.42 + i * 0.58
-          card(s, x, y, w, 0.5, { flat: true })
-          dot(s, x + 0.25, y + 0.25, 0.13, c)
-          T(s, ic, { x: x + 0.12, y: y + 0.12, w: 0.26, h: 0.26, fontSize: 9, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle' })
-          T(s, short(t, 140), { x: x + 0.5, y: y + 0.03, w: w - 0.6, h: 0.44, fontSize: 8.5, valign: 'middle' })
-        })
-      })
-    }
   }
 
   // ===== 20b. Rencana aksi: bila terkonfirmasi / sekarang / bila gagal =====
@@ -847,17 +744,17 @@ export function buildDeck(PptxGenJS, d, th) {
     const cw = (CW - 0.3) / 3
     const tg = rc.targets.map(t => `${rpS(t.p)} (${t.l})`)
     ;[
-      ['BILA TERKONFIRMASI', th.good, 'Syarat:', rc.triggers.slice(0, 3), `Tindakan: ${rc.tier === 'akumulasi' ? 'tambah posisi bertahap' : 'mulai posisi kecil'}${rc.entry ? ` di area ${rc.entry[1] ? rpS(rc.entry[0]) + '–' + rpS(rc.entry[1]) : 'di atas ' + rpS(rc.entry[0])}` : ''}; target ${tg[0] || '–'}.`],
+      ['BILA TERKONFIRMASI', th.good, 'Syarat:', [...rc.triggers, ...(d.pa?.variabelKunci || [])].slice(0, 3), `Tindakan: ${rc.tier === 'akumulasi' ? 'tambah posisi bertahap' : 'mulai posisi kecil'}${rc.entry ? ` di area ${rc.entry[1] ? rpS(rc.entry[0]) + '–' + rpS(rc.entry[1]) : 'di atas ' + rpS(rc.entry[0])}` : ''}; target ${tg[0] || '–'}.`],
       ['KONDISI SEKARANG', recTone(rc.tone), 'Rekomendasi:', [rc.label, `Porsi: ${rc.porsi}`, `Profil risiko: ${rc.profil}`], rc.holder],
-      ['BILA TESIS GAGAL', th.bad, 'Sinyal keluar:', rc.exits, `Tindakan: keluar/hindari; batas risiko ${rpS(rc.stop)}.`],
+      ['BILA TESIS GAGAL', th.bad, 'Sinyal keluar:', [...rc.exits, ...(d.pa?.tesisSalahBila || [])].slice(0, 3), `Tindakan: keluar/hindari; batas risiko ${rpS(rc.stop)}.`],
     ].forEach(([h, col, sub, list, act], i) => {
       const x = M + i * (cw + 0.15)
       card(s, x, TOP, cw, 3.35)
       s.addShape(S.RECTANGLE, { x, y: TOP, w: cw, h: 0.08, fill: { color: col }, line: { color: col, width: 0 } })
       T(s, h, { x: x + 0.18, y: TOP + 0.2, w: cw - 0.36, h: 0.22, fontSize: 8.5, bold: true, color: col, charSpacing: 2 })
       T(s, sub, { x: x + 0.18, y: TOP + 0.48, w: cw - 0.36, h: 0.2, fontSize: 8, bold: true, color: th.muted })
-      T(s, (list.length ? list : ['belum ada']).map((t, k, a) => ({ text: short(t, 120), options: { bullet: { indent: 10 }, breakLine: k < a.length - 1, paraSpaceAfter: 3 } })),
-        { x: x + 0.18, y: TOP + 0.7, w: cw - 0.36, h: 1.75, fontSize: 8.5, color: th.ink })
+      T(s, (list.length ? list : ['belum ada']).map((t, k, a) => ({ text: short(t, 130), options: { bullet: { indent: 10 }, breakLine: k < a.length - 1, paraSpaceAfter: 3 } })),
+        { x: x + 0.18, y: TOP + 0.7, w: cw - 0.36, h: 1.75, fontSize: 8.5, color: th.ink, fit: 'shrink' })
       T(s, short(act, 170), { x: x + 0.18, y: TOP + 2.5, w: cw - 0.36, h: 0.78, fontSize: 8.5, bold: true, color: th.ink })
     })
   }
@@ -874,7 +771,7 @@ export function buildDeck(PptxGenJS, d, th) {
     pts.forEach((p, i) => {
       const y = 2.0 + i * 0.62
       dot(s, 0.85, y + 0.17, 0.08, th.accent2)
-      T(s, short(p, 100), { x: 1.1, y, w: 5.3, h: 0.55, fontSize: 11.5, color: 'F8FAFC' })
+      T(s, short(p, 170), { x: 1.1, y, w: 5.6, h: 0.58, fontSize: 11.5, color: 'F8FAFC' })
     })
     T(s, `${d.rec ? 'Rekomendasi: ' + d.rec.label + '  ·  ' : ''}Skor ${A.score ?? '–'}/100  ·  Harga ${rpS(A.price)}`, { x: 0.7, y: 4.65, w: 6.2, h: 0.3, fontSize: 11, bold: true, color: th.accent2 })
     T(s, 'Kajian ini disusun secara otomatis berdasarkan aturan dari data Stockbit dan sumber publik. Isinya merupakan kerangka analisis, bukan anjuran membeli atau menjual efek.', { x: 0.7, y: 5.0, w: 6.5, h: 0.3, fontSize: 8.5, color: 'DCE7F3' })
@@ -897,6 +794,21 @@ export function buildDeck(PptxGenJS, d, th) {
   }
 
   return pres
+}
+
+// Teks panjang → poin per kalimat (untuk kartu poin).
+const points = (t, n = 3) => sentences(t).map(x => x.trim().replace(/\.$/, '')).filter(x => x.length > 12).slice(0, n)
+
+// Level acuan harga (seperti "Potensi target harga" di tab Profil), urut dari terendah.
+function priceLevels(d) {
+  const A = d.A || {}, m = A.p?.metrics || {}, nw = d.pa?.nilaiWajar || {}, rows = []
+  if (m.bvps > 0) rows.push(['Nilai buku (PBV 1×)', m.bvps])
+  if (A.tender?.price) rows.push(['Harga penawaran tender', A.tender.price])
+  if (m.low52 > 0) rows.push(['Terendah 52 minggu', m.low52])
+  if (m.high52 > 0) rows.push(['Tertinggi 52 minggu', m.high52])
+  if (nw.bawah > 0) rows.push(['Nilai wajar bawah (analis)', nw.bawah])
+  if (nw.atas > 0) rows.push(['Nilai wajar atas (analis)', nw.atas])
+  return rows.sort((a, b) => a[1] - b[1])
 }
 
 // Garis dari (x,y) sejauh (w,h). PowerPoint menolak ukuran negatif (berkas dianggap rusak), jadi arah
@@ -1273,7 +1185,7 @@ function riSlides(K, th, d, opt = {}) {
 
   // ---------- Bagian: Penerbitan dan dana (urutan sama dengan analisa rights issue di website) ----------
   sec('Penerbitan dan dana')
-  docSlides(K, th, c.doc, 'fakta')
+  if (!opt.inFull) docSlides(K, th, c.doc, 'fakta')
 
   // ===== 4. Komposisi penerbitan vs nilai aset; tahap I vs II =====
   {
@@ -1307,7 +1219,7 @@ function riSlides(K, th, d, opt = {}) {
   }
 
   // ===== 5. Siapa harus menyetor / penerima saham baru =====
-  if (!nr) {
+  if (opt.inFull) { /* ringkas: dilewati di presentasi lengkap */ } else if (!nr) {
     const s = slide('Kewajiban penyetoran', 'Kewajiban Penyetoran Dana',
       `Bila publik menebus ${d.U || 0}%, pembeli siaga/pengendali harus menyerap ${bigS(r.standby)}; porsi pengendali ${id(c.ctrlPct || 0, 2)}% → ${pc(r.ctrlAfterAbsorb)}.`)
     s.addChart(pres.charts.BAR, [{ name: 'Rp miliar', labels: ['Sisa publik diserap siaga', `Publik (${id(c.float || 0, 1)}%)`, `Pengendali (${id(c.ctrlPct || 0, 1)}%)`], values: [B(r.standby), B(r.pubPart), B(r.ctrlPart)] }],
@@ -1334,11 +1246,11 @@ function riSlides(K, th, d, opt = {}) {
   // ---------- Bagian: Simulasi (urutan sama dengan analisa rights issue di website) ----------
   sec('Simulasi')
   // ===== 6a. Dasar perhitungan harga pelaksanaan: skenario A (seluruh nilai) dan B (tunai saja), rasio 1:1 =====
-  dasarSlide(K, th, c)
+  if (!opt.inFull) dasarSlide(K, th, c)
 
   // ===== 6b. Harga saham agar dana tunai tercapai =====
   const nd = riPriceNeeded(c, P)
-  if (nd) {
+  if (nd && !opt.inFull) {
     const take = nd.gap == null ? `Patokan harga saham minimal ${rpS(Math.ceil(nd.ref))} (diskon 20%).`
       : nd.gap > 0 ? `Harga saham perlu naik ${id(nd.gap * 100, 0)}% ke ${rpS(Math.ceil(nd.ref))} agar publik terdorong menebus.`
       : `Harga kini ${rpS(nd.now)} sudah di atas patokan ${rpS(Math.ceil(nd.ref))}; dana dapat tercapai bila minat menebus ada.`
@@ -1395,7 +1307,7 @@ function riSlides(K, th, d, opt = {}) {
   // ---------- Bagian: Dampak investor (urutan sama dengan analisa rights issue di website) ----------
   sec('Dampak investor')
   // ===== 6. Untuk investor per 1 lot =====
-  {
+  if (!opt.inFull) {
     const s = slide('Investor ritel', 'Dampak terhadap Investor per Satu Lot', r.hak != null
       ? (r.hak > 0 ? `Nilai teoretis 1 HMETD ${rpS(r.hak)}.` : 'Harga tebus di atas TERP: HMETD secara teoretis tidak bernilai.')
       : `Tanpa hak tebus; kepemilikan turun ${pc(r.dilusi)}.`)
@@ -1411,7 +1323,7 @@ function riSlides(K, th, d, opt = {}) {
   }
 
   // ===== 8. Porsi publik bertahap =====
-  {
+  if (!opt.inFull) {
     const labels = ['Sekarang', 'Setelah penerbitan', ...(r.pubAfterInj != null ? ['Setelah injeksi tahap lanjutan'] : [])]
     const vals = [c.float || 0, r.pubAfter * 100, ...(r.pubAfterInj != null ? [r.pubAfterInj * 100] : [])].map(v => Math.round(v * 100) / 100)
     const low = Math.min(...vals) < 7.5

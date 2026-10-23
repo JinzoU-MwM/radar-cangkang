@@ -118,7 +118,9 @@ export function posisiOf(d, p, { verified = {} } = {}) {
     const nm = MILESTONES.find(m => !ms[m.id] && !(m.id === 'kjpp' && !v?.injectType))
     if (nm) next = nm.label
     const tgt = v?.target || (d.tender?.end && !ms.to_selesai ? 'PTW s.d. ' + fmtDate(d.tender.end.slice(0, 10)) : '')
-    if (tgt) next += (next ? ' · target: ' : '') + String(tgt).split(/[.;]/)[0].slice(0, 90)
+    // Klausa pertama target; bila panjang, tanpa keterangan dalam kurung (tidak dipotong di tengah kata).
+    const t1 = String(tgt).split(/[.;]/)[0].trim()
+    if (tgt) next += (next ? ' · target: ' : '') + (t1.length <= 90 ? t1 : t1.replace(/\s*\(.*$/, ''))
   }
   return { now, next }
 }

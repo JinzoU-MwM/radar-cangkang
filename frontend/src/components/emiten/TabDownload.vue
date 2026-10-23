@@ -18,28 +18,23 @@ const guess = computed(() => {
   return sectorOf({ baru: (it ? storyOf(t)?.baru : '') || store.verified?.[t]?.baru, aset: [a?.sektor, a?.nama].filter(Boolean).join(' '), nama: it?.name })
 })
 
-// Isi presentasi per bagian, berurutan seperti karya ilmiah: profil & data, analisa, lalu ringkasan, rekomendasi,
-// dan kesimpulan di akhir (lihat buildDeck di lib/deck.js).
+// Isi presentasi ringkas (maks. ±26 slide, poin penting saja), berurutan seperti karya ilmiah: profil & data,
+// analisa, lalu rekomendasi dan kesimpulan di akhir (lihat buildDeck di lib/deck.js).
 const SECTIONS = [
-  ['Profil', [['Fundamental', 'PBV, PER, ekuitas, kas, margin'], ['Pengurus', 'direksi & komisaris']]],
-  ['Story & Pengendali', [['Pengendali', 'struktur & aktor'], ['Profil pengendali', 'latar & rekam jejak'], ['Pengendali & key person', 'UBO, harga masuk, riwayat hukum'], ['Pihak lawan', 'rantai kepemilikan'],
-    ['Progres', 'tonggak transaksi'], ['Kronologi', 'jejak keterbukaan penting']]],
-  ['Insider Activity', [['Kepemilikan', 'donat & arus pemegang']]],
+  ['Profil', [['Profil perusahaan', 'angka kunci, pemegang saham, potensi target harga'], ['Pengurus', 'direksi & komisaris']]],
+  ['Story & Pengendali', [['Pengendali', 'struktur & aktor'], ['Pengendali & key person', 'UBO, harga masuk, riwayat hukum'],
+    ['Transformasi bisnis', 'bisnis lama → aset injeksi → bisnis baru'], ['Progres', 'tonggak transaksi']]],
   ['Berita', [['Berita terkini', 'berita material & kesimpulannya']]],
-  ['Analisa', [['Tesis analis', 'alasan sikap, kalimat demi kalimat'], ['Variabel kunci', 'yang dipantau & tesis salah bila'],
-    ['Enam dimensi', 'grafik skor'], ['Rincian skor', 'alasan tiap dimensi & bobot'], ['Aset injeksi', 'nilai, KJPP, tahapan'],
-    ['Rincian nilai aset', 'bila belum ada data dokumen'], ['Simulasi KJPP', 'nilai aset dengan pembanding'],
-    ['Valuasi & dilusi', 'sebelum → sesudah'], ['Kelebihan vs kekurangan', 'red flag & katalis'], ['Pandangan mendalam', 'temuan kunci']]],
-  // Bagian Rights Issue: isi sama dengan analisa rights issue di tab Analisa (hanya bila ada rencana penambahan modal).
+  ['Analisa', [['Tesis analis', '4 poin alasan sikap'], ['Enam dimensi', 'skor & alasan singkat'],
+    ['Aset & valuasi', 'bila tidak ada rights issue'], ['Kasus naik vs turun', 'pendorong, risiko, catatan analis']]],
+  // Bagian Rights Issue: inti analisa rights issue (hanya bila ada rencana penambahan modal).
   ['Rights Issue', [['Angka kunci', 'nilai penerbitan, dana tunai, harga, dilusi'], ['Kewajaran aset', 'wajar atau tidak & alasannya'],
-    ['Model bisnis & laba', 'cara menghasilkan laba, laba aset, proyeksi'], ['Fakta dokumen', 'angka & jadwal dari dokumen asli'],
-    ['Kebutuhan dana', 'nilai penerbitan vs nilai aset'], ['Kewajiban penyetoran', 'pengendali, publik, pembeli siaga'],
-    ['Dasar perhitungan', 'rumus harga pelaksanaan, skenario A/B'], ['Harga potensi', 'harga saham agar dana tercapai'],
-    ['Simulasi rasio', 'harga RI, dana, harga dibutuhkan, dilusi'], ['Simulasi valuasi', 'valuasi target & sudut pandang pengendali'],
-    ['Investor per lot', 'HMETD, dana tebus, harga teoretis'], ['Porsi publik', 'sebelum → sesudah'], ['Kelayakan investasi', 'laba sebelum/sesudah, layak atau tidak (A/B/C)']]],
-  ['Teknikal', [['Harga 1 tahun', 'grafik & siklus'], ['Teknikal', 'meter sinyal'], ['Pola & level', 'support/resistance'], ['Rencana transaksi', 'masuk/keluar']]],
+    ['Model bisnis & laba', 'cara menghasilkan laba & proyeksi'], ['Kebutuhan dana', 'nilai penerbitan vs nilai aset'],
+    ['Simulasi rasio', 'harga RI, dana, harga dibutuhkan'], ['Simulasi valuasi', 'valuasi target & sudut pandang pengendali'],
+    ['Kelayakan investasi', 'laba sebelum/sesudah, layak atau tidak']]],
+  ['Teknikal', [['Harga 1 tahun', 'grafik & siklus'], ['Teknikal', 'meter sinyal'], ['Rencana transaksi', 'masuk/keluar']]],
   ['Spekulasi', [['Skenario', 'tangga harga']]],
-  ['Penutup', [['Ringkasan', 'skor & sikap analis'], ['Rekomendasi', 'tindakan, area beli, batas risiko, target, porsi'], ['Daftar pantau', 'harus terjadi vs sinyal keluar'], ['Rencana aksi', 'bila terkonfirmasi / sekarang / bila gagal'],
+  ['Penutup', [['Rekomendasi', 'tindakan, area beli, batas risiko, target'], ['Rencana aksi', 'bila terkonfirmasi / sekarang / bila gagal'],
     ['Kesimpulan', 'rekomendasi & skor'], ['Lampiran', 'sumber & celah data']]],
 ]
 // Nomor slide berurutan lintas bagian (sampul tidak dihitung).
