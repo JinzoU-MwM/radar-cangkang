@@ -156,7 +156,7 @@ function makeKit(PptxGenJS, d, th, title) {
       T(s, 'KESIMPULAN', { x: M + 0.18, y: 4.72, w: 1.5, h: 0.42, fontSize: 8.5, bold: true, color: th.accent2, charSpacing: 3, valign: 'middle' })
       T(s, short(take, 145), { x: M + 1.75, y: 4.72, w: CW - 1.9, h: 0.42, fontSize: 10.5, color: 'FFFFFF', valign: 'middle' })
     }
-    T(s, `${d.t} | Kajian Radar Backdoor | Data per ${fmtDate(d.date)}`, { x: M, y: 5.24, w: 6, h: 0.22, fontSize: 8, color: th.muted })
+    T(s, `${d.t} | Riset Ekuitas Radar Backdoor | Data per ${fmtDate(d.date)}`, { x: M, y: 5.24, w: 6, h: 0.22, fontSize: 8, color: th.muted })
     T(s, String(page), { x: W - M - 0.5, y: 5.24, w: 0.5, h: 0.22, fontSize: 8, color: th.muted, align: 'right' })
     return s
   }
@@ -208,7 +208,7 @@ function makeKit(PptxGenJS, d, th, title) {
 }
 
 export function buildDeck(PptxGenJS, d, th) {
-  const K = makeKit(PptxGenJS, d, th, `${d.t}: Kajian Analitis Backdoor Listing`)
+  const K = makeKit(PptxGenJS, d, th, `${d.t}: Laporan Riset Ekuitas Backdoor Listing`)
   const { pres, S, T, card, pill, dot, line, tone, sikapTone, scoreTone, dimTone, chartBase, slide, kpi, hbar, icon, flow, pointCard } = K
   const A = d.A || {}
   const hasDoc = !!(d.ri?.doc || d.riDoc)
@@ -220,9 +220,9 @@ export function buildDeck(PptxGenJS, d, th) {
     const s = pres.addSlide(); K.bump()
     s.background = { color: th.dark }
     coverArt(s, d.sector?.motif, th, S, dot, line)
-    T(s, 'KAJIAN ANALITIS · BACKDOOR LISTING', { x: 0.7, y: 1.0, w: 5.2, h: 0.3, fontSize: 10, bold: true, color: th.accent2, charSpacing: 5 })
+    T(s, 'RISET EKUITAS · BACKDOOR LISTING', { x: 0.7, y: 1.0, w: 5.2, h: 0.3, fontSize: 10, bold: true, color: th.accent2, charSpacing: 5 })
     T(s, d.t, { x: 0.7, y: 1.35, w: 5.2, h: 1.2, fontFace: th.head, fontSize: 66, bold: true, color: 'FFFFFF', valign: 'middle' })
-    T(s, 'Kajian Pengambilalihan Emiten', { x: 0.7, y: 2.55, w: 5.6, h: 0.5, fontFace: th.head, fontSize: 22, color: 'FFFFFF' })
+    T(s, 'Laporan Riset Investasi', { x: 0.7, y: 2.55, w: 5.6, h: 0.5, fontFace: th.head, fontSize: 22, color: 'FFFFFF' })
     T(s, d.name || '', { x: 0.7, y: 3.1, w: 5.2, h: 0.35, fontSize: 15, color: th.accent2 })
     const topics = ['Pengendali', d.aset || A.sv?.injectType ? 'Aset injeksi' : null, 'Valuasi', 'Teknikal', 'Skenario'].filter(Boolean)
     T(s, topics.join('  •  '), { x: 0.7, y: 3.55, w: 5.4, h: 0.3, fontSize: 11, color: 'EAF2FA' })
@@ -774,7 +774,7 @@ export function buildDeck(PptxGenJS, d, th) {
       T(s, short(p, 170), { x: 1.1, y, w: 5.6, h: 0.58, fontSize: 11.5, color: 'F8FAFC' })
     })
     T(s, `${d.rec ? 'Rekomendasi: ' + d.rec.label + '  ·  ' : ''}Skor ${A.score ?? '–'}/100  ·  Harga ${rpS(A.price)}`, { x: 0.7, y: 4.65, w: 6.2, h: 0.3, fontSize: 11, bold: true, color: th.accent2 })
-    T(s, 'Kajian ini disusun secara otomatis berdasarkan aturan dari data Stockbit dan sumber publik. Isinya merupakan kerangka analisis, bukan anjuran membeli atau menjual efek.', { x: 0.7, y: 5.0, w: 6.5, h: 0.3, fontSize: 8.5, color: 'DCE7F3' })
+    T(s, 'Laporan ini disusun secara otomatis dari data Stockbit dan sumber publik dengan kerangka analisis yang terukur. Laporan ini bukan merupakan rekomendasi untuk membeli atau menjual efek.', { x: 0.7, y: 5.0, w: 6.5, h: 0.3, fontSize: 8.5, color: 'DCE7F3' })
   }
 
   // ===== 22. Lampiran: sumber & batasan =====
@@ -783,7 +783,7 @@ export function buildDeck(PptxGenJS, d, th) {
     const src = [...new Set([...(pf.pengendali || []).flatMap(o => o.sumber || []), ...(pf.afiliasi?.sumber || []), ...(d.aset?.sumber ? [].concat(d.aset.sumber) : [])])].slice(0, 7)
     const reps = (d.reports || []).slice(0, 6).map(r => `${fmtDate(String(r.date).slice(0, 10))} · ${r.title}`)
     const gaps = (pf.tidakDitemukan || []).slice(0, 6)
-    const s = slide('Lampiran', 'Sumber Data dan Keterbatasan Kajian', '')
+    const s = slide('Lampiran', 'Sumber Data dan Batasan Analisis', '')
     ;[['Sumber riset', src], ['Keterbukaan informasi terbaru', reps], ['Belum ditemukan di sumber publik', gaps]].forEach(([h, list], k) => {
       const x = M + k * (CW / 3), w = CW / 3 - 0.15
       card(s, x, TOP, w, 3.75)
@@ -1066,7 +1066,7 @@ function docSlides(K, th, doc, which = '') {
 // (0–100), sama seperti simulasi di layar.
 export function buildRiDeck(PptxGenJS, d, th) {
   const c = d.c
-  const K = makeKit(PptxGenJS, d, th, `${d.t}: Kajian ${c.label}`)
+  const K = makeKit(PptxGenJS, d, th, `${d.t}: Analisis ${c.label}`)
   const { pres, S, T, card, pill, dot, line, chartBase, slide, kpi, hbar } = K
   const P = d.P, u = (d.U || 0) / 100
   const r = riCalc(c, P, u)
@@ -1084,11 +1084,11 @@ export function buildRiDeck(PptxGenJS, d, th) {
     const s = pres.addSlide(); K.bump()
     s.background = { color: th.dark }
     coverArt(s, d.sector?.motif, th, S, dot, line)
-    T(s, 'KAJIAN PENAMBAHAN MODAL', { x: 0.7, y: 1.0, w: 5.2, h: 0.3, fontSize: 10, bold: true, color: th.accent2, charSpacing: 5 })
+    T(s, 'ANALISIS PENAMBAHAN MODAL', { x: 0.7, y: 1.0, w: 5.2, h: 0.3, fontSize: 10, bold: true, color: th.accent2, charSpacing: 5 })
     T(s, d.t, { x: 0.7, y: 1.35, w: 5.2, h: 1.2, fontFace: th.head, fontSize: 66, bold: true, color: 'FFFFFF', valign: 'middle' })
     T(s, c.label.charAt(0).toUpperCase() + c.label.slice(1), { x: 0.7, y: 2.55, w: 5.6, h: 0.5, fontFace: th.head, fontSize: 24, color: 'FFFFFF', fit: 'shrink' })
     T(s, d.name || '', { x: 0.7, y: 3.1, w: 5.2, h: 0.35, fontSize: 15, color: th.accent2 })
-    T(s, ['Nilai aset', 'Kebutuhan dana', 'Siapa menyetor', 'Per lot', 'Sensitivitas harga'].join('  •  '), { x: 0.7, y: 3.55, w: 5.6, h: 0.3, fontSize: 11, color: 'EAF2FA' })
+    T(s, ['Nilai aset', 'Kebutuhan dana', 'Kewajiban penyetoran', 'Dampak per lot', 'Sensitivitas harga'].join('  •  '), { x: 0.7, y: 3.55, w: 5.6, h: 0.3, fontSize: 11, color: 'EAF2FA' })
     const w0 = pill(s, 0.7, 4.0, STATUS[c.status], c.status === 'tereksekusi' ? th.good : th.accent, { size: 9 })
     if (c.jadwal) T(s, short(c.jadwal, 70), { x: 0.85 + w0, y: 4.0, w: 5, h: 0.24, fontSize: 9.5, color: 'EAF2FA', valign: 'middle' })
     T(s, `Data per ${fmtDate(d.date)}  |  Harga terakhir ${rpS(c.price)}  |  Simulasi harga pelaksanaan ${rpS(P)}`, { x: 0.7, y: 4.95, w: 7, h: 0.25, fontSize: 9.5, color: 'DCE7F3' })
