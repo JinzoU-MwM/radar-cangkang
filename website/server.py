@@ -77,6 +77,88 @@ def token_exp() -> int | None:
     except Exception:
         return None
 
+# ------------------------------------------------------------ suara TTS ----
+# Narasi video dengan suara pria Indonesia (Azure Speech, id-ID-ArdiNeural). Kunci dibaca dari env
+# AZURE_SPEECH_KEY + AZURE_SPEECH_REGION atau file .azure-speech (baris 1 kunci, baris 2 region); file
+# tidak pernah di-commit atau disajikan. Audio per kalimat disimpan di .tts-cache/ sehingga kalimat yang
+# sama tidak dibuat ulang. Pengaman kuota: batas karakter per bulan (TTS_MONTHLY_CHARS) dan per pengunjung.
+TTS_DIR = ROOT / ".tts-cache"
+TTS_KEY_FILE = ROOT / ".azure-speech"
+TTS_VOICE = os.environ.get("AZURE_SPEECH_VOICE", "id-ID-ArdiNeural")
+TTS_MONTHLY_CHARS = int(os.environ.get("TTS_MONTHLY_CHARS", "450000"))   # kuota gratis Azure F0: 500 ribu/bulan
+TTS_MAX_TEXT = 700
+TTS_IP_WINDOW, TTS_IP_LIMIT = 600, 400          # maks. 400 kalimat baru per pengunjung per 10 menit
+_tts_lock = threading.Lock()
+_tts_ip: dict = {}
+
+
+def tts_config() -> tuple[str, str] | None:
+    key, region = os.environ.get("AZURE_SPEECH_KEY"), os.environ.get("AZURE_SPEECH_REGION")
+    if not (key and region):
+        try:
+            lines = [x.strip() for x in TTS_KEY_FILE.read_text(encoding="utf-8-sig").splitlines() if x.strip() and not x.startswith("#")]
+            key, region = (lines + ["", ""])[:2]
+        except OSError:
+            return None
+    return (key, region) if key and region else None
+
+
+def tts_usage(add: int = 0) -> dict:
+    """Pemakaian karakter bulan ini (file .tts-cache/usage.json); add > 0 menambah pemakaian."""
+    month = datetime.now().strftime("%Y-%m")
+    p = TTS_DIR / "usage.json"
+    with _tts_lock:
+        try:
+            u = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            u = {}
+        if u.get("bulan") != month:
+            u = {"bulan": month, "karakter": 0}
+        if add:
+            u["karakter"] += add
+            TTS_DIR.mkdir(exist_ok=True)
+            p.write_text(json.dumps(u), encoding="utf-8")
+        return u
+
+
+def tts_audio(text: str, ip: str = "") -> bytes | None:
+    """MP3 untuk satu kalimat (dari cache bila ada). None = TTS tidak tersedia (frontend memakai suara browser)."""
+    text = re.sub(r"\s+", " ", text or "").strip()[:TTS_MAX_TEXT]
+    if not text:
+        return None
+    path = TTS_DIR / (hashlib.sha1(f"{TTS_VOICE}|{text}".encode()).hexdigest() + ".mp3")
+    if path.is_file():
+        return path.read_bytes()
+    cfg = tts_config()
+    if not cfg or tts_usage()["karakter"] + len(text) > TTS_MONTHLY_CHARS:
+        return None
+    now = time.time()
+    with _tts_lock:
+        calls = [t for t in _tts_ip.get(ip, []) if t > now - TTS_IP_WINDOW]
+        if len(calls) >= TTS_IP_LIMIT:
+            return None
+        _tts_ip[ip] = calls + [now]
+    key, region = cfg
+    esc = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    ssml = (f"<speak version='1.0' xml:lang='id-ID'><voice name='{TTS_VOICE}'>"
+            f"<prosody rate='-4%'>{esc}</prosody></voice></speak>").encode("utf-8")
+    req = urllib.request.Request(f"https://{region}.tts.speech.microsoft.com/cognitiveservices/v1", data=ssml, method="POST", headers={
+        "Ocp-Apim-Subscription-Key": key, "Content-Type": "application/ssml+xml",
+        "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3", "User-Agent": "radar-backdoor"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            audio = r.read()
+    except Exception as e:  # kunci salah/kuota habis/jaringan: diam-diam kembali ke suara browser
+        print(f"[tts] gagal: {str(e)[:120]}", file=sys.stderr)
+        return None
+    if not audio:
+        return None
+    TTS_DIR.mkdir(exist_ok=True)
+    path.write_bytes(audio)
+    tts_usage(len(text))
+    return audio
+
+
 # ---------------------------------------------------------------- cache ----
 # Respons Stockbit dan sumber berita disimpan di .cache.sqlite sehingga semua
 # perangkat memakai salinan yang sama; Stockbit hanya dipanggil saat kedaluwarsa.
@@ -2004,7 +2086,22 @@ class Handler(BaseHTTPRequestHandler):
         cfg = load_config()
         ticker = self.qs("ticker").upper()
 
-        if path == "api/items":
+        if path == "api/tts":
+            # Narasi video (suara pria). 204 = tidak tersedia; frontend lalu memakai suara browser.
+            audio = tts_audio(self.qs("t"), self.headers.get("Cf-Connecting-Ip") or self.client_address[0])
+            if not audio:
+                self.reply(b"", 204)
+                return
+            try:
+                self.send_response(200)
+                self.send_header("Content-Type", "audio/mpeg")
+                self.send_header("Content-Length", str(len(audio)))
+                self.send_header("Cache-Control", "public, max-age=2592000, immutable")
+                self.end_headers()
+                self.wfile.write(audio)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+        elif path == "api/items":
             self.reply_json(items_all())
         elif path == "api/updates":
             self.reply_json(updates_all())
@@ -2022,6 +2119,7 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json({
                 "ok": True, "tokenLoaded": bool(get_token()), "tokenExp": exp,
                 "sinkronStockbit": NEWS_STATE.get("sbOk") or sync_state().get("sbOk"),
+                "tts": bool(tts_config()) and tts_usage()["karakter"] < TTS_MONTHLY_CHARS,
                 "deploy": deploy_status(),
                 "tokenStale": bool(exp and exp < time.time()),
                 "pageFallback": False,
