@@ -8,9 +8,12 @@ import { fmt, fmtDate } from '../lib/domain.js'
 import SikapTag from '../components/SikapTag.vue'
 
 const data = ref(null), err = ref(''), kd = ref(null)
-onMounted(async () => {
-  try { data.value = await api.get('/api/pov') } catch (e) { err.value = e.message }
-  try { kd.value = await loadJson('kakdrway.json') } catch {}
+// Analisa KakdrWay disembunyikan sampai tombolnya diklik.
+const kdOpen = ref(false)
+// POV dan KakdrWay dimuat paralel: tombol KakdrWay tidak menunggu data POV.
+onMounted(() => {
+  api.get('/api/pov').then(v => { data.value = v }, e => { err.value = e.message })
+  loadJson('kakdrway.json').then(v => { kd.value = v }, () => {})
 })
 const sikap = t => store.pandangan?.[t]?.sikap || ''
 // Rekomendasi cara membaca konsensus terhadap sikap analis radar.
@@ -103,7 +106,10 @@ const users = computed(() => data.value?.users || [])
     </section>
 
     <section v-if="kd" class="rule-top">
-      <h2>Analisa KakdrWay <span class="muted small">({{ kd.julukan }})</span></h2>
+      <button type="button" class="btn kdbtn" :aria-expanded="String(kdOpen)" aria-controls="kd-isi" @click="kdOpen = !kdOpen">
+        Analisa KakdrWay <span class="muted">({{ kd.julukan }})</span> <span aria-hidden="true">{{ kdOpen ? '▴' : '▾' }}</span>
+      </button>
+      <div v-if="kdOpen" id="kd-isi">
       <div class="kd">
         <div>
           <h4>Screening standar</h4>
@@ -121,6 +127,7 @@ const users = computed(() => data.value?.users || [])
       <ul class="small"><li v-for="x in kd.terhadapBackdoor" :key="x">{{ x }}</li></ul>
       <h4>Artikel</h4>
       <ul class="small"><li v-for="a in kd.artikel" :key="a.url"><a :href="a.url" target="_blank" rel="noopener">{{ a.judul }}</a> <span class="muted">· {{ fmtDate(a.d) }}</span></li></ul>
+      </div>
     </section>
   </div>
 </template>
@@ -139,6 +146,7 @@ header h1{margin:0}
 h4{margin:6px 0 2px;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
 .num{text-align:right}
 .rek{padding-left:20px;display:flex;flex-direction:column;gap:4px;max-width:100ch}
+.kdbtn{font-weight:700;margin-bottom:8px}
 .kd{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
 .kd dl div{margin-bottom:6px}
 .kd dt{font-weight:700;font-size:13px}
