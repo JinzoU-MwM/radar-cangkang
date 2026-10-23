@@ -1485,8 +1485,35 @@ def stockbit_post_api(url: str, body: dict, fresh: bool = False) -> dict:
     return json.loads(cached_text(key, fetch, fresh))
 
 
+def pov_posts_public(user: str, fresh: bool = False) -> list[dict]:
+    """Cadangan tanpa token: 30 posting terbaru dari endpoint publik Stockbit (untuk pengunjung belum login).
+    Bentuk datanya berbeda; diseragamkan ke kolom yang dipakai pov_user."""
+    url = f"https://exodus.stockbit.com/stream/non-login/user/{user}"
+    raw = cached_text(url, lambda: http_get(url, {"User-Agent": UA_BROWSER, "Accept": "application/json"}, 20), fresh)
+    out = []
+    for p in json.loads(raw).get("data") or []:
+        if str(p.get("replyto") or "0") not in ("0", "", "None"):
+            continue  # balasan, bukan ide utama
+        try:
+            topics = json.loads(p.get("topics") or "[]") if isinstance(p.get("topics"), str) else p.get("topics") or []
+        except ValueError:
+            topics = re.findall(r"\$([A-Z]{4})", str(p.get("content_original") or ""))
+        out.append({"stream_id": p.get("postid"), "created_at": p.get("created"), "content_original": p.get("content_original"),
+                    "content": p.get("content"), "topics": topics, "total_likes": p.get("likes"), "_pub": True})
+    return out
+
+
 def pov_posts(user: str, fresh: bool = False) -> list[dict]:
-    """Posting ide utama (bukan balasan) satu akun, terbaru dulu, maks. POV_PAGES halaman dalam POV_DAYS hari."""
+    """Posting ide utama (bukan balasan) satu akun, terbaru dulu, maks. POV_PAGES halaman dalam POV_DAYS hari.
+    Bila endpoint bertoken ditolak (mis. 401), memakai cadangan publik (30 posting terbaru)."""
+    try:
+        return _pov_posts_token(user, fresh)
+    except Exception as e:
+        print(f"[pov] {user}: endpoint bertoken gagal ({e}); memakai endpoint publik", file=sys.stderr)
+        return pov_posts_public(user, fresh)
+
+
+def _pov_posts_token(user: str, fresh: bool = False) -> list[dict]:
     cutoff = (datetime.now() - timedelta(days=POV_DAYS)).strftime("%Y-%m-%d")
     out, cursor = [], 0
     for _ in range(POV_PAGES):
@@ -1503,7 +1530,10 @@ def pov_posts(user: str, fresh: bool = False) -> list[dict]:
 
 
 def pov_user(user: str, radar: set, fresh: bool = False) -> dict:
-    prof = stockbit_api(f"https://exodus.stockbit.com/user/profile/{user}", fresh).get("data") or {}
+    try:
+        prof = stockbit_api(f"https://exodus.stockbit.com/user/profile/{user}", fresh).get("data") or {}
+    except Exception:
+        prof = {}
     posts = pov_posts(user, fresh)
     style = {k: 0 for k, _ in POV_STYLE}
     hor = {k: 0 for k, _ in POV_HORIZON}
@@ -1552,6 +1582,8 @@ def pov_user(user: str, radar: set, fresh: bool = False) -> dict:
         "perDay": round(n / days, 1) if days else 0, "avgLikes": round(likes / n, 1) if n else 0, "avgChars": round(chars / n) if n else 0,
         "styles": st, "horizon": hz[0] if hz[1] >= 3 else "", "tickers": tickers[:12], "latest": latest,
         "radarHits": [e["t"] for e in tickers if e["radar"]],
+        # True = memakai cadangan publik (hanya posting terbaru), bukan riwayat 60 hari.
+        "terbatas": any(p.get("_pub") for p in posts),
     }
 
 

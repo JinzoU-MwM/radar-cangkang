@@ -75,7 +75,7 @@ const users = computed(() => data.value?.users || [])
             <a :href="u.url" target="_blank" rel="noopener"><b>@{{ u.username }}</b></a>
             <span v-if="u.priority" class="tag t-now">prioritas</span><span v-if="u.trending" class="tag t-warn">trending</span>
           </div>
-          <p class="small muted">{{ u.posts }} posting ide ({{ u.from ? fmtDate(u.from) : '–' }} – {{ u.to ? fmtDate(u.to) : '–' }}) · {{ fmt(u.perDay, 1) }}/hari · rata-rata {{ fmt(u.avgLikes, 0) }} suka<template v-if="u.followers"> · {{ fmt(u.followers, 0) }} pengikut</template></p>
+          <p class="small muted">{{ u.posts }} posting ide ({{ u.from ? fmtDate(u.from) : '–' }} – {{ u.to ? fmtDate(u.to) : '–' }}) · {{ fmt(u.perDay, 1) }}/hari · rata-rata {{ fmt(u.avgLikes, 0) }} suka<template v-if="u.followers"> · {{ fmt(u.followers, 0) }} pengikut</template><template v-if="u.terbatas"> · data terbatas (posting terbaru saja)</template></p>
           <ul class="small pola"><li v-for="x in pola(u)" :key="x">{{ x }}</li></ul>
           <div class="sty">
             <span v-for="s in u.styles.filter(x => x.n)" :key="s.k" class="st"><i :style="{ width: Math.max(4, s.pct) + '%' }"></i>{{ s.k }} {{ s.pct }}%</span>
