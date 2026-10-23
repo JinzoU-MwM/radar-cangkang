@@ -1165,11 +1165,24 @@ def convert_sb_news(res: dict, ticker: str, days: int = 365) -> list[dict]:
     return out
 
 
-def get_sb_news(cfg_reports: dict, ticker: str, fresh: bool = False) -> list[dict]:
-    """Satu halaman (30 terbaru) berita StockbitNews per emiten: endpoint sama dengan laporan, kategori NEWS."""
-    url = re.sub(r"category=[A-Z_]+", "category=STREAM_CATEGORY_NEWS", cfg_reports["url"])
-    url = re.sub(r"&report_type=[A-Z_]+", "", url).replace("{ticker}", ticker)
-    return convert_sb_news(stockbit_api(url, fresh), ticker, int(cfg_reports.get("days") or 365))
+def get_sb_news(cfg_reports: dict, ticker: str, fresh: bool = False, pages: int = 1, since: str = "") -> list[dict]:
+    """Berita StockbitNews per emiten (30 per halaman): endpoint sama dengan laporan, kategori NEWS.
+    pages > 1 dipakai saat mengejar ketertinggalan; berhenti setelah melewati tanggal `since`."""
+    base = re.sub(r"category=[A-Z_]+", "category=STREAM_CATEGORY_NEWS", cfg_reports["url"])
+    base = re.sub(r"&report_type=[A-Z_]+", "", base).replace("{ticker}", ticker)
+    days = int(cfg_reports.get("days") or 365)
+    out, cursor = [], 0
+    for _ in range(max(1, pages)):
+        res = stockbit_api(re.sub(r"last_stream_id=\d+", f"last_stream_id={cursor}", base), fresh)
+        out += convert_sb_news(res, ticker, days)
+        page = res.get("data", {}).get("stream") or []
+        pag = res.get("data", {}).get("pagination", {})
+        dates = [str(x.get("created_at") or "")[:10] for x in page if x.get("created_at")]
+        if pag.get("is_last_page") or not page or (since and dates and min(dates) < since):
+            break
+        cursor = pag.get("next_cursor") or 0
+        time.sleep(0.25)
+    return out
 
 
 def get_reports(cfg_reports: dict, ticker: str, fresh: bool = False, max_pages: int | None = None) -> list[dict]:
@@ -1407,6 +1420,30 @@ def iso_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
+# Stempel sinkron Stockbit terakhir yang berhasil (tidak di-commit). Bila celahnya > CATCHUP_GAP
+# (mis. token habis saat libur), sinkron berikutnya mengambil CATCHUP_PAGES halaman per emiten.
+SYNC_STATE = ROOT / ".sync-state.json"
+CATCHUP_GAP = 2 * 86400
+CATCHUP_PAGES = 4
+
+
+def sync_state() -> dict:
+    try:
+        return json.loads(SYNC_STATE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def catchup_plan(last_ok: str | None, now: float | None = None) -> tuple[int, str]:
+    """(jumlah halaman per emiten, tanggal batas) dari stempel sinkron terakhir yang berhasil."""
+    now = time.time() if now is None else now
+    try:
+        ts = datetime.fromisoformat(str(last_ok).replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return CATCHUP_PAGES, ""
+    return (CATCHUP_PAGES, str(last_ok)[:10]) if now - ts > CATCHUP_GAP else (1, str(last_ok)[:10])
+
+
 def sync_updates(cfg: dict, delay: float = 0.4) -> dict:
     """Setara syncReports di browser: keterbukaan Stockbit per emiten backdoor + berita media,
     digabung ke tabel updates berdasarkan id (stempel updatedAt laporan lama dipertahankan)."""
@@ -1414,11 +1451,19 @@ def sync_updates(cfg: dict, delay: float = 0.4) -> dict:
     changed, errors, added, added_news = [], [], 0, 0
     # Semua emiten di monitor (termasuk tahap radar) agar keterbukaan & berita tidak ada yang terlewat.
     codes = [t for t in dict.fromkeys(it["ticker"] for it in items_all()) if TICKER_RE.match(t)]
-    if cfg.get("reports") and get_token():
+    st = sync_state()
+    pages, since = catchup_plan(st.get("sbOk"))
+    ok_any, unauth = False, False
+    # Token kedaluwarsa: lewati Stockbit (data cache lama tidak dihitung sebagai sinkron berhasil).
+    if cfg.get("reports") and get_token() and not token_expired():
+        if pages > 1:
+            print(f"[berita] mengejar ketertinggalan sejak {since or 'awal'}: {pages} halaman per emiten", file=sys.stderr)
         for t in codes:
             try:
                 # Keterbukaan (Stockbit Reports) + berita StockbitNews yang ditandai untuk emiten ini.
-                for it in get_reports(cfg["reports"], t, fresh=True, max_pages=1) + get_sb_news(cfg["reports"], t, fresh=True):
+                rows = get_reports(cfg["reports"], t, fresh=True, max_pages=pages) + get_sb_news(cfg["reports"], t, fresh=True, pages=pages, since=since)
+                ok_any = True
+                for it in rows:
                     prev = old.get(it["id"])
                     if prev is None:
                         added += 1
@@ -1431,8 +1476,16 @@ def sync_updates(cfg: dict, delay: float = 0.4) -> dict:
             except Exception as e:
                 errors.append({"source": t, "error": str(e)[:120]})
                 if "401" in str(e):
+                    unauth = True
                     break
             time.sleep(delay)
+        # Stempel hanya bila seluruh emiten tersinkron dengan token yang masih berlaku.
+        if ok_any and not unauth and not token_expired():
+            st["sbOk"] = iso_now()
+            try:
+                SYNC_STATE.write_text(json.dumps(st), encoding="utf-8")
+            except OSError:
+                pass
     if cfg.get("news"):
         try:
             res = get_news(cfg["news"], codes, fresh=True)
@@ -1452,22 +1505,31 @@ def sync_updates(cfg: dict, delay: float = 0.4) -> dict:
             errors.append({"source": "Berita media", "error": str(e)[:120]})
     if changed:
         updates_put(changed)
-    NEWS_STATE.update({"at": iso_now(), "added": added, "addedNews": added_news, "errors": errors[:5]})
+    NEWS_STATE.update({"at": iso_now(), "added": added, "addedNews": added_news, "errors": errors[:5],
+                       "sbOk": st.get("sbOk"), "catchUp": pages > 1 and ok_any})
     return NEWS_STATE
 
 
 def news_loop() -> None:
-    """Segarkan laporan dan berita tiap NEWS_GAP detik supaya tab Berita di situs publik tetap terbaru."""
+    """Segarkan laporan dan berita tiap NEWS_GAP detik supaya tab Berita di situs publik tetap terbaru.
+    Bila token Stockbit diganti (mis. sepulang libur), sinkron langsung dijalankan tanpa menunggu siklus."""
     time.sleep(60)
     while True:
+        tok = get_token()
         cfg = load_config()
         if cfg:
             try:
                 r = sync_updates(cfg)
-                print(f"[berita] {r['added']} laporan, {r['addedNews']} berita baru", file=sys.stderr)
+                print(f"[berita] {r['added']} laporan, {r['addedNews']} berita baru{' (mengejar ketertinggalan)' if r.get('catchUp') else ''}", file=sys.stderr)
             except Exception as e:
                 print(f"[berita] gagal: {e}", file=sys.stderr)
-        time.sleep(NEWS_GAP)
+        waited = 0
+        while waited < NEWS_GAP:
+            time.sleep(60)
+            waited += 60
+            if get_token() != tok:
+                print("[berita] token baru terdeteksi: sinkron segera", file=sys.stderr)
+                break
 
 
 # ------------------------------------------------------------------- POV ----
@@ -1959,6 +2021,7 @@ class Handler(BaseHTTPRequestHandler):
             exp = token_exp()
             self.reply_json({
                 "ok": True, "tokenLoaded": bool(get_token()), "tokenExp": exp,
+                "sinkronStockbit": NEWS_STATE.get("sbOk") or sync_state().get("sbOk"),
                 "deploy": deploy_status(),
                 "tokenStale": bool(exp and exp < time.time()),
                 "pageFallback": False,

@@ -22,7 +22,12 @@ const token = computed(() => {
   const left = exp * 1000 - now.value
   const until = new Date(exp * 1000).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
   const h = Math.floor(left / 3600e3), m = Math.max(0, Math.floor(left % 3600e3 / 60e3))
-  if (left <= 0) return { cls: 'bad', text: 'Token Stockbit kedaluwarsa: harga dan laporan bisa basi sampai token diperbarui' }
+  if (left <= 0) {
+    // Sinkron terakhir yang berhasil; setelah token diganti server mengejar ketertinggalan otomatis.
+    const ok = store.status?.sinkronStockbit
+    const last = ok ? new Date(ok).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''
+    return { cls: 'bad', text: `Token Stockbit kedaluwarsa: harga dan laporan bisa basi sampai token diperbarui${last ? `. Sinkron terakhir ${last}; ketertinggalan dikejar otomatis setelah token baru` : ''}` }
+  }
   if (left < 2 * 3600e3) return { cls: 'warn', text: `Token habis dalam ${h ? h + ' jam ' : ''}${m} menit (${until})` }
   return { cls: 'ok', text: `Token berlaku s.d. ${until}` }
 })
