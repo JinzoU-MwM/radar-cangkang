@@ -1,9 +1,10 @@
 // Naskah video rangkuman analisis: adegan berurutan berisi teks narasi (gaya karya ilmiah, mudah dipahami)
 // dan data visual untuk animasi di layar. Disusun otomatis dari hasil collectDeck(), sehingga isinya sama
-// dengan tab Analisa dan presentasi unduhan. mode: 'ringkas' (±4 menit) atau 'lengkap' (±10 menit).
+// dengan tab Analisa dan presentasi unduhan. mode: 'ringkas' (±4 menit) atau 'lengkap' (±15–18 menit, setara presentasi). Urutan adegan
+// mengikuti presentasi (ORDER): profil → pengendali → transformasi → berita → analisa → rights issue → teknikal → penutup.
 import { fmtDate } from './domain.js'
 import { phaseName } from './cycle.js'
-import { riPriceNeeded, asetLaba, labaSebelumSesudah, riLayak } from './rightsIssue.js'
+import { riPriceNeeded, asetLaba, labaSebelumSesudah, riLayak, riScenarios } from './rightsIssue.js'
 import { valuasiSim, bandarView } from './valuasi.js'
 
 const id = (v, d = 0) => v == null || isNaN(v) ? '–' : (+v).toLocaleString('id-ID', { maximumFractionDigits: d })
@@ -36,6 +37,11 @@ export function speakable(text) {
     .replace(/\bKJPP\b/g, 'K J P P').replace(/\bPTW\b/g, 'P T W').replace(/\bUBO\b/g, 'U B O').replace(/\bSPV\b/g, 'S P V')
     .replace(/\s*[·|]\s*/g, ', ').replace(/\s+/g, ' ').trim()
 }
+
+// Urutan adegan mengikuti urutan slide presentasi (deck.js buildDeck).
+const ORDER = ['buka', 'profilp', 'pengurus', 'pengendali', 'profil', 'transformasi', 'progres', 'berita', 'tesis', 'skor', 'kasus',
+  'aset', 'valuasi', 'ri', 'ri-kewajaran', 'ri-penilaian', 'ri-bisnis', 'ri-simulasi', 'ri-valuasi', 'ri-kelayakan',
+  'teknikal', 'rencana', 'skenario', 'rekomendasi', 'tindakan', 'penutup']
 
 // Satu adegan: { id, bab, judul, visual, lines: [teks] }. visual.type: title | kpis | bars | compare | ladder | list | rec.
 export function buildVideo(d, mode = 'ringkas') {
@@ -91,23 +97,43 @@ export function buildVideo(d, mode = 'ringkas') {
     ])
   }
 
-  // 3c. Pihak lawan transaksi (lengkap)
-  const af = d.profil?.afiliasi
-  if (full && af?.pihakLawan) add('pihaklawan', 'Pihak lawan', 'Pihak di balik aset target', {
-    type: 'list', items: (af.strukturKepemilikan || []).slice(0, 5).map(x => `${x.nama || x.entitas || ''}${x.porsi ? ' · ' + x.porsi : ''}`).filter(x => x.trim()),
+  // 2b. Profil perusahaan: angka kunci, pemegang saham utama, potensi target harga
+  const m = A.p?.metrics || {}, stt = A.p?.stats || {}, prof = d.profile || A.p || {}
+  const holders = (prof.shareholders || []).map(h => ({ ...h, pct: parseFloat(String(h.pct).replace(',', '.')) })).filter(h => h.pct > 0).slice(0, 3)
+  const mcap = stt.marketCap || A.mcap
+  add('profilp', 'Profil perusahaan', 'Profil perusahaan dan fundamental', {
+    type: 'kpis', items: [mcap ? [big(mcap), 'Kapitalisasi pasar'] : null, m.pbv != null ? [`${id(m.pbv, 2)}×`, 'PBV'] : null,
+      m.netMargin ? [String(m.netMargin).replace('.', ','), 'Margin laba bersih'] : null, m.ret1y ? [String(m.ret1y).replace('.', ','), 'Kinerja harga 1 tahun'] : null].filter(Boolean),
   }, [
-    `Pihak lawan dalam transaksi ini adalah ${af.pihakLawan}.`,
-    af.hubungan ? first(af.hubungan, 2) : null,
-    (af.temuan || []).length ? first(af.temuan[0]?.temuan || af.temuan[0], 1) : null,
+    `${d.name || d.t} bergerak di sektor ${String(prof.sector || d.sector?.label || 'yang belum diketahui').toLowerCase()}${prof.industry ? ', industri ' + String(prof.industry).toLowerCase() : ''}, dengan kapitalisasi pasar sekitar ${big(mcap)}.`,
+    m.pbv != null ? `Harga saham setara ${id(m.pbv, 2)} kali nilai bukunya${m.bvps != null ? ' yang sebesar ' + rp(m.bvps) + ' per saham' : ''}${m.netMargin ? ', dengan margin laba bersih ' + String(m.netMargin).replace('.', ',') : ''}.` : null,
+    full && holders.length ? `Pemegang saham utamanya adalah ${holders.map(h => `${h.name} ${id(h.pct, 1)} persen`).join(', ')}.` : null,
+    full && (prof.beneficiary || []).length ? `Pemilik manfaatnya tercatat ${prof.beneficiary.join(' dan ')}.` : null,
+    full && m.low52 != null && m.high52 != null ? `Dalam 52 minggu terakhir harga bergerak antara ${rp(m.low52)} dan ${rp(m.high52)}.` : null,
   ])
 
-  // 4. Kepemilikan & pergerakan (lengkap)
-  const hold = (A.holders || []).filter(h => Math.abs(h.change || 0) >= 0.5).slice(0, 5)
-  if (full && hold.length) add('kepemilikan', 'Kepemilikan', 'Pergerakan pemegang saham', {
-    type: 'bars', unit: '%', items: hold.map(h => ({ label: h.name, from: h.from, to: h.to })),
+  // 2c. Pengurus (lengkap)
+  const board = [...(d.profil?.pengurus?.direksi || []), ...(d.profil?.pengurus?.komisaris || [])].filter(x => x && x.nama)
+  if (full && board.length) {
+    const nb = board.filter(x => x.orangPengendaliBaru)
+    add('pengurus', 'Pengurus', 'Susunan direksi dan dewan komisaris', { type: 'list', items: board.slice(0, 6).map(x => `${x.nama}: ${x.jabatan || ''}`) }, [
+      `Perseroan diurus oleh ${board.length} anggota direksi dan dewan komisaris.`,
+      nb.length ? `Sebanyak ${nb.length} di antaranya berasal dari pihak pengendali baru, antara lain ${nb.slice(0, 2).map(x => x.nama).join(' dan ')}.` : 'Belum ada pengurus yang tercatat berasal dari pihak pengendali baru.',
+    ])
+  }
+
+  // 3d. Transformasi bisnis: lama → pengendali baru → aset injeksi → bisnis baru
+  const st = d.story || {}, sv = A.sv || {}
+  const bLama = st.lama, bBaru = st.baru || sv.baru, bInj = [sv.injectType, sv.injectTarget].filter(Boolean).join(', ') || st.inject
+  const bTarget = sv.target || st.target
+  if (bLama || bBaru || bInj) add('transformasi', 'Transformasi bisnis', 'Dari bisnis lama ke bisnis baru', {
+    type: 'list', items: [bLama && `Bisnis lama: ${bLama}`, bInj && `Aset injeksi: ${bInj}`, bBaru && `Bisnis baru: ${bBaru}`, bTarget && `Target: ${bTarget}`].filter(Boolean),
   }, [
-    `Dalam satu tahun terakhir tercatat ${hold.length} pergerakan pemegang saham di atas lima persen.`,
-    pa.pengendaliBergerak ? first(pa.pengendaliBergerak, 2) : `${hold[0].name} berubah dari ${pct(hold[0].from, 2)} menjadi ${pct(hold[0].to, 2)}.`,
+    bLama ? `Sebelum pengambilalihan, perseroan bergerak di bidang ${lower1(bLama)}.` : null,
+    bInj ? `Aset yang direncanakan masuk adalah ${lower1(bInj)}.` : null,
+    bBaru ? `Arah bisnis barunya adalah ${lower1(bBaru)}.` : null,
+    bTarget ? `Targetnya: ${lower1(first(bTarget, 1))}` : null,
+    full && pv.rencana ? `Rencana pengendali: ${lower1(first(pv.rencana, 1))}` : null,
   ])
 
   // 5. Aset injeksi
@@ -149,13 +175,49 @@ export function buildVideo(d, mode = 'ringkas') {
       `Perusahaan merencanakan ${c.label} dengan nilai penerbitan sekitar ${big(r.total)}, yaitu ${id(r.N / 1e9, 2)} miliar saham pada harga ${rp(d.riP)}.`,
       c.laterInj ? `Dana tahap pertama ini berupa uang tunai dan tidak digunakan untuk membeli aset; aset senilai ${big(c.laterInj)} akan dibayar dengan saham baru pada tahap berikutnya.` : null,
       `Bila pemegang saham publik tidak ikut menebus, porsi publik turun dari ${pct(c.float, 1)} menjadi ${pct(r.pubAfter * 100, 1)}${r.pubAfterInj != null ? `, dan dapat turun hingga ${pct(r.pubAfterInj * 100, 1)} setelah injeksi aset` : ''}.`,
-      vs ? `Bila perusahaan dihargai ${big(vs.target)} setelah rights issue, harga per saham sekitar ${rp(Math.round(vs.harga))}${vs.x ? `, atau ${id(vs.x, 2)} kali harga kini` : ''}${vs.pbvReal ? `, setara ${id(vs.pbvReal, 0)} kali nilai buku riil` : ''}.` : null,
-      bv ? `Dari sisi pengendali, harga impasnya sekitar ${rp(Math.round(bv.impas))}${bv.kelipatanAwal ? ` dan modal awalnya sudah berlipat ${id(bv.kelipatanAwal, 1)} kali` : ''}.` : null,
-      ly ? `Kesimpulan investasinya: ${ly.label.toLowerCase()}.${ls ? (ls.akresi ? ' Laba per saham emiten naik setelah aset masuk.' : ' Laba per saham emiten justru turun setelah penerbitan.') : ''}` : null,
-      nd ? `Agar dana tunai ${big(nd.cash)} tercapai, harga saham sebaiknya berada di atas ${rp(Math.ceil(nd.ref))}, yaitu harga pelaksanaan ${rp(d.riP)} ditambah diskon dua puluh persen${nd.gap != null ? (nd.gap > 0 ? `; harga saat ini masih perlu naik ${id(nd.gap * 100, 0)} persen` : '; harga saat ini sudah memenuhi syarat tersebut') : ''}.` : null,
+      !full && vs ? `Bila perusahaan dihargai ${big(vs.target)} setelah rights issue, harga per saham sekitar ${rp(Math.round(vs.harga))}${vs.x ? `, atau ${id(vs.x, 2)} kali harga kini` : ''}${vs.pbvReal ? `, setara ${id(vs.pbvReal, 0)} kali nilai buku riil` : ''}.` : null,
+      !full && bv ? `Dari sisi pengendali, harga impasnya sekitar ${rp(Math.round(bv.impas))}${bv.kelipatanAwal ? ` dan modal awalnya sudah berlipat ${id(bv.kelipatanAwal, 1)} kali` : ''}.` : null,
+      !full && ly ? `Kesimpulan investasinya: ${ly.label.toLowerCase()}.${ls ? (ls.akresi ? ' Laba per saham emiten naik setelah aset masuk.' : ' Laba per saham emiten justru turun setelah penerbitan.') : ''}` : null,
+      !full && nd ? `Agar dana tunai ${big(nd.cash)} tercapai, harga saham sebaiknya berada di atas ${rp(Math.ceil(nd.ref))}, yaitu harga pelaksanaan ${rp(d.riP)} ditambah diskon dua puluh persen${nd.gap != null ? (nd.gap > 0 ? `; harga saat ini masih perlu naik ${id(nd.gap * 100, 0)} persen` : '; harga saat ini sudah memenuhi syarat tersebut') : ''}.` : null,
       f ? `Berdasarkan keterbukaan informasi terakhir${f.last ? ' pada ' + fmtDate(f.last.date) : ''}, peluang terkumpulnya dana dinilai ${f.label.toLowerCase()}.` : null,
       f ? first(f.reasons.filter(x => x.s < 0).map(x => x.t).join(' '), full ? 3 : 2) : null,
     ])
+    if (full) {
+      const doc = c.doc || {}, kwR = doc.kewajaran, pn = doc.aset?.penilaian, bs = doc.bisnis
+      if (kwR) add('ri-kewajaran', 'Rights issue', 'Kewajaran nilai aset injeksi', { type: 'list', items: (kwR.alasan || []).slice(0, 4) }, [
+        `Berdasarkan dokumen keterbukaan, nilai aset injeksi dinilai ${String(kwR.putusan || 'belum dapat dinilai').toLowerCase()}.`,
+        kwR.ringkas ? first(kwR.ringkas, 1) : null, ...(kwR.alasan || []).slice(0, 3).map(x => first(x, 1)),
+        kwR.syaratWajar ? `Nilai tersebut dapat dianggap wajar bila ${lower1(first(kwR.syaratWajar, 1))}` : null,
+      ])
+      if (pn) add('ri-penilaian', 'Rights issue', pn.judul || 'Penilaian aset injeksi', {
+        type: 'kpis', items: (pn.simulasi || []).slice(0, 4).map(x => [`${/^Rp/.test(x.satuan || '') ? 'Rp' + id(x.nilai, x.nilai >= 100 ? 0 : 1) + (x.satuan || '').slice(2) : id(x.nilai, x.nilai >= 100 ? 0 : 1) + (x.satuan || '')}`, x.nama]),
+      }, [pn.ringkas ? first(pn.ringkas, 2) : null, ...(pn.dicermati || []).slice(0, 2).map(x => `Yang harus diuji: ${lower1(x)}`), pn.kesimpulan ? first(pn.kesimpulan, 1) : null])
+      if (bs?.model) add('ri-bisnis', 'Rights issue', 'Cara menghasilkan laba', { type: 'list', items: (bs.sumberPendapatan || []).slice(0, 4) }, [
+        `Model bisnisnya: ${lower1(first(bs.model, 1))}`,
+        (bs.sumberPendapatan || []).length ? `Sumber pendapatannya meliputi ${bs.sumberPendapatan.slice(0, 3).map(x => lower1(x)).join('; ')}.` : null,
+        lbR?.labaThn != null ? `Laba aset setahun sekitar ${big(lbR.labaThn)}${lbR.per != null ? `, setara ${id(lbR.per, 1)} kali laba bila dibandingkan nilai transaksi` : ''}.` : 'Laba aset belum diungkap di dokumen.',
+      ])
+      const sc = riScenarios(c, d.riP)
+      add('ri-simulasi', 'Rights issue', 'Simulasi harga rights issue dan kebutuhan dana', {
+        type: 'kpis', items: [[rp(d.riP), 'Harga pelaksanaan simulasi'], nd ? [rp(Math.ceil(nd.ref)), 'Harga saham agar dana tercapai'] : null, [pct(r.dilusi * 100, 1), 'Dilusi bila tidak menebus'], r.terp != null ? [rp(r.terp), 'Harga teoretis setelah RI'] : null].filter(Boolean),
+      }, [
+        nd ? `Agar dana tunai ${big(nd.cash)} tercapai, harga saham sebaiknya berada di atas ${rp(Math.ceil(nd.ref))}, yaitu harga pelaksanaan ${rp(d.riP)} ditambah diskon dua puluh persen${nd.gap != null ? (nd.gap > 0 ? `; harga saat ini masih perlu naik ${id(nd.gap * 100, 0)} persen` : '; harga saat ini sudah memenuhi syarat tersebut') : ''}.` : null,
+        r.terp != null ? `Setelah penerbitan, harga teoretis saham sekitar ${rp(r.terp)}, dan pemegang saham yang tidak menebus terdilusi ${pct(r.dilusi * 100, 1)}.` : null,
+        sc?.rows?.length > 1 ? `Makin sedikit saham baru yang diterbitkan, makin tinggi harga rights issue dan harga saham yang dibutuhkan; pada rasio paling ketat harga yang dibutuhkan mencapai ${rp(Math.ceil(sc.rows[sc.rows.length - 1].need))}.` : null,
+      ])
+      if (vs || bv) add('ri-valuasi', 'Rights issue', 'Simulasi valuasi dan sudut pandang pengendali', {
+        type: 'kpis', items: [vs ? [big(vs.target), 'Valuasi setelah RI'] : null, vs ? [rp(Math.round(vs.harga)), 'Harga per saham'] : null, bv ? [rp(Math.round(bv.impas)), 'Harga impas pengendali'] : null, bv?.kelipatanAwal ? [`${id(bv.kelipatanAwal, 1)}×`, 'Kelipatan modal awal'] : null].filter(Boolean),
+      }, [
+        vs ? `Bila perusahaan dihargai ${big(vs.target)} setelah rights issue, harga per saham sekitar ${rp(Math.round(vs.harga))}${vs.x ? `, atau ${id(vs.x, 2)} kali harga kini` : ''}${vs.pbvReal ? `, setara ${id(vs.pbvReal, 0)} kali nilai buku riil` : ''}.` : null,
+        bv ? `Dari sisi pengendali, harga impasnya sekitar ${rp(Math.round(bv.impas))}${bv.kelipatanAwal ? ` dan modal awalnya sudah berlipat ${id(bv.kelipatanAwal, 1)} kali` : ''}.` : null,
+        bv ? 'Makin besar saham yang didapat pengendali dari inbreng pada harga rendah, makin besar peluang distribusi setelah harga dinaikkan.' : null,
+      ])
+      if (ly) add('ri-kelayakan', 'Rights issue', 'Laba setelah aset masuk dan kelayakan investasi', { type: 'list', items: ly.reasons.slice(0, 5).map(x => (x.s > 0 ? '+ ' : x.s < 0 ? '− ' : '· ') + x.t) }, [
+        ls ? `Laba bersih setahun berubah dari ${big(ls.before.laba)} menjadi ${big(ls.after.laba)}, dan laba per saham ${ls.akresi ? 'naik' : 'turun'} setelah penerbitan.` : 'Laba sebelum dan sesudah aset masuk belum dapat dihitung karena laba aset belum diungkap.',
+        `Kesimpulan investasinya: ${ly.label.toLowerCase()}.`,
+        ...ly.reasons.filter(x => x.s < 0).slice(0, 2).map(x => first(x.t, 1)),
+      ])
+    }
   }
 
   // 6b. Progres & kronologi (lengkap)
@@ -198,15 +260,6 @@ export function buildVideo(d, mode = 'ringkas') {
     type: 'bars', unit: '%', items: sk.map(l => ({ label: l[0], to: Math.abs(l[2] / A.price - 1) * 100 })), max: Math.max(...sk.map(l => Math.abs(l[2] / A.price - 1) * 100)),
   }, sk.slice(0, 4).map(l => `${l[0]} berada di ${rp(l[2])}, atau ${l[2] >= A.price ? 'naik' : 'turun'} ${id(Math.abs(l[2] / A.price - 1) * 100, 0)} persen dari harga saat ini, yaitu ${lower1(l[1])}.`))
 
-  // 9. Fundamental (lengkap)
-  const m = A.p?.metrics || {}
-  if (full && (m.pbv != null || m.equity != null)) add('fundamental', 'Fundamental', 'Indikator keuangan', {
-    type: 'kpis', items: [m.pbv != null && [`${id(m.pbv, 2)}×`, 'PBV'], m.equity != null && [big(m.equity), 'Ekuitas'], m.cash != null && [big(m.cash), 'Kas'], m.netMargin && [String(m.netMargin).replace('.', ','), 'Margin laba bersih']].filter(Boolean),
-  }, [
-    m.pbv != null ? `Harga saham setara ${id(m.pbv, 2)} kali nilai bukunya, dengan ekuitas sekitar ${big(m.equity)} dan kas ${big(m.cash)}.` : null,
-    m.revGrowth ? `Pendapatan tumbuh ${String(m.revGrowth).replace('.', ',').replace('%', ' persen')} dibandingkan tahun sebelumnya, dengan margin laba bersih ${String(m.netMargin || '–').replace('.', ',').replace('%', ' persen')}.` : null,
-  ])
-
   // 10. Harga & teknikal
   const tech = d.tech, cyc = d.cyc
   if (tech) add('teknikal', 'Harga & teknikal', 'Posisi harga dan sinyal teknikal', {
@@ -218,19 +271,17 @@ export function buildVideo(d, mode = 'ringkas') {
     full && tech.verdict ? cap(first(tech.verdict, 1)) : null,
   ])
 
-  // 11. Faktor pendukung vs risiko (lengkap)
-  if (full && d.pc && (d.pc.pros.length || d.pc.cons.length)) add('faktor', 'Pendukung & risiko', 'Faktor pendukung dan faktor risiko', {
-    type: 'list', items: [...d.pc.pros.slice(0, 3).map(x => 'Pendukung: ' + x.t), ...d.pc.cons.slice(0, 3).map(x => 'Risiko: ' + x.t)],
+  // 11. Kasus naik vs kasus turun (sama dengan tab Analisa dan presentasi)
+  const bull = (A.bull || []).length ? A.bull : (d.pc?.pros || []).map(x => x.t), bear = (A.bear || []).length ? A.bear : (d.pc?.cons || []).map(x => x.t)
+  if (bull.length || bear.length) add('kasus', 'Kasus naik dan turun', 'Pendorong kenaikan dan risiko penurunan', {
+    type: 'list', items: [...bull.slice(0, 3).map(x => 'Naik: ' + x), ...bear.slice(0, 3).map(x => 'Turun: ' + x)],
   }, [
-    `Analisis ini mengidentifikasi ${d.pc.pros.length} faktor pendukung dan ${d.pc.cons.length} faktor risiko.`,
-    d.pc.pros[0] ? `Faktor pendukung utama adalah ${d.pc.pros[0].t.toLowerCase()}.` : null,
-    d.pc.cons[0] ? `Adapun risiko utamanya adalah ${d.pc.cons[0].t.toLowerCase()}${d.pc.cons[1] ? ', serta ' + d.pc.cons[1].t.toLowerCase() : ''}.` : null,
+    `Analisis ini mencatat ${bull.length} pendorong kenaikan dan ${bear.length} risiko penurunan${bear.length > bull.length ? ', sehingga risiko lebih dominan' : ''}.`,
+    bull[0] ? `Pendorong utamanya: ${lower1(first(bull[0], 1)).replace(/\.$/, '')}.` : null,
+    bear[0] ? `Risiko utamanya: ${lower1(first(bear[0], 1)).replace(/\.$/, '')}.` : null,
+    full && bear[1] ? `Selain itu, ${lower1(first(bear[1], 1)).replace(/\.$/, '')}.` : null,
+    full && (A.notes || [])[0] ? `Catatan analis: ${lower1(first(A.notes[0], 1))}` : null,
   ])
-
-  // 11b. Pembahasan temuan utama (lengkap)
-  const deep = (d.deep || []).slice(0, 4)
-  if (full && deep.length) add('pembahasan', 'Pembahasan', 'Pembahasan temuan utama', { type: 'list', items: deep.map(x => x[0]) },
-    deep.map(x => `${x[0]}: ${first(x[1], 1)}`))
 
   // 11c. Perkembangan berita terkini
   const ns = d.newsSum, nr = d.newsRecent || []
@@ -244,6 +295,19 @@ export function buildVideo(d, mode = 'ringkas') {
     ...(d.pa?.pembaruan || []).slice(0, full ? 2 : 1),
   ])
 
+  // 10b. Rencana transaksi (lengkap)
+  const pl = tech?.planPola || tech?.plan
+  if (full && pl) add('rencana', 'Rencana transaksi', pl.type ? cap(String(pl.type).replace(/\s+—\s+/, ': ')) : 'Rencana transaksi', {
+    type: 'kpis', items: pl.entry ? [[`${rp(pl.entryLo)}–${rp(pl.entryHi)}`, 'Zona entry'], [rp(pl.stop), 'Stop loss'], pl.tp1 ? [rp(pl.tp1), 'Target 1'] : null, pl.tp2 ? [rp(pl.tp2), 'Target 2'] : null].filter(Boolean)
+      : [[rp(tech.sig?.res), 'Area kurangi saat rebound'], [rp(pl.stop), 'Keluar bila di bawah'], [rp(A.price), 'Harga kini']],
+  }, pl.entry ? [
+    `Rencana transaksinya: masuk di zona ${rp(pl.entryLo)} hingga ${rp(pl.entryHi)} dengan stop loss ${rp(pl.stop)}.`,
+    pl.tp1 ? `Target pertama ${rp(pl.tp1)}${pl.tp2 ? ' dan target kedua ' + rp(pl.tp2) : ''}; di target pertama separuh posisi dijual dan stop dinaikkan ke titik impas.` : null,
+  ] : [
+    'Saat ini tidak ada setup beli.',
+    `Bagi pemegang, rebound ke ${rp(tech.sig?.res)} dapat dimanfaatkan untuk mengurangi posisi, dan posisi dilepas penuh bila harga ditutup di bawah ${rp(pl.stop)}.`,
+  ])
+
   // 12. Rekomendasi
   const rc = d.rec
   if (rc) add('rekomendasi', 'Rekomendasi', 'Rekomendasi', { type: 'rec', rec: rc }, [
@@ -254,6 +318,16 @@ export function buildVideo(d, mode = 'ringkas') {
     rc.holder,
   ])
 
+  // 12b. Rencana tindakan berdasarkan skenario (lengkap)
+  if (full && rc) add('tindakan', 'Rencana tindakan', 'Rencana tindakan berdasarkan skenario', {
+    type: 'list', items: [...(rc.triggers || []).slice(0, 2).map(x => 'Bila terkonfirmasi: ' + x), ...(rc.exits || []).slice(0, 2).map(x => 'Bila gagal: ' + x)],
+  }, [
+    (rc.triggers || [])[0] ? `Posisi dapat ditambah bertahap bila tesis terkonfirmasi; yang dipantau: ${lower1(first(rc.triggers[0], 1).replace(/^pantau\s+/i, '')).replace(/\.$/, '')}.` : null,
+    `Kondisi sekarang: ${lower1(rc.label)}, dengan porsi ${lower1(rc.porsi)}.`,
+    (rc.exits || [])[0] ? `Bila tesis gagal, misalnya ${lower1(first(rc.exits[0], 1)).replace(/\.$/, '')}, posisi dilepas dengan batas risiko ${rp(rc.stop)}.` : null,
+    rc.catalyst ? `Katalis berikutnya adalah ${lower1(rc.catalyst)}.` : null,
+  ])
+
   // 13. Penutup: yang perlu dipantau
   const watch = [...(rc?.triggers || A.checks || [])].slice(0, full ? 3 : 2).map(x => String(x).replace(/^pantau( apakah)?\s+/i, (m, a) => a ? 'apakah ' : '')), exits = (rc?.exits || A.exits || []).slice(0, full ? 2 : 1)
   add('penutup', 'Penutup', 'Hal yang perlu dipantau', { type: 'list', items: [...watch.map(x => 'Pantau: ' + x), ...exits.map(x => 'Sinyal keluar: ' + x)] }, [
@@ -261,7 +335,7 @@ export function buildVideo(d, mode = 'ringkas') {
     exits.length ? `Posisi sebaiknya ditinjau ulang apabila ${lower1(exits[0]).replace(/\.$/, '').replace(/:\s*/, ', yang menandakan ')}.` : null,
     'Rangkuman ini disusun secara otomatis dari data publik dan bukan merupakan anjuran membeli atau menjual efek. Terima kasih.',
   ])
-  return S
+  return S.sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id))
 }
 
 // Perkiraan durasi (detik) satu kalimat pada kecepatan baca normal (±2,4 kata per detik untuk suara Indonesia).

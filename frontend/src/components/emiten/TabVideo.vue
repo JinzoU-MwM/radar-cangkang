@@ -1,7 +1,7 @@
 <script setup>
 // Video rangkuman analisis: adegan animasi + narasi suara Bahasa Indonesia (Web Speech API browser) + teks di layar.
 // Naskah disusun otomatis dari data analisis yang sama dengan tab Analisa/presentasi. Versi Ringkas (±4 menit)
-// atau Lengkap (±10 menit). Tanpa suara Indonesia di perangkat, video tetap berjalan dengan teks dan waktu perkiraan.
+// atau Lengkap (±15–18 menit, isi dan urutan sama dengan presentasi). Tanpa suara Indonesia di perangkat, video tetap berjalan dengan teks dan waktu perkiraan.
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { store, storyOf, getBenchmark } from '../../store.js'
 import { api } from '../../api.js'
