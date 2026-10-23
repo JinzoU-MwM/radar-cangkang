@@ -18,6 +18,8 @@ const bs = computed(() => props.doc.bisnis || null)
 const pc = v => v == null ? '–' : fmt(v * 100, 1) + '%'
 const k = computed(() => props.doc.kewajaran || null)
 const a = computed(() => props.doc.aset || {})
+// Analisa penilaian aset injeksi (fakta dokumen + simulasi Radar), bila tersedia.
+const pn = computed(() => a.value.penilaian || null)
 const sh = v => v == null ? 'belum diungkap' : v >= 1e9 ? fmt(v / 1e9, 2) + ' miliar saham' : fmt(v / 1e6, 1) + ' juta saham'
 const val = v => v == null ? 'belum diungkap' : big(v)
 const hp = computed(() => {
@@ -73,6 +75,26 @@ const facts = computed(() => {
       <h4>Alasan</h4>
       <ol class="al"><li v-for="x in k.alasan || []" :key="x">{{ x }}</li></ol>
       <p v-if="k.syaratWajar" class="small"><b>Dapat dianggap wajar bila:</b> {{ k.syaratWajar }}</p>
+    </div>
+
+    <!-- Penilaian aset injeksi: apa yang diungkap, simulasi, dan yang harus diuji di laporan penilai. -->
+    <div v-if="pn && show('aset')" class="lb pn">
+      <h4>{{ pn.judul || 'Penilaian aset injeksi' }}</h4>
+      <p v-if="pn.ringkas" class="kr">{{ pn.ringkas }}</p>
+      <template v-if="(pn.diketahui || []).length">
+        <p class="small"><b>Yang sudah diungkap dokumen:</b></p>
+        <ul class="small"><li v-for="x in pn.diketahui" :key="x">{{ x }}</li></ul>
+      </template>
+      <table v-if="(pn.simulasi || []).length" class="ledger met">
+        <thead><tr><th>Simulasi</th><th class="num">Nilai</th><th>Perhitungan</th><th>Catatan</th></tr></thead>
+        <tbody><tr v-for="m in pn.simulasi" :key="m.nama"><td>{{ m.nama }}</td><td class="num"><b>{{ metrikVal(m) }}</b></td><td class="small muted">{{ m.rumus }}</td><td class="small">{{ m.catatan }}</td></tr></tbody>
+      </table>
+      <template v-if="(pn.dicermati || []).length">
+        <p class="small"><b>Yang harus diuji di laporan penilai:</b></p>
+        <ol class="small"><li v-for="x in pn.dicermati" :key="x">{{ x }}</li></ol>
+      </template>
+      <p v-if="pn.kesimpulan" class="small"><b>Kesimpulan:</b> {{ pn.kesimpulan }}</p>
+      <p v-if="pn.asumsi" class="small muted">{{ pn.asumsi }}</p>
     </div>
 
     <!-- Perhitungan laba aset injeksi. -->

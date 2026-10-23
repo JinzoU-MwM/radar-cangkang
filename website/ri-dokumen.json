@@ -5013,12 +5013,113 @@
         "labaBersihRp": null,
         "catatan": "Data keuangan PAA/LOH belum diungkap (dijanjikan paling lambat saat dokumen RUPSLB). Lahan tambak yang disebut dokumen: Sumbawa ±36,79 ha (40 kolam), Sabah ±48,56 ha (beroperasi sejak 1998), dan tambahan PMA di Indonesia 68,07 ha (diakuisisi 75% melalui Ark Abundance, 20 Jul 2026), total ±153,4 ha. Rencana usaha baru: fasilitas pertanian & akuakultur terintegrasi di Semenanjung Malaysia, ekspansi tambak & perdagangan udang di Malaysia Timur, proyek baru di kawasan Pasifik. SMKM: ekuitas Rp206,67 M (31 Des 2025, audit KAP Mirawati Sensi Idris, WTM), laba bersih 2025 Rp567,7 jt. Kinerja SMKM sebelum akuisisi (tanggapan BEI 23 Okt 2025): total aset Rp212,20 M per 30 Jun 2025, pendapatan semester I 2025 Rp35,81 M (turun 19,74% dari Rp44,62 M), kas dan bank Rp19,11 M (turun dari Rp38,17 M akhir 2024 dan Rp66,19 M akhir 2023), aset tetap naik ke Rp17,71 M karena pembelian alat proyek dari kas internal."
       },
-      "afiliasi": true
+      "afiliasi": true,
+      "penilaian": {
+        "judul": "Penilaian PanAsia Aquaculture Pte. Ltd. (PAA)",
+        "ringkas": "Nilai PAA belum ditetapkan penilai: dokumen hanya menyebut batas atas USD100 juta (±Rp1,77 T pada kurs acuan Rp17.703/USD), setara 8,6× ekuitas dan 17× kapitalisasi pasar SMKM. Agar wajar pada PER 8–15×, PAA perlu laba bersih Rp118–221 M per tahun, sekitar 210–390 kali laba SMKM 2025. Bila dibayar dengan saham baru pada harga nominal Rp100, porsi publik turun dari 55,02% ke ±3,6%.",
+        "diketahui": [
+          "Nilai transaksi 'diperkirakan berkisar sampai dengan USD100 juta' (batas atas, bukan hasil penilaian); nilai final mengacu Laporan Penilaian Independen sebelum PMHMETD (KI 22 Des 2025, hal 1).",
+          "Penilaian nilai wajar oleh penilai independen adalah syarat pendahuluan CSPA dan diwajibkan POJK 42/2020 karena transaksi afiliasi (KI 22 Des 2025, hal 2).",
+          "PAA adalah holding yang didirikan 6 Jan 2025 di Singapura dengan modal 3 lembar saham milik LSO, dibentuk 'untuk mempermudah proses injeksi aset'; aset operasional baru akan dimasukkan lewat restrukturisasi (tanggapan BEI 4 Mar 2026, hal 2; KI transaksi afiliasi 2 Jun 2026).",
+          "Belum ada data keuangan PAA (aset, liabilitas, ekuitas, pendapatan, laba) dan tidak ada pelanggan utama; data dijanjikan paling lambat saat dokumen RUPSLB (tanggapan BEI 4 Mar 2026, hal 2-3).",
+          "Tanggal acuan (cut-off) penilaian bergeser: 31 Mar 2026 (Mar 2026) → Juni 2026 (Jul 2026) → cut-off 2026 yang belum disebut (Okt 2026); auditor PAA CLA Global TS, nama KJPP belum diungkap.",
+          "Aset operasional yang disebut: tambak Sumbawa ±36,79 ha (40 kolam), Sabah ±48,56 ha (sejak 1998, peningkatan kapasitas sejak 2023), dan PMA tambak 68,07 ha di Indonesia (75% via Ark Abundance, Jul 2026); LSO BVI dimiliki 50:50 dengan ASA sehingga porsi efektif atas sebagian aset belum jelas."
+        ],
+        "simulasi": [
+          {
+            "nama": "Nilai PAA dalam rupiah (batas atas)",
+            "nilai": 1770.3,
+            "satuan": "Rp M",
+            "rumus": "USD100 juta × Rp17.703",
+            "catatan": "Kurs acuan 31 Agu 2026 dari keterbukaan emiten lain (PACK); dokumen SMKM tidak menyebut kurs"
+          },
+          {
+            "nama": "Nilai PAA ÷ ekuitas SMKM",
+            "nilai": 8.6,
+            "satuan": "×",
+            "rumus": "Rp1.770,3 M ÷ Rp206,67 M",
+            "catatan": "Aset yang masuk 8,6 kali lebih besar dari perusahaan penerima"
+          },
+          {
+            "nama": "Nilai PAA ÷ kapitalisasi pasar SMKM",
+            "nilai": 17.0,
+            "satuan": "×",
+            "rumus": "Rp1.770,3 M ÷ (Rp83 × 1,253 miliar saham)",
+            "catatan": "Kapitalisasi Rp104,0 M pada harga Rp83"
+          },
+          {
+            "nama": "Nilai per hektare tambak (153,42 ha)",
+            "nilai": 11.54,
+            "satuan": "Rp M/ha",
+            "rumus": "Rp1.770,3 M ÷ 153,42 ha (±USD652 rb/ha)",
+            "catatan": "Sebelum tambahan 68,07 ha (saat CSPA Des 2025, 85,35 ha): Rp20,74 M/ha (±USD1,17 juta/ha)"
+          },
+          {
+            "nama": "Laba bersih yang dibutuhkan agar PER 8×",
+            "nilai": 221.3,
+            "satuan": "Rp M",
+            "rumus": "Rp1.770,3 M ÷ 8",
+            "catatan": "PER 12× → Rp147,5 M; PER 15× → Rp118,0 M per tahun"
+          },
+          {
+            "nama": "Laba yang dibutuhkan ÷ laba SMKM 2025",
+            "nilai": 208,
+            "satuan": "×",
+            "rumus": "Rp118,0 M (PER 15×) ÷ Rp0,57 M",
+            "catatan": "Pada PER 8× menjadi ±390×"
+          },
+          {
+            "nama": "Porsi publik bila inbreng dibayar saham pada Rp100 (nominal)",
+            "nilai": 3.64,
+            "satuan": "%",
+            "rumus": "689,42 jt ÷ (1,253 miliar + 17,70 miliar saham baru)",
+            "catatan": "LSO menjadi ±95.0%; di bawah batas free float 7,5%"
+          },
+          {
+            "nama": "Harga saham baru minimum agar publik tetap ≥7,5%",
+            "nilai": 223,
+            "satuan": "Rp",
+            "rumus": "Rp1.770,3 M ÷ (689,42 jt ÷ 7,5% − 1,253 miliar)",
+            "catatan": "±2.7× harga kini Rp83; untuk nilai USD75 juta Rp167, USD50 juta Rp111"
+          },
+          {
+            "nama": "Dana tunai publik agar porsinya tidak terdilusi",
+            "nilai": 974.0,
+            "satuan": "Rp M",
+            "rumus": "55,02% × Rp1.770,3 M",
+            "catatan": "Bila inbreng dilakukan melalui PMHMETD dan publik menebus seluruh haknya"
+          }
+        ],
+        "dicermati": [
+          "Metode penilaian (pendapatan/DCF, pasar, atau aset) dan asumsinya: produksi per hektare, harga udang, tingkat diskonto, serta umur ekonomis tambak.",
+          "Laporan keuangan audit PAA (cut-off 2026) dan laba historis aset tambak sebelum restrukturisasi, bukan hanya proyeksi.",
+          "Biaya perolehan Ark Abundance dan 75% PMA tambak 68,07 ha (Jul 2026): bila dibeli murah lalu dinilai tinggi dalam PAA, selisihnya menjadi keuntungan pengendali.",
+          "Porsi efektif PAA atas LSO BVI (50:50 dengan ASA) dan atas PMA (75%): nilai yang dibayar SMKM harus sesuai porsi ini.",
+          "Harga pelaksanaan dan jumlah saham baru untuk inbreng: makin rendah harga, makin besar porsi pengendali dan dilusi publik.",
+          "Independensi KJPP dan pendapat kewajaran, serta persetujuan RUPS independen (pemegang saham tanpa benturan kepentingan)."
+        ],
+        "kesimpulan": "Penilaian PAA adalah faktor penentu utama kewajaran transaksi SMKM. Selama laporan penilai belum terbit, USD100 juta hanya batas atas yang belum ditopang data laba; nilai yang pantas baru dapat diuji bila laba bersih PAA mendekati Rp118–221 M per tahun. Harga saham baru di bawah ±Rp223 akan menurunkan porsi publik di bawah 7,5% bila publik tidak menebus.",
+        "asumsi": "Simulasi memakai kurs acuan Rp17.703/USD, harga Rp83, saham beredar 1.253.000.000, porsi publik 55,02% (689.419.856 saham), ekuitas SMKM Rp206,67 M (31 Des 2025), dan laba bersih 2025 Rp567,7 jt. Angka simulasi adalah perhitungan Radar, bukan angka dokumen."
+      }
     },
     "kewajaran": {
       "putusan": "belum dapat dinilai",
       "ringkas": "Nilai ±USD100 juta untuk PAA masih angka perkiraan CSPA dari pihak afiliasi (pengendali); audit dan penilaian independen baru berjalan, sementara objek transaksi terus bertambah (tambak baru 68,07 ha, ekspansi Malaysia dan Pasifik) sehingga nilai akhirnya belum dapat diuji.",
       "metrik": [
+        {
+          "nama": "Nilai PAA ÷ ekuitas SMKM",
+          "nilai": 8.6,
+          "satuan": "×",
+          "rumus": "USD100 juta × Rp17.703 (kurs acuan) ÷ Rp206,67 M",
+          "pembanding": "Batas atas CSPA; nilai final menunggu penilai independen"
+        },
+        {
+          "nama": "Harga saham baru minimum agar publik ≥7,5%",
+          "nilai": 223,
+          "satuan": "Rp",
+          "rumus": "Rp1.770,3 M ÷ (689,42 jt ÷ 7,5% − 1,253 miliar)",
+          "pembanding": "±2.7× harga kini Rp83 (simulasi Radar)"
+        },
         {
           "nama": "Kapitalisasi pasar SMKM",
           "nilai": 100240000000,
