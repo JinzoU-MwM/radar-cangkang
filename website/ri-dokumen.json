@@ -3672,7 +3672,7 @@
     }
   },
   "SMKM": {
-    "asOf": "2026-10-22",
+    "asOf": "2026-10-23",
     "jenis": "inbreng",
     "status": "rencana",
     "sahamBeredar": 1253000000,
@@ -3703,7 +3703,7 @@
     },
     "komitmenPengendali": "Lim Shrimp Org Pte. Ltd. (melalui PT Lim Shrimp Org) memegang 313.250.000 saham (25%), dibeli di Rp37/saham; PTW Rp93/saham tanpa satu pun saham tertender. Komitmen setor pada PMHMETD berupa inbreng aset PAA (nilai belum final).",
     "aset": {
-      "nama": "PanAsia Aquaculture Pte. Ltd. (Panasia/PAA) dan LSO Organization Holdings Pte. Ltd. (LSO Holdings) — termasuk sisa 50% Lim Shrimp Organization Ltd, BVI",
+      "nama": "PanAsia Aquaculture Pte. Ltd. (PAA) beserta grup hasil restrukturisasi (termasuk Ark Abundance Pte. Ltd. dan 75% PMA tambak 68,07 ha di Indonesia) dan LSO Organization Holdings Pte. Ltd. (LOH) beserta LSO BVI, Lim Shrimp Org Sdn. Bhd., dan LSO Pacific Pte. Ltd.",
       "porsiPersen": 100,
       "nilai100Rp": null,
       "nilaiTransaksiRp": null,
@@ -3721,28 +3721,29 @@
           "sumberDana": "LSO Holdings: estimasi ±SGD13 juta dari Advanced Systems Automation Ltd (cara bayar belum diungkap)"
         }
       ],
-      "dasarNilai": "Angka kesepakatan CSPA ('diperkirakan'): Panasia ±USD100 juta (CSPA dengan LSO, 22 Des 2025), LSO Holdings ±SGD13 juta (CSPA dengan ASA, 30 Jan 2026). Laporan penilaian independen belum tersedia; ditargetkan semester II 2026 dengan cut-off LK audit Juni 2026.",
+      "dasarNilai": "Angka kesepakatan CSPA ('diperkirakan'): PAA ±USD100 juta (CSPA dengan Lim Shrimp Org Pte. Ltd., 22 Des 2025), LOH ±SGD13 juta (CSPA dengan Advanced Systems Automation Limited, 30 Jan 2026). Per 6 Okt 2026 entitas yang direstrukturisasi di bawah PAA sedang diaudit dan dinilai pihak independen; penilaian independen LOH masih berlangsung. Hasilnya menjadi dasar studi kelayakan dan pendapat kewajaran untuk RUPSLB.",
       "kjpp": {
         "nama": null,
-        "status": "belum ditunjuk",
+        "status": "ditunjuk",
         "nilaiRp": null,
-        "tanggal": null
+        "tanggal": null,
+        "keterangan": "Penilai independen sedang menilai PAA dan LOH (per 6 Okt 2026); nama belum diungkap."
       },
       "keuangan": {
         "periode": null,
         "standar": null,
-        "auditor": "Panasia menunjuk CLA Global TS (audit berjalan)",
+        "auditor": "PAA: audit & penilaian independen berjalan (diberitahukan 1 Okt 2026); LOH, LSO BVI, LSOSB, LSO Pacific: audit sampai tahun buku 2025 selesai, audit sampai cut-off 2026 berjalan",
         "ekuitasRp": null,
         "totalAsetRp": null,
         "pendapatanRp": null,
         "labaBersihRp": null,
-        "catatan": "Data keuangan Panasia/LSO Holdings belum diungkap (dijanjikan paling lambat saat dokumen RUPSLB). Panasia adalah holding baru untuk mengonsolidasikan aset LSO: tambak Sumbawa ±367.900 m² (40 kolam) dan Sabah ±485.623 m² (beroperasi sejak 1998, peningkatan kapasitas sejak 2023); restrukturisasi internal masih berjalan. SMKM: ekuitas Rp206,67 M (31 Des 2025, audit KAP Mirawati Sensi Idris, WTM), laba bersih 2025 Rp567,7 jt."
+        "catatan": "Data keuangan PAA/LOH belum diungkap (dijanjikan paling lambat saat dokumen RUPSLB). Lahan tambak yang disebut dokumen: Sumbawa ±36,79 ha (40 kolam), Sabah ±48,56 ha (beroperasi sejak 1998), dan tambahan PMA di Indonesia 68,07 ha (diakuisisi 75% melalui Ark Abundance, 20 Jul 2026), total ±153,4 ha. Rencana usaha baru: fasilitas pertanian & akuakultur terintegrasi di Semenanjung Malaysia, ekspansi tambak & perdagangan udang di Malaysia Timur, proyek baru di kawasan Pasifik. SMKM: ekuitas Rp206,67 M (31 Des 2025, audit KAP Mirawati Sensi Idris, WTM), laba bersih 2025 Rp567,7 jt."
       },
       "afiliasi": true
     },
     "kewajaran": {
       "putusan": "belum dapat dinilai",
-      "ringkas": "Nilai ±USD100 juta untuk Panasia hanya angka perkiraan CSPA dari pihak afiliasi (pengendali) tanpa laporan keuangan audit maupun penilaian KJPP, sementara nilainya berlipat ganda dibanding ekuitas dan kapitalisasi pasar SMKM.",
+      "ringkas": "Nilai ±USD100 juta untuk PAA masih angka perkiraan CSPA dari pihak afiliasi (pengendali); audit dan penilaian independen baru berjalan, sementara objek transaksi terus bertambah (tambak baru 68,07 ha, ekspansi Malaysia dan Pasifik) sehingga nilai akhirnya belum dapat diuji.",
       "metrik": [
         {
           "nama": "Kapitalisasi pasar SMKM",
@@ -3757,19 +3758,27 @@
           "satuan": "%",
           "rumus": "Rp30 M ÷ Rp206,67 M",
           "pembanding": "KJPP Ihot, Dollar & Raymond: wajar (bunga 6%)"
+        },
+        {
+          "nama": "Lahan tambak grup target",
+          "nilai": 153.42,
+          "satuan": "ha",
+          "rumus": "Sumbawa 36,79 ha + Sabah 48,56 ha + PMA Indonesia 68,07 ha",
+          "pembanding": "Tambahan 68,07 ha (±80%) diakuisisi Jul 2026; nilai dan kinerjanya belum diungkap"
         }
       ],
       "alasan": [
-        "Penjual Panasia (Lim Shrimp Org Pte. Ltd.) adalah pengendali SMKM — transaksi afiliasi; nilai USD100 juta adalah estimasi CSPA, bukan hasil penilai.",
-        "Laporan keuangan audit dan laporan penilaian independen Panasia/LSO Holdings belum tersedia; restrukturisasi grup masih berjalan sehingga objek transaksi belum final.",
-        "Panasia adalah holding yang baru dibentuk untuk 'mempermudah injeksi aset'; tidak ada pelanggan utama yang diungkap.",
-        "Nilai transaksi (USD100 juta + SGD13 juta) jauh melampaui ekuitas SMKM Rp206,67 M dan kapitalisasi pasar ±Rp100 M — inbreng akan menghasilkan dilusi sangat besar bagi publik (75% saat ini).",
-        "Pengendali baru membeli di Rp37/saham, sedangkan harga PTW Rp93 tidak diminati publik (0 saham) — harga pelaksanaan inbreng menjadi penentu utama keadilan bagi publik.",
-        "SMKM telah meminjamkan Rp30 M (bunga 6%, tenor 1 tahun) kepada Panasia sebelum akuisisi — dana emiten mengalir ke calon aset milik pengendali."
+        "Penjual PAA (Lim Shrimp Org Pte. Ltd.) adalah pengendali SMKM: transaksi afiliasi; nilai USD100 juta adalah estimasi CSPA, bukan hasil penilai.",
+        "Per 6 Okt 2026 audit dan penilaian independen PAA dan LOH masih berjalan; RUPSLB belum dijadwalkan sehingga belum ada angka KJPP untuk diuji.",
+        "Lingkup aset berubah: PAA menambah Ark Abundance dan 75% PMA tambak 68,07 ha (Jul 2026) serta merencanakan ekspansi Malaysia dan Pasifik; lahan tambak bertambah dari ±85 ha menjadi ±153 ha, tetapi nilai dan kinerja aset baru belum diungkap.",
+        "Nilai transaksi (USD100 juta + SGD13 juta) jauh melampaui ekuitas SMKM Rp206,67 M dan kapitalisasi pasar ±Rp100 M: inbreng akan menghasilkan dilusi sangat besar bagi publik (75% saat ini).",
+        "Penyelesaian mundur: long stop date CSPA PAA diperpanjang ke 30 Jun 2027 dan penyelesaian diperkirakan paling lambat 31 Mar 2027 (semula RUPSLB selambatnya Q3 2026).",
+        "Pengendali membeli di Rp37/saham, sedangkan PTW Rp93 tidak diminati publik (0 saham): harga pelaksanaan inbreng menjadi penentu utama keadilan bagi publik.",
+        "SMKM telah meminjamkan Rp30 M (bunga 6%, tenor 1 tahun) kepada PAA sebelum akuisisi: dana emiten mengalir ke calon aset milik pengendali, dan tenornya jatuh tempo sebelum transaksi selesai."
       ],
-      "syaratWajar": "Nilai Panasia/LSO Holdings ditetapkan KJPP berdasarkan laporan keuangan audit (cut-off Juni 2026) dengan kelipatan PBV/PER setara emiten akuakultur/perikanan, dan harga saham baru untuk inbreng tidak di bawah harga pasar/NAV sehingga publik tidak terdilusi secara tidak proporsional."
+      "syaratWajar": "Nilai PAA dan LOH ditetapkan KJPP berdasarkan laporan keuangan audit cut-off 2026 (termasuk aset baru AAPL dan PMA), dengan kelipatan PBV/PER setara emiten akuakultur, dan harga saham baru untuk inbreng tidak di bawah harga pasar/NAV sehingga publik tidak terdilusi secara tidak proporsional."
     },
-    "dampakPublik": "Belum dapat dihitung dari dokumen (jumlah saham baru dan harga belum ada). Publik saat ini 75% (939.750.000 saham); dengan nilai aset yang berlipat ganda dari kapitalisasi pasar, porsi publik pasca-inbreng berpotensi turun drastis.",
+    "dampakPublik": "Belum dapat dihitung dari dokumen (jumlah saham baru dan harga belum ada). Publik saat ini 75% (939.750.000 saham). Setelah kedua transaksi, SMKM akan memiliki 75%–100% kegiatan usaha grup PAA dan LOH; dengan nilai aset yang berlipat ganda dari kapitalisasi pasar, porsi publik pasca-inbreng berpotensi turun drastis.",
     "jadwal": [
       {
         "tahap": "CSPA Panasia dengan LSO",
@@ -3797,26 +3806,48 @@
         "status": "selesai"
       },
       {
-        "tahap": "Laporan penilaian independen Panasia & LSO Holdings",
-        "waktu": "Semester II 2026 (cut-off Juni 2026)",
-        "status": "rencana"
+        "tahap": "PAA menyelesaikan akuisisi Ark Abundance Pte. Ltd.",
+        "waktu": "18 Juni 2026",
+        "status": "selesai"
+      },
+      {
+        "tahap": "Ark Abundance mengakuisisi 75% PMA pemilik tambak udang 68,07 ha di Indonesia",
+        "waktu": "20 Juli 2026",
+        "status": "selesai"
+      },
+      {
+        "tahap": "Audit & penilaian independen entitas PAA (dasar studi kelayakan & pendapat kewajaran)",
+        "waktu": "Berjalan (diberitahukan 1 Okt 2026)",
+        "status": "berjalan"
+      },
+      {
+        "tahap": "Audit LOH sampai cut-off 2026 & penilaian independen LOH",
+        "waktu": "Berjalan (audit tahun buku 2025 selesai)",
+        "status": "berjalan"
+      },
+      {
+        "tahap": "Perpanjangan long stop date CSPA PAA",
+        "waktu": "30 Juni 2027 (disetujui, keterbukaan 6 Okt 2026)",
+        "status": "selesai"
       },
       {
         "tahap": "RUPSLB persetujuan PMHMETD/inbreng",
-        "waktu": "Semula 'selambatnya Q3 2026' — belum dipanggil per 22 Okt 2026",
+        "waktu": "Belum ditentukan (menunggu audit, penilaian, studi kelayakan, pendapat kewajaran)",
         "status": "rencana"
       },
       {
-        "tahap": "Long stop date CSPA Panasia / LSO Holdings",
-        "waktu": "30 Juni 2026 (Panasia, per dokumen Maret 2026) / 30 Juni 2027 (LSO Holdings)",
+        "tahap": "Penyelesaian Pengambilalihan PAA dan LOH",
+        "waktu": "Paling lambat 31 Maret 2027 (kuartal I 2027)",
         "status": "rencana"
       }
     ],
     "temuan": [
-      "Dokumen Maret 2026 menyebut tanggal akhir penyelesaian CSPA Panasia maksimal 30 Juni 2026; perpanjangan ke 30 Juni 2027 (data situs) tidak ditemukan di berkas yang tersedia.",
+      "Long stop date CSPA PAA resmi diperpanjang ke 30 Juni 2027 (keterbukaan 6 Okt 2026); penyelesaian diperkirakan paling lambat 31 Maret 2027, mundur dari rencana RUPSLB selambatnya Q3 2026.",
+      "Objek transaksi bertambah: PAA mengakuisisi Ark Abundance (18 Jun 2026), yang lalu mengakuisisi 75% PMA pemilik tambak 68,07 ha di Indonesia (20 Jul 2026); nilai akuisisi dan sumber dananya tidak diungkap.",
+      "Setelah kedua transaksi SMKM disebut memiliki 75%–100% kegiatan usaha grup PAA dan LOH, berbeda dengan dokumen Maret 2026 yang menyatakan LOH hanya pihak lawan dan tidak dikonsolidasikan.",
+      "Pengambilalihan LOH diperkirakan selesai lebih cepat dari rencana semula, juga pada kuartal I 2027.",
       "Nilai LSO Holdings di dokumen adalah ±SGD13 juta, bukan Rp172,25 M; kurs konversi tidak diungkap.",
-      "LSO Holdings dinyatakan hanya pihak lawan transaksi dan tidak akan dikonsolidasikan; yang diakuisisi adalah sisa 50% Lim Shrimp Organization Ltd, BVI.",
-      "Penerima manfaat akhir Panasia: Chen Pei Ling Catherine; Lim Yu, Victoria; dan Structured Capital Solutions Inc.",
+      "Penerima manfaat akhir PAA: Chen Pei Ling Catherine; Lim Yu, Victoria; dan Structured Capital Solutions Inc.",
       "Rencana PMHMETD disebut pada 2026 dan 2027 (lebih dari satu tahap)."
     ],
     "sumber": [
@@ -3861,6 +3892,13 @@
         "file": "f-32112973-0_SMKM_Ringkasan_Risalah_Risalah_RUPS_32112973.pdf",
         "url": "https://emitten-announcement.stockbit.com/attachments/f-32112973-0_SMKM_Ringkasan_Risalah_Risalah_RUPS_32112973.pdf",
         "hal": "1-3"
+      },
+      {
+        "tanggal": "2026-10-06",
+        "judul": "Perkembangan Pengambilalihan PanAsia Aquaculture & LSO Organization Holdings (Laporan Informasi dan Fakta Material)",
+        "file": "f-32163922-0_SMKM_Laporan_Informasi_dan_Fakta_Material_32163922_lamp2.pdf",
+        "url": "https://emitten-announcement.stockbit.com/attachments/f-32163922-0_SMKM_Laporan_Informasi_dan_Fakta_Material_32163922_lamp2.pdf",
+        "hal": "1-2"
       }
     ],
     "pengendali": {
@@ -3879,7 +3917,7 @@
       "cara": "Beli dari pengendali lama melalui transaksi crossing (tahap 1: 313.250.000 saham @Rp37; nilai = perhitungan 313.250.000 × Rp37). Tahap 2 maksimal 136.750.000 saham (10,91%) @Rp37 paling lambat 30 Jun 2026 sehingga maksimal 35,91%; realisasinya belum diungkap. PTW 10 Des 2025–9 Jan 2026 @Rp93 melalui PT Lim Shrimp Org: tidak ada saham tertender.",
       "hargaPTW": 93,
       "penjual": "PT Vina Nauli Jordania (VNJ)",
-      "rencana": "Mengembangkan bisnis pengendali melalui Perseroan di bidang konstruksi dan budidaya perikanan (tambak udang) lewat pengalihan aset (inbreng PanAsia Aquaculture Pte. Ltd. ±USD100 juta melalui PMHMETD), perubahan kegiatan usaha, dan penambahan modal; tidak berencana delisting, go private, likuidasi, atau mengubah kebijakan dividen.",
+      "rencana": "Mengembangkan bisnis pengendali melalui Perseroan di bidang konstruksi dan budidaya perikanan (tambak udang) lewat pengalihan aset (inbreng PanAsia Aquaculture Pte. Ltd. ±USD100 juta melalui PMHMETD), perubahan kegiatan usaha, dan penambahan modal; tidak berencana delisting, go private, likuidasi, atau mengubah kebijakan dividen; per 6 Okt 2026 grup PAA diperluas dengan tambak 68,07 ha di Indonesia dan rencana ekspansi Malaysia serta Pasifik.",
       "sumber": [
         {
           "tanggal": "2025-12-09",
@@ -3979,18 +4017,18 @@
         "Jasa konstruksi gudang dan infrastruktur (mis. PT Putra Tanjung Permai, PT Kuala Jaya Samudera, PT Anekapura Multikarta)",
         "Konstruksi jalan dan drainase pabrik (PT Citra Buana Pasta)",
         "Pekerjaan perumahan (PT Dian Wira Putra)",
-        "Rencana: budidaya udang melalui Panasia (tambak Sumbawa dan Sabah)"
+        "Rencana: budidaya dan perdagangan udang melalui grup PAA/LOH (tambak Sumbawa, Sabah, dan PMA 68,07 ha di Indonesia; ekspansi Malaysia Timur, Semenanjung Malaysia, dan Pasifik)"
       ],
       "proyek": [
         {
           "nama": "Akuisisi/inbreng PanAsia Aquaculture Pte. Ltd.",
-          "status": "CSPA 22 Des 2025; menunggu audit dan penilaian",
+          "status": "CSPA 22 Des 2025; long stop date diperpanjang ke 30 Jun 2027; target selesai paling lambat 31 Mar 2027",
           "nilaiRp": null,
           "keterangan": "Estimasi ±USD100 juta (kurs tidak diungkap); penjual adalah pengendali (afiliasi)."
         },
         {
           "nama": "Akuisisi LSO Organization Holdings Pte. Ltd.",
-          "status": "CSPA 30 Jan 2026",
+          "status": "CSPA 30 Jan 2026; audit 2025 selesai, penilaian berjalan; target selesai kuartal I 2027",
           "nilaiRp": null,
           "keterangan": "Estimasi ±SGD13 juta dari Advanced Systems Automation Ltd."
         },
@@ -3999,6 +4037,12 @@
           "status": "terlaksana Juni 2026",
           "nilaiRp": 30000000000,
           "keterangan": "Bunga 6%, tenor 1 tahun; pendapat kewajaran KJPP Ihot, Dollar & Raymond."
+        },
+        {
+          "nama": "Akuisisi Ark Abundance & 75% PMA tambak 68,07 ha (oleh PAA)",
+          "status": "selesai Jun–Jul 2026",
+          "nilaiRp": null,
+          "keterangan": "Aset baru di dalam calon aset injeksi; PAA menjajaki pengembangan menjadi budidaya intensif. Nilai akuisisi tidak diungkap."
         }
       ],
       "proyeksi": [],
