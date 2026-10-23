@@ -303,6 +303,9 @@ export function riLayak(c, r, lb, ls) {
     else plus(-1, 'Belum ada laporan penilai independen (KJPP).')
     if (d.aset?.afiliasi === true) plus(-1, 'Aset dibeli dari pihak terafiliasi pengendali.')
   }
+  const hk = (d.hukum?.daftar || []).filter(h => /berjalan|putusan/i.test(h.status || ''))
+  if (hk.length) plus(-1, `Ada ${hk.length} catatan hukum/regulasi yang masih berjalan atau sudah diputus: ${hk.slice(0, 2).map(h => h.isu).join('; ')}`)
+  else if (d.hukum?.tidakDitemukan) plus(0, 'Tidak ditemukan riwayat masalah hukum di dokumen keterbukaan.')
   if (lb) {
     if (lb.rugi) plus(-2, 'Aset yang masuk masih merugi.')
     else if (lb.per != null) plus(lb.per <= 15 ? 1 : lb.per > 40 ? -1 : 0, `PER implisit transaksi ${lb.per.toLocaleString('id-ID', { maximumFractionDigits: 1 })}×${lb.per <= 15 ? ' (wajar)' : lb.per > 40 ? ' (mahal)' : ''}.`)
@@ -425,14 +428,14 @@ export function riCalc(c, P, u = 0) {
   }
 }
 
-// Rentang slider harga pelaksanaan: tidak dibatasi nominal (Rp1 sampai 5× harga tertinggi yang relevan);
-// harga di luar rentang tetap bisa diketik langsung.
+// Rentang slider harga pelaksanaan: tidak dibatasi nominal, Rp1 sampai minimal Rp10.000 (atau 5× harga tertinggi
+// yang relevan); harga di luar rentang tetap bisa diketik langsung.
 export function riRange(c) {
   const start = Math.max(c?.nominal || 1, c?.ex || c?.implied || c?.price || 100)
   const top = Math.max(c?.price || 0, start)
   const lo = 1
-  const hi = Math.max(lo + 1, Math.round(top * 5))
-  return { lo, hi, step: hi > 2000 ? 5 : 1, start: Math.round(start) }
+  const hi = Math.max(10000, Math.round(top * 5))
+  return { lo, hi, step: hi > 20000 ? 10 : 1, start: Math.round(start) }
 }
 
 const fmtX = v => v.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + '×'

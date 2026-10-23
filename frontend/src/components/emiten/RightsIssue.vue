@@ -11,6 +11,7 @@ import { buildRiDeck, riDeckFileName } from '../../lib/deck.js'
 import { sectorOf, pickTheme } from '../../lib/deckThemes.js'
 import DeckDownload from './DeckDownload.vue'
 import RiDokumen from './RiDokumen.vue'
+import RiValuasi from './RiValuasi.vue'
 
 const props = defineProps({ c: { type: Object, required: true }, ticker: { type: String, default: '' }, name: { type: String, default: '' } })
 const range = computed(() => riRange(props.c))
@@ -369,17 +370,21 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
         </ul>
       </div>
 
+      <!-- Simulasi valuasi target, pengendali mengambil dana, dan sudut pandang pengendali/bandar. -->
+      <RiValuasi v-if="r" :c="c" :r="r" :P="+P" :laba-setahun="ls ? ls.after.laba : null" />
+
       <!-- Kesimpulan akhir: layak investasi atau tidak. -->
       <div v-if="layak" class="fund-ok" :class="layak.tone">
         <div class="fh">
           <span class="small muted">Kesimpulan investasi</span>
           <b>{{ layak.label }}</b>
         </div>
-        <ul class="why">
+        <p class="small"><b>{{ layak.key === 'layak' ? 'Layak dipertimbangkan' : layak.key === 'tidak' ? 'Tidak layak' : 'Spekulatif' }}, karena:</b></p>
+        <ol class="why abc">
           <li v-for="(x, i) in layak.reasons" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
-            <span class="ic" aria-hidden="true">{{ x.s > 0 ? '+' : x.s < 0 ? '−' : '·' }}</span>{{ x.t }}
+            <span class="ic" aria-hidden="true">{{ 'ABCDEFGHIJ'[i] }}.</span>{{ x.t }}
           </li>
-        </ul>
+        </ol>
         <p class="small muted">Skor {{ layak.score }} (≥ 2 layak dipertimbangkan; −1 s.d. 1 spekulatif; ≤ −2 tidak layak). Kerangka analisis otomatis dari dokumen dan simulasi, bukan anjuran membeli atau menjual efek.</p>
       </div>
 

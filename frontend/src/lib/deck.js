@@ -6,6 +6,7 @@ import { PT_STATUS, ptStatusTxt, confLvl } from './patterns.js'
 import { phaseName } from './cycle.js'
 import { mergeBoard } from './profil.js'
 import { riCalc, riVerdict, noRights, riFunding, asetDetail, riPriceNeeded, riScenarios, asetLaba, labaSebelumSesudah, riLayak } from './rightsIssue.js'
+import { valuasiSim, bandarView } from './valuasi.js'
 
 const W = 10, H = 5.625, M = 0.45, CW = W - 2 * M
 const TOP = 1.2, BOT = 4.6
@@ -588,6 +589,8 @@ export function buildDeck(PptxGenJS, d, th) {
 
   // ===== 8b2. Kewajaran aset & fakta dokumen asli (bila sudah diekstrak) =====
   docSlides(K, th, d.ri?.doc || d.riDoc)
+  personSlide(K, th, d.ri?.doc || d.riDoc)
+  valuasiSlide(K, th, d.ri, d.riR, d.riP)
 
   // ===== 9. Simulasi nilai KJPP (grafik) =====
   if (d.sim?.rows?.length) {
@@ -993,6 +996,71 @@ function coverArt(s, motif, th, S, dot, line, small = false) {
   }
 }
 
+// Harga per saham dengan desimal bila tidak bulat (mis. Rp23,5).
+const rpD = v => v == null ? '–' : Number.isInteger(+v) ? rpS(v) : 'Rp' + id(v, 2)
+
+// Slide pengendali/key person/riwayat hukum (dari dokumen) dan simulasi valuasi + sudut pandang pengendali.
+function personSlide(K, th, doc) {
+  const pg = doc?.pengendali, kp = doc?.keyPerson || [], hk = doc?.hukum
+  if (!pg && !kp.length && !hk) return
+  const { T, card, slide } = K
+  const hkList = (hk?.daftar || []).slice(0, 4)
+  const s = slide('Pengendali', 'Pengendali, Key Person, dan Riwayat Hukum',
+    hkList.length ? `Tercatat ${hk.daftar.length} catatan hukum/regulasi di dokumen keterbukaan.` : hk?.tidakDitemukan ? 'Tidak ditemukan riwayat masalah hukum di dokumen keterbukaan.' : pg?.rencana || '')
+  const lw = 4.4
+  card(s, M, TOP, lw, 3.35, { fill: th.dark, line: th.dark })
+  T(s, 'PENGENDALI', { x: M + 0.18, y: TOP + 0.12, w: lw - 0.3, h: 0.22, fontSize: 7.5, bold: true, color: th.accent2, charSpacing: 2 })
+  T(s, short(pg?.nama || 'belum diungkap', 60), { x: M + 0.18, y: TOP + 0.36, w: lw - 0.3, h: 0.45, fontFace: th.head, fontSize: 15, bold: true, color: 'FFFFFF', fit: 'shrink' })
+  const rows = pg ? [
+    pg.ubo?.length && ['UBO', pg.ubo.join(', ')],
+    pg.porsiPersen != null && ['Porsi', id(pg.porsiPersen, 2) + '%'],
+    (pg.hargaMasuk || pg.nilaiMasukRp) && ['Harga masuk', [pg.hargaMasuk && rpD(pg.hargaMasuk) + '/saham', pg.nilaiMasukRp && bigS(pg.nilaiMasukRp)].filter(Boolean).join(' · ')],
+    pg.hargaPTW && ['Harga tender', rpD(pg.hargaPTW)],
+    pg.rencana && ['Rencana', pg.rencana],
+  ].filter(Boolean) : []
+  T(s, rows.map((r2, i) => ({ text: `${r2[0]}: ${short(r2[1], 120)}`, options: { breakLine: i < rows.length - 1, paraSpaceAfter: 4 } })),
+    { x: M + 0.18, y: TOP + 0.9, w: lw - 0.3, h: 2.35, fontSize: 8.5, color: 'EAF2FA', fit: 'shrink' })
+  const x = M + lw + 0.2, w = CW - lw - 0.2
+  T(s, 'KEY PERSON', { x, y: TOP, w, h: 0.22, fontSize: 7.5, bold: true, color: th.accent, charSpacing: 2 })
+  const kl = kp.slice(0, 6)
+  T(s, kl.length ? kl.map((p, i) => ({ text: `${p.nama} · ${p.jabatan}${p.afiliasi ? ' (' + short(p.afiliasi, 40) + ')' : ''}`, options: { breakLine: i < kl.length - 1, paraSpaceAfter: 2 } })) : 'Belum diungkap.',
+    { x, y: TOP + 0.24, w, h: 1.5, fontSize: 8.5, color: th.ink, fit: 'shrink' })
+  T(s, 'RIWAYAT HUKUM DAN REGULASI', { x, y: TOP + 1.85, w, h: 0.22, fontSize: 7.5, bold: true, color: th.accent, charSpacing: 2 })
+  T(s, hkList.length ? hkList.map((h, i) => ({ text: `${h.tanggal ? fmtDate(h.tanggal) + ' · ' : ''}${h.jenis} (${h.status}): ${short(h.isu, 110)}`, options: { breakLine: i < hkList.length - 1, paraSpaceAfter: 2 } }))
+    : hk?.tidakDitemukan ? 'Tidak ditemukan di dokumen keterbukaan yang diperiksa.' : 'Belum diperiksa.',
+    { x, y: TOP + 2.09, w, h: 1.25, fontSize: 8, color: th.ink, fit: 'shrink' })
+}
+
+function valuasiSlide(K, th, c, r, P) {
+  if (!c || !r) return
+  const target = Math.max(0.1e12, Math.round(((r.total || 0) + (c.mcap || 0)) / 1e11) * 1e11)
+  const v = valuasiSim(c, r, { target, ambil: target * 0.2 })
+  const b = bandarView(c, r, P, c.doc?.pengendali || {}, target)
+  if (!v) return
+  const { T, card, slide, kpi } = K
+  const sh = x => x == null ? '–' : x >= 1e9 ? id(x / 1e9, 2) + ' miliar' : id(x / 1e6, 0) + ' jt'
+  const s = slide('Valuasi', 'Simulasi Valuasi dan Sudut Pandang Pengendali',
+    `Pada valuasi ${bigS(target)}, harga ${rpS(Math.round(v.harga))}${v.x ? ` (${id(v.x, 2)}× harga kini)` : ''}${b ? `; harga impas pengendali ${rpS(Math.round(b.impas))}` : ''}.`)
+  const w4 = (CW - 0.45) / 4
+  ;[
+    [rpS(Math.round(v.harga)), `Harga per saham pada valuasi ${bigS(target)}`],
+    [v.x ? id(v.x, 2) + '×' : '–', `Kelipatan dari harga kini ${rpS(c.price)}`],
+    [(v.pbvReal || v.pbv) ? id(v.pbvReal || v.pbv, 1) + '×' : '–', v.pbvReal ? 'PBV terhadap nilai buku riil' : 'PBV tersirat (ekuitas setelah transaksi)'],
+    [b ? rpS(Math.round(b.impas)) : '–', 'Harga impas pengendali'],
+  ].forEach(([val, l], i) => kpi(s, M + i * (w4 + 0.15), TOP, w4, 1.2, val, l))
+  const rows = [
+    v.jual && `A. Pengendali mengambil ${bigS(v.ambil)} lewat penjualan saham: ${sh(v.jual.saham)} saham (${id(v.jual.pctPerusahaan * 100, 1)}% perusahaan).`,
+    v.ri && `B. Lewat RI baru pada valuasi ${bigS(target)}: harga ${rpS(Math.round(v.ri.harga))}, ${sh(v.ri.saham)} saham baru, dilusi ${id(v.ri.dilusi * 100, 1)}%.`,
+    b && `Pengendali: saham awal ${sh(b.sahamAwal)}${b.hargaMasuk ? ` di ${rpD(b.hargaMasuk)}` : ''} + inbreng ${sh(b.sahamInbreng)} + tebus ${sh(b.sahamTebus)} = ${sh(b.totalSaham)} (${id(b.porsiSetelah * 100, 1)}%); modal ${bigS(b.totalModal)}.`,
+    b && `Laba kertas pengendali: harga kini ${bigS(b.labaKini)}${b.labaTarget != null ? `, valuasi target ${bigS(b.labaTarget)}` : ''}${b.kelipatanAwal ? `; modal awal sudah ${id(b.kelipatanAwal, 2)}×` : ''}.`,
+    // Skenario kedua: valuasi 2× dengan pengendali mengambil 20% (mis. Rp5 T dan Rp1 T).
+    (v2 => v2 && `Skenario 2×: valuasi ${bigS(v2.target)} → harga ${rpS(Math.round(v2.harga))} (${id(v2.x, 2)}× harga kini, PBV riil ${v2.pbvReal ? id(v2.pbvReal, 1) + '×' : '–'}); pengendali mengambil ${bigS(v2.ambil)} = jual ${id(v2.jual.pctPerusahaan * 100, 1)}% perusahaan atau RI baru ${id(v2.ri.dilusi * 100, 1)}% dilusi.`)(valuasiSim(c, r, { target: target * 2, ambil: target * 0.4 })),
+  ].filter(Boolean)
+  card(s, M, TOP + 1.35, CW, 2.0, { flat: true })
+  T(s, rows.map((t, i) => ({ text: short(t, 200), options: { breakLine: i < rows.length - 1, paraSpaceAfter: 5 } })),
+    { x: M + 0.18, y: TOP + 1.45, w: CW - 0.36, h: 1.8, fontSize: 9, color: th.ink, fit: 'shrink' })
+}
+
 // Dua slide dari dokumen asli (ri-dokumen.json): kewajaran nilai aset injeksi, lalu fakta dokumen & jadwal.
 // Dipakai presentasi lengkap dan presentasi penambahan modal.
 function docSlides(K, th, doc) {
@@ -1113,6 +1181,8 @@ export function buildRiDeck(PptxGenJS, d, th) {
 
   // ===== 2b. Kewajaran aset & fakta dokumen asli =====
   docSlides(K, th, c.doc)
+  personSlide(K, th, c.doc)
+  valuasiSlide(K, th, c, r, P)
 
   // ===== 3. Rincian nilai aset injeksi =====
   if (det && (det.nama || det.lo)) {
