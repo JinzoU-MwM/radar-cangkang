@@ -17,7 +17,7 @@ export const SECTORS = [
 ]
 
 // Tiga varian per sektor, semuanya palet terang yang tenang (tanpa merah, ungu, cokelat).
-// dark = warna sampul, panel, dan pita simpulan (cukup pekat untuk teks putih); accent = angka & label;
+// dark = warna sampul, panel, dan pita kesimpulan (cukup pekat untuk teks putih); accent = angka & label;
 // accent2 = sorotan muda; bg = latar slide isi; card = kartu; ink/muted = teks.
 // good/warn/bad: hijau / emas / jingga (bukan merah) untuk penanda positif, waspada, dan negatif.
 const T = (id, name, c) => ({ id, name, good: '16A34A', warn: 'CA8A04', bad: 'EA7317', card: 'FFFFFF', ink: '1F2937', muted: '5B6573', ...c })
