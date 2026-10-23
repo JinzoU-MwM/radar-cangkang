@@ -279,7 +279,8 @@ const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
       </section>
     </div>
 
-    <section v-if="A.pv" class="rule-top">
+    <!-- Bila analisa rights issue memuat data pengendali dari dokumen, bagian ini tidak diulang. -->
+    <section v-if="A.pv && !ri?.doc?.pengendali" class="rule-top">
       <h2>Pengendali & rencananya</h2>
       <p v-if="A.pv.bukanPengambilAlih" class="warn">Nama di kolom pengendali adalah pengendali lama/penjual atau bukan pengambil alih.</p>
       <p><b>Siapa:</b> {{ A.pv.siapa }}</p>
@@ -301,7 +302,8 @@ const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
     </section>
 
     <!-- Kalkulator dilusi. -->
-    <section v-if="calcMode" class="rule-top">
+    <!-- Kalkulator dilusi hanya tampil bila tidak ada analisa rights issue (simulasinya sudah ada di sana). -->
+    <section v-if="calcMode && !ri" class="rule-top">
       <h2>Kalkulator dilusi & nilai per saham</h2>
       <p v-if="calcMode === 'done'" class="small muted">Penerbitan saham baru sudah tereksekusi — jumlah saham dan porsi publik saat ini sudah mencerminkan dilusinya. Lihat <b>Hitungan dilusi</b> di pandangan analis untuk posisi sebelum dan sesudah.</p>
       <template v-else>

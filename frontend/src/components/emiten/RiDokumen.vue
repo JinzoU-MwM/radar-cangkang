@@ -5,7 +5,9 @@ import { fmt, rp, big, fmtDate } from '../../lib/domain.js'
 import { kewajaranTone, asetLaba } from '../../lib/rightsIssue.js'
 
 // post = { S1: saham setelah penerbitan, P: harga RI simulasi } untuk laba per saham emiten.
-const props = defineProps({ doc: { type: Object, required: true }, post: { type: Object, default: () => ({}) } })
+// part = bagian yang ditampilkan (aset | pengendali | fakta | sumber); kosong = semua bagian.
+const props = defineProps({ doc: { type: Object, required: true }, post: { type: Object, default: () => ({}) }, part: { type: String, default: '' } })
+const show = p => !props.part || props.part === p
 const lb = computed(() => asetLaba(props.doc, props.post))
 // Harga per saham dengan desimal bila tidak bulat (mis. Rp23,5).
 const rpD = v => v == null ? '–' : Number.isInteger(+v) ? rp(v) : 'Rp' + fmt(v, 2)
@@ -56,7 +58,7 @@ const facts = computed(() => {
 <template>
   <div class="rid">
     <!-- Inti: apakah nilai aset injeksi wajar. -->
-    <div v-if="k" class="kw" :class="'kw-' + kewajaranTone(k.putusan)">
+    <div v-if="k && show('aset')" class="kw" :class="'kw-' + kewajaranTone(k.putusan)">
       <div class="kwh">
         <span class="lbl">Kewajaran nilai aset injeksi</span>
         <b class="put">{{ k.putusan }}</b>
@@ -74,7 +76,7 @@ const facts = computed(() => {
     </div>
 
     <!-- Perhitungan laba aset injeksi. -->
-    <div class="lb">
+    <div v-if="show('aset')" class="lb">
       <h4>Perhitungan laba aset injeksi</h4>
       <template v-if="lb">
         <table class="ledger met">
@@ -96,7 +98,7 @@ const facts = computed(() => {
     </div>
 
     <!-- Pengendali & key person. -->
-    <div v-if="pg || kp.length" class="lb">
+    <div v-if="(pg || kp.length) && show('pengendali')" class="lb">
       <h4>Pengendali dan key person</h4>
       <dl v-if="pg" class="fx">
         <div><dt class="small muted">Pengendali</dt><dd class="small"><b>{{ pg.nama || 'belum diungkap' }}</b>{{ pg.negara ? ' (' + pg.negara + ')' : '' }}{{ pg.porsiPersen != null ? ' · ' + fmt(pg.porsiPersen, 2) + '%' : '' }}</dd></div>
@@ -113,7 +115,7 @@ const facts = computed(() => {
     </div>
 
     <!-- Riwayat masalah hukum/regulasi dari dokumen resmi. -->
-    <div v-if="hk" class="lb">
+    <div v-if="hk && show('pengendali')" class="lb">
       <h4>Riwayat masalah hukum dan regulasi</h4>
       <p v-if="hk.tidakDitemukan && !(hk.daftar || []).length" class="small">Tidak ditemukan riwayat gugatan, PKPU, sanksi, atau perkara lain di dokumen keterbukaan yang diperiksa.</p>
       <ul v-else class="small">
@@ -122,7 +124,7 @@ const facts = computed(() => {
     </div>
 
     <!-- Cara menghasilkan laba: model bisnis, proyek, proyeksi. -->
-    <div v-if="bs" class="lb">
+    <div v-if="bs && show('aset')" class="lb">
       <h4>Cara menghasilkan laba</h4>
       <p v-if="bs.model" class="small">{{ bs.model }}</p>
       <p v-if="(bs.sumberPendapatan || []).length" class="small"><b>Sumber pendapatan:</b> {{ bs.sumberPendapatan.join('; ') }}.</p>
@@ -138,26 +140,26 @@ const facts = computed(() => {
       <p v-if="bs.catatan" class="small muted">{{ bs.catatan }}</p>
     </div>
 
-    <details class="dd" open>
-      <summary class="lbl">Fakta dari dokumen asli</summary>
-      <dl class="fx">
+    <details v-if="show('fakta') || show('sumber')" class="dd" open>
+      <summary class="lbl">{{ show('fakta') ? 'Fakta dari dokumen asli' : 'Sumber dokumen' }}</summary>
+      <dl v-if="show('fakta')" class="fx">
         <div v-for="[l, v] in facts" :key="l"><dt class="small muted">{{ l }}</dt><dd class="small">{{ v }}</dd></div>
       </dl>
-      <template v-if="(doc.penggunaanDana || []).length">
+      <template v-if="show('fakta') && (doc.penggunaanDana || []).length">
         <h4>Rencana penggunaan dana</h4>
         <ul class="small"><li v-for="p in doc.penggunaanDana" :key="p.pos">{{ p.pos }}<template v-if="p.nilaiRp"> · {{ big(p.nilaiRp) }}</template><template v-if="p.persen"> ({{ fmt(p.persen, 0) }}%)</template></li></ul>
       </template>
-      <p v-if="doc.dampakPublik" class="small"><b>Dampak bagi pemegang saham publik:</b> {{ doc.dampakPublik }}</p>
-      <template v-if="(doc.jadwal || []).length">
+      <p v-if="show('fakta') && doc.dampakPublik" class="small"><b>Dampak bagi pemegang saham publik:</b> {{ doc.dampakPublik }}</p>
+      <template v-if="show('fakta') && (doc.jadwal || []).length">
         <h4>Jadwal menurut dokumen</h4>
         <ol class="jd small"><li v-for="j in doc.jadwal" :key="j.tahap + j.waktu" :class="{ ok: j.status === 'selesai' }"><b>{{ j.waktu }}</b> · {{ j.tahap }}</li></ol>
       </template>
-      <template v-if="(doc.temuan || []).length">
+      <template v-if="show('fakta') && (doc.temuan || []).length">
         <h4>Temuan penting di dokumen</h4>
         <ul class="small"><li v-for="t in doc.temuan" :key="t">{{ t }}</li></ul>
       </template>
-      <template v-if="(doc.sumber || []).length">
-        <h4>Sumber dokumen</h4>
+      <template v-if="show('sumber') && (doc.sumber || []).length">
+        <h4 v-if="part !== 'sumber'">Sumber dokumen</h4>
         <ul class="small src">
           <li v-for="s in doc.sumber" :key="(s.file || s.judul) + s.hal">
             {{ s.tanggal ? fmtDate(s.tanggal) : '' }} · {{ s.judul }}<template v-if="s.hal"> · hal. {{ s.hal }}</template>
