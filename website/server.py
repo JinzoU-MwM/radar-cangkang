@@ -1600,20 +1600,24 @@ def get_pov(fresh: bool = False) -> dict:
         for a in cons:
             a["nada"] = "bullish" if a["bull"] > a["bear"] else "bearish" if a["bear"] > a["bull"] else "netral"
         res = {"asOf": datetime.now().isoformat(timespec="seconds"), "users": users, "consensus": cons[:20], "errors": errors}
-        _pov_memo = (time.time(), res)
-        return res
+        # Hasil gagal total (mis. token kedaluwarsa) tidak menimpa hasil lama yang masih berguna.
+        if users or not _pov_memo:
+            _pov_memo = (time.time() if users else 0, res)
+        return _pov_memo[1] if not users and _pov_memo[1].get("users") else res
 
 
 def pov_loop() -> None:
-    """Hitung POV di latar belakang (setelah start, lalu tiap 6 jam) supaya halaman publik tidak menunggu."""
+    """Hitung POV di latar belakang (setelah start, lalu tiap 6 jam) supaya halaman publik tidak menunggu.
+    Bila gagal (mis. token kedaluwarsa), dicoba lagi tiap 30 menit sehingga pulih sendiri setelah token diganti."""
     time.sleep(90)
     while True:
+        ok = False
         if get_token():
             try:
-                get_pov(fresh=True)
+                ok = bool(get_pov(fresh=True).get("users")) and _pov_memo and _pov_memo[0] > 0
             except Exception as e:
                 print(f"[pov] gagal: {e}", file=sys.stderr)
-        time.sleep(6 * 3600 + 120)
+        time.sleep(6 * 3600 + 120 if ok else 1800)
 
 
 def _kandidat(cfg: dict, fresh: bool = False) -> dict:
