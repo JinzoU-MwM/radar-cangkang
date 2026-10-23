@@ -538,7 +538,7 @@ export function buildDeck(PptxGenJS, d, th) {
 
   // ===== 8b2. Kewajaran aset & fakta dokumen asli (bila sudah diekstrak) =====
   // Bila ada rights issue, kewajaran, fakta dokumen, dan valuasi tampil di bagian Rights Issue.
-  if (!d.ri) docSlides(K, th, d.riDoc)
+  if (!d.ri) { docSlides(K, th, d.riDoc); penilaianSlide(K, th, d.riDoc) }
 
   // ===== 9. Simulasi nilai KJPP (grafik) =====
   if (!d.ri && d.sim?.rows?.length) {
@@ -867,6 +867,23 @@ function coverArt(s, motif, th, S, dot, line, small = false) {
   }
 }
 
+// Penilaian aset injeksi: angka kunci simulasi, yang sudah diungkap, dan yang harus diuji di laporan penilai.
+function penilaianSlide(K, th, doc) {
+  const pn = doc?.aset?.penilaian
+  if (!pn) return
+  const { T, kpi, pointCard, slide } = K
+  const s = slide('Penilaian aset', pn.judul || 'Penilaian Aset Injeksi', pn.kesimpulan || pn.ringkas)
+  const val = m => m.nilai == null ? '–' : /^Rp/.test(m.satuan || '') ? `Rp${id(m.nilai, m.nilai >= 100 ? 0 : 1)}${(m.satuan || '').slice(2)}` : id(m.nilai, m.nilai >= 100 ? 0 : 1) + (m.satuan || '')
+  const sim = (pn.simulasi || []).slice(0, 8)
+  const pick = re => sim.find(m => re.test(m.nama))
+  const tiles = [pick(/dalam rupiah/i), pick(/ekuitas/i), pick(/PER 8/i), pick(/minimum agar publik/i)].filter(Boolean)
+  const w4 = (CW - 0.15 * (tiles.length - 1)) / Math.max(1, tiles.length)
+  tiles.forEach((m, i) => kpi(s, M + i * (w4 + 0.15), TOP, w4, 1.15, val(m), m.nama, i === tiles.length - 1 ? th.bad : th.accent))
+  const y = TOP + 1.3, h = 3.35 - 1.3, hw = CW / 2 - 0.1
+  pointCard(s, M, y, hw, h, 'i', th.accent, 'Yang sudah diungkap', (pn.diketahui || []).map(t => t.replace(/\s*\((KI|tanggapan)[^)]*\)\.?$/, '')), { max: 3, n: 120, size: 9.5 })
+  pointCard(s, M + hw + 0.2, y, hw, h, '?', th.warn, 'Harus diuji di laporan penilai', pn.dicermati || [], { max: 3, n: 120, size: 9.5 })
+}
+
 // Model bisnis aset, perhitungan laba aset, dan proyeksi laba dari dokumen.
 function bisnisSlide(K, th, doc, r, P) {
   const bs = doc?.bisnis, lb = doc ? asetLaba(doc, { S1: r?.S1, P }) : null
@@ -1143,6 +1160,7 @@ function riSlides(K, th, d, opt = {}) {
   // ---------- Bagian: Aset dan laba (urutan sama dengan analisa rights issue di website) ----------
   sec('Aset dan laba')
   docSlides(K, th, c.doc, 'kewajaran')
+  penilaianSlide(K, th, c.doc)
 
   // ===== 3. Rincian nilai aset injeksi =====
   if (!c.doc && det && (det.nama || det.lo)) {
