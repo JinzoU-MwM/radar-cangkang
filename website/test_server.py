@@ -12,6 +12,7 @@ import urllib.request
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 
+from datetime import datetime
 import server
 
 # Data contoh tradersaham untuk tes (file asli tsa-*.json tidak dilacak git).
@@ -226,6 +227,15 @@ class CacheTest(unittest.TestCase):
 
 
 class KandidatTest(unittest.TestCase):
+    def test_sb_news_convert(self):
+        res = {"data": {"stream": [{"stream_id": 9, "title": "DOOH Teken MoU AI Data Center", "created_at": datetime.now().strftime("%Y-%m-%d 10:00:00"),
+                                    "content": "PT Era Media Sejahtera Tbk (DOOH) menandatangani tiga nota kesepahaman ...", "news_feed": {"label": "emitennews"}},
+                                   {"stream_id": 8, "title": "Lama", "created_at": "2000-01-01 10:00:00", "content": ""}]}}
+        out = server.convert_sb_news(res, "DOOH")
+        self.assertEqual([x["id"] for x in out], ["sb-news-9"])
+        self.assertEqual(out[0]["source"], "StockbitNews · emitennews")
+        self.assertFalse(out[0]["summary"].endswith("..."))
+
     def test_title_signals(self):
         f = server.kandidat_sigs
         self.assertEqual(f("Keterbukaan Informasi Negosiasi Perubahan Pengendali"), ["akuisisi"])

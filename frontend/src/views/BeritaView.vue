@@ -7,8 +7,8 @@ import Modal from '../components/emiten/Modal.vue'
 import NewsItem from '../components/NewsItem.vue'
 
 const typeName = id => (UTYPES.find(t => t.id === id) || UTYPES[UTYPES.length - 1]).name
-// Sumber dari prefiks id: "sb-report-" = Stockbit Reports, "news-" = media.
-const srcOf = u => /^sb-report-/.test(u.id) ? 'stockbit' : /^news-/.test(u.id) ? 'media' : ''
+// Sumber dari prefiks id: "sb-report-" = Stockbit Reports, "sb-news-" = StockbitNews, "news-" = media.
+const srcOf = u => /^sb-report-/.test(u.id) ? 'stockbit' : /^(news-|sb-news-)/.test(u.id) ? 'media' : ''
 
 const type = ref('')
 const src = ref('')
