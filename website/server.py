@@ -1412,7 +1412,8 @@ def sync_updates(cfg: dict, delay: float = 0.4) -> dict:
     digabung ke tabel updates berdasarkan id (stempel updatedAt laporan lama dipertahankan)."""
     old = {str(u["id"]): u for u in updates_all()}
     changed, errors, added, added_news = [], [], 0, 0
-    codes = [t for t in backdoor_tickers() if TICKER_RE.match(t)]
+    # Semua emiten di monitor (termasuk tahap radar) agar keterbukaan & berita tidak ada yang terlewat.
+    codes = [t for t in dict.fromkeys(it["ticker"] for it in items_all()) if TICKER_RE.match(t)]
     if cfg.get("reports") and get_token():
         for t in codes:
             try:
