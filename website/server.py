@@ -1443,7 +1443,8 @@ def news_loop() -> None:
 # Sudut pandang (POV) akun Stockbit yang diprioritaskan + akun trending: saham yang mereka incar, gaya analisa,
 # horizon, dan nada (bullish/bearish). Hanya posting ide publik yang dianalisis; tidak ada data pribadi.
 
-POV_PRIORITY = ["kakdr", "zeinihzafahrozi", "majoindonangega", "athira", "PMFernandoR"]
+# Urutan tampil kartu POV mengikuti daftar ini.
+POV_PRIORITY = ["athira", "majoindonangega", "zeinihzafahrozi", "PMFernandoR", "kakdr"]
 POV_PAGES, POV_DAYS, POV_TRENDING = 5, 60, 5
 POV_NOT_STOCK = {"IHSG", "LQ45", "IDXV", "IDXG", "JII7"}
 POV_STYLE = [
