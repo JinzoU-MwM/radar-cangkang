@@ -38,11 +38,15 @@ describe('pickTheme', () => {
 
 describe('short', () => {
   it('teks pendek tidak diubah', () => expect(short('Halo dunia', 20)).toBe('Halo dunia'))
-  it('memotong di batas kalimat atau kata, tidak di tengah kata', () => {
-    const s = short('Pengendali baru masuk lewat tender wajib dan menyiapkan inbreng aset tambang senilai besar', 40)
-    expect(s.length).toBeLessThanOrEqual(40)
-    expect(s.endsWith('…')).toBe(true)
-    expect(s).not.toMatch(/\s…$/)
+  it('tidak memotong kalimat: ambil kalimat lengkap yang muat', () => {
+    expect(short('Pengendali baru masuk lewat tender wajib. Inbreng aset tambang menyusul tahun depan.', 50)).toBe('Pengendali baru masuk lewat tender wajib.')
+  })
+  it('kalimat pertama yang panjang tetap utuh, tanpa elipsis', () => {
+    const t = 'Inbreng 45% TCP senilai Rp1,6 T pada harga indikatif Rp450–550, jauh di atas harga Rp106.'
+    expect(short(t, 60)).toBe(t)
+  })
+  it('singkatan "maks." bukan akhir kalimat', () => {
+    expect(short('Nilai injeksi BTL (maks. USD125 juta) besar. Pantau KJPP.', 45)).toBe('Nilai injeksi BTL (maks. USD125 juta) besar.')
   })
 })
 

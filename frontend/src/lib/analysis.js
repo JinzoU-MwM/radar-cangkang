@@ -31,7 +31,7 @@ const NEG_GOOD = /(tidak|kurang|belum|bukan) (\w+ )?kredibel/i
 const HI_SIGNAL = /(transaksi material|perubahan kegiatan usaha|inbreng|HMETD|penilai|akuisisi|pengambilalihan|tender|RUPS|private placement|penempatan terbatas)/i
 const NOISE = /(volatilitas|permintaan penjelasan bursa)/i
 // Pecah kalimat tanpa memotong singkatan nama badan hukum (Pte., Ltd., Tbk., B.V., Co.).
-export const sentences = s => String(s || '').split(/(?<!\b(?:Pte|Ltd|Co|Tbk|Inc|B\.V|No|dkk|mis|Jl)\.)(?<=\.)\s+(?=[A-Z0-9(])/).filter(Boolean)
+export const sentences = s => String(s || '').split(/(?<!\b(?:Pte|Ltd|Co|Tbk|Inc|B\.V|No|dkk|mis|Jl|maks|min|dll|dst|vs|s\.d)\.)(?<=\.)\s+(?=[A-Z0-9(])/).filter(Boolean)
 
 // Input: profile = respons /api/profile, reports = laporan emiten (urut terbaru dulu), insider = /api/insider,
 // quote = /api/quote, benchmark = data pembanding (deals); verified/pengendali/pandangan = peta per kode, analisa = analisa.json.
