@@ -17,20 +17,25 @@ const si = ref(0), li = ref(0), playing = ref(false), rate = ref(1)
 const stage = ref(null)
 
 // ---- suara ----
+// Utama: suara pria "Ardi" dari server (Azure Speech, sama di semua perangkat). Cadangan: suara browser.
+const SERVER = 'Ardi · pria (server)'
+const serverTts = computed(() => !!store.status?.tts)
 const synth = typeof window !== 'undefined' ? window.speechSynthesis : null
 const voices = ref([]), voiceName = ref('')
 function loadVoices() {
-  if (!synth) return
-  const all = synth.getVoices().filter(v => /^id(-|_|$)/i.test(v.lang))
+  const all = synth ? synth.getVoices().filter(v => /^id(-|_|$)/i.test(v.lang)) : []
   // Utamakan suara laki-laki (Edge: Ardi Online; Windows: Andika), lalu suara alami lainnya.
   const rank = v => (MALE.test(v.name) ? 0 : 2) + (/(online|natural)/i.test(v.name) ? 0 : 1)
-  voices.value = all.sort((a, b) => rank(a) - rank(b))
-  if (!voices.value.some(v => v.name === voiceName.value)) voiceName.value = voices.value[0]?.name || ''
+  voices.value = [...(serverTts.value ? [{ name: SERVER, server: true }] : []), ...all.sort((a, b) => rank(a) - rank(b))]
+  if (!voices.value.some(v => v.name === voiceName.value) || (serverTts.value && !voiceName.value)) voiceName.value = voices.value[0]?.name || ''
 }
+watch(serverTts, v => { loadVoices(); if (v) voiceName.value = SERVER })
 const MALE = /\b(ardi|andika|male|pria|laki)\b/i
 const voice = computed(() => voices.value.find(v => v.name === voiceName.value) || null)
-// Bila hanya tersedia suara wanita (mis. "Google Bahasa Indonesia"), nada diturunkan agar terdengar lebih berat.
-const pitch = computed(() => voice.value && !MALE.test(voice.value.name) ? 0.7 : 1)
+// Suara browser terbaik untuk cadangan bila audio server gagal.
+const browserVoice = computed(() => voices.value.find(v => !v.server) || null)
+const ttsUrl = text => '/api/tts?t=' + encodeURIComponent(speakable(text))
+let audio = null
 
 async function load() {
   loading.value = true; error.value = ''; stop()
@@ -48,7 +53,7 @@ onBeforeUnmount(() => { stop(); if (synth) synth.onvoiceschanged = null })
 let timer = null, token = 0
 const scene = computed(() => scenes.value[si.value] || null)
 const line = computed(() => scene.value?.lines[li.value] || '')
-function stop() { playing.value = false; token++; clearTimeout(timer); synth?.cancel() }
+function stop() { playing.value = false; token++; clearTimeout(timer); synth?.cancel(); if (audio) { audio.pause(); audio = null } }
 function next() {
   const sc = scenes.value[si.value]
   if (!sc) return stop()
@@ -57,25 +62,46 @@ function next() {
   else { stop(); return }
   speak()
 }
-function speak() {
-  const my = ++token
-  clearTimeout(timer); synth?.cancel()
-  const text = line.value
-  if (!playing.value || !text) return
-  if (synth && voice.value) {
+// Kalimat berikutnya (untuk memuat audio server lebih dulu agar tidak ada jeda).
+function upcoming() {
+  const sc = scenes.value[si.value]
+  if (!sc) return ''
+  return li.value < sc.lines.length - 1 ? sc.lines[li.value + 1] : scenes.value[si.value + 1]?.lines[0] || ''
+}
+function speakBrowser(text, my, v) {
+  if (synth && v) {
     const u = new SpeechSynthesisUtterance(speakable(text))
-    u.lang = voice.value.lang; u.voice = voice.value; u.rate = rate.value; u.pitch = pitch.value
+    u.lang = v.lang; u.voice = v; u.rate = rate.value; u.pitch = MALE.test(v.name) ? 1 : 0.7
     u.onend = () => { if (my === token && playing.value) timer = setTimeout(next, 250) }
     u.onerror = () => { if (my === token && playing.value) timer = setTimeout(next, lineSecs(text, rate.value) * 1000) }
     synth.speak(u)
   } else timer = setTimeout(() => { if (my === token) next() }, lineSecs(text, rate.value) * 1000)
+}
+function speak() {
+  const my = ++token
+  clearTimeout(timer); synth?.cancel(); if (audio) { audio.pause(); audio = null }
+  const text = line.value
+  if (!playing.value || !text) return
+  if (voice.value?.server) {
+    const a = new Audio(ttsUrl(text))
+    audio = a
+    a.playbackRate = rate.value
+    a.onended = () => { if (my === token && playing.value) timer = setTimeout(next, 200) }
+    // Server tidak tersedia (204/kuota habis/jaringan): kalimat ini dibacakan suara browser.
+    a.onerror = () => { if (my === token && playing.value) speakBrowser(text, my, browserVoice.value) }
+    a.play().catch(() => { if (my === token && playing.value) speakBrowser(text, my, browserVoice.value) })
+    const nx = upcoming()
+    if (nx) { const pre = new Audio(ttsUrl(nx)); pre.preload = 'auto' }
+    return
+  }
+  speakBrowser(text, my, voice.value)
 }
 function play() { if (!scenes.value.length) return; if (si.value >= scenes.value.length) { si.value = 0; li.value = 0 } playing.value = true; speak() }
 function toggle() { playing.value ? stop() : play() }
 function goScene(i) { const was = playing.value; stop(); si.value = i; li.value = 0; if (was) play() }
 function prevLine() { const was = playing.value; stop(); if (li.value > 0) li.value--; else if (si.value > 0) { si.value--; li.value = scenes.value[si.value].lines.length - 1 } if (was) play() }
 function nextLine() { const was = playing.value; stop(); next(); if (was) play() }
-watch(rate, () => { if (playing.value) speak() })
+watch(rate, () => { if (audio) audio.playbackRate = rate.value; else if (playing.value) speak() })
 watch(voiceName, () => { if (playing.value) speak() })
 
 // Waktu: perkiraan dari jumlah kata (durasi suara sebenarnya bergantung mesin suara perangkat).
@@ -202,6 +228,7 @@ const rpS = v => v == null ? '–' : 'Rp' + Math.round(v).toLocaleString('id-ID'
         </label>
         <button type="button" class="btn" @click="fullscreen">Layar penuh</button>
       </div>
+      <p v-if="!serverTts && voices.length && !MALE.test(voices[0].name)" class="small muted">Suara pria server belum aktif; perangkat ini hanya memiliki suara wanita. Buka di Microsoft Edge untuk suara pria "Ardi".</p>
       <p v-if="!voices.length" class="small muted">Perangkat ini belum memiliki suara Bahasa Indonesia, sehingga video berjalan tanpa suara (teks tetap tampil). Gunakan Chrome atau Edge terbaru, atau pasang paket suara Indonesia di pengaturan sistem.</p>
 
       <!-- Bab -->

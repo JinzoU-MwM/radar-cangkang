@@ -37,3 +37,7 @@ website/tsa-*.json
 
 # stempel sinkron Stockbit (runtime)
 **/.sync-state.json
+
+# suara video (kunci Azure & cache audio)
+**/.azure-speech
+**/.tts-cache/

@@ -227,6 +227,23 @@ class CacheTest(unittest.TestCase):
 
 
 class KandidatTest(unittest.TestCase):
+    def test_tts_cache_and_fallback(self):
+        import tempfile
+        from pathlib import Path
+        old_dir, old_cfg = server.TTS_DIR, server.tts_config
+        with tempfile.TemporaryDirectory() as d:
+            server.TTS_DIR = Path(d)
+            try:
+                server.tts_config = lambda: None
+                self.assertIsNone(server.tts_audio("Halo"))            # tanpa kunci: frontend pakai suara browser
+                import hashlib
+                p = Path(d) / (hashlib.sha1(f"{server.TTS_VOICE}|Halo dunia".encode()).hexdigest() + ".mp3")
+                p.write_bytes(b"ID3x")
+                self.assertEqual(server.tts_audio("  Halo   dunia "), b"ID3x")   # cache dipakai tanpa kunci
+                self.assertEqual(server.tts_usage()["karakter"], 0)
+            finally:
+                server.TTS_DIR, server.tts_config = old_dir, old_cfg
+
     def test_catchup_plan(self):
         now = datetime(2026, 10, 23, 12, 0).timestamp()
         self.assertEqual(server.catchup_plan("2026-10-23T08:00:00.000Z", now)[0], 1)
