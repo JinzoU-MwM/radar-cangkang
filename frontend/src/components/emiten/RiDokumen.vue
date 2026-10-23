@@ -7,6 +7,12 @@ import { kewajaranTone, asetLaba } from '../../lib/rightsIssue.js'
 // post = { S1: saham setelah penerbitan, P: harga RI simulasi } untuk laba per saham emiten.
 const props = defineProps({ doc: { type: Object, required: true }, post: { type: Object, default: () => ({}) } })
 const lb = computed(() => asetLaba(props.doc, props.post))
+// Harga per saham dengan desimal bila tidak bulat (mis. Rp23,5).
+const rpD = v => v == null ? '–' : Number.isInteger(+v) ? rp(v) : 'Rp' + fmt(v, 2)
+const pg = computed(() => props.doc.pengendali || null)
+const kp = computed(() => props.doc.keyPerson || [])
+const hk = computed(() => props.doc.hukum || null)
+const bs = computed(() => props.doc.bisnis || null)
 const pc = v => v == null ? '–' : fmt(v * 100, 1) + '%'
 const k = computed(() => props.doc.kewajaran || null)
 const a = computed(() => props.doc.aset || {})
@@ -87,6 +93,49 @@ const facts = computed(() => {
         <p v-if="lb.catatan" class="small muted">{{ lb.catatan }}</p>
       </template>
       <p v-else class="small">Laba dan pendapatan aset <b>belum diungkap</b> di dokumen keterbukaan; nilai transaksi belum dapat diuji terhadap laba.</p>
+    </div>
+
+    <!-- Pengendali & key person. -->
+    <div v-if="pg || kp.length" class="lb">
+      <h4>Pengendali dan key person</h4>
+      <dl v-if="pg" class="fx">
+        <div><dt class="small muted">Pengendali</dt><dd class="small"><b>{{ pg.nama || 'belum diungkap' }}</b>{{ pg.negara ? ' (' + pg.negara + ')' : '' }}{{ pg.porsiPersen != null ? ' · ' + fmt(pg.porsiPersen, 2) + '%' : '' }}</dd></div>
+        <div v-if="(pg.ubo || []).length"><dt class="small muted">Pemilik manfaat akhir (UBO)</dt><dd class="small">{{ pg.ubo.join(', ') }}</dd></div>
+        <div><dt class="small muted">Harga & modal masuk</dt><dd class="small">{{ pg.hargaMasuk ? rpD(pg.hargaMasuk) + '/saham' : 'belum diungkap' }}{{ pg.nilaiMasukRp ? ' · ' + big(pg.nilaiMasukRp) : '' }}{{ pg.tanggalMasuk ? ' · ' + fmtDate(pg.tanggalMasuk) : '' }}</dd></div>
+        <div v-if="pg.cara || pg.penjual"><dt class="small muted">Cara masuk</dt><dd class="small">{{ [pg.cara, pg.penjual && 'dari ' + pg.penjual].filter(Boolean).join(' · ') }}</dd></div>
+        <div v-if="pg.hargaPTW"><dt class="small muted">Harga tender wajib</dt><dd class="small">{{ rpD(pg.hargaPTW) }}</dd></div>
+        <div v-if="pg.rencana"><dt class="small muted">Rencana pengendali</dt><dd class="small">{{ pg.rencana }}</dd></div>
+      </dl>
+      <table v-if="kp.length" class="ledger met">
+        <thead><tr><th>Nama</th><th>Jabatan</th><th>Afiliasi / catatan</th></tr></thead>
+        <tbody><tr v-for="p in kp" :key="p.nama + p.jabatan"><td><b>{{ p.nama }}</b></td><td class="small">{{ p.jabatan }}</td><td class="small muted">{{ [p.afiliasi, p.catatan].filter(Boolean).join(' · ') }}</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- Riwayat masalah hukum/regulasi dari dokumen resmi. -->
+    <div v-if="hk" class="lb">
+      <h4>Riwayat masalah hukum dan regulasi</h4>
+      <p v-if="hk.tidakDitemukan && !(hk.daftar || []).length" class="small">Tidak ditemukan riwayat gugatan, PKPU, sanksi, atau perkara lain di dokumen keterbukaan yang diperiksa.</p>
+      <ul v-else class="small">
+        <li v-for="h in hk.daftar" :key="h.tanggal + h.isu"><b>{{ h.tanggal ? fmtDate(h.tanggal) : '' }} · {{ h.jenis }}</b> ({{ h.status }}): {{ h.isu }}<span v-if="h.sumber?.judul" class="muted"> · {{ h.sumber.judul }}</span></li>
+      </ul>
+    </div>
+
+    <!-- Cara menghasilkan laba: model bisnis, proyek, proyeksi. -->
+    <div v-if="bs" class="lb">
+      <h4>Cara menghasilkan laba</h4>
+      <p v-if="bs.model" class="small">{{ bs.model }}</p>
+      <p v-if="(bs.sumberPendapatan || []).length" class="small"><b>Sumber pendapatan:</b> {{ bs.sumberPendapatan.join('; ') }}.</p>
+      <template v-if="(bs.proyek || []).length">
+        <p class="small"><b>Proyek yang sedang dikerjakan:</b></p>
+        <ul class="small"><li v-for="p in bs.proyek" :key="p.nama">{{ p.nama }}<template v-if="p.status"> ({{ p.status }})</template><template v-if="p.nilaiRp"> · {{ big(p.nilaiRp) }}</template><template v-if="p.keterangan"> · {{ p.keterangan }}</template></li></ul>
+      </template>
+      <table v-if="(bs.proyeksi || []).length" class="ledger met">
+        <thead><tr><th>Tahun</th><th class="num">Pendapatan</th><th class="num">Laba bersih</th><th>Sumber proyeksi</th></tr></thead>
+        <tbody><tr v-for="p in bs.proyeksi" :key="p.tahun"><td>{{ p.tahun }}</td><td class="num">{{ p.pendapatanRp != null ? big(p.pendapatanRp) : '–' }}</td><td class="num"><b>{{ p.labaBersihRp != null ? big(p.labaBersihRp) : '–' }}</b></td><td class="small muted">{{ p.sumber }}</td></tr></tbody>
+      </table>
+      <p v-else class="small muted">Proyeksi laba belum diungkap di dokumen; gunakan perhitungan laba aset di atas.</p>
+      <p v-if="bs.catatan" class="small muted">{{ bs.catatan }}</p>
     </div>
 
     <details class="dd" open>

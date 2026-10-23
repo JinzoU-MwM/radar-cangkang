@@ -42,7 +42,7 @@ describe('riCalc', () => {
     expect(riCalc(c, 81, 1).pubAfter).toBeCloseTo(0.5891)
   })
   it('rentang slider tidak dibatasi nominal', () => {
-    expect(riRange(c)).toMatchObject({ lo: 1, start: 81, hi: 405 })
+    expect(riRange(c)).toMatchObject({ lo: 1, start: 81, hi: 10000 })
     expect(riVerdict(c, r)).toMatch(/kapitalisasi pasar/)
   })
 })
@@ -83,13 +83,13 @@ describe('rincian aset injeksi', () => {
 })
 
 describe('presentasi analisa rights issue', () => {
-  it('membangun 12 slide tanpa ukuran negatif atau NaN', async () => {
+  it('membangun 13 slide tanpa ukuran negatif atau NaN', async () => {
     const PptxGenJS = (await import('pptxgenjs')).default
     const { buildRiDeck, riDeckFileName } = await import('../deck.js')
     const { THEMES, SECTORS } = await import('../deckThemes.js')
     const c = riCase(A, { aset: { ...aset, aset: { nama: 'PGGR', jenis: 'Tambang' }, tidakDitemukan: ['kjpp: belum'] }, sv })
     const pres = buildRiDeck(PptxGenJS, { t: 'NINE', name: 'Techno9', date: '2026-10-22', sector: SECTORS[1], c, P: 81, U: 0 }, THEMES.batubara[0])
-    expect(pres.slides.length).toBe(12)
+    expect(pres.slides.length).toBe(13)
     const json = JSON.stringify(pres.slides.map(s => s._slideObjects.map(o => o.options)))
     expect(json).not.toMatch(/"[wh]":-|NaN/)
     expect(riDeckFileName('NINE', '2026-10-22', { name: 'Arang & Amber' })).toBe('NINE_RightsIssue_2026-10-22_Arang-Amber.pptx')
@@ -97,7 +97,7 @@ describe('presentasi analisa rights issue', () => {
 })
 
 describe('PDF analisa rights issue', () => {
-  it('12 halaman, sama dengan jumlah slide', async () => {
+  it('13 halaman, sama dengan jumlah slide', async () => {
     const PptxGenJS = (await import('pptxgenjs')).default
     const { jsPDF } = await import('jspdf')
     const { buildRiDeck } = await import('../deck.js')
@@ -106,7 +106,7 @@ describe('PDF analisa rights issue', () => {
     const c = riCase(A, { aset: { ...aset, aset: { nama: 'PGGR' } }, sv })
     const pres = buildRiDeck(PptxGenJS, { t: 'NINE', name: 'Techno9', date: '2026-10-22', sector: SECTORS[1], c, P: 81, U: 0 }, THEMES.batubara[1])
     const doc = await deckToPdf(pres, jsPDF)
-    expect(doc.getNumberOfPages()).toBe(12)
+    expect(doc.getNumberOfPages()).toBe(13)
   })
 })
 
