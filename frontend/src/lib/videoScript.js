@@ -45,7 +45,7 @@ export function buildVideo(d, mode = 'ringkas') {
 
   // 1. Pembuka
   add('buka', 'Pembuka', `${d.t} · ${d.name || ''}`.trim(), { type: 'title', t: d.t, name: d.name, sikap: pa.sikap || A.stance?.t, score: A.score, sector: d.sector?.label }, [
-    `Video ini merangkum hasil kajian atas ${d.name || d.t} dengan kode saham ${d.t}, sebuah emiten yang berada dalam radar backdoor listing.`,
+    `Video ini merangkum hasil riset investasi atas ${d.name || d.t} dengan kode saham ${d.t}, sebuah emiten yang berada dalam radar backdoor listing.`,
     pa.sikap ? `Sikap analis terhadap saham ini adalah ${pa.sikap.toLowerCase()}, dengan skor analisis ${A.score ?? '–'} dari 100.` : `Skor analisis saham ini adalah ${A.score ?? '–'} dari 100.`,
     pa.ringkas ? first(pa.ringkas, 1) : null,
   ])
@@ -222,7 +222,7 @@ export function buildVideo(d, mode = 'ringkas') {
   if (full && d.pc && (d.pc.pros.length || d.pc.cons.length)) add('faktor', 'Pendukung & risiko', 'Faktor pendukung dan faktor risiko', {
     type: 'list', items: [...d.pc.pros.slice(0, 3).map(x => 'Pendukung: ' + x.t), ...d.pc.cons.slice(0, 3).map(x => 'Risiko: ' + x.t)],
   }, [
-    `Kajian ini mengidentifikasi ${d.pc.pros.length} faktor pendukung dan ${d.pc.cons.length} faktor risiko.`,
+    `Analisis ini mengidentifikasi ${d.pc.pros.length} faktor pendukung dan ${d.pc.cons.length} faktor risiko.`,
     d.pc.pros[0] ? `Faktor pendukung utama adalah ${d.pc.pros[0].t.toLowerCase()}.` : null,
     d.pc.cons[0] ? `Adapun risiko utamanya adalah ${d.pc.cons[0].t.toLowerCase()}${d.pc.cons[1] ? ', serta ' + d.pc.cons[1].t.toLowerCase() : ''}.` : null,
   ])
