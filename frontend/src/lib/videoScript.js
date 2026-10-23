@@ -4,12 +4,13 @@
 import { fmtDate } from './domain.js'
 import { phaseName } from './cycle.js'
 import { riPriceNeeded, asetLaba, labaSebelumSesudah, riLayak } from './rightsIssue.js'
+import { valuasiSim, bandarView } from './valuasi.js'
 
 const id = (v, d = 0) => v == null || isNaN(v) ? '–' : (+v).toLocaleString('id-ID', { maximumFractionDigits: d })
 const rp = v => v == null || isNaN(v) ? '–' : 'Rp' + id(Math.round(v))
 const big = v => v == null || isNaN(v) ? '–' : Math.abs(v) >= 1e12 ? `Rp${id(v / 1e12, 2)} T` : Math.abs(v) >= 1e9 ? `Rp${id(v / 1e9, 1)} M` : `Rp${id(v / 1e6, 0)} jt`
 const pct = (v, d = 1) => v == null || isNaN(v) ? '–' : `${id(v, d)}%`
-const ABBR = /\b(Pte|Ltd|Tbk|PT|Rp|No|dll|dsb|Inc|Co|Corp|Bhd|Sdn|Jl|Tn|Ny|Dr|Ir|St)\.$/i
+const ABBR = /\b(Pte|Ltd|Tbk|PT|Rp|No|dll|dsb|Inc|Co|Corp|Bhd|Sdn|Jl|Tn|Ny|Dr|Ir|St|maks|min|mis|sd|kl)\.$/i
 export function sentences(s) {
   const parts = String(s || '').replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s+(?=[A-Z0-9])/)
   const out = []
@@ -55,6 +56,9 @@ export function buildVideo(d, mode = 'ringkas') {
 
   // 3. Pengendali
   const pv = d.pv || {}, o = d.profil?.pengendali?.[0]
+  const docD = d.ri?.doc || d.riDoc || null, pgD = docD?.pengendali || null
+  const hkD = (docD?.hukum?.daftar || []).filter(h => /berjalan|putusan|dugaan/i.test(h.status || ''))
+  const rpD = v => Number.isInteger(+v) ? rp(v) : 'Rp' + id(v, 2)
   add('pengendali', 'Pengendali', 'Siapa pengendalinya', {
     type: 'kpis', items: [
       [pct(A.ctrlPct, 2), `Porsi ${A.ctrlName || 'pengendali'}`],
@@ -65,6 +69,12 @@ export function buildVideo(d, mode = 'ringkas') {
     pv.siapa ? first(pv.siapa, full ? 2 : 1) : `Pengendali saat ini adalah ${A.ctrlName || 'belum diketahui'} dengan porsi ${pct(A.ctrlPct, 2)}.`,
     A.tender?.price && A.price ? `Harga penawaran tender wajib tercatat ${rp(A.tender.price)}, sedangkan harga saat ini ${rp(A.price)}, atau ${A.price >= A.tender.price ? 'di atas' : 'di bawah'} harga tender sebesar ${id(Math.abs(A.price / A.tender.price - 1) * 100, 0)} persen.` : null,
     full && o ? `${o.nama} berperan sebagai ${String(o.peran || 'pengendali').toLowerCase()}. ${first(o.latar, 1)}` : null,
+    // Dari dokumen: harga masuk, pemilik manfaat akhir, dan riwayat hukum.
+    // Harga masuk tidak diulang bila kalimat pertama sudah menyebutnya.
+    pgD?.hargaMasuk && A.price ? (String(pv.siapa || '').includes(rpD(pgD.hargaMasuk)) ? `Dengan harga saat ini, modal awal pengendali sudah berlipat ${id(A.price / pgD.hargaMasuk, 1)} kali.`
+      : `Menurut dokumen, pengendali masuk pada harga ${rpD(pgD.hargaMasuk)} per saham${pgD.nilaiMasukRp ? ' dengan modal ' + big(pgD.nilaiMasukRp) : ''}, sehingga harga saat ini sudah ${id(A.price / pgD.hargaMasuk, 1)} kali harga masuknya.`) : null,
+    full && (pgD?.ubo || []).length ? `Pemilik manfaat akhirnya adalah ${pgD.ubo.join(' dan ')}.` : null,
+    hkD.length ? `Dokumen mencatat ${hkD.length} catatan hukum atau regulasi, antara lain ${lower1(hkD[0].isu).replace(/\.$/, '')}.` : docD?.hukum?.tidakDitemukan ? 'Tidak ditemukan riwayat masalah hukum di dokumen keterbukaan.' : null,
   ])
 
   // 3b. Profil pengendali (lengkap)
@@ -113,9 +123,9 @@ export function buildVideo(d, mode = 'ringkas') {
     ].filter(Boolean),
   }, [
     asetNama ? `Aset yang direncanakan masuk adalah ${asetNama}${det?.jenis ? ', berupa ' + det.jenis.toLowerCase() : ''}.` : null,
-    det?.spread ? `Nilainya masih indikatif, berkisar ${big(det.lo)} hingga ${big(det.hi)} menurut sumber yang berbeda, dan perhitungan memakai ${big(inj)}.` : inj ? `Nilai transaksinya sekitar ${big(inj)}.` : null,
+    !kw && det?.spread ? `Nilainya masih indikatif, berkisar ${big(det.lo)} hingga ${big(det.hi)} menurut sumber yang berbeda, dan perhitungan memakai ${big(inj)}.` : inj ? `Nilai transaksinya sekitar ${big(inj)}.` : null,
     inj && A.mcap ? `Nilai tersebut setara ${id(inj / A.mcap, 1)} kali kapitalisasi pasar ${d.t} saat ini.` : null,
-    det?.kjpp?.status === 'terbit' ? `Penilai independen telah menerbitkan nilai${det.kjpp.nilai ? ' sebesar ' + big(det.kjpp.nilai) : ''}.` : 'Nilai aset tersebut belum diuji oleh penilai independen, sehingga masih berupa klaim.',
+    kw ? null : det?.kjpp?.status === 'terbit' ? `Penilai independen telah menerbitkan nilai${det.kjpp.nilai ? ' sebesar ' + big(det.kjpp.nilai) : ''}.` : 'Nilai aset tersebut belum diuji oleh penilai independen, sehingga masih berupa klaim.',
     full && det?.cara ? `Cara pembayarannya adalah ${det.cara.charAt(0).toLowerCase() + det.cara.slice(1)}.` : null,
     // Kewajaran nilai aset menurut dokumen asli (ri-dokumen.json).
     kw ? `Berdasarkan dokumen keterbukaan, nilai aset ini dinilai ${kw.putusan}. ${kw.ringkas || ''}` : null,
@@ -129,6 +139,8 @@ export function buildVideo(d, mode = 'ringkas') {
   if (d.ri && d.riR) {
     const c = d.ri, r = d.riR, f = d.riF, nd = riPriceNeeded(c, d.riP)
     const lbR = c.doc ? asetLaba(c.doc, { S1: r.S1, P: d.riP }) : null, ls = labaSebelumSesudah(c, r, lbR), ly = riLayak(c, r, lbR, ls)
+    const tgt = Math.max(0.1e12, Math.round(((r.total || 0) + (c.mcap || 0)) / 1e11) * 1e11)
+    const vs = valuasiSim(c, r, { target: tgt }), bv = bandarView(c, r, d.riP, c.doc?.pengendali || {}, tgt)
     add('ri', 'Penambahan modal', c.label, {
       type: 'compare', from: { v: c.float || 0, l: 'Porsi publik sekarang' }, to: { v: r.pubAfter * 100, l: 'Bila publik tidak menebus' },
       extra: r.pubAfterInj != null ? { v: r.pubAfterInj * 100, l: 'Setelah injeksi tahap lanjutan' } : null,
@@ -137,6 +149,8 @@ export function buildVideo(d, mode = 'ringkas') {
       `Perusahaan merencanakan ${c.label} dengan nilai penerbitan sekitar ${big(r.total)}, yaitu ${id(r.N / 1e9, 2)} miliar saham pada harga ${rp(d.riP)}.`,
       c.laterInj ? `Dana tahap pertama ini berupa uang tunai dan tidak digunakan untuk membeli aset; aset senilai ${big(c.laterInj)} akan dibayar dengan saham baru pada tahap berikutnya.` : null,
       `Bila pemegang saham publik tidak ikut menebus, porsi publik turun dari ${pct(c.float, 1)} menjadi ${pct(r.pubAfter * 100, 1)}${r.pubAfterInj != null ? `, dan dapat turun hingga ${pct(r.pubAfterInj * 100, 1)} setelah injeksi aset` : ''}.`,
+      vs ? `Bila perusahaan dihargai ${big(vs.target)} setelah rights issue, harga per saham sekitar ${rp(Math.round(vs.harga))}${vs.x ? `, atau ${id(vs.x, 2)} kali harga kini` : ''}${vs.pbvReal ? `, setara ${id(vs.pbvReal, 0)} kali nilai buku riil` : ''}.` : null,
+      bv ? `Dari sisi pengendali, harga impasnya sekitar ${rp(Math.round(bv.impas))}${bv.kelipatanAwal ? ` dan modal awalnya sudah berlipat ${id(bv.kelipatanAwal, 1)} kali` : ''}.` : null,
       ly ? `Kesimpulan investasinya: ${ly.label.toLowerCase()}.${ls ? (ls.akresi ? ' Laba per saham emiten naik setelah aset masuk.' : ' Laba per saham emiten justru turun setelah penerbitan.') : ''}` : null,
       nd ? `Agar dana tunai ${big(nd.cash)} tercapai, harga saham sebaiknya berada di atas ${rp(Math.ceil(nd.ref))}, yaitu harga pelaksanaan ${rp(d.riP)} ditambah diskon dua puluh persen${nd.gap != null ? (nd.gap > 0 ? `; harga saat ini masih perlu naik ${id(nd.gap * 100, 0)} persen` : '; harga saat ini sudah memenuhi syarat tersebut') : ''}.` : null,
       f ? `Berdasarkan keterbukaan informasi terakhir${f.last ? ' pada ' + fmtDate(f.last.date) : ''}, peluang terkumpulnya dana dinilai ${f.label.toLowerCase()}.` : null,

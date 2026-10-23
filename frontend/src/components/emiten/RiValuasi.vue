@@ -5,7 +5,8 @@ import { computed, ref, watch } from 'vue'
 import { fmt, rp, big } from '../../lib/domain.js'
 import { valuasiSim, bandarView } from '../../lib/valuasi.js'
 
-const props = defineProps({ c: { type: Object, required: true }, r: { type: Object, default: null }, P: { type: Number, required: true }, labaSetahun: { type: Number, default: null } })
+// part = valuasi (simulasi valuasi target) | bandar (sudut pandang pengendali); kosong = keduanya.
+const props = defineProps({ part: { type: String, default: '' }, c: { type: Object, required: true }, r: { type: Object, default: null }, P: { type: Number, required: true }, labaSetahun: { type: Number, default: null } })
 // Isian dalam triliun rupiah; bawaan: valuasi = nilai penerbitan + kapitalisasi kini (dibulatkan), ambil = 20% valuasi.
 const T = ref(0), AMBIL = ref(0)
 watch(() => props.c, c => {
@@ -28,6 +29,7 @@ const pbvU = computed(() => v.value?.pbvReal || v.value?.pbv || null)
 
 <template>
   <div class="vs">
+    <template v-if="part !== 'bandar'">
     <h3 class="lbl">Simulasi valuasi target dan pengendali mengambil dana</h3>
     <div class="inp">
       <label>Valuasi setelah RI (Rp triliun)<input v-model.number="T" type="number" min="0.01" step="0.1" class="pin"></label>
@@ -63,7 +65,8 @@ const pbvU = computed(() => v.value?.pbvReal || v.value?.pbv || null)
       </div>
     </template>
 
-    <template v-if="b">
+    </template>
+    <template v-if="b && part !== 'valuasi'">
       <h3 class="lbl">Sudut pandang pengendali<template v-if="name"> ({{ name }})</template></h3>
       <table class="ledger st">
         <tbody>

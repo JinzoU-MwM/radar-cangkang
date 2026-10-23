@@ -90,7 +90,27 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
       <span class="tag" :class="c.status === 'tereksekusi' ? 't-good' : c.status === 'berjalan' ? 't-now' : 't-warn'">{{ STATUS[c.status] }}</span>
       <span v-if="c.jadwal" class="small muted">{{ c.jadwal }}</span>
     </div>
+    <p class="small muted">Disusun dari jawaban ke bukti; setiap topik hanya muncul sekali. Angka mengikuti simulasi di bagian 5.</p>
 
+    <h3 class="sec">1. Kesimpulan investasi</h3>
+    <template v-if="r">
+      <!-- Kesimpulan akhir: layak investasi atau tidak. -->
+      <div v-if="layak" class="fund-ok" :class="layak.tone">
+        <div class="fh">
+          <span class="small muted">Kesimpulan investasi</span>
+          <b>{{ layak.label }}</b>
+        </div>
+        <p class="small"><b>{{ layak.key === 'layak' ? 'Layak dipertimbangkan' : layak.key === 'tidak' ? 'Tidak layak' : 'Spekulatif' }}, karena:</b></p>
+        <ol class="why abc">
+          <li v-for="(x, i) in layak.reasons" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
+            <span class="ic" aria-hidden="true">{{ 'ABCDEFGHIJ'[i] }}.</span>{{ x.t }}
+          </li>
+        </ol>
+        <p class="small muted">Skor {{ layak.score }} (≥ 2 layak dipertimbangkan; −1 s.d. 1 spekulatif; ≤ −2 tidak layak). Kerangka analisis otomatis dari dokumen dan simulasi, bukan anjuran membeli atau menjual efek.</p>
+      </div>
+      <p v-if="verdict" class="verdict"><b>Kesimpulan:</b> {{ verdict }}</p>
+      <p class="small muted">Catatan: <b>skor enam dimensi</b> di atas menilai profil saham backdoor secara umum, <b>sikap analis</b> adalah penilaian manual, dan <b>kesimpulan investasi</b> ini khusus menilai transaksi penambahan modal dan asetnya. Bila berbeda, kesimpulan ini yang menentukan kelayakan ikut serta dalam rights issue.</p>
+    </template>
     <div v-if="r" class="kpi">
       <div v-if="c.inj" class="k">
         <span class="lbl">Nilai transaksi injeksi aset</span>
@@ -113,12 +133,34 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
         <em class="small muted">{{ pSrc }}<template v-if="r.disc != null"> · {{ r.disc >= 0 ? 'premi' : 'diskon' }} {{ fmt(Math.abs(r.disc) * 100, 0) }}% vs pasar {{ rp(c.price) }}</template></em>
       </div>
     </div>
+    <template v-if="r">
+      <!-- Pengumpulan dana: tercapai atau tidak, berdasarkan keterbukaan terakhir. -->
+      <div v-if="fund" class="fund-ok" :class="fund.tone">
+        <div class="fh">
+          <span class="small muted">Pengumpulan dana</span>
+          <b>{{ fund.label }}</b>
+        </div>
+        <p class="small last">
+          <template v-if="fund.last">Keterbukaan terakhir: <b>{{ fmtDate(fund.last.date) }}</b> · {{ fund.last.title }}</template>
+          <template v-else>Belum ada keterbukaan resmi tentang penambahan modal; penilaian memakai data kurasi.</template>
+        </p>
+        <ul class="why">
+          <li v-for="(x, i) in fund.reasons" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
+            <span class="ic" aria-hidden="true">{{ x.s > 0 ? '+' : x.s < 0 ? '−' : '·' }}</span>{{ x.t }}
+          </li>
+        </ul>
+        <p v-if="fund.key !== 'done'" class="small muted">Penilaian mengikuti simulasi harga {{ rp(P) }}<template v-if="!nr"> dan publik menebus {{ U }}%</template>; berubah bila slider digeser.</p>
+      </div>
+    </template>
 
-    <!-- Dasar dokumen asli & kewajaran aset injeksi (bila sudah diekstrak). -->
-    <RiDokumen v-if="c.doc" :doc="c.doc" :post="{ S1: r?.S1, P: +P }" />
+    <h3 class="sec">2. Pengendali dan key person</h3>
+    <RiDokumen v-if="c.doc" :doc="c.doc" part="pengendali" />
+    <RiValuasi v-if="r" part="bandar" :c="c" :r="r" :P="+P" />
 
+    <h3 class="sec">3. Aset injeksi dan laba</h3>
+    <RiDokumen v-if="c.doc" :doc="c.doc" part="aset" :post="{ S1: r?.S1, P: +P }" />
     <!-- Rincian nilai aset injeksi: kisaran antar-sumber, profil aset, cara bayar, penilaian, data belum diungkap. -->
-    <div v-if="d && (d.nama || d.lo)" class="aset">
+    <div v-if="!c.doc && d && (d.nama || d.lo)" class="aset">
       <h3 class="lbl">Rincian nilai aset injeksi</h3>
       <div class="ag">
         <div class="ac val">
@@ -152,7 +194,6 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
         <span v-for="g in d.gaps" :key="g" class="tag t-warn">{{ g }}</span>
       </div>
     </div>
-
     <!-- Tahap I (dana) vs tahap II (aset) agar tidak tertukar. -->
     <div v-if="r && c.laterInj" class="tahap">
       <div class="tc">
@@ -169,24 +210,29 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
         <span class="small muted">Porsi publik bisa turun ke {{ pct(r.pubAfterInj, 1) }}.</span>
       </div>
     </div>
+    <template v-if="r">
+      <!-- Laba emiten sebelum vs setelah aset masuk. -->
+      <div v-if="ls" class="dasar">
+        <h3 class="lbl">Laba sebelum dan setelah aset masuk</h3>
+        <div class="scroll">
+          <table class="ledger st">
+            <thead><tr><th></th><th class="num">Sebelum</th><th class="num">Setelah</th><th class="num">Perubahan</th></tr></thead>
+            <tbody>
+              <tr><td>Laba bersih setahun</td><td class="num">{{ big(ls.before.laba) }}</td><td class="num"><b>{{ big(ls.after.laba) }}</b></td><td class="num" :class="ls.dLaba >= 0 ? 'c-good' : 'c-strong'">{{ ls.dLaba >= 0 ? '+' : '' }}{{ big(ls.dLaba) }}</td></tr>
+              <tr><td>Jumlah saham</td><td class="num">{{ sh(ls.before.saham) }}</td><td class="num">{{ sh(ls.after.saham) }}</td><td class="num">+{{ fmt((ls.after.saham / ls.before.saham - 1) * 100, 0) }}%</td></tr>
+              <tr><td>Laba per saham (EPS)</td><td class="num">Rp{{ fmt(ls.before.eps, 2) }}</td><td class="num"><b>Rp{{ fmt(ls.after.eps, 2) }}</b></td><td class="num" :class="ls.akresi ? 'c-good' : 'c-strong'">{{ (ls.akresi ? 'naik ' : 'turun ') + (ls.dEps != null ? fmt(Math.abs(ls.dEps) * 100, 0) + '%' : '') }}</td></tr>
+              <tr><td>Harga acuan</td><td class="num">{{ rp(ls.before.harga) }} <span class="small muted">kini</span></td><td class="num">{{ rp(Math.round(ls.after.harga)) }} <span class="small muted">teoretis</span></td><td></td></tr>
+              <tr><td>PER</td><td class="num">{{ ls.before.per ? fmt(ls.before.per, 1) + '×' : 'rugi' }}</td><td class="num">{{ ls.after.per ? fmt(ls.after.per, 1) + '×' : 'rugi' }}</td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small">Setelah = laba emiten 12 bulan terakhir + laba porsi aset {{ big(lbA.labaPorsi) }} setahun, dibagi seluruh saham setelah penerbitan pada harga RI {{ rp(P) }}. <b>{{ ls.akresi ? 'Transaksi menaikkan laba per saham (akresi).' : 'Transaksi menurunkan laba per saham (dilutif): tambahan laba tidak sebanding dengan tambahan saham.' }}</b></p>
+      </div>
+      <p v-else-if="c.doc && c.labaEmiten != null && !lbA" class="small muted">Laba sebelum vs setelah aset masuk belum dapat dihitung: laba aset belum diungkap di dokumen.</p>
+    </template>
 
-    <!-- Simulasi. -->
-    <div class="sim">
-      <label class="sl">
-        <span class="small">Harga pelaksanaan <b>{{ rp(P) }}</b>
-          <input v-model.number="P" type="number" min="1" step="1" class="pin" aria-label="Ketik harga pelaksanaan (Rp)"></span>
-        <input v-model.number="P" type="range" :min="range.lo" :max="hiP" :step="range.step" aria-label="Harga pelaksanaan">
-        <span class="ends small muted"><span>{{ rp(range.lo) }}</span><span v-if="c.price">pasar {{ rp(c.price) }}</span><span>{{ rp(hiP) }}</span></span>
-        <span v-if="c.nominal && P < c.nominal" class="small c-strong">Di bawah nilai nominal {{ rp(c.nominal) }}: secara aturan saham tidak dapat diterbitkan di bawah nominal (simulasi saja).</span>
-      </label>
-      <label v-if="!nr" class="sl">
-        <span class="small">Publik menebus <b>{{ U }}%</b></span>
-        <input v-model.number="U" type="range" min="0" max="100" step="5" aria-label="Persentase publik menebus">
-        <span class="ends small muted"><span>0% (tidak ikut)</span><span>100%</span></span>
-      </label>
-      <p v-if="!c.N" class="small muted span">Jumlah saham baru belum diumumkan: dihitung dari nilai yang perlu dibiayai ÷ harga pelaksanaan.</p>
-    </div>
-
+    <h3 class="sec">4. Struktur penerbitan dan dana</h3>
+    <RiDokumen v-if="c.doc" :doc="c.doc" part="fakta" />
     <template v-if="r">
       <!-- Komposisi penerbitan vs nilai aset. -->
       <div v-if="bars" class="fund">
@@ -199,7 +245,6 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
         </p>
         <p v-if="c.injCara" class="small muted">{{ c.injCara }}</p>
       </div>
-
       <div class="grid">
         <div v-if="!nr" class="box">
           <h3 class="lbl">Siapa harus menyetor</h3>
@@ -222,32 +267,27 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
             </tbody>
           </table>
         </div>
-        <div class="box">
-          <h3 class="lbl">Untuk investor (per 1 lot = 100 saham)</h3>
-          <table class="ledger">
-            <tbody>
-              <tr v-if="!nr"><td>HMETD diterima</td><td class="r num">{{ fmt(r.perLot.hak, 1) }} hak <span class="small muted">(rasio {{ fmt(r.ratio, 2) }}:1)</span></td></tr>
-              <tr v-if="!nr"><td>Dana untuk menebus semua hak</td><td class="r num">{{ rp(r.perLot.dana) }}</td></tr>
-              <tr v-if="r.terp != null"><td>Harga teoretis setelah penerbitan (TERP)</td><td class="r num"><b>{{ rp(r.terp) }}</b> <span class="small muted">{{ r.terp >= c.price ? '+' : '' }}{{ pct(r.terp / c.price - 1, 0) }}</span></td></tr>
-              <tr v-if="!nr && r.hak != null"><td>Nilai teoretis 1 HMETD</td><td class="r num">{{ r.hak > 0 ? rp(r.hak) : 'Rp0 (harga tebus ≥ TERP)' }}</td></tr>
-              <tr><td>Porsi kepemilikan bila tidak ikut</td><td class="r num">turun {{ pct(r.dilusi) }}</td></tr>
-            </tbody>
-          </table>
-        </div>
       </div>
+    </template>
 
-      <div class="steps">
-        <div class="st"><span class="small muted">Publik sekarang</span><b>{{ fmt(c.float || 0, 2) }}%</b></div>
-        <span class="arr" aria-hidden="true">→</span>
-        <div class="st"><span class="small muted">Setelah penerbitan{{ nr ? '' : ` (publik menebus ${U}%)` }}</span><b :class="{ warn: r.pubAfter < 0.075 }">{{ pct(r.pubAfter, 2) }}</b></div>
-        <template v-if="r.pubAfterInj != null">
-          <span class="arr" aria-hidden="true">→</span>
-          <div class="st"><span class="small muted">Setelah injeksi aset tahap lanjutan</span><b :class="{ warn: r.pubAfterInj < 0.075 }">{{ pct(r.pubAfterInj, 2) }}</b></div>
-        </template>
-      </div>
-
-      <p v-if="verdict" class="verdict"><b>Kesimpulan:</b> {{ verdict }}</p>
-
+    <h3 class="sec">5. Simulasi harga pelaksanaan, dana, dan valuasi</h3>
+    <!-- Simulasi. -->
+    <div class="sim">
+      <label class="sl">
+        <span class="small">Harga pelaksanaan <b>{{ rp(P) }}</b>
+          <input v-model.number="P" type="number" min="1" step="1" class="pin" aria-label="Ketik harga pelaksanaan (Rp)"></span>
+        <input v-model.number="P" type="range" :min="range.lo" :max="hiP" :step="range.step" aria-label="Harga pelaksanaan">
+        <span class="ends small muted"><span>{{ rp(range.lo) }}</span><span v-if="c.price">pasar {{ rp(c.price) }}</span><span>{{ rp(hiP) }}</span></span>
+        <span v-if="c.nominal && P < c.nominal" class="small c-strong">Di bawah nilai nominal {{ rp(c.nominal) }}: secara aturan saham tidak dapat diterbitkan di bawah nominal (simulasi saja).</span>
+      </label>
+      <label v-if="!nr" class="sl">
+        <span class="small">Publik menebus <b>{{ U }}%</b></span>
+        <input v-model.number="U" type="range" min="0" max="100" step="5" aria-label="Persentase publik menebus">
+        <span class="ends small muted"><span>0% (tidak ikut)</span><span>100%</span></span>
+      </label>
+      <p v-if="!c.N" class="small muted span">Jumlah saham baru belum diumumkan: dihitung dari nilai yang perlu dibiayai ÷ harga pelaksanaan.</p>
+    </div>
+    <template v-if="r">
       <!-- Harga saham potensi agar dana tunai rights issue tercapai. -->
       <div v-if="need" class="fund-ok need" :class="NEED[need.status][1]">
         <div class="fh">
@@ -273,26 +313,6 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
         </p>
         <p v-if="need.short" class="small c-strong">Pada {{ rp(P) }}, saham maksimum hanya menghasilkan {{ big(need.short.maxDana) }}; kurang {{ big(need.short.kurang) }}.</p>
       </div>
-
-      <!-- Laba emiten sebelum vs setelah aset masuk. -->
-      <div v-if="ls" class="dasar">
-        <h3 class="lbl">Laba sebelum dan setelah aset masuk</h3>
-        <div class="scroll">
-          <table class="ledger st">
-            <thead><tr><th></th><th class="num">Sebelum</th><th class="num">Setelah</th><th class="num">Perubahan</th></tr></thead>
-            <tbody>
-              <tr><td>Laba bersih setahun</td><td class="num">{{ big(ls.before.laba) }}</td><td class="num"><b>{{ big(ls.after.laba) }}</b></td><td class="num" :class="ls.dLaba >= 0 ? 'c-good' : 'c-strong'">{{ ls.dLaba >= 0 ? '+' : '' }}{{ big(ls.dLaba) }}</td></tr>
-              <tr><td>Jumlah saham</td><td class="num">{{ sh(ls.before.saham) }}</td><td class="num">{{ sh(ls.after.saham) }}</td><td class="num">+{{ fmt((ls.after.saham / ls.before.saham - 1) * 100, 0) }}%</td></tr>
-              <tr><td>Laba per saham (EPS)</td><td class="num">Rp{{ fmt(ls.before.eps, 2) }}</td><td class="num"><b>Rp{{ fmt(ls.after.eps, 2) }}</b></td><td class="num" :class="ls.akresi ? 'c-good' : 'c-strong'">{{ (ls.akresi ? 'naik ' : 'turun ') + (ls.dEps != null ? fmt(Math.abs(ls.dEps) * 100, 0) + '%' : '') }}</td></tr>
-              <tr><td>Harga acuan</td><td class="num">{{ rp(ls.before.harga) }} <span class="small muted">kini</span></td><td class="num">{{ rp(Math.round(ls.after.harga)) }} <span class="small muted">teoretis</span></td><td></td></tr>
-              <tr><td>PER</td><td class="num">{{ ls.before.per ? fmt(ls.before.per, 1) + '×' : 'rugi' }}</td><td class="num">{{ ls.after.per ? fmt(ls.after.per, 1) + '×' : 'rugi' }}</td><td></td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="small">Setelah = laba emiten 12 bulan terakhir + laba porsi aset {{ big(lbA.labaPorsi) }} setahun, dibagi seluruh saham setelah penerbitan pada harga RI {{ rp(P) }}. <b>{{ ls.akresi ? 'Transaksi menaikkan laba per saham (akresi).' : 'Transaksi menurunkan laba per saham (dilutif): tambahan laba tidak sebanding dengan tambahan saham.' }}</b></p>
-      </div>
-      <p v-else-if="c.doc && c.labaEmiten != null && !lbA" class="small muted">Laba sebelum vs setelah aset masuk belum dapat dihitung: laba aset belum diungkap di dokumen.</p>
-
       <!-- Dasar perhitungan harga pelaksanaan: rumus, asumsi, skenario A (seluruh nilai) dan B (tunai saja). -->
       <div v-if="ex" class="dasar">
         <h3 class="lbl">Dasar perhitungan harga pelaksanaan</h3>
@@ -328,7 +348,6 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
           <template v-else><b>Catatan:</b> aset dibayar dengan penerbitan terpisah, sehingga harga HMETD dihitung dari porsi tunai (skenario B).</template>
         </p>
       </div>
-
       <!-- Skenario: rasio, harga RI, dana, harga saham yang dibutuhkan, dibanding saham beredar. -->
       <div v-if="scen" class="scen">
         <h3 class="lbl">Simulasi harga RI, kebutuhan dana, dan harga saham</h3>
@@ -369,56 +388,52 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
           </template>
         </ul>
       </div>
-
-      <!-- Simulasi valuasi target, pengendali mengambil dana, dan sudut pandang pengendali/bandar. -->
-      <RiValuasi v-if="r" :c="c" :r="r" :P="+P" :laba-setahun="ls ? ls.after.laba : null" />
-
-      <!-- Kesimpulan akhir: layak investasi atau tidak. -->
-      <div v-if="layak" class="fund-ok" :class="layak.tone">
-        <div class="fh">
-          <span class="small muted">Kesimpulan investasi</span>
-          <b>{{ layak.label }}</b>
-        </div>
-        <p class="small"><b>{{ layak.key === 'layak' ? 'Layak dipertimbangkan' : layak.key === 'tidak' ? 'Tidak layak' : 'Spekulatif' }}, karena:</b></p>
-        <ol class="why abc">
-          <li v-for="(x, i) in layak.reasons" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
-            <span class="ic" aria-hidden="true">{{ 'ABCDEFGHIJ'[i] }}.</span>{{ x.t }}
-          </li>
-        </ol>
-        <p class="small muted">Skor {{ layak.score }} (≥ 2 layak dipertimbangkan; −1 s.d. 1 spekulatif; ≤ −2 tidak layak). Kerangka analisis otomatis dari dokumen dan simulasi, bukan anjuran membeli atau menjual efek.</p>
-      </div>
-
-      <!-- Pengumpulan dana: tercapai atau tidak, berdasarkan keterbukaan terakhir. -->
-      <div v-if="fund" class="fund-ok" :class="fund.tone">
-        <div class="fh">
-          <span class="small muted">Pengumpulan dana</span>
-          <b>{{ fund.label }}</b>
-        </div>
-        <p class="small last">
-          <template v-if="fund.last">Keterbukaan terakhir: <b>{{ fmtDate(fund.last.date) }}</b> · {{ fund.last.title }}</template>
-          <template v-else>Belum ada keterbukaan resmi tentang penambahan modal; penilaian memakai data kurasi.</template>
-        </p>
-        <ul class="why">
-          <li v-for="(x, i) in fund.reasons" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
-            <span class="ic" aria-hidden="true">{{ x.s > 0 ? '+' : x.s < 0 ? '−' : '·' }}</span>{{ x.t }}
-          </li>
-        </ul>
-        <p v-if="fund.key !== 'done'" class="small muted">Penilaian mengikuti simulasi harga {{ rp(P) }}<template v-if="!nr"> dan publik menebus {{ U }}%</template>; berubah bila slider digeser.</p>
-      </div>
+      <RiValuasi part="valuasi" :c="c" :r="r" :P="+P" :laba-setahun="ls ? ls.after.laba : null" />
     </template>
     <p v-else class="small muted">Jumlah saham baru atau nilai dana belum diketahui dari keterbukaan; perhitungan menunggu prospektus.</p>
+
+    <h3 class="sec">6. Dampak bagi investor</h3>
+    <template v-if="r">
+      <div class="grid">
+        <div class="box">
+          <h3 class="lbl">Untuk investor (per 1 lot = 100 saham)</h3>
+          <table class="ledger">
+            <tbody>
+              <tr v-if="!nr"><td>HMETD diterima</td><td class="r num">{{ fmt(r.perLot.hak, 1) }} hak <span class="small muted">(rasio {{ fmt(r.ratio, 2) }}:1)</span></td></tr>
+              <tr v-if="!nr"><td>Dana untuk menebus semua hak</td><td class="r num">{{ rp(r.perLot.dana) }}</td></tr>
+              <tr v-if="r.terp != null"><td>Harga teoretis setelah penerbitan (TERP)</td><td class="r num"><b>{{ rp(r.terp) }}</b> <span class="small muted">{{ r.terp >= c.price ? '+' : '' }}{{ pct(r.terp / c.price - 1, 0) }}</span></td></tr>
+              <tr v-if="!nr && r.hak != null"><td>Nilai teoretis 1 HMETD</td><td class="r num">{{ r.hak > 0 ? rp(r.hak) : 'Rp0 (harga tebus ≥ TERP)' }}</td></tr>
+              <tr><td>Porsi kepemilikan bila tidak ikut</td><td class="r num">turun {{ pct(r.dilusi) }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="steps">
+        <div class="st"><span class="small muted">Publik sekarang</span><b>{{ fmt(c.float || 0, 2) }}%</b></div>
+        <span class="arr" aria-hidden="true">→</span>
+        <div class="st"><span class="small muted">Setelah penerbitan{{ nr ? '' : ` (publik menebus ${U}%)` }}</span><b :class="{ warn: r.pubAfter < 0.075 }">{{ pct(r.pubAfter, 2) }}</b></div>
+        <template v-if="r.pubAfterInj != null">
+          <span class="arr" aria-hidden="true">→</span>
+          <div class="st"><span class="small muted">Setelah injeksi aset tahap lanjutan</span><b :class="{ warn: r.pubAfterInj < 0.075 }">{{ pct(r.pubAfterInj, 2) }}</b></div>
+        </template>
+      </div>
+    </template>
+
+    <h3 class="sec">7. Sumber dokumen</h3>
+    <RiDokumen v-if="c.doc" :doc="c.doc" part="sumber" />
     <details v-if="c.notes.length" class="small muted src"><summary>Dasar angka</summary><p v-for="n in c.notes" :key="n">{{ n }}</p></details>
 
     <div v-if="ticker" class="dl">
       <h3 class="lbl">Unduh analisa {{ c.label }}</h3>
-      <p class="small muted">Khusus analisa ini (9 slide): angka kunci, rincian aset injeksi, kebutuhan dana & tahap, siapa menyetor,
-        dampak per lot, sensitivitas harga, porsi publik, kesimpulan. Memakai simulasi saat ini: harga {{ rp(P) }}<template v-if="!nr">, publik menebus {{ U }}%</template>.</p>
+      <p class="small muted">Khusus analisa ini, urutannya sama dengan bagian 1–7 di atas: kesimpulan & angka kunci, pengendali, aset & laba,
+        penerbitan & dana, simulasi (harga potensi, tabel rasio, valuasi), dampak investor, penutup. Memakai simulasi saat ini: harga {{ rp(P) }}<template v-if="!nr">, publik menebus {{ U }}%</template>.</p>
       <DeckDownload :sector-id="sector.id" :build="build" label="analisa" />
     </div>
   </section>
 </template>
 
 <style scoped>
+.sec{margin:22px 0 8px;padding-top:10px;border-top:2px solid var(--rule);font:700 15px var(--f-display)}
 .hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .hd h2{margin:0}
 .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-bottom:12px}

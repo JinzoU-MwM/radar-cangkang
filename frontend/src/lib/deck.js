@@ -338,6 +338,9 @@ export function buildDeck(PptxGenJS, d, th) {
     })
   }
 
+  // Pengendali, key person, dan riwayat hukum dari dokumen (bagian Story & Pengendali, bukan Analisa).
+  personSlide(K, th, d.ri?.doc || d.riDoc)
+
   // ===== 10. Pihak lawan & rantai kepemilikan (diagram) =====
   const af = d.profil?.afiliasi
   if (af?.pihakLawan) {
@@ -547,7 +550,8 @@ export function buildDeck(PptxGenJS, d, th) {
   }
 
   // ===== 8b. Rincian nilai aset injeksi (kisaran antar-sumber, cara bayar, KJPP, data belum diungkap) =====
-  {
+  // Dilewati bila fakta dokumen tersedia: slide Kewajaran & Fakta dokumen sudah memuat nilainya.
+  if (!(d.ri?.doc || d.riDoc)) {
     const inj = d.ri?.inj || d.aset?.transaksi?.nilaiRp || null
     const det = d.ri?.detail || asetDetail(d.aset, inj)
     if (det && (det.lo || det.nama)) {
@@ -589,7 +593,6 @@ export function buildDeck(PptxGenJS, d, th) {
 
   // ===== 8b2. Kewajaran aset & fakta dokumen asli (bila sudah diekstrak) =====
   docSlides(K, th, d.ri?.doc || d.riDoc)
-  personSlide(K, th, d.ri?.doc || d.riDoc)
   valuasiSlide(K, th, d.ri, d.riR, d.riP)
 
   // ===== 9. Simulasi nilai KJPP (grafik) =====
@@ -1063,12 +1066,12 @@ function valuasiSlide(K, th, c, r, P) {
 
 // Dua slide dari dokumen asli (ri-dokumen.json): kewajaran nilai aset injeksi, lalu fakta dokumen & jadwal.
 // Dipakai presentasi lengkap dan presentasi penambahan modal.
-function docSlides(K, th, doc) {
+function docSlides(K, th, doc, which = '') {
   if (!doc) return
   const { T, card, pill, slide } = K
   const kw = doc.kewajaran, a = doc.aset || {}
   const tone = /^wajar/i.test(kw?.putusan || '') ? th.good : /tidak wajar/i.test(kw?.putusan || '') ? th.bad : th.warn
-  if (kw) {
+  if (kw && which !== 'fakta') {
     const s = slide('Kewajaran aset', 'Kewajaran Nilai Aset Injeksi', kw.ringkas)
     card(s, M, TOP, 3.0, 3.35, { fill: th.dark, line: th.dark })
     T(s, 'PUTUSAN', { x: M + 0.2, y: TOP + 0.18, w: 2.6, h: 0.22, fontSize: 8, bold: true, color: th.accent2, charSpacing: 3 })
@@ -1094,7 +1097,7 @@ function docSlides(K, th, doc) {
       { x, y: ay + 0.22, w, h: ah - 0.22, fontSize: 8, color: th.ink, fit: 'shrink' })
   }
   // Fakta dokumen & jadwal.
-  {
+  if (which !== 'kewajaran') {
     const hp = doc.hargaPelaksanaan || {}, ke = a.keuangan || {}
     const rows = [
       ['Saham baru maksimum', doc.sahamBaruMaks ? `${id(doc.sahamBaruMaks / 1e9, 2)} miliar${doc.rasio ? ' · rasio ' + doc.rasio : ''}` : 'belum diungkap'],
@@ -1161,6 +1164,37 @@ export function buildRiDeck(PptxGenJS, d, th) {
   }
   if (!r) return pres
 
+  // ---------- Bagian: Kesimpulan (urutan sama dengan analisa rights issue di website) ----------
+  K.setSec('Kesimpulan')
+  // ===== 6b2. Laba sebelum/sesudah aset masuk & kesimpulan layak investasi =====
+  {
+    const lbA = c.doc ? asetLaba(c.doc, { S1: r.S1, P }) : null
+    const ls = labaSebelumSesudah(c, r, lbA)
+    const ly = riLayak(c, r, lbA, ls)
+    if (ly) {
+      const s = slide('Kelayakan', 'Laba Setelah Aset Masuk dan Kelayakan Investasi', ly.label)
+      const lw = 5.0
+      if (ls) {
+        const rows = [['', 'Sebelum', 'Setelah'], ['Laba bersih setahun', bigS(ls.before.laba), bigS(ls.after.laba)], ['Jumlah saham', shS(ls.before.saham), shS(ls.after.saham)],
+          ['Laba per saham', 'Rp' + id(ls.before.eps, 2), 'Rp' + id(ls.after.eps, 2)], ['Harga acuan', rpS(ls.before.harga) + ' (kini)', rpS(Math.round(ls.after.harga)) + ' (teoretis)'],
+          ['PER', ls.before.per ? id(ls.before.per, 1) + '×' : 'rugi', ls.after.per ? id(ls.after.per, 1) + '×' : 'rugi']]
+        rows.forEach((rw, i) => {
+          const y = TOP + i * 0.42
+          if (i) line(s, M, y, lw, 0, th.line, { w: 0.5 })
+          rw.forEach((v, j) => T(s, v, { x: M + (j ? 1.6 + (j - 1) * 1.7 : 0), y, w: j ? 1.65 : 1.6, h: 0.42, fontSize: i ? 9.5 : 8, bold: !i || j === 2, color: i ? th.ink : th.muted, valign: 'middle', align: j ? 'right' : 'left' }))
+        })
+        T(s, ls.akresi ? 'Transaksi menaikkan laba per saham (akresi).' : 'Transaksi menurunkan laba per saham (dilutif).', { x: M, y: TOP + 6 * 0.42 + 0.05, w: lw, h: 0.4, fontSize: 9.5, bold: true, color: ls.akresi ? th.good : th.bad })
+      } else T(s, 'Laba sebelum vs setelah aset masuk belum dapat dihitung: laba aset belum diungkap di dokumen.', { x: M, y: TOP, w: lw, h: 0.6, fontSize: 10, color: th.muted })
+      const x = M + lw + 0.25, w = CW - lw - 0.25
+      card(s, x, TOP, w, 3.35, { fill: th.dark, line: th.dark })
+      T(s, 'KESIMPULAN INVESTASI', { x: x + 0.18, y: TOP + 0.12, w: w - 0.3, h: 0.22, fontSize: 7.5, bold: true, color: th.accent2, charSpacing: 2 })
+      T(s, ly.label, { x: x + 0.18, y: TOP + 0.36, w: w - 0.3, h: 0.55, fontFace: th.head, fontSize: 15, bold: true, color: 'FFFFFF', valign: 'middle', fit: 'shrink' })
+      const rs = ly.reasons.slice(0, 7)
+      T(s, rs.map((x2, i) => ({ text: `${x2.s > 0 ? '+' : x2.s < 0 ? '−' : '·'} ${short(x2.t, 95)}`, options: { breakLine: i < rs.length - 1, paraSpaceAfter: 2 } })),
+        { x: x + 0.18, y: TOP + 0.98, w: w - 0.3, h: 2.3, fontSize: 8, color: 'EAF2FA', fit: 'shrink' })
+    }
+  }
+
   // ===== 2. Angka kunci =====
   {
     const s = slide('Angka kunci', 'Ringkasan Angka Penambahan Modal', verdict)
@@ -1179,13 +1213,16 @@ export function buildRiDeck(PptxGenJS, d, th) {
     ].forEach(([v, l, col], i) => kpi(s, M + i * (w4 + 0.15), TOP + 1.7, w4, 1.5, v, l, col))
   }
 
-  // ===== 2b. Kewajaran aset & fakta dokumen asli =====
-  docSlides(K, th, c.doc)
+  // ---------- Bagian: Pengendali (urutan sama dengan analisa rights issue di website) ----------
+  K.setSec('Pengendali')
   personSlide(K, th, c.doc)
-  valuasiSlide(K, th, c, r, P)
+
+  // ---------- Bagian: Aset dan laba (urutan sama dengan analisa rights issue di website) ----------
+  K.setSec('Aset dan laba')
+  docSlides(K, th, c.doc, 'kewajaran')
 
   // ===== 3. Rincian nilai aset injeksi =====
-  if (det && (det.nama || det.lo)) {
+  if (!c.doc && det && (det.nama || det.lo)) {
     const kj = det.kjpp
     const s = slide('Aset injeksi', short(det.nama || 'Rincian nilai aset injeksi', 52),
       kj.status === 'terbit' ? `KJPP terbit${kj.nilai ? ': ' + bigS(kj.nilai) : ''}.` : kj.ket || 'Nilai aset belum diuji penilai independen.')
@@ -1219,6 +1256,10 @@ export function buildRiDeck(PptxGenJS, d, th) {
         { x: cx, y: gy + 0.24, w: cw, h: TOP + 3.35 - gy - 0.24, fontSize: 8.5, color: th.muted })
     }
   }
+
+  // ---------- Bagian: Penerbitan dan dana (urutan sama dengan analisa rights issue di website) ----------
+  K.setSec('Penerbitan dan dana')
+  docSlides(K, th, c.doc, 'fakta')
 
   // ===== 4. Komposisi penerbitan vs nilai aset; tahap I vs II =====
   {
@@ -1276,22 +1317,8 @@ export function buildRiDeck(PptxGenJS, d, th) {
     kpi(s, M + 3.9, TOP + 1.75, CW - 3.9, 1.55, `${id(c.ctrlPct || 0, 2)}% → ${pc(r.ctrlAfterNr)}`, 'Porsi pengendali lama sesudah penerbitan', th.warn)
   }
 
-  // ===== 6. Untuk investor per 1 lot =====
-  {
-    const s = slide('Investor ritel', 'Dampak terhadap Investor per Satu Lot', r.hak != null
-      ? (r.hak > 0 ? `Nilai teoretis 1 HMETD ${rpS(r.hak)}.` : 'Harga tebus di atas TERP: HMETD secara teoretis tidak bernilai.')
-      : `Tanpa hak tebus; kepemilikan turun ${pc(r.dilusi)}.`)
-    const tiles = [
-      !nr && [id(r.perLot.hak, 1), 'HMETD diterima per lot'],
-      !nr && [rpS(r.perLot.dana), 'Dana untuk menebus semua hak'],
-      r.terp != null && [rpS(r.terp), `Harga teoretis setelah penerbitan (TERP) · ${pctS(r.terp / c.price - 1, 0)} vs pasar`],
-      !nr && r.hak != null && [r.hak > 0 ? rpS(r.hak) : 'Rp0', 'Nilai teoretis 1 HMETD'],
-      [pc(r.dilusi), 'Kepemilikan turun bila tidak ikut'],
-    ].filter(Boolean)
-    const n = tiles.length, w = (CW - 0.15 * (n - 1)) / n
-    tiles.forEach(([v, l], i) => kpi(s, M + i * (w + 0.15), TOP + 0.4, w, 2.2, v, l, i === n - 1 ? th.warn : th.accent))
-  }
-
+  // ---------- Bagian: Simulasi (urutan sama dengan analisa rights issue di website) ----------
+  K.setSec('Simulasi')
   // ===== 6b. Harga saham agar dana tunai tercapai =====
   const nd = riPriceNeeded(c, P)
   if (nd) {
@@ -1316,35 +1343,6 @@ export function buildRiDeck(PptxGenJS, d, th) {
     ].filter(Boolean)
     T(s, notes.map((t, i) => ({ text: t, options: { bullet: { indent: 10 }, breakLine: i < notes.length - 1, paraSpaceAfter: 4 } })),
       { x: M, y: TOP + 2.1, w: CW, h: 1.25, fontSize: 9.5, color: th.ink })
-  }
-
-  // ===== 6b2. Laba sebelum/sesudah aset masuk & kesimpulan layak investasi =====
-  {
-    const lbA = c.doc ? asetLaba(c.doc, { S1: r.S1, P }) : null
-    const ls = labaSebelumSesudah(c, r, lbA)
-    const ly = riLayak(c, r, lbA, ls)
-    if (ly) {
-      const s = slide('Kelayakan', 'Laba Setelah Aset Masuk dan Kelayakan Investasi', ly.label)
-      const lw = 5.0
-      if (ls) {
-        const rows = [['', 'Sebelum', 'Setelah'], ['Laba bersih setahun', bigS(ls.before.laba), bigS(ls.after.laba)], ['Jumlah saham', shS(ls.before.saham), shS(ls.after.saham)],
-          ['Laba per saham', 'Rp' + id(ls.before.eps, 2), 'Rp' + id(ls.after.eps, 2)], ['Harga acuan', rpS(ls.before.harga) + ' (kini)', rpS(Math.round(ls.after.harga)) + ' (teoretis)'],
-          ['PER', ls.before.per ? id(ls.before.per, 1) + '×' : 'rugi', ls.after.per ? id(ls.after.per, 1) + '×' : 'rugi']]
-        rows.forEach((rw, i) => {
-          const y = TOP + i * 0.42
-          if (i) line(s, M, y, lw, 0, th.line, { w: 0.5 })
-          rw.forEach((v, j) => T(s, v, { x: M + (j ? 1.6 + (j - 1) * 1.7 : 0), y, w: j ? 1.65 : 1.6, h: 0.42, fontSize: i ? 9.5 : 8, bold: !i || j === 2, color: i ? th.ink : th.muted, valign: 'middle', align: j ? 'right' : 'left' }))
-        })
-        T(s, ls.akresi ? 'Transaksi menaikkan laba per saham (akresi).' : 'Transaksi menurunkan laba per saham (dilutif).', { x: M, y: TOP + 6 * 0.42 + 0.05, w: lw, h: 0.4, fontSize: 9.5, bold: true, color: ls.akresi ? th.good : th.bad })
-      } else T(s, 'Laba sebelum vs setelah aset masuk belum dapat dihitung: laba aset belum diungkap di dokumen.', { x: M, y: TOP, w: lw, h: 0.6, fontSize: 10, color: th.muted })
-      const x = M + lw + 0.25, w = CW - lw - 0.25
-      card(s, x, TOP, w, 3.35, { fill: th.dark, line: th.dark })
-      T(s, 'KESIMPULAN INVESTASI', { x: x + 0.18, y: TOP + 0.12, w: w - 0.3, h: 0.22, fontSize: 7.5, bold: true, color: th.accent2, charSpacing: 2 })
-      T(s, ly.label, { x: x + 0.18, y: TOP + 0.36, w: w - 0.3, h: 0.55, fontFace: th.head, fontSize: 15, bold: true, color: 'FFFFFF', valign: 'middle', fit: 'shrink' })
-      const rs = ly.reasons.slice(0, 7)
-      T(s, rs.map((x2, i) => ({ text: `${x2.s > 0 ? '+' : x2.s < 0 ? '−' : '·'} ${short(x2.t, 95)}`, options: { breakLine: i < rs.length - 1, paraSpaceAfter: 2 } })),
-        { x: x + 0.18, y: TOP + 0.98, w: w - 0.3, h: 2.3, fontSize: 8, color: 'EAF2FA', fit: 'shrink' })
-    }
   }
 
   // ===== 6c. Simulasi rasio → harga RI → harga saham yang dibutuhkan (baris bentuk, bukan tabel, agar sama di PDF) =====
@@ -1375,37 +1373,24 @@ export function buildRiDeck(PptxGenJS, d, th) {
       { x: M, y: TOP + (rows.length + 1) * rh + 0.18, w: CW, h: 0.3, fontSize: 8, color: th.muted })
   }
 
-  // ===== 7. Sensitivitas harga pelaksanaan (kotak, bukan tabel, agar sama di PDF) =====
+  valuasiSlide(K, th, c, r, P)
+
+  // ---------- Bagian: Dampak investor (urutan sama dengan analisa rights issue di website) ----------
+  K.setSec('Dampak investor')
+  // ===== 6. Untuk investor per 1 lot =====
   {
-    const base = c.price || P
-    const pts = [...new Set([c.nominal, base * 0.5, base * 0.75, c.price, c.ex, c.implied, P, base * 1.25]
-      .filter(v => v > 0).map(v => Math.round(v)))].sort((a, b) => a - b).slice(0, 8)
-    const rows = pts.map(p => [p, riCalc(c, p, u)]).filter(([, x]) => x)
-    const s = slide('Sensitivitas', 'Analisis Sensitivitas Harga Pelaksanaan', c.laterInj
-      ? `Makin rendah harga, makin banyak saham untuk membayar aset tahap II: pada ${rpS(P)} porsi publik akhir ${pc(r.pubAfterInj)}.`
-      : `Pada ${rpS(P)}: nilai penerbitan ${bigS(r.total)}, TERP ${r.terp != null ? rpS(r.terp) : '–'}.`)
-    // Kolom yang benar-benar berubah terhadap harga: bila jumlah saham baru tetap, yang berubah adalah dana,
-    // TERP, nilai HMETD, dan (bila ada) saham untuk injeksi tahap lanjutan.
-    const COLS = {
-      saham: ['Saham baru', x => shS(x.N)], nilai: ['Nilai penerbitan', x => bigS(x.total)], tunai: ['Dana tunai', x => bigS(x.tunai)],
-      terp: ['TERP', x => x.terp != null ? rpS(x.terp) : '–'], hak: ['Nilai 1 HMETD', x => x.hak != null ? rpS(Math.max(0, x.hak)) : '–'],
-      disc: ['vs pasar', x => x.disc != null ? pctS(x.disc, 0) : '–'], pub: ['Publik setelah', x => pc(x.pubAfter)],
-      inj: ['Saham utk aset tahap II', x => shS(x.injShares)], pubInj: ['Publik setelah tahap II', x => pc(x.pubAfterInj)],
-    }
-    const keys = c.laterInj ? ['nilai', 'tunai', 'terp', 'inj', 'pubInj'] : c.N ? ['nilai', 'tunai', 'terp', ...(nr ? [] : ['hak']), 'disc'] : ['saham', 'nilai', 'tunai', 'terp', 'pub']
-    const cols = ['Harga', ...keys.map(k => COLS[k][0])]
-    const warnCol = keys.includes('pubInj') ? 'pubInj' : keys.includes('pub') ? 'pub' : ''
-    const cw = CW / cols.length, rh = Math.min(0.42, 3.3 / (rows.length + 1))
-    s.addShape(S.ROUNDED_RECTANGLE, { x: M, y: TOP, w: CW, h: rh, rectRadius: 0.04, fill: { color: th.dark }, line: { color: th.dark, width: 0.5 } })
-    cols.forEach((h, i) => T(s, h, { x: M + i * cw + 0.1, y: TOP, w: cw - 0.2, h: rh, fontSize: 9, bold: true, color: 'FFFFFF', valign: 'middle', align: i ? 'right' : 'left' }))
-    rows.forEach(([p, x], k) => {
-      const y = TOP + (k + 1) * rh, cur = p === Math.round(P)
-      s.addShape(S.RECTANGLE, { x: M, y, w: CW, h: rh, fill: { color: cur ? th.accent2 : k % 2 ? th.bg : th.card, transparency: cur ? 55 : 0 }, line: { color: th.line, width: 0.5 } })
-      const tag = [p === c.nominal && 'nominal', p === Math.round(c.price || 0) && 'pasar', p === Math.round(c.ex || 0) && 'data', c.implied && p === Math.round(c.implied) && 'tersirat'].filter(Boolean).join(', ')
-      const low = warnCol && (warnCol === 'pubInj' ? x.pubAfterInj : x.pubAfter) < 0.075
-      ;[rpS(p) + (tag ? ` (${tag})` : ''), ...keys.map(k => COLS[k][1](x))]
-        .forEach((v, i) => T(s, v, { x: M + i * cw + 0.1, y, w: cw - 0.2, h: rh, fontSize: 9, bold: cur, color: low && keys[i - 1] === warnCol ? th.bad : th.ink, valign: 'middle', align: i ? 'right' : 'left' }))
-    })
+    const s = slide('Investor ritel', 'Dampak terhadap Investor per Satu Lot', r.hak != null
+      ? (r.hak > 0 ? `Nilai teoretis 1 HMETD ${rpS(r.hak)}.` : 'Harga tebus di atas TERP: HMETD secara teoretis tidak bernilai.')
+      : `Tanpa hak tebus; kepemilikan turun ${pc(r.dilusi)}.`)
+    const tiles = [
+      !nr && [id(r.perLot.hak, 1), 'HMETD diterima per lot'],
+      !nr && [rpS(r.perLot.dana), 'Dana untuk menebus semua hak'],
+      r.terp != null && [rpS(r.terp), `Harga teoretis setelah penerbitan (TERP) · ${pctS(r.terp / c.price - 1, 0)} vs pasar`],
+      !nr && r.hak != null && [r.hak > 0 ? rpS(r.hak) : 'Rp0', 'Nilai teoretis 1 HMETD'],
+      [pc(r.dilusi), 'Kepemilikan turun bila tidak ikut'],
+    ].filter(Boolean)
+    const n = tiles.length, w = (CW - 0.15 * (n - 1)) / n
+    tiles.forEach(([v, l], i) => kpi(s, M + i * (w + 0.15), TOP + 0.4, w, 2.2, v, l, i === n - 1 ? th.warn : th.accent))
   }
 
   // ===== 8. Porsi publik bertahap =====
@@ -1426,6 +1411,8 @@ export function buildRiDeck(PptxGenJS, d, th) {
       { x: x + 0.2, y: TOP + 1.15, w: w - 0.4, h: 1.0, fontSize: 9.5, color: th.muted })
   }
 
+  // ---------- Bagian: Penutup (urutan sama dengan analisa rights issue di website) ----------
+  K.setSec('Penutup')
   // ===== 9. Kesimpulan (gelap) =====
   {
     const s = pres.addSlide(); K.bump()
@@ -1461,6 +1448,7 @@ export function buildRiDeck(PptxGenJS, d, th) {
     T(s, short(c.notes.join(' '), 260), { x: 0.7, y: 4.5, w: 6.5, h: 0.5, fontSize: 8.5, color: 'DCE7F3' })
     T(s, 'Simulasi ini disusun dari data kurasi dan keterbukaan informasi publik. Angka bersifat indikatif hingga prospektus dan laporan KJPP terbit, dan bukan merupakan anjuran membeli atau menjual efek.', { x: 0.7, y: 5.05, w: 6.5, h: 0.3, fontSize: 8, color: 'DCE7F3' })
   }
+
   return pres
 }
 
