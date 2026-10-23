@@ -77,6 +77,33 @@ def token_exp() -> int | None:
     except Exception:
         return None
 
+# ------------------------------------------------------- watcher token ----
+def watcher_status() -> dict:
+    """Keadaan stockbit-token-watcher tanpa membuka rahasia: hanya keberadaan file, waktu ubah,
+    dan waktu terbit/kedaluwarsa token (klaim iat/exp JWT)."""
+    def mtime(p: Path) -> str | None:
+        try:
+            return datetime.fromtimestamp(p.stat().st_mtime, timezone.utc).isoformat(timespec="seconds")
+        except OSError:
+            return None
+    iat = None
+    t = get_token()
+    if t and "." in t:
+        try:
+            p = t.split(".")[1]
+            iat = int(json.loads(base64.urlsafe_b64decode(p + "=" * (-len(p) % 4))).get("iat") or 0) or None
+        except Exception:
+            iat = None
+    ref = ROOT / ".stockbit-refresh"
+    return {
+        "refreshAda": ref.is_file() and ref.stat().st_size > 20,
+        "refreshDiubah": mtime(ref),                                # berubah tiap refresh sukses (token berotasi)
+        "tokenDiubah": mtime(TOKEN_PATH),
+        "tokenTerbit": datetime.fromtimestamp(iat, timezone.utc).isoformat(timespec="seconds") if iat else None,
+        "menungguIsiManual": (ROOT / ".stockbit-notify-stamp").exists() or (ROOT.parent / ".stockbit-notify-stamp").exists(),
+    }
+
+
 # ------------------------------------------------------------ suara TTS ----
 # Narasi video dengan suara pria Indonesia (Azure Speech, id-ID-ArdiNeural). Kunci dibaca dari env
 # AZURE_SPEECH_KEY + AZURE_SPEECH_REGION atau file .azure-speech (baris 1 kunci, baris 2 region); file
@@ -2120,6 +2147,7 @@ class Handler(BaseHTTPRequestHandler):
                 "ok": True, "tokenLoaded": bool(get_token()), "tokenExp": exp,
                 "sinkronStockbit": NEWS_STATE.get("sbOk") or sync_state().get("sbOk"),
                 "tts": bool(tts_config()) and tts_usage()["karakter"] < TTS_MONTHLY_CHARS,
+                "watcher": watcher_status(),
                 "deploy": deploy_status(),
                 "tokenStale": bool(exp and exp < time.time()),
                 "pageFallback": False,
