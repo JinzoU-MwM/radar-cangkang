@@ -34,3 +34,6 @@ website/tsa-*.json
 .ci/
 # Semua berkas rahasia tradersaham, termasuk cadangan (.tsa-creds.json.backup-*)
 **/.tsa-*
+
+# stempel sinkron Stockbit (runtime)
+**/.sync-state.json

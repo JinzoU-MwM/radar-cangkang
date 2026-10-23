@@ -227,6 +227,30 @@ class CacheTest(unittest.TestCase):
 
 
 class KandidatTest(unittest.TestCase):
+    def test_catchup_plan(self):
+        now = datetime(2026, 10, 23, 12, 0).timestamp()
+        self.assertEqual(server.catchup_plan("2026-10-23T08:00:00.000Z", now)[0], 1)
+        self.assertEqual(server.catchup_plan("2026-10-15T08:00:00.000Z", now), (server.CATCHUP_PAGES, "2026-10-15"))
+        self.assertEqual(server.catchup_plan(None, now)[0], server.CATCHUP_PAGES)
+
+    def test_sb_news_pages_stop_at_since(self):
+        calls = []
+        def fake(url, fresh=False):
+            calls.append(url)
+            n = len(calls)
+            return {"data": {"stream": [{"stream_id": n, "title": f"Berita {n}", "created_at": f"2026-10-{24 - n * 3:02d} 10:00:00", "content": ""}],
+                             "pagination": {"is_last_page": False, "next_cursor": 100 + n}}}
+        old, server.stockbit_api = server.stockbit_api, fake
+        try:
+            out = server.get_sb_news({"url": "https://x/stream/v3/symbol/{ticker}?category=STREAM_CATEGORY_REPORTS&report_type=REPORT_TYPE_ALL&last_stream_id=0&limit=30"},
+                                     "DOOH", pages=4, since="2026-10-16")
+        finally:
+            server.stockbit_api = old
+        self.assertEqual(len(calls), 3)            # 21, 18, lalu 15 < 16: berhenti
+        self.assertIn("last_stream_id=101", calls[1])
+        self.assertTrue(all("STREAM_CATEGORY_NEWS" in c and "report_type" not in c for c in calls))
+        self.assertEqual(len(out), 3)
+
     def test_sb_news_convert(self):
         res = {"data": {"stream": [{"stream_id": 9, "title": "DOOH Teken MoU AI Data Center", "created_at": datetime.now().strftime("%Y-%m-%d 10:00:00"),
                                     "content": "PT Era Media Sejahtera Tbk (DOOH) menandatangani tiga nota kesepahaman ...", "news_feed": {"label": "emitennews"}},
