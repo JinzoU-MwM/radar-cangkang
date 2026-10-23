@@ -90,27 +90,9 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
       <span class="tag" :class="c.status === 'tereksekusi' ? 't-good' : c.status === 'berjalan' ? 't-now' : 't-warn'">{{ STATUS[c.status] }}</span>
       <span v-if="c.jadwal" class="small muted">{{ c.jadwal }}</span>
     </div>
-    <p class="small muted">Disusun dari jawaban ke bukti; setiap topik hanya muncul sekali. Angka mengikuti simulasi di bagian 5.</p>
+    <p class="small muted">Disusun seperti karya ilmiah: gambaran, data, analisa, lalu kesimpulan di akhir; setiap topik hanya muncul sekali. Angka mengikuti simulasi di bagian 5.</p>
 
-    <h3 class="sec">1. Kesimpulan investasi</h3>
-    <template v-if="r">
-      <!-- Kesimpulan akhir: layak investasi atau tidak. -->
-      <div v-if="layak" class="fund-ok" :class="layak.tone">
-        <div class="fh">
-          <span class="small muted">Kesimpulan investasi</span>
-          <b>{{ layak.label }}</b>
-        </div>
-        <p class="small"><b>{{ layak.key === 'layak' ? 'Layak dipertimbangkan' : layak.key === 'tidak' ? 'Tidak layak' : 'Spekulatif' }}, karena:</b></p>
-        <ol class="why abc">
-          <li v-for="(x, i) in layak.reasons" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
-            <span class="ic" aria-hidden="true">{{ 'ABCDEFGHIJ'[i] }}.</span>{{ x.t }}
-          </li>
-        </ol>
-        <p class="small muted">Skor {{ layak.score }} (≥ 2 layak dipertimbangkan; −1 s.d. 1 spekulatif; ≤ −2 tidak layak). Kerangka analisis otomatis dari dokumen dan simulasi, bukan anjuran membeli atau menjual efek.</p>
-      </div>
-      <p v-if="verdict" class="verdict"><b>Kesimpulan:</b> {{ verdict }}</p>
-      <p class="small muted">Catatan: <b>skor enam dimensi</b> di atas menilai profil saham backdoor secara umum, <b>sikap analis</b> adalah penilaian manual, dan <b>kesimpulan investasi</b> ini khusus menilai transaksi penambahan modal dan asetnya. Bila berbeda, kesimpulan ini yang menentukan kelayakan ikut serta dalam rights issue.</p>
-    </template>
+    <h3 class="sec">1. Gambaran penambahan modal</h3>
     <div v-if="r" class="kpi">
       <div v-if="c.inj" class="k">
         <span class="lbl">Nilai transaksi injeksi aset</span>
@@ -133,25 +115,6 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
         <em class="small muted">{{ pSrc }}<template v-if="r.disc != null"> · {{ r.disc >= 0 ? 'premi' : 'diskon' }} {{ fmt(Math.abs(r.disc) * 100, 0) }}% vs pasar {{ rp(c.price) }}</template></em>
       </div>
     </div>
-    <template v-if="r">
-      <!-- Pengumpulan dana: tercapai atau tidak, berdasarkan keterbukaan terakhir. -->
-      <div v-if="fund" class="fund-ok" :class="fund.tone">
-        <div class="fh">
-          <span class="small muted">Pengumpulan dana</span>
-          <b>{{ fund.label }}</b>
-        </div>
-        <p class="small last">
-          <template v-if="fund.last">Keterbukaan terakhir: <b>{{ fmtDate(fund.last.date) }}</b> · {{ fund.last.title }}</template>
-          <template v-else>Belum ada keterbukaan resmi tentang penambahan modal; penilaian memakai data kurasi.</template>
-        </p>
-        <ul class="why">
-          <li v-for="(x, i) in fund.reasons" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
-            <span class="ic" aria-hidden="true">{{ x.s > 0 ? '+' : x.s < 0 ? '−' : '·' }}</span>{{ x.t }}
-          </li>
-        </ul>
-        <p v-if="fund.key !== 'done'" class="small muted">Penilaian mengikuti simulasi harga {{ rp(P) }}<template v-if="!nr"> dan publik menebus {{ U }}%</template>; berubah bila slider digeser.</p>
-      </div>
-    </template>
 
     <h3 class="sec">2. Pengendali dan key person</h3>
     <RiDokumen v-if="c.doc" :doc="c.doc" part="pengendali" />
@@ -419,14 +382,53 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
       </div>
     </template>
 
-    <h3 class="sec">7. Sumber dokumen</h3>
+    <h3 class="sec">7. Kesimpulan investasi</h3>
+    <template v-if="r">
+      <!-- Kesimpulan akhir: layak investasi atau tidak. -->
+      <div v-if="layak" class="fund-ok" :class="layak.tone">
+        <div class="fh">
+          <span class="small muted">Kesimpulan investasi</span>
+          <b>{{ layak.label }}</b>
+        </div>
+        <p class="small"><b>{{ layak.key === 'layak' ? 'Layak dipertimbangkan' : layak.key === 'tidak' ? 'Tidak layak' : 'Spekulatif' }}, karena:</b></p>
+        <ol class="why abc">
+          <li v-for="(x, i) in layak.reasons" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
+            <span class="ic" aria-hidden="true">{{ 'ABCDEFGHIJ'[i] }}.</span>{{ x.t }}
+          </li>
+        </ol>
+        <p class="small muted">Skor {{ layak.score }} (≥ 2 layak dipertimbangkan; −1 s.d. 1 spekulatif; ≤ −2 tidak layak). Kerangka analisis otomatis dari dokumen dan simulasi, bukan anjuran membeli atau menjual efek.</p>
+      </div>
+      <p v-if="verdict" class="verdict"><b>Kesimpulan:</b> {{ verdict }}</p>
+      <p class="small muted">Catatan: <b>skor enam dimensi</b> di atas menilai profil saham backdoor secara umum, <b>sikap analis</b> adalah penilaian manual, dan <b>kesimpulan investasi</b> ini khusus menilai transaksi penambahan modal dan asetnya. Bila berbeda, kesimpulan ini yang menentukan kelayakan ikut serta dalam rights issue.</p>
+    </template>
+    <template v-if="r">
+      <!-- Pengumpulan dana: tercapai atau tidak, berdasarkan keterbukaan terakhir. -->
+      <div v-if="fund" class="fund-ok" :class="fund.tone">
+        <div class="fh">
+          <span class="small muted">Pengumpulan dana</span>
+          <b>{{ fund.label }}</b>
+        </div>
+        <p class="small last">
+          <template v-if="fund.last">Keterbukaan terakhir: <b>{{ fmtDate(fund.last.date) }}</b> · {{ fund.last.title }}</template>
+          <template v-else>Belum ada keterbukaan resmi tentang penambahan modal; penilaian memakai data kurasi.</template>
+        </p>
+        <ul class="why">
+          <li v-for="(x, i) in fund.reasons" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
+            <span class="ic" aria-hidden="true">{{ x.s > 0 ? '+' : x.s < 0 ? '−' : '·' }}</span>{{ x.t }}
+          </li>
+        </ul>
+        <p v-if="fund.key !== 'done'" class="small muted">Penilaian mengikuti simulasi harga {{ rp(P) }}<template v-if="!nr"> dan publik menebus {{ U }}%</template>; berubah bila slider digeser.</p>
+      </div>
+    </template>
+
+    <h3 class="sec">8. Sumber dokumen</h3>
     <RiDokumen v-if="c.doc" :doc="c.doc" part="sumber" />
     <details v-if="c.notes.length" class="small muted src"><summary>Dasar angka</summary><p v-for="n in c.notes" :key="n">{{ n }}</p></details>
 
     <div v-if="ticker" class="dl">
       <h3 class="lbl">Unduh analisa {{ c.label }}</h3>
-      <p class="small muted">Khusus analisa ini, urutannya sama dengan bagian 1–7 di atas: kesimpulan & angka kunci, pengendali, aset & laba,
-        penerbitan & dana, simulasi (harga potensi, tabel rasio, valuasi), dampak investor, penutup. Memakai simulasi saat ini: harga {{ rp(P) }}<template v-if="!nr">, publik menebus {{ U }}%</template>.</p>
+      <p class="small muted">Khusus analisa ini, urutannya sama dengan bagian di atas: angka kunci, pengendali, aset & laba,
+        penerbitan & dana, simulasi (harga potensi, tabel rasio, valuasi), dampak investor, lalu kelayakan dan kesimpulan. Memakai simulasi saat ini: harga {{ rp(P) }}<template v-if="!nr">, publik menebus {{ U }}%</template>.</p>
       <DeckDownload :sector-id="sector.id" :build="build" label="analisa" />
     </div>
   </section>
