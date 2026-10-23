@@ -37,6 +37,14 @@ const browserVoice = computed(() => voices.value.find(v => !v.server) || null)
 const ttsUrl = text => '/api/tts?t=' + encodeURIComponent(speakable(text))
 let audio = null
 
+// Suara pria gratis hanya ada di Microsoft Edge ("Ardi"). Di browser lain tampil tombol buka di Edge
+// (Windows: skema microsoft-edge: membuka halaman yang sama langsung di Edge).
+const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
+const isEdge = /Edg(e|A|iOS)?\//.test(ua)
+const isWindows = /Windows/.test(ua)
+const hasMale = computed(() => voices.value.some(v => v.server || MALE.test(v.name)))
+const edgeHref = computed(() => 'microsoft-edge:' + (typeof location !== 'undefined' ? location.href : ''))
+
 // Aktifkan suara pria: pemilik menempel KEY 1 Azure Speech; server mengujinya lalu menyimpannya.
 const keyForm = ref({ open: false, key: '', region: 'southeastasia', busy: false, msg: '', ok: false })
 async function pasangKunci() {
@@ -250,7 +258,10 @@ const rpS = v => v == null ? '–' : 'Rp' + Math.round(v).toLocaleString('id-ID'
         </form>
         <p v-if="keyForm.msg" :class="keyForm.ok ? 'c-good' : 'c-strong'">{{ keyForm.msg }}</p>
       </div>
-      <p v-if="!serverTts && voices.length && !MALE.test(voices[0].name)" class="small muted">Suara pria server belum aktif; perangkat ini hanya memiliki suara wanita. Buka di Microsoft Edge untuk suara pria "Ardi".</p>
+      <p v-if="!hasMale && !isEdge" class="edge small">
+        <a v-if="isWindows" :href="edgeHref" class="btn">Buka di Edge (suara pria)</a>
+        <span class="muted">Browser ini hanya memiliki suara wanita. Suara pria "Ardi" gratis tersedia di Microsoft Edge{{ isWindows ? '' : ' (buka tautan halaman ini di Edge)' }}.</span>
+      </p>
       <p v-if="!voices.length" class="small muted">Perangkat ini belum memiliki suara Bahasa Indonesia, sehingga video berjalan tanpa suara (teks tetap tampil). Gunakan Chrome atau Edge terbaru, atau pasang paket suara Indonesia di pengaturan sistem.</p>
 
       <!-- Bab -->
@@ -267,6 +278,7 @@ const rpS = v => v == null ? '–' : 'Rp' + Math.round(v).toLocaleString('id-ID'
 </template>
 
 <style scoped>
+.edge{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
 .keybox{margin:6px 0}.kf{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}
 .bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
 .lbl{margin:0}.grp{display:flex;gap:6px}
