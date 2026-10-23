@@ -18,9 +18,9 @@ const guess = computed(() => {
   return sectorOf({ baru: (it ? storyOf(t)?.baru : '') || store.verified?.[t]?.baru, aset: [a?.sektor, a?.nama].filter(Boolean).join(' '), nama: it?.name })
 })
 
-// Isi presentasi per bagian, urutannya sama dengan tab di halaman emiten (lihat buildDeck di lib/deck.js).
+// Isi presentasi per bagian, berurutan seperti karya ilmiah: profil & data, analisa, lalu ringkasan, rekomendasi,
+// dan kesimpulan di akhir (lihat buildDeck di lib/deck.js).
 const SECTIONS = [
-  ['Ringkasan', [['Rekomendasi', 'tindakan, area beli, batas risiko, target, porsi'], ['Ringkasan', 'skor & sikap analis']]],
   ['Profil', [['Fundamental', 'PBV, PER, ekuitas, kas, margin'], ['Pengurus', 'direksi & komisaris']]],
   ['Story & Pengendali', [['Pengendali', 'struktur & aktor'], ['Profil pengendali', 'latar & rekam jejak'], ['Pengendali & key person', 'UBO, harga masuk, riwayat hukum'], ['Pihak lawan', 'rantai kepemilikan'],
     ['Progres', 'tonggak transaksi'], ['Kronologi', 'jejak keterbukaan penting']]],
@@ -33,7 +33,7 @@ const SECTIONS = [
     ['Valuasi & dilusi', 'sebelum → sesudah'], ['Kelebihan vs kekurangan', 'red flag & katalis'], ['Pandangan mendalam', 'temuan kunci']]],
   ['Teknikal', [['Harga 1 tahun', 'grafik & siklus'], ['Teknikal', 'meter sinyal'], ['Pola & level', 'support/resistance'], ['Rencana transaksi', 'masuk/keluar']]],
   ['Spekulasi', [['Skenario', 'tangga harga']]],
-  ['Penutup', [['Daftar pantau', 'harus terjadi vs sinyal keluar'], ['Rencana aksi', 'bila terkonfirmasi / sekarang / bila gagal'],
+  ['Penutup', [['Ringkasan', 'skor & sikap analis'], ['Rekomendasi', 'tindakan, area beli, batas risiko, target, porsi'], ['Daftar pantau', 'harus terjadi vs sinyal keluar'], ['Rencana aksi', 'bila terkonfirmasi / sekarang / bila gagal'],
     ['Kesimpulan', 'rekomendasi & skor'], ['Lampiran', 'sumber & celah data']]],
 ]
 // Nomor slide berurutan lintas bagian (sampul tidak dihitung).
