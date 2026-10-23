@@ -115,8 +115,8 @@ function makeKit(PptxGenJS, d, th, title) {
     T(s, title, { x: M, y: 0.5, w: CW, h: 0.58, fontFace: th.head, fontSize: 25, bold: true, color: th.ink, valign: 'middle', fit: 'shrink' })
     if (take) {
       s.addShape(S.ROUNDED_RECTANGLE, { x: M, y: 4.72, w: CW, h: 0.42, rectRadius: 0.06, fill: { color: th.dark }, line: { color: th.dark, width: 0.5 } })
-      T(s, 'SIMPULAN', { x: M + 0.18, y: 4.72, w: 1.2, h: 0.42, fontSize: 8.5, bold: true, color: th.accent2, charSpacing: 3, valign: 'middle' })
-      T(s, short(take, 150), { x: M + 1.45, y: 4.72, w: CW - 1.6, h: 0.42, fontSize: 10.5, color: 'FFFFFF', valign: 'middle' })
+      T(s, 'KESIMPULAN', { x: M + 0.18, y: 4.72, w: 1.5, h: 0.42, fontSize: 8.5, bold: true, color: th.accent2, charSpacing: 3, valign: 'middle' })
+      T(s, short(take, 145), { x: M + 1.75, y: 4.72, w: CW - 1.9, h: 0.42, fontSize: 10.5, color: 'FFFFFF', valign: 'middle' })
     }
     T(s, `${d.t} | Kajian Radar Backdoor | Data per ${fmtDate(d.date)}`, { x: M, y: 5.24, w: 6, h: 0.22, fontSize: 8, color: th.muted })
     T(s, String(page), { x: W - M - 0.5, y: 5.24, w: 0.5, h: 0.22, fontSize: 8, color: th.muted, align: 'right' })
@@ -912,7 +912,7 @@ export function buildDeck(PptxGenJS, d, th) {
     const s = pres.addSlide(); K.bump()
     s.background = { color: th.dark }
     coverArt(s, d.sector?.motif, th, S, dot, line, true)
-    T(s, 'SIMPULAN', { x: 0.7, y: 0.6, w: 5, h: 0.3, fontSize: 10, bold: true, color: th.accent2, charSpacing: 5 })
+    T(s, 'KESIMPULAN', { x: 0.7, y: 0.6, w: 5, h: 0.3, fontSize: 10, bold: true, color: th.accent2, charSpacing: 5 })
     T(s, short(pa.sikap || A.stance?.t || 'Kesimpulan', 40), { x: 0.7, y: 0.95, w: 6.2, h: 0.8, fontFace: th.head, fontSize: 34, bold: true, color: 'FFFFFF', valign: 'middle', fit: 'shrink' })
     const pts = [pa.ringkas, A.stance?.t, d.pos?.next ? 'Berikutnya: ' + d.pos.next : null, (pa.variabelKunci || [])[0] ? 'Kunci: ' + pa.variabelKunci[0] : null].filter(Boolean).slice(0, 4)
     pts.forEach((p, i) => {
@@ -1091,7 +1091,7 @@ function docSlides(K, th, doc, which = '') {
     })
     const ay = TOP + met.length * mh + 0.06, ah = TOP + 3.35 - ay
     T(s, 'ALASAN', { x, y: ay, w, h: 0.2, fontSize: 7.5, bold: true, color: th.accent, charSpacing: 2 })
-    // Jumlah alasan menyesuaikan ruang (±2 baris per alasan) agar tidak menimpa pita simpulan.
+    // Jumlah alasan menyesuaikan ruang (±2 baris per alasan) agar tidak menimpa pita kesimpulan.
     const al = (kw.alasan || []).slice(0, Math.max(2, Math.floor((ah - 0.22) / 0.36)))
     T(s, al.map((t, i) => ({ text: short(t, 150), options: { bullet: { type: 'number' }, breakLine: i < al.length - 1, paraSpaceAfter: 2 } })),
       { x, y: ay + 0.22, w, h: ah - 0.22, fontSize: 8, color: th.ink, fit: 'shrink' })
@@ -1417,7 +1417,7 @@ export function buildRiDeck(PptxGenJS, d, th) {
   {
     const s = pres.addSlide(); K.bump()
     s.background = { color: th.dark }
-    T(s, 'SIMPULAN', { x: 0.7, y: 0.6, w: 5, h: 0.3, fontSize: 10, bold: true, color: th.accent2, charSpacing: 5 })
+    T(s, 'KESIMPULAN', { x: 0.7, y: 0.6, w: 5, h: 0.3, fontSize: 10, bold: true, color: th.accent2, charSpacing: 5 })
     if (fund) {
       // Pengumpulan dana: tercapai atau tidak, dengan keterbukaan terakhir dan alasan utama.
       const fc = { good: th.good, warn: th.warn, strong: th.bad }[fund.tone] || th.accent2
@@ -1434,7 +1434,7 @@ export function buildRiDeck(PptxGenJS, d, th) {
     T(s, `${d.t}: ${c.label}`, { x: 0.7, y: 0.95, w: 6.0, h: 0.8, fontFace: th.head, fontSize: 30, bold: true, color: 'FFFFFF', valign: 'middle', fit: 'shrink' })
     const pts = [
       `Nilai ${what} ${bigS(r.total)} (${shS(r.N)} saham × ${rpS(P)}); dana tunai ${bigS(r.tunai)}.`,
-      c.inj ? `Aset injeksi ${det?.spread ? bigS(det.lo) + '–' + bigS(det.hi) : bigS(c.inj)}${c.laterInj ? `, dibayar ±${shS(r.injShares)} saham di tahap lanjutan` : ''}.` : null,
+      c.inj ? `Aset injeksi ${!c.doc && det?.spread ? bigS(det.lo) + '–' + bigS(det.hi) : bigS(c.inj)}${c.doc?.kewajaran?.putusan ? ' (' + c.doc.kewajaran.putusan + ')' : ''}${c.laterInj ? `, dibayar ±${shS(r.injShares)} saham di tahap lanjutan` : ''}.` : null,
       `Porsi publik ${pc((c.float || 0) / 100)} → ${pc(r.pubAfterInj ?? r.pubAfter)}${r.pubAfterInj != null ? ' setelah semua tahap' : ''}.`,
       fund ? `Pengumpulan dana: ${fund.label.toLowerCase()}.` : null,
       ...verdict.split(/(?<=\.)\s+/).filter(Boolean),
