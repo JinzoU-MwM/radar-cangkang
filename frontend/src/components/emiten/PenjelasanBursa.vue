@@ -2,7 +2,7 @@
 // Tanggapan emiten atas permintaan penjelasan BEI yang terakhir (ri-dokumen.json → penjelasanBursa), disajikan
 // sebagai memo riset: kesimpulan dan dampak terhadap tesis di depan, lalu poin utama, implikasi investasi,
 // hal yang belum terjawab (otomatis dari poin[].kurang), dan yang dipantau. Tanya-jawab lengkap jadi lampiran.
-import { fmtDate, PB_JAWABAN, PB_KRITERIA } from '../../lib/domain.js'
+import { fmtDate, PB_NADA, PB_DASAR, PB_KRITERIA } from '../../lib/domain.js'
 import { computed } from 'vue'
 const props = defineProps({ pb: { type: Object, required: true } })
 const memo = computed(() => props.pb.memo || null)
@@ -14,7 +14,7 @@ const DAMPAK = { negatif: ['Negatif', 't-strong'], netral: ['Netral', 't-calm'],
 const dampak = computed(() => DAMPAK[props.pb.dampak] || DAMPAK.netral)
 // Nomor pertanyaan BEI (1a, 2b, ...) bila datanya tersedia.
 const adaNo = computed(() => (props.pb.poin || []).some(x => x.no))
-const n = x => PB_JAWABAN[x] || PB_JAWABAN.sebagian
+const n = x => PB_NADA[x] || PB_NADA.netral
 </script>
 
 <template>
@@ -61,14 +61,14 @@ const n = x => PB_JAWABAN[x] || PB_JAWABAN.sebagian
       <summary>Analisa per pertanyaan BEI ({{ (pb.poin || []).length }} butir)</summary>
       <div class="scroll">
         <table class="ledger">
-          <thead><tr><th v-if="adaNo">No</th><th>Topik</th><th>Pertanyaan BEI</th><th>Jawaban emiten</th><th>Kelengkapan jawaban</th><th>Analisa</th></tr></thead>
+          <thead><tr><th v-if="adaNo">No</th><th>Topik</th><th>Pertanyaan BEI</th><th>Jawaban emiten</th><th>Nada</th><th>Analisa</th></tr></thead>
           <tbody>
             <tr v-for="(x, i) in pb.poin || []" :key="i">
               <td v-if="adaNo" class="num">{{ x.no }}</td>
               <td><b>{{ x.topik }}</b></td>
               <td class="small">{{ x.tanya }}</td>
               <td class="small">{{ x.jawab }}</td>
-              <td><span class="tag" :class="'t-' + n(x.jawaban)[1]">{{ n(x.jawaban)[0] }}</span></td>
+              <td><span class="tag" :class="'t-' + n(x.nada)[1]">{{ n(x.nada)[0] }}</span><div v-if="PB_DASAR[x.dasar]" class="dasar">{{ PB_DASAR[x.dasar] }}</div></td>
               <td class="small">{{ x.analisa }}</td>
             </tr>
           </tbody>
@@ -96,4 +96,5 @@ const n = x => PB_JAWABAN[x] || PB_JAWABAN.sebagian
 .lamp{margin-top:12px}
 .lamp summary{cursor:pointer;font-weight:600}
 .pb td{vertical-align:top}
+.dasar{font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap}
 </style>

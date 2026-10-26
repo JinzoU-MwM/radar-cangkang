@@ -484,28 +484,36 @@
           "jawab": "Hasil negosiasi CSPA dalam jual beli saham signifikan, bukan karena penurunan kinerja.",
           "analisa": "Harga masuk pengendali jauh di bawah pasar; patokan nilai sebenarnya rendah.",
           "jawaban": "sebagian",
-          "kurang": "Hanya disebut hasil negosiasi; dasar perhitungan harga tidak dijelaskan."
+          "kurang": "Hanya disebut hasil negosiasi; dasar perhitungan harga tidak dijelaskan.",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Dividen, covenant, pengurus",
           "tanya": "Dampak pengambilalihan terhadap dividen, perjanjian penting, dan pengurus.",
           "jawab": "Tidak ada perubahan dividen maupun covenant; Nusttanakit Sasiarnon (Direktur) dan Sawin Laosethakul (Komisaris) diangkat RUPSLB 2 Okt 2026.",
           "analisa": "Tidak ada kejutan; pengurus wakil Saiko.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Rencana jual pengendali",
           "tanya": "Rencana Saiko/SCG menjual saham dalam 10 tahun.",
           "jawab": "Tidak ada rencana melepas kepemilikan.",
           "analisa": "Sinyal komitmen jangka panjang pengendali.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "positif",
+          "dasar": "kepastian"
         },
         {
           "topik": "Sumber dana 20% BTL",
           "tanya": "Sumber dana Rp448,3 M untuk membeli 1.138.500 saham BTL, mengingat kas Rp6,1 M.",
           "jawab": "Dari dana PMHMETD yang dilaksanakan bersamaan dengan inbreng BT oleh Saiko; dapat juga memakai hasil penjualan aset dari dana IPO.",
           "analisa": "Uang publik dipakai membayar pengendali (penjual BTL); bergantung tingkat partisipasi publik.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Valuasi USD125 juta",
@@ -513,7 +521,9 @@
           "jawab": "Valuation report Avison Young (penasihat BT) metode DCF; nilai final mengacu KJPP terdaftar OJK.",
           "analisa": "Penilai berasal dari pihak penjual; kelipatan nilai buku sangat tinggi.",
           "jawaban": "sebagian",
-          "kurang": "Nilai final menunggu KJPP; yang tersedia baru valuasi penasihat pihak penjual."
+          "kurang": "Nilai final menunggu KJPP; yang tersedia baru valuasi penasihat pihak penjual.",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Rincian aset BT",
@@ -521,21 +531,27 @@
           "jawab": "Total aset Rp74,05 M (IFRS, audit PKF, THB Rp538); BT masih restrukturisasi dan peningkatan modal.",
           "analisa": "Aset kecil dibanding nilai transaksi; laba dan pendapatan belum diungkap.",
           "jawaban": "sebagian",
-          "kurang": "Hanya total aset; rincian aset dan kegunaannya tidak dijelaskan."
+          "kurang": "Hanya total aset; rincian aset dan kegunaannya tidak dijelaskan.",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Jadwal penyelesaian",
           "tanya": "Timeline perjanjian pengalihan saham bersyarat.",
           "jawab": "RUPS Independen dan pernyataan pendaftaran Q1 2027; pembelian 20% BTL dan efektif Q2 2027; konsolidasi di laporan keuangan 31 Des 2027.",
           "analisa": "Katalis utama di 2027; waktu tunggu panjang.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Rencana aksi korporasi",
           "tanya": "Konfirmasi perubahan rencana.",
           "jawab": "Tidak ada perubahan: PMHMETD dengan inbreng BT dan perubahan usaha ke telekomunikasi dan teknologi; MTO masih berjalan.",
           "analisa": "Rencana konsisten.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         }
       ],
       "kesimpulan": "Penjelasan menegaskan struktur yang menguntungkan pengendali: masuk di Rp23,5, nilai BTL dari penasihat penjual, dan sebagian dana publik untuk membayar pengendali. Katalis resmi baru pada 2027.",
@@ -1107,7 +1123,9 @@
           "tanya": "Estimasi penyertaan modal, timeline, dan sumber dana penyertaan pada WNA dan WNG melalui AEA.",
           "jawab": "Kebutuhan pendanaan konstruksi hingga kuartal II 2028 sekitar Rp131 miliar (ditelaah KJPP Ferdinand, Danar, Ichsan & Rekan); penyertaan saat ini USD200.000 (sekitar Rp3,36 miliar) untuk 10% di masing-masing WNA dan WNG; setoran berikutnya bertahap lewat capital call sesuai porsi; sumber dana PMHMETD dan/atau pinjaman bank.",
           "analisa": "Kebutuhan dana jauh melampaui penyertaan saat ini sehingga keberlanjutan keikutsertaan di proyek sangat bergantung pada keberhasilan rights issue atau pinjaman.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Proyeksi hingga 2058",
@@ -1115,21 +1133,27 @@
           "jawab": "Titik proyeksi mengikuti PPA 30 tahun sejak COD kuartal II 2028 tanpa asumsi perpanjangan; PPA Denpasar Raya ditandatangani 8 Juli 2026, PPA Bogor Raya direncanakan awal kuartal IV 2026; prospek lima tahun bertumpu pada usaha furnitur ditambah arus kas dari KBLI baru, dividen, dan hasil investasi.",
           "analisa": "Proyeksi berjangka sangat panjang dan prospek lima tahun tidak disertai angka, sehingga sulit diverifikasi investor.",
           "jawaban": "sebagian",
-          "kurang": "Prospek lima tahun tidak disertai angka."
+          "kurang": "Prospek lima tahun tidak disertai angka.",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Kesiapan usaha baru",
           "tanya": "Kesiapan keuangan, operasional, dan legalitas; sinergi; risiko; serta hal material lain terkait KBLI 64210 dan 64220.",
           "jawab": "Pendanaan dari PMHMETD (pernyataan pendaftaran awal kuartal IV 2026); Divisi Manajemen Portofolio serta Treasury dan Pendanaan masih tahap perencanaan; cukup NIB karena risiko rendah; sinergi berupa alokasi modal dan pendanaan intra-grup; risiko investasi, kredit, konsentrasi, keuangan, dan regulasi; telah ada pengalihan 10% saham WNA dan WNG (8 Juni 2026), novasi JVA dengan PT Danantara Investment Management (7 Juli 2026), dan PJBL PLTSa Denpasar Raya 30 MW (8 Juli 2026).",
           "analisa": "Arah usaha bergeser ke investment holding dengan organisasi yang belum terbentuk; Perseroan sendiri mengakui risiko kredit sebagai pihak yang menanggung pinjaman bank.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Progres PMHMETD",
           "tanya": "Perkembangan rencana PMHMETD sejak keterbukaan informasi 14 April 2026.",
           "jawab": "Disetujui RUPS Tahunan 21 Mei 2026; pernyataan pendaftaran ke OJK ditargetkan awal kuartal IV 2026.",
           "analisa": "Rencana berjalan, namun harga pelaksanaan dan jumlah dana belum diungkap.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Kelangsungan usaha",
@@ -1137,49 +1161,63 @@
           "jawab": "Upaya berupa perluasan pemasaran, kerja sama, promosi, efisiensi produksi, dan penguatan tim internal; usaha baru didanai PMHMETD dan, bila perlu, pinjaman bank, terpisah dari arus kas operasional.",
           "analisa": "Langkah perbaikan usaha furnitur bersifat umum tanpa target terukur, sementara usaha baru bergantung penuh pada dana eksternal.",
           "jawaban": "sebagian",
-          "kurang": "Upaya bersifat umum tanpa target terukur."
+          "kurang": "Upaya bersifat umum tanpa target terukur.",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Kenaikan uang muka",
           "tanya": "Latar belakang kenaikan uang muka dari Rp2,7 miliar (Desember 2025) menjadi Rp4,7 miliar (Juni 2026).",
           "jawab": "Barang atas pembelian ke pemasok belum diterima.",
           "analisa": "Penjelasan singkat; identitas pemasok dan jadwal penerimaan barang tidak diungkap.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Utang lain-lain",
           "tanya": "Sifat dan latar belakang utang lain-lain Rp3,3 miliar yang muncul per Juni 2026.",
           "jawab": "Tagihan konsultan terkait penambahan kegiatan usaha, persiapan proyek WTE, dan uji tuntas prospek usaha, yang dibayar lebih dulu oleh pemegang saham mengingat kondisi keuangan Perseroan; transaksi terjadi pada tahun berjalan.",
           "analisa": "Biaya persiapan aksi korporasi ditalangi pemegang saham, menandakan kas Perseroan terbatas.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Rugi usaha",
           "tanya": "Penyebab rugi usaha Rp7 miliar (sebelumnya laba usaha Rp767,2 juta) dengan beban pokok naik ke Rp16,4 miliar dan laba kotor turun ke Rp4,9 miliar, serta strategi efisiensi.",
           "jawab": "Clearance sale barang slow-moving dan deadstock di bawah harga normal, kenaikan harga bahan baku akibat geopolitik, dan peralihan produksi dari in-house ke outsourcing; efisiensi melalui seleksi pemasok, negosiasi harga, dan disiplin persediaan.",
           "analisa": "Kinerja usaha inti furnitur memburuk tajam dan belum ada indikator pemulihan yang terukur.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "negatif",
+          "dasar": "merugikan"
         },
         {
           "topik": "Arus kas dan karyawan",
           "tanya": "Arus kas operasi negatif Rp4 miliar; kenaikan pembayaran ke pemasok (Rp14,2 miliar dari Rp11,5 miliar) dan penurunan pembayaran karyawan (Rp1,6 miliar dari Rp4,6 miliar).",
           "jawab": "Pembayaran ke pemasok sebagian besar pelunasan utang usaha periode sebelumnya; pembayaran karyawan turun karena pengurangan karyawan, yang dinilai tidak berdampak negatif pada kelangsungan usaha.",
           "analisa": "Pengurangan karyawan dan peralihan ke outsourcing menunjukkan penyusutan operasi furnitur; jumlah karyawan yang dikurangi tidak diungkap.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "negatif",
+          "dasar": "merugikan"
         },
         {
           "topik": "Rencana aksi korporasi",
           "tanya": "Rencana tindakan korporasi dalam 12 bulan ke depan.",
           "jawab": "RUPS Luar Biasa 30 September 2026 untuk penambahan kegiatan usaha dan penyampaian pernyataan pendaftaran PMHMETD awal kuartal IV 2026.",
           "analisa": "Dua katalis dekat yang menentukan arah transformasi usaha.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Informasi material lain",
           "tanya": "Informasi atau kejadian material lain yang dapat memengaruhi kelangsungan usaha dan harga saham.",
           "jawab": "Tidak ada.",
           "analisa": "Tidak ada informasi baru di luar yang sudah diungkap.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         }
       ],
       "kesimpulan": "Penjelasan menunjukkan transformasi SOFA menjadi investment holding di proyek WTE yang membutuhkan dana sekitar Rp131 miliar, sementara usaha furnitur merugi, arus kas operasi negatif, dan biaya persiapan ditalangi pemegang saham. Yang perlu dipantau: hasil RUPSLB 30 September 2026, harga pelaksanaan dan besaran PMHMETD dalam prospektus, penandatanganan PPA Bogor Raya, serta kemampuan Perseroan memenuhi capital call.",
@@ -1780,7 +1818,9 @@
           "tanya": "Langkah konkret, jadwal, dan proforma perbaikan ekuitas negatif Rp42,83 M per 30 Jun 2026.",
           "jawab": "PMTHMETD 1,25 miliar saham pada Rp100 (Rp125 M) seluruhnya diambil GIGP secara tunai; RUPSLB 3 Nov 2026, penyetoran 1 Des 2026, pencatatan 11 Des 2026. Proforma: ekuitas dari negatif Rp42,83 M menjadi Rp82,17 M, rasio lancar 0,69x menjadi 2,12x, liabilitas terhadap aset 124,3% menjadi 72,7%.",
           "analisa": "Pemulihan ekuitas sepenuhnya bergantung pada setoran pengendali dan baru tercermin di laporan keuangan 31 Des 2026.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "positif",
+          "dasar": "kepastian"
         },
         {
           "topik": "Profil perusahaan target",
@@ -1788,7 +1828,9 @@
           "jawab": "Bergerak di kendaraan bermotor roda tiga termasuk listrik dan suku cadangnya; dimiliki 2 orang perorangan yang menurut Perseroan tidak terafiliasi. Nama perusahaan, identitas pemegang saham, dan manajemen belum diungkap, akan disampaikan dalam keterbukaan informasi.",
           "analisa": "Identitas target dan pemiliknya belum dapat diverifikasi publik pada tanggal tanggapan.",
           "jawaban": "tidak",
-          "kurang": "Nama perusahaan target, pemegang saham, dan manajemen ditunda ke keterbukaan informasi berikutnya."
+          "kurang": "Nama perusahaan target, pemegang saham, dan manajemen ditunda ke keterbukaan informasi berikutnya.",
+          "nada": "negatif",
+          "dasar": "ditunda"
         },
         {
           "topik": "Valuasi dan sumber dana akuisisi",
@@ -1796,63 +1838,81 @@
           "jawab": "Akuisisi 90% saham; KJPP sudah ditunjuk tetapi nilai penilaian dan nilai akuisisi belum diungkap. Didanai pinjaman pihak ketiga jangka pendek, bukan dari dana PMTHMETD, dan disebut bukan transaksi material.",
           "analisa": "Investor belum dapat menilai kewajaran harga, sementara Perseroan berekuitas negatif menambah utang jangka pendek untuk akuisisi.",
           "jawaban": "sebagian",
-          "kurang": "Nilai penilaian dan nilai akuisisi belum diungkap."
+          "kurang": "Nilai penilaian dan nilai akuisisi belum diungkap.",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Keuangan perusahaan target",
           "tanya": "Ikhtisar keuangan target: aset, liabilitas, ekuitas, pendapatan, laba usaha, laba bersih.",
           "jawab": "Per 31 Mar 2026 (disebut telah diaudit): total aset sekitar Rp583,0 M, liabilitas sekitar Rp578,9 M, ekuitas sekitar Rp4,1 M, pendapatan 3 bulan sekitar Rp1,3 M, laba usaha Rp136 juta, laba bersih Rp686 juta.",
           "analisa": "Ekuitas sangat tipis dibanding liabilitas (sekitar 99,3% aset), sementara rincian liabilitas tidak diungkap.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Pengendali dan manajemen",
           "tanya": "Rencana pengembangan target dan perubahan pengendali maupun manajemen Perseroan setelah akuisisi.",
           "jawab": "Target menjadi entitas anak yang dikendalikan langsung; GIGP tetap pengendali dan susunan Direksi serta Dewan Komisaris Perseroan tidak berubah; manajemen target dipertahankan.",
           "analisa": "Tidak ada perubahan tata kelola di tingkat Perseroan.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Proyek roda tiga Rp1,25 T",
           "tanya": "Deskripsi, nilai, analisis biaya-manfaat proyek, dan apakah dikerjakan bersama target.",
           "jawab": "Proyek pengadaan kendaraan roda tiga sekitar Rp1,25 T dari salah satu entitas anak grup Danantara (Maret 2026), margin diperkirakan 7% sampai 8%; belum dimulai karena keterbatasan dana operasional target. Dikerjakan oleh target dan dikonsolidasikan sesuai porsi 90%.",
           "analisa": "Nilai ekonomi akuisisi bertumpu pada satu proyek yang belum berjalan dan kontraknya tidak dilampirkan.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Pendanaan dan jadwal proyek",
           "tanya": "Alasan memprioritaskan akuisisi dan proyek, strategi pendanaan proyek, serta timeline akuisisi hingga proyek selesai.",
           "jawab": "PMTHMETD dan akuisisi disebut berjalan paralel dan tidak saling menggantikan. Proyek didanai pinjaman bank atau pihak ketiga atas dasar proyek, termin pemberi kerja, dan dukungan Perseroan. Akuisisi awal Okt 2026, proyek mulai Nov 2026, termin pertama Des 2026, selesai Mar 2028; jadwal indikatif.",
           "analisa": "Sumber dana proyek bernilai triliunan belum memiliki komitmen pasti, sehingga risiko eksekusi tinggi.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Struktur PMTHMETD",
           "tanya": "Latar belakang, dana, jumlah saham, investor, struktur pemegang saham, penggunaan dana, free float, dan lock-up.",
           "jawab": "Harga Rp100 di atas kajian KJPP Ferdinand, Danar, Ichsan dan Rekan Rp91,22. GIGP naik dari 65,86% menjadi 88,32%, masyarakat turun dari 24,12% menjadi 8,25%. Dana: utang pihak ketiga sekitar Rp21 M (16,8%), penyertaan ke entitas anak sekitar Rp99 M (79,2%), modal kerja Rp5 M (4,0%). Free float menjadi 11,68% (di bawah 15%) dan akan dipenuhi lewat pelepasan bertahap ke investor terpilih; GIGP bersedia lock-up.",
           "analisa": "Publik terdilusi besar, dan pemenuhan free float melalui investor terpilih tidak memberi kesempatan langsung bagi pemegang saham publik.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "negatif",
+          "dasar": "merugikan"
         },
         {
           "topik": "Penjualan saham GIGP pasca-MTO",
           "tanya": "Perubahan bidang usaha, alasan GIGP menjual saham 13 Agu hingga 17 Sep 2026 setelah MTO, komitmen GIGP, dan pertimbangan menjual lalu menyuntik modal.",
           "jawab": "Bidang usaha pergudangan dan BBM tetap, ditambah diversifikasi otomotif. Penjualan untuk memenuhi free float setelah MTO dan hasilnya diterima GIGP; GIGP kini 65,86% dan tidak berencana mengalihkan pengendalian. PMTHMETD disebut bentuk komitmen pemulihan.",
           "analisa": "Pengendali menjual saham di pasar lalu memperoleh saham baru dalam jumlah jauh lebih besar pada Rp100, pola yang menguntungkan pengendali.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Afiliasi BIKE, MENN, PMJ",
           "tanya": "Hubungan afiliasi Perseroan dan GIGP dengan BIKE, MENN, dan PMJ terkait rangkap jabatan Muhammad Reagy Sukmana serta keterlibatannya dalam rencana akuisisi PTDU.",
           "jawab": "Tidak ada hubungan kepemilikan, pengendalian, usaha, maupun transaksi; satu-satunya keterkaitan adalah jabatan Komisaris Independen BIKE dan MENN dalam kapasitas pribadi, yang diakui termasuk afiliasi menurut UU Pasar Modal. Keterlibatan dalam rencana akuisisi PTDU bersifat pribadi, rencana telah batal, dan ia telah mundur.",
           "analisa": "Rangkap jabatan lintas emiten perlu dipantau bila muncul transaksi di kemudian hari.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Fakta material dan suspensi",
           "tanya": "Informasi atau fakta material lain yang belum diungkap.",
           "jawab": "Tidak ada; akuisisi akan diumumkan setelah perjanjian jual beli ditandatangani. Perseroan sekaligus memohon pencabutan suspensi berdasarkan ketentuan V.5 Peraturan I-X (Kep-00139/BEI/09-2026), dengan alasan calon pemberi pinjaman dan calon investor ragu selama suspensi.",
           "analisa": "Kelangsungan pendanaan akuisisi dikaitkan dengan pencabutan suspensi, sehingga keputusan BEI menjadi katalis utama.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         }
       ],
       "kesimpulan": "Tanggapan memperjelas jalur pemulihan ekuitas melalui setoran tunai GIGP, tetapi nilai, identitas, dan dasar valuasi perusahaan target belum diungkap, sementara nilai ekonominya bergantung pada satu proyek Rp1,25 T yang belum berjalan dan belum memiliki pendanaan pasti. Perlu dipantau keterbukaan akuisisi (nilai, penilaian KJPP, pemilik), keputusan BEI atas permohonan pencabutan suspensi, hasil RUPSLB 3 Nov 2026, dan mekanisme pemenuhan free float.",
@@ -5952,7 +6012,9 @@
           "tanya": "Skema akuisisi PAA dan LOH.",
           "jawab": "Inbreng dalam PMHMETD: LSO (pengendali SMKM, pemilik 100% PAA) menyetor saham PAA; saham LOH diambil dari ASA (pemilik 100% LOH).",
           "analisa": "SMKM membayar aset pengendalinya dengan saham baru; nilai dan rasio tukar belum ada, sehingga besar dilusi publik belum dapat dihitung.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "no": "1b",
@@ -5960,7 +6022,9 @@
           "tanya": "Sumber dana akuisisi, mengingat kas dan bank 30 Jun 2026 Rp27,02 M.",
           "jawab": "Dari inbreng saham milik LSO dan dana tunai partisipasi publik dalam PMHMETD; dana PMHMETD juga untuk membeli sebagian saham PAA dan LOH.",
           "analisa": "Bagian tunai bergantung pada uang publik; jumlahnya dan ada tidaknya pembeli siaga tidak diungkap.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "no": "1c",
@@ -5969,7 +6033,9 @@
           "jawab": "UBO: Chen Pei Ling Catherine, Lim Yu Victoria, dan Chong Chee Hoong. Bagan indikatif: LSO 25%, masyarakat 75%; porsi SMKM di PAA dan LOH tertulis XX%.",
           "analisa": "UBO kini terbuka, tetapi bagan masih draf (persentase kosong) dan porsi LSO 25% belum sejalan dengan inbreng aset besar milik LSO; angka dilusi belum bisa dipegang.",
           "jawaban": "sebagian",
-          "kurang": "Porsi SMKM di PAA dan LOH masih tertulis XX%."
+          "kurang": "Porsi SMKM di PAA dan LOH masih tertulis XX%.",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "no": "1d",
@@ -5977,7 +6043,9 @@
           "tanya": "Apakah termasuk transaksi afiliasi (POJK 42/2020)?",
           "jawab": "Ya, karena penyetor inbreng adalah LSO, pengendali Perseroan; Perseroan akan memenuhi POJK 42/2020.",
           "analisa": "Pengendali berada di kedua sisi transaksi; perlindungan investor publik bergantung pada penilai independen dan suara pemegang saham independen.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "no": "2a",
@@ -5986,7 +6054,9 @@
           "jawab": "Baru diungkap saat pengumuman RUPSLB, untuk menghindari diskrepansi informasi selama finalisasi.",
           "analisa": "Sampai RUPSLB, investor tidak dapat menguji nilai aset yang akan ditukar dengan saham baru.",
           "jawaban": "tidak",
-          "kurang": "Identitas penilai, tanggal, cut-off, metode, dan target ditunda sampai pengumuman RUPSLB."
+          "kurang": "Identitas penilai, tanggal, cut-off, metode, dan target ditunda sampai pengumuman RUPSLB.",
+          "nada": "negatif",
+          "dasar": "ditunda"
         },
         {
           "no": "2b",
@@ -5994,7 +6064,9 @@
           "tanya": "Alasan menunggu restrukturisasi internal PAA, bukan langsung membeli unit bisnisnya.",
           "jawab": "Agar akuisisi optimal setelah struktur usaha, aset, dan keuangan PAA tertata, serta menjaga kelangsungan usaha entitas yang diakuisisi.",
           "analisa": "Prosedurnya wajar, tetapi artinya isi dan nilai aset PAA belum final dan masih bisa berubah sebelum RUPSLB.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "no": "3",
@@ -6002,7 +6074,9 @@
           "tanya": "Hubungan kepemilikan, kepengurusan, dan keluarga serta jabatan di Perseroan.",
           "jawab": "PAA 100% milik LSO; LOH 100% milik ASA. Lim Chen Chong, Lim Wee Beng Eddie, dan Chang Yun Peng (Direktur SMKM) serta Chong Chee Hoong (Komisaris Utama SMKM, juga UBO) merangkap di PAA, LOH, LSO, atau ASA; diangkat RUPSLB 15 Jul 2026.",
           "analisa": "Direksi dan Komisaris Utama SMKM juga pengurus pihak penjual; keputusan akuisisi tidak independen dari kepentingan penjual.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "no": "4",
@@ -6011,7 +6085,9 @@
           "jawab": "Merujuk keterbukaan 2 Jun 2026: fasilitas hingga Rp30 M, bunga 6% per tahun, tenor 1 tahun, untuk belanja modal, modal kerja, dan investasi; KJPP IDR menilai wajar. Bila akuisisi batal, Perseroan berkeyakinan PAA mampu membayar.",
           "analisa": "Setara 14,52% ekuitas SMKM, dipinjamkan ke holding yang berdiri Jan 2025 dengan modal SGD3 dan tanpa jaminan yang disebut; pengembalian bertumpu pada keyakinan, bukan agunan.",
           "jawaban": "sebagian",
-          "kurang": "Rencana pengembalian bila akuisisi batal hanya berupa keyakinan, tanpa mekanisme atau jaminan."
+          "kurang": "Rencana pengembalian bila akuisisi batal hanya berupa keyakinan, tanpa mekanisme atau jaminan.",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "no": "5",
@@ -6019,7 +6095,9 @@
           "tanya": "Penyajian pinjaman ke PAA dan utang pihak ketiga, serta rincian arus kas operasi lainnya.",
           "jawab": "Keduanya dicatat di arus kas operasi bagian lainnya: utang lain-lain masuk Rp15 M, piutang PAA keluar Rp30 M, beban umum keluar Rp7,81 M, uang muka kembali Rp3,33 M, utang pajak Rp2,14 M; total Rp17,94 M (secara hitungan arus keluar bersih).",
           "analisa": "Pinjaman ke afiliasi lazimnya arus kas investasi dan utang Rp15 M arus kas pendanaan; penggabungan ini mengaburkan kas dari usaha, dan pemberi utang Rp15 M tidak disebut.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "no": "6",
@@ -6028,7 +6106,9 @@
           "jawab": "Tidak ada afiliasi SSLA dengan Perseroan maupun LSO; kontrak jasa konstruksi biasa dan tidak terkait aksi korporasi; rincian kontrak terlampir.",
           "analisa": "Seluruh pendapatan semester I dari satu pelanggan tambak; pernyataan tidak terafiliasi belum disertai data pemegang saham dan pengurus SSLA.",
           "jawaban": "sebagian",
-          "kurang": "Susunan pemegang saham, pengurus, dan pemilik manfaat SSLA tidak dijelaskan; rincian kontrak hanya \"terlampir\"."
+          "kurang": "Susunan pemegang saham, pengurus, dan pemilik manfaat SSLA tidak dijelaskan; rincian kontrak hanya \"terlampir\".",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "no": "7",
@@ -6037,7 +6117,9 @@
           "jawab": "SSLA bukan AAPL; keduanya entitas berbeda.",
           "analisa": "Yang ditanya adalah PMA pemilik tambak, bukan AAPL, sehingga pertanyaan inti belum terjawab. Bila PMA itu SSLA, pendapatan SMKM berasal dari aset yang akan dibelinya sendiri.",
           "jawaban": "tidak",
-          "kurang": "Tidak dijawab apakah PMA pemilik tambak 68,07 ha adalah SSLA; jawaban hanya membandingkan dengan AAPL."
+          "kurang": "Tidak dijawab apakah PMA pemilik tambak 68,07 ha adalah SSLA; jawaban hanya membandingkan dengan AAPL.",
+          "nada": "negatif",
+          "dasar": "ditunda"
         },
         {
           "no": "8",
@@ -6045,7 +6127,9 @@
           "tanya": "Rincian beban pokok dan tidak adanya pembayaran ke pemasok di laporan arus kas.",
           "jawab": "Material dari 13 pemasok (CV, UD, dan toko bangunan) Rp43,14 M dan upah Rp5,33 M; pemasok dibayar saat material tiba di lokasi, dan selama semester I 2026 tidak ada pembayaran ke pemasok.",
           "analisa": "Tabelnya berjudul uang muka proyek tahun 2025 dan nilainya persis sama dengan uang muka SSLA; beban diakui tanpa kas keluar, sehingga waktu dan bukti pembayaran pemasok perlu diuji auditor.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "no": "9",
@@ -6054,7 +6138,9 @@
           "jawab": "Sedang dikerjakan dan belum serah terima; semester I hanya ada serah terima ke SSLA.",
           "analisa": "Diversifikasi pelanggan belum terlihat di laporan keuangan; nama pelanggan proyek tidak disebut.",
           "jawaban": "sebagian",
-          "kurang": "Nama pelanggan proyek Sumatera Utara dan Jambi tidak disebut."
+          "kurang": "Nama pelanggan proyek Sumatera Utara dan Jambi tidak disebut.",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "no": "10",
@@ -6062,7 +6148,9 @@
           "tanya": "Rencana RUPST mengingat kehadiran hanya 36,73%.",
           "jawab": "RUPST pertama 24 Jun 2026 gagal kuorum; RUPST kedua 15 Jul 2026 sah dengan kuorum 1/3; tidak ada RUPST lanjutan.",
           "analisa": "Sesuai ketentuan; partisipasi pemegang saham yang rendah tetap menjadi catatan.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "no": "11",
@@ -6070,7 +6158,9 @@
           "tanya": "Perkembangan PMHMETD yang disetujui RUPSLB 24 Jun 2025, kaitannya dengan akuisisi, dan target RUPSLB ulang.",
           "jawab": "Pernyataan pendaftaran belum diajukan karena restrukturisasi dan finalisasi; persetujuan sudah lewat 12 bulan; PMHMETD bagian dari akuisisi PAA dan LOH; RUPSLB ulang selambatnya Semester I 2027.",
           "analisa": "Katalis utama mundur hingga 2027 dan seluruh skema harus disetujui ulang; waktu tunggu investor panjang.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "negatif",
+          "dasar": "merugikan"
         },
         {
           "no": "12",
@@ -6078,7 +6168,9 @@
           "tanya": "Informasi material lain yang belum diungkap.",
           "jawab": "Tidak ada.",
           "analisa": "Pernyataan standar.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         }
       ],
       "kesimpulan": "Tiga hal belum terjawab: nilai aset PAA dan LOH yang akan ditukar dengan saham baru, kepastian pengembalian Rp30 M bila akuisisi batal, dan apakah pelanggan tunggal SSLA terkait tambak milik PAA. Dampak jangka pendek negatif; sentimen baru dapat membaik bila RUPSLB (selambatnya Semester I 2027) mengungkap penilai dan nilai transaksi.",
@@ -6591,35 +6683,45 @@
           "tanya": "Jumlah HMETD, rasio, rincian perhitungan harga, dan perkiraan dana PMHMETD.",
           "jawab": "Maksimal 2 miliar HMETD; harga indikatif Rp50 diperoleh dari target dana Rp100 M dibagi 2 miliar saham; asumsi rasio 2:1 dengan dilusi 33,33% bila publik tidak melaksanakan haknya.",
           "analisa": "Harga diturunkan dari target dana, bukan dari analisis harga pasar, sehingga dasar penetapan harga belum kuat.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Struktur modal dan dilusi",
           "tanya": "Proforma permodalan sebelum dan sesudah HMETD serta rincian efek dilusi.",
           "jawab": "Saham beredar naik dari 3.966.350.139 menjadi 5.966.350.139; saham baru 33,52% dari modal setelah PMHMETD II. Bila semua pihak melaksanakan hak, JSI tetap 51,00% dan masyarakat 49,00%.",
           "analisa": "Pemegang saham yang tidak menebus terdilusi hingga 33,52%; angka 33,33% pada jawaban rasio tidak konsisten dengan proforma.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Pembeli siaga",
           "tanya": "Informasi pembeli siaga dan perlakuan atas saham yang tidak diambil.",
           "jawab": "Belum menunjuk atau memiliki pembeli siaga; sisa saham ditawarkan kepada pemegang HMETD yang memesan saham tambahan.",
           "analisa": "Realisasi porsi tunai Rp55,6 M bergantung penuh pada partisipasi pemegang saham.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "negatif",
+          "dasar": "merugikan"
         },
         {
           "topik": "Jadwal dan modal",
           "tanya": "Indikasi jadwal, rencana waran, dan rincian peningkatan modal dasar, ditempatkan, dan disetor.",
           "jawab": "RUPSLB 20 Okt 2026, pernyataan pendaftaran ke OJK 27 Okt 2026, perkiraan efektif 23 Des 2026, perdagangan dan pelaksanaan HMETD 12 sampai 25 Jan 2027, pencatatan saham baru 1 Feb 2027. Tidak ada waran. Modal dasar Seri B 6 miliar saham nominal Rp25; ditempatkan Seri B maksimal 2 miliar saham (Rp50 M).",
           "analisa": "Katalis utama ada di Januari 2027; jadwal masih indikatif.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "positif",
+          "dasar": "kepastian"
         },
         {
           "topik": "Pengendali dan inbreng BSS",
           "tanya": "Identitas dan dasar penetapan pengendali, serta keterkaitan dengan PMHMETD dan transaksi material/afiliasi.",
           "jawab": "JSI ditetapkan sebagai pengendali sesuai Pasal 45 POJK 45/2024 karena belum pernah ditetapkan melalui RUPS. Inbreng saham BSS Rp44,397 M (44,63% total aset) adalah bagian tak terpisahkan dari PMHMETD II, tergolong transaksi material dan afiliasi; karena ekuitas negatif Rp2,65 M dan modal kerja bersih negatif Rp26,45 M, Perseroan dikecualikan dari kewajiban penilai kewajaran dan RUPS independen (Pasal 11 huruf f POJK 17/2020).",
           "analisa": "Pemegang saham independen tidak memberikan persetujuan terpisah atas inbreng aset milik pengendali, sehingga perlindungan publik bergantung pada penilaian KJPP.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "negatif",
+          "dasar": "merugikan"
         },
         {
           "topik": "Penggunaan dana",
@@ -6627,21 +6729,27 @@
           "jawab": "Rp44,397 M untuk pengambilalihan 59.995 saham (99,99%) BSS melalui inbreng dan Rp55,603 M untuk modal kerja dan pengembangan usaha, seluruhnya pada 2027. Perseroan menegaskan bukan perusahaan asuransi sehingga POJK 23/2023 tidak berlaku. Tidak ada perubahan kegiatan usaha utama; JSI pengendali Perseroan dan BSS.",
           "analisa": "Sebagian besar nilai PMHMETD berupa aset afiliasi, bukan kas; rincian pemakaian Rp55,6 M untuk modal kerja tidak diungkap.",
           "jawaban": "sebagian",
-          "kurang": "Rincian penggunaan Rp55,6 M untuk modal kerja dan pengembangan usaha tidak dijelaskan."
+          "kurang": "Rincian penggunaan Rp55,6 M untuk modal kerja dan pengembangan usaha tidak dijelaskan.",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Saham Seri B",
           "tanya": "Latar belakang, hak, kaitan dengan selisih harga pasar dan nominal, kaitan dengan transaksi material, serta dampak penerbitan Saham Seri B.",
           "jawab": "Seri B nominal Rp25 (Seri A Rp100) agar harga pelaksanaan dapat disesuaikan dengan harga pasar tanpa di bawah nominal; hak sama dengan Seri A. Sebagian diambil JSI melalui inbreng BSS, sisanya tunai; modal disetor naik dari Rp396,64 M menjadi Rp446,64 M.",
           "analisa": "Seri B menandakan harga pasar sudah di bawah nominal Rp100 sehingga emisi memerlukan nominal lebih rendah.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Nama, LK, dan lainnya",
           "tanya": "Perubahan nama dan alamat, laporan keuangan auditan dasar PMHMETD, pembatasan kreditur, rencana penerbitan efek 12 bulan, dan informasi material lain.",
           "jawab": "Perubahan nama untuk identitas arah usaha, tanpa perubahan kegiatan utama; usaha jasa penunjang pertambangan melalui BSS. Dasar PMHMETD adalah LK konsolidasian 30 Jun 2026 diaudit KAP Maurice Ganda Nainggolan & Rekan (9 Sep 2026). Tidak ada pembatasan dari kreditur, tidak ada rencana penerbitan efek dalam 12 bulan setelah efektif, dan tidak ada informasi material lain.",
           "analisa": "Tidak ada hambatan kontraktual yang diungkap; arah bisnis bergeser ke jasa tambang melalui BSS.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         }
       ],
       "kesimpulan": "Tanggapan memperjelas struktur PMHMETD II: JSI menyetor saham BSS milik afiliasinya senilai Rp44,397 M tanpa pendapat kewajaran dan tanpa RUPS independen, sementara porsi tunai Rp55,6 M tidak dijamin pembeli siaga. Perlu dipantau hasil RUPSLB 20 Okt 2026, efektifnya pernyataan pendaftaran, harga pelaksanaan final, dan tingkat partisipasi publik.",
@@ -8048,7 +8156,9 @@
           "tanya": "Kendala yang dihadapi karena tidak ada pemegang saham yang mengikuti tender offer.",
           "jawab": "Dianggap dinamika pasar biasa; selama periode penawaran harga saham berada di atas harga penawaran sehingga pemegang saham cenderung mempertahankan kepemilikan.",
           "analisa": "Kepemilikan publik tidak berubah dan pengendali baru tidak menambah porsi melalui tender offer.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Dampak operasional",
@@ -8056,49 +8166,63 @@
           "jawab": "Tidak berdampak material dalam jangka pendek; usaha berjalan sesuai rencana bisnis dan strategi.",
           "analisa": "Jawaban normatif tanpa data kinerja pendukung.",
           "jawaban": "sebagian",
-          "kurang": "Jawaban normatif tanpa data kinerja."
+          "kurang": "Jawaban normatif tanpa data kinerja.",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Jadwal dan data TCP",
           "tanya": "Alasan PMHMETD diumumkan dini untuk pelaksanaan kuartal III 2026, target audit laporan keuangan TCP, target valuasi KJPP, laporan keuangan yang dipakai, dan timeline (butir a, c, d, h, n).",
           "jawab": "Diumumkan sebagai keterbukaan informasi; laporan keuangan audit TCP ditargetkan selesai kuartal II 2026, valuasi KJPP setelahnya dan sebelum kuartal III 2026; pelaksanaan paling lambat kuartal III 2026 setelah seluruh persyaratan dan persetujuan terpenuhi.",
           "analisa": "Rencana diumumkan sebelum ada data keuangan maupun valuasi independen atas aset yang akan disuntikkan, sehingga publik belum dapat menilai kewajaran nilai TCP.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Kisaran harga dan dilusi",
           "tanya": "Dasar kisaran Rp450 s.d. Rp550 yang jauh di atas harga pasar, kondisi revisi harga, dan korelasi harga dengan dilusi publik (butir b, f, l).",
           "jawab": "Indikasi awal berdasarkan proyeksi nilai wajar TCP dan harga saham Perseroan; harga final menunggu kondisi pasar dan KJPP, valuasi masih berlangsung; harga lebih rendah berarti lebih banyak saham baru untuk share swap sehingga dilusi publik lebih besar; Rp450 s.d. Rp550 disebut estimasi terendah yang tidak memperbesar dilusi.",
           "analisa": "Kisaran harga dapat direvisi dan belum didukung valuasi independen; bila harga final turun, dilusi pemegang saham publik membesar.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Struktur share swap",
           "tanya": "Perkiraan dana yang diperoleh, tujuan PMHMETD, dan dampak bila PMHMETD tidak terserap optimal (butir e, g, j).",
           "jawab": "Pengambilalihan 45% saham TCP melalui share swap sehingga tidak ada cash inflow; tujuan mendukung akuisisi TCP dan memperkuat permodalan; bila publik tidak berpartisipasi, seluruh saham diserap pemegang saham pengendali TCP.",
           "analisa": "Penggunaan setoran tunai dari publik yang menebus HMETD tidak dijelaskan, sedangkan publik yang tidak menebus akan terdilusi oleh pemilik TCP.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Pembeli strategis dan pengendalian",
           "tanya": "Apakah strategic buyer adalah pemegang saham TCP dan apakah PMHMETD tetap tidak mengubah pengendalian (butir i, m).",
           "jawab": "Strategic buyer adalah pemegang saham pengendali TCP; tidak berubahnya pengendalian merupakan kesepakatan pengendali Perseroan dan pengendali TCP dalam perjanjian 22 Desember 2025 yang salinannya telah diserahkan ke BEI.",
           "analisa": "Pemilik TCP berpotensi menjadi pemegang saham besar, namun pengendalian dijaga lewat perjanjian privat; komposisi kepemilikan akhir tidak diungkap.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Alasan memilih PMHMETD",
           "tanya": "Alasan memilih PMHMETD dibandingkan PMTHMETD atau private placement (butir k).",
           "jawab": "Perseroan tidak mengalami permasalahan keuangan yang memungkinkannya melakukan PMTHMETD.",
           "analisa": "PMHMETD memberi publik hak memesan untuk menjaga porsi, meski nilai inbreng belum diverifikasi.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Informasi material lain",
           "tanya": "Informasi atau kejadian material lain yang belum diungkap.",
           "jawab": "Tidak ada; seluruh informasi material telah disampaikan melalui keterbukaan informasi.",
           "analisa": "Tidak ada informasi baru di luar rencana yang sudah diumumkan.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         }
       ],
       "kesimpulan": "Penjelasan menegaskan bahwa PMHMETD MEJA adalah inbreng 45% TCP tanpa dana tunai bagi Perseroan, dengan kisaran harga Rp450 s.d. Rp550 yang belum didukung laporan keuangan audit maupun valuasi independen. Yang perlu dipantau: terbitnya laporan keuangan audit TCP, hasil valuasi KJPP, harga pelaksanaan final, serta jumlah saham baru yang menentukan besarnya dilusi publik.",
@@ -11426,7 +11550,9 @@
           "jawab": "Pendapatan 2025 turun menjadi Rp2,35 M (2024: Rp9,02 M), rugi Rp9,95 M, akumulasi rugi Rp20,36 M, dan auditor memberi penekanan going concern; pinjaman sulit diperoleh dengan ekuitas Rp25,64 M. Harga dan rasio belum ditetapkan (maksimal 2.157 : 2.443, harga tidak di bawah nominal Rp10). Poh Holding hanya akan mempertimbangkan pelaksanaan HMETD; pembeli siaga belum ditunjuk. Modal dasar cukup tanpa perubahan; free float skenario terburuk 27,66%. Ada perjanjian opsi (29 Des 2025) akuisisi aset tambang Mongolia milik Poh Golden Ger Resources (afiliasi pengendali) senilai indikatif USD150 juta, serta rencana penerbitan surat utang.",
           "analisa": "Tidak ada komitmen tegas pengendali maupun pembeli siaga, sementara rencana injeksi aset afiliasi bernilai besar menjadi katalis spekulatif yang belum terverifikasi.",
           "jawaban": "sebagian",
-          "kurang": "Harga, rasio, dan pembeli siaga belum ditetapkan; Poh Holding hanya \"akan mempertimbangkan\"."
+          "kurang": "Harga, rasio, dan pembeli siaga belum ditetapkan; Poh Holding hanya \"akan mempertimbangkan\".",
+          "nada": "negatif",
+          "dasar": "merugikan"
         },
         {
           "topik": "Penggunaan dana",
@@ -11434,28 +11560,36 @@
           "jawab": "Sekitar 25% untuk pelunasan utang (segera setelah dana diterima) dan sekitar 75% modal kerja (bertahap paling lambat 12 bulan). Identitas kreditur, nilai, bunga, jatuh tempo, dan hubungan afiliasi tidak diungkap; akan dimuat dalam Prospektus. Ketentuan transaksi material dan afiliasi akan dipenuhi bila berlaku.",
           "analisa": "Tanpa identitas kreditur, publik belum dapat menilai apakah dana dipakai melunasi utang kepada pihak terafiliasi.",
           "jawaban": "sebagian",
-          "kurang": "Identitas kreditur, nilai, bunga, dan hubungan afiliasi ditunda ke prospektus."
+          "kurang": "Identitas kreditur, nilai, bunga, dan hubungan afiliasi ditunda ke prospektus.",
+          "nada": "negatif",
+          "dasar": "ditunda"
         },
         {
           "topik": "Laporan keuangan Juni 2026",
           "tanya": "Perkembangan dan jadwal laporan keuangan per 30 Juni 2026 yang belum disampaikan serta laporan auditan untuk Pernyataan Pendaftaran.",
           "jawab": "Sedang diaudit KAP Irfan Waluyo & Rekan pada tahap review akhir; ditargetkan disampaikan paling lambat minggu pertama November 2026. Periode dan auditor untuk Pernyataan Pendaftaran akan diinformasikan kemudian.",
           "analisa": "Kondisi keuangan terkini belum tersedia bagi publik saat rencana rights issue berjalan.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Proforma dan free float",
           "tanya": "Proforma pemegang saham bila seluruh pemegang saham atau hanya Poh Holding dan Djoni melaksanakan HMETD, serta strategi pemenuhan free float.",
           "jawab": "Bila semua melaksanakan, komposisi tetap (Poh Holding 35,85%, publik 58,98%). Bila hanya Poh Holding dan Djoni, Poh Holding 52,23%, Djoni 7,43%, publik 40,29%. Skenario terburuk publik 27,66%; masa transisi free float minimal 15% sampai 31 Mar 2029.",
           "analisa": "Pemegang saham publik yang tidak menebus dapat menyerahkan kendali mayoritas kepada Poh Holding.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Informasi material lain",
           "tanya": "Informasi material lain yang belum diungkap.",
           "jawab": "Tidak ada.",
           "analisa": "Jawaban standar.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         }
       ],
       "kesimpulan": "Rights issue NINE dilatarbelakangi rugi berulang dan keraguan kelangsungan usaha, sedangkan parameter kunci (harga, kreditur, pembeli siaga, komitmen pengendali) belum ditetapkan. Pantau Prospektus, laporan keuangan auditan Juni 2026 (target awal November 2026), serta uji tuntas dan penilaian aset tambang Mongolia milik afiliasi pengendali.",
@@ -11874,7 +12008,9 @@
           "jawab": "Volume pekerjaan lebih rendah dan perbedaan waktu pengakuan pendapatan; kehumasan juga terdampak restrukturisasi lini usaha. Strategi berupa penguatan business development dan evaluasi portofolio layanan; nilai pipeline tidak diungkap, hanya disebut mengacu pada kontrak.",
           "analisa": "Tanpa angka pipeline, investor tidak dapat menilai prospek pemulihan bisnis lama FORU.",
           "jawaban": "sebagian",
-          "kurang": "Nilai pipeline kontrak tidak diungkap."
+          "kurang": "Nilai pipeline kontrak tidak diungkap.",
+          "nada": "negatif",
+          "dasar": "merugikan"
         },
         {
           "topik": "Kontrak tertunda Q1",
@@ -11882,35 +12018,45 @@
           "jawab": "Sebagian pekerjaan mulai berjalan pada Q2 2026 dan/atau setelah 30 Juni 2026; nilai kontrak, pemberi kerja, dan jangka waktu disebut mengikuti masing-masing kontrak tanpa rincian.",
           "analisa": "Klaim kontrak yang akan menopang pendapatan belum dapat diverifikasi publik.",
           "jawaban": "tidak",
-          "kurang": "Nilai kontrak, pemberi kerja, dan jangka waktu tidak dirinci."
+          "kurang": "Nilai kontrak, pemberi kerja, dan jangka waktu tidak dirinci.",
+          "nada": "negatif",
+          "dasar": "ditunda"
         },
         {
           "topik": "Beban usaha naik",
           "tanya": "Beban langsung turun 78,04% (Rp12,79 M menjadi Rp2,80 M) sementara beban usaha naik menjadi Rp14,69 M; komponen, efisiensi, dan potensi berlanjut.",
           "jawab": "Beban langsung turun seiring volume (produksi digital Rp5,56 M menjadi Rp1,36 M; periklanan Rp4,23 M menjadi Rp0,88 M). Beban usaha naik karena gaji Rp9,21 M menjadi Rp10,27 M dan imbalan kerja Rp0,21 M menjadi Rp1,82 M terkait restrukturisasi; sebagian tidak berulang, sebagian (penguatan manajemen senior) akan berlanjut.",
           "analisa": "Biaya tetap membengkak saat pendapatan menyusut, sehingga tekanan pada profitabilitas berpotensi berlanjut.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "negatif",
+          "dasar": "merugikan"
         },
         {
           "topik": "Rugi komprehensif",
           "tanya": "Rugi komprehensif naik 902% menjadi Rp7,38 M (sebelumnya Rp736,67 juta); adakah beban non-recurring dan langkah perbaikan.",
           "jawab": "Ada, yaitu beban imbalan kerja Rp1,82 M terkait restrukturisasi yang sebagian tidak berulang; perbaikan melalui business development, penyesuaian organisasi, dan pengendalian biaya.",
           "analisa": "Komponen non-recurring relatif kecil dibanding total rugi, sehingga kerugian cenderung struktural.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "negatif",
+          "dasar": "merugikan"
         },
         {
           "topik": "Kas dan piutang",
           "tanya": "Aset turun 30,84% menjadi Rp26,73 M; kas Bank Shinhan dan deposito Bank Hibank masing-masing turun Rp2 M, piutang Rp13,4 M menjadi Rp5,5 M; dampak likuiditas.",
           "jawab": "Fasilitas dialihkan dari Bank Shinhan ke Bank Mandiri (rekening akan ditutup); deposito Hibank Rp2 M dicairkan untuk modal kerja; piutang turun karena penagihan, bukan penghapusan, tanpa provisi. Kas Rp16,44 M dan aset lancar Rp23,42 M terhadap liabilitas jangka pendek Rp9,99 M.",
           "analisa": "Likuiditas jangka pendek masih memadai, namun pencairan deposito menandakan cadangan kas mulai dipakai menutup operasi.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Penurunan liabilitas",
           "tanya": "Liabilitas turun 29,7% menjadi Rp10,73 M, terutama beban akrual Rp5,33 M menjadi Rp2,89 M; sumber dana pembayaran dan kewajiban jatuh tempo.",
           "jawab": "Realisasi akrual biaya pihak ketiga tanpa perubahan kebijakan akuntansi; dibayar dari kas, penerimaan pelanggan, dan fasilitas modal kerja. Utang usaha jatuh tempo Rp1,18 M (Rp936,26 juta umur 1 sampai 30 hari; Rp854,28 juta dibayar awal Juli 2026).",
           "analisa": "Penurunan liabilitas wajar dan tunggakan kecil; solvabilitas hanya disebut dipantau.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Defisit dan ekuitas",
@@ -11918,28 +12064,36 @@
           "jawab": "Defisit naik karena rugi Rp7,38 M; target waktu laba tidak diungkap dan bergantung realisasi pekerjaan. Ekuitas masih positif Rp16,00 M, tidak ada pelanggaran covenant, dan kreditur telah memberi waiver untuk PMHMETD I.",
           "analisa": "Tanpa aksi korporasi ekuitas FORU terus tergerus; nilai perusahaan sangat bergantung pada masuknya BP.",
           "jawaban": "sebagian",
-          "kurang": "Target waktu kembali laba tidak diungkap."
+          "kurang": "Target waktu kembali laba tidak diungkap.",
+          "nada": "negatif",
+          "dasar": "merugikan"
         },
         {
           "topik": "Arus kas operasi",
           "tanya": "Arus kas operasi berbalik dari Rp1,82 M menjadi negatif Rp4,46 M; penyebab, pembayaran imbalan kerja, sumber pendanaan, dan strategi.",
           "jawab": "Penerimaan pelanggan turun dari Rp29,26 M menjadi Rp18,71 M; pembayaran beban usaha naik dari Rp2,41 M menjadi Rp5,21 M; pembayaran manfaat karyawan jangka panjang Rp2,84 M sebagian tidak berulang. Ditutup dari kas, pencairan deposito, dan fasilitas modal kerja.",
           "analisa": "Bisnis lama membakar kas dan dibiayai dari cadangan yang terbatas.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "negatif",
+          "dasar": "merugikan"
         },
         {
           "topik": "Rasio keuangan",
           "tanya": "NPM turun dari -3,04% menjadi -71,30%; penilaian manajemen atas struktur modal dan leverage (DER 0,67x, DAR 0,40x).",
           "jawab": "NPM turun karena pendapatan berkurang Rp13,88 M dan beban usaha naik sekitar Rp2,53 M; leverage masih sesuai financial covenant, dan perbaikan kinerja tahun depan diharapkan melalui aksi korporasi.",
           "analisa": "Manajemen menggantungkan perbaikan kinerja pada aksi korporasi, bukan pada bisnis inti.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Informasi material lain",
           "tanya": "Informasi material lain yang belum diungkap.",
           "jawab": "Tidak ada.",
           "analisa": "Jawaban standar.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "netral",
+          "dasar": "fakta"
         },
         {
           "topik": "Kinerja Borneo Prima",
@@ -11947,14 +12101,18 @@
           "jawab": "Angka yang dikutip BEI sebenarnya dalam USD dan membandingkan Q1 2026 dengan Q1 2025: pendapatan USD11,29 juta (sebelumnya USD6,31 juta) seluruhnya dari penjualan batu bara; laba komprehensif USD0,97 juta (sebelumnya rugi USD5,81 juta). Total aset naik 11,61% menjadi USD140,78 juta; liabilitas USD90,80 juta didorong uang muka pelanggan USD59,62 juta dan provisi reklamasi USD4,90 juta. Kontrak jangka panjang hanya dengan IMR Group; defisit baru berbalik bila produksi di atas 2 juta ton per tahun. Alasan akuisisi: cadangan batu bara kokas, prospek harga, perizinan, dan tim berpengalaman.",
           "analisa": "BP baru satu kuartal membukukan laba, pembeli utamanya grup pengendali sendiri, dan target waktu pemulihan defisit tidak diungkap.",
           "jawaban": "sebagian",
-          "kurang": "Target waktu pemulihan defisit BP tidak diungkap."
+          "kurang": "Target waktu pemulihan defisit BP tidak diungkap.",
+          "nada": "positif",
+          "dasar": "kepastian"
         },
         {
           "topik": "Pembeli siaga",
           "tanya": "Ada atau tidaknya pembeli siaga, mitigasi bila HMETD tidak terserap, penjajakan investor, dan alternatif pendanaan.",
           "jawab": "Tidak ada pembeli siaga dan tidak ada penjajakan, karena menurut Pasal 12 POJK 32/2015 tidak wajib (dana tunai hanya untuk modal kerja BP; perolehan BP melalui inbreng IMR AH). Bila dana publik tidak masuk, modal kerja BP dipenuhi dari kas internal BP dan IMR AH berkomitmen mendukung.",
           "analisa": "Inbreng pengendali tetap berjalan tanpa bergantung pada publik, sehingga pemegang saham publik yang tidak menebus akan terdilusi sangat besar.",
-          "jawaban": "lengkap"
+          "jawaban": "lengkap",
+          "nada": "negatif",
+          "dasar": "merugikan"
         },
         {
           "topik": "Karhutla dan produksi BP",
@@ -11962,7 +12120,9 @@
           "jawab": "Tidak ada dampak signifikan karena lokasi jauh dari wilayah terdampak dan berada di elevasi di atas 600 mdpl; hanya sedikit asap tanpa mengganggu jarak pandang; tidak ada potensi gangguan target produksi 2026. Kapasitas produksi BP tidak diungkap.",
           "analisa": "Risiko Karhutla jangka pendek rendah, tetapi kapasitas produksi yang diminta BEI tetap tidak dijawab.",
           "jawaban": "sebagian",
-          "kurang": "Kapasitas produksi BP tidak dijawab."
+          "kurang": "Kapasitas produksi BP tidak dijawab.",
+          "nada": "netral",
+          "dasar": "fakta"
         }
       ],
       "kesimpulan": "Tanggapan mempertegas bahwa bisnis lama FORU memburuk (rugi membesar, kas operasi negatif, defisit Rp51,30 M) dan nilai perusahaan praktis bergantung pada inbreng BP yang tidak disertai pembeli siaga. Pantau realisasi penebusan HMETD publik, kapasitas dan realisasi produksi BP terhadap ambang 2 juta ton per tahun, serta keberlanjutan laba BP setelah kuartal I 2026.",

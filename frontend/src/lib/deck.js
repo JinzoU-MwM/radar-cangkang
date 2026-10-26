@@ -1,7 +1,7 @@
 // Pembuat presentasi analisa emiten (.pptx) dengan pptxgenjs. Prinsip: analisa dalam, teks sedikit —
 // angka besar, meteran, diagram, dan grafik PowerPoint asli (bisa diklik/diedit). Satu pesan per slide,
 // pita KESIMPULAN di bawah. Dipakai di browser (unduhan) dan di Node (uji).
-import { fmtDate, PB_JAWABAN } from './domain.js'
+import { fmtDate, PB_NADA, PB_DASAR } from './domain.js'
 import { PT_STATUS, ptStatusTxt, confLvl } from './patterns.js'
 import { phaseName } from './cycle.js'
 import { mergeBoard } from './profil.js'
@@ -459,8 +459,8 @@ export function buildDeck(PptxGenJS, d, th) {
       pointCard(s, M, y0 + gh + 0.12, gw, gh, '!', th.bad, 'Belum terjawab', [...belum].sort((p, q) => (p.jawaban === 'tidak' ? 0 : 1) - (q.jawaban === 'tidak' ? 0 : 1)).map(x => `${x.no ? x.no + '. ' : ''}${x.topik} (${x.jawaban === 'tidak' ? 'tidak dijawab' : 'dijawab sebagian'})`), { max: 5, n: 90, size: 8.5, empty: 'Seluruh pertanyaan dijawab lengkap.' })
       pointCard(s, M + gw + 0.16, y0 + gh + 0.12, gw, gh, '→', th.accent, 'Yang dipantau', m.pantau, { max: 3, n: 130, size: 8.5 })
 
-      // Analisa per pertanyaan BEI (semua butir, 8 per slide): jawaban emiten, kelengkapannya, dan catatan analis.
-      const col = x => x === 'lengkap' ? th.good : x === 'tidak' ? th.bad : th.muted
+      // Analisa per pertanyaan BEI (semua butir, 8 per slide): nada objektif + dasarnya, jawaban emiten, dan analisa.
+      const col = x => x === 'positif' ? th.good : x === 'negatif' ? th.bad : th.muted
       const pages = []
       for (let i = 0; i < pb.poin.length; i += 8) pages.push(pb.poin.slice(i, i + 8))
       pages.forEach((rows, p) => {
@@ -468,11 +468,12 @@ export function buildDeck(PptxGenJS, d, th) {
         const s2 = slide('Penjelasan bursa', `Analisa Penjelasan atas Permintaan Penjelasan Bursa${pages.length > 1 ? ` (${p + 1}/${pages.length})` : ''}`, last ? pb.kesimpulan : null)
         T(s2, `${pb.tanggal ? fmtDate(pb.tanggal) + ' · ' : ''}${short(pb.judul || '', 90)}`, { x: M, y: TOP - 0.05, w: CW, h: 0.22, fontSize: 8.5, color: th.muted })
         const rh = 3.05 / 8
-        if (last) T(s2, 'Kelengkapan jawaban · Lengkap: semua unsur pertanyaan BEI dijawab dengan data · Sebagian: ada unsur tidak dijawab, normatif, atau dirujuk ke dokumen lain · Tidak dijawab: inti pertanyaan tidak dijawab atau ditunda. Kolom kanan: analisa.', { x: M, y: TOP + 3.32, w: CW, h: 0.18, fontSize: 7, color: th.muted, fit: 'shrink' })
+        if (last) T(s2, 'Dasar nada · Negatif: tidak dijawab/ditunda, atau fakta merugikan yang dinyatakan emiten · Netral: fakta/prosedur/kepatuhan · Positif: menambah kepastian · Kolom kanan: analisa', { x: M, y: TOP + 3.32, w: CW, h: 0.18, fontSize: 7, color: th.muted, fit: 'shrink' })
         rows.forEach((x, i) => {
           const y = TOP + 0.25 + i * rh
           if (i) line(s2, M, y, CW, 0, th.line, { w: 0.5 })
-          pill(s2, M, y + (rh - 0.2) / 2, (PB_JAWABAN[x.jawaban] || PB_JAWABAN.sebagian)[0], col(x.jawaban), { size: 7, h: 0.2, w: 0.75 })
+          pill(s2, M, y + (rh - 0.2) / 2 - (PB_DASAR[x.dasar] ? 0.06 : 0), (PB_NADA[x.nada] || PB_NADA.netral)[0], col(x.nada), { size: 7, h: 0.2, w: 0.75 })
+          if (PB_DASAR[x.dasar]) T(s2, PB_DASAR[x.dasar], { x: M - 0.05, y: y + (rh - 0.2) / 2 + 0.15, w: 0.85, h: 0.14, fontSize: 5.5, color: th.muted, align: 'center', fit: 'shrink' })
           T(s2, short(`${x.no ? x.no + '. ' : ''}${x.topik}`, 38), { x: M + 0.85, y, w: 1.6, h: rh, fontSize: 8.5, bold: true, color: th.ink, valign: 'middle', fit: 'shrink' })
           T(s2, short(x.kurang ? `${x.jawab} Belum dijawab: ${x.kurang.charAt(0).toLowerCase() + x.kurang.slice(1)}` : x.jawab, 340), { x: M + 2.5, y, w: 3.25, h: rh, fontSize: 7.5, color: th.ink, valign: 'middle', fit: 'shrink' })
           T(s2, short(x.analisa, 240), { x: M + 5.85, y, w: CW - 5.85, h: rh, fontSize: 7.5, color: th.muted, valign: 'middle', fit: 'shrink' })
