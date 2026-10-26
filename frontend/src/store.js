@@ -54,6 +54,7 @@ export const store = reactive({
   // Penanda "sudah dilihat" browser ini (diset lewat tombol, bukan otomatis saat tab ditutup):
   // dasar penanda "baru" di Monitor, Berita, dan rail. Belum pernah diset = 24 jam terakhir.
   seenAt: ls.get(LS_SEEN, '') || new Date(Date.now() - 864e5).toISOString(),
+  newVersion: false,  // deploy baru sudah live, tab ini masih kode lama (lihat loadStatus)
   busy: { stockbit: false, reports: false, story: false },
   toasts: [],
   syncNote: '',
@@ -155,6 +156,10 @@ async function loadData() {
 
 async function loadStatus() {
   try { store.status = await api.get('/api/status') } catch { store.status = null }
+  // Deploy baru sudah live tetapi tab ini masih menjalankan kode lama (aplikasi satu halaman tidak memuat ulang sendiri).
+  const dep = store.status?.deploy
+  const build = typeof __BUILD__ === 'string' ? __BUILD__ : ''
+  store.newVersion = !!(build && dep?.hasil === 'live' && dep.commit && String(dep.commit).slice(0, 7) !== build)
 }
 
 export async function init() {
@@ -169,7 +174,7 @@ export async function init() {
   setInterval(loadStatus, 5 * 60e3)
   // Ambil ulang data tim saat tab kembali aktif, supaya suntingan anggota lain terlihat.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') loadData().catch(() => {})
+    if (document.visibilityState === 'visible') { loadData().catch(() => {}); loadStatus() }
   })
 }
 
