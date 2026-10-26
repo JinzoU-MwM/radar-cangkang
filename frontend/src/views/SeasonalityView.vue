@@ -6,7 +6,8 @@ import { api } from '../api.js'
 import { fmt } from '../lib/domain.js'
 
 const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
-const bulan = ref(new Date().getMonth() % 12 + 2 > 12 ? 1 : new Date().getMonth() + 2)
+// Default bulan depan (Desember -> Januari).
+const bulan = ref((new Date().getMonth() + 1) % 12 + 1)
 const tahun = ref(10)
 const data = ref(null), err = ref(''), loading = ref(false)
 async function load() {
