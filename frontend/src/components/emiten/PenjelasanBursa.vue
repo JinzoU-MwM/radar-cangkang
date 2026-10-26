@@ -2,7 +2,10 @@
 // Analisa tanggapan emiten atas permintaan penjelasan BEI yang terakhir (ri-dokumen.json → penjelasanBursa):
 // tiap pertanyaan, jawaban emiten, analisa, dan nadanya, ditutup kesimpulan dampak.
 import { fmtDate } from '../../lib/domain.js'
-defineProps({ pb: { type: Object, required: true } })
+import { computed } from 'vue'
+const props = defineProps({ pb: { type: Object, required: true } })
+// Nomor pertanyaan BEI (1a, 2b, ...) bila datanya tersedia.
+const adaNo = computed(() => (props.pb.poin || []).some(x => x.no))
 const NADA = { positif: ['Positif', 't-good'], netral: ['Netral', 't-calm'], negatif: ['Negatif', 't-strong'] }
 const n = x => NADA[x] || NADA.netral
 </script>
@@ -17,9 +20,10 @@ const n = x => NADA[x] || NADA.netral
     <p v-if="pb.ringkas" class="lead">{{ pb.ringkas }}</p>
     <div class="scroll">
       <table class="ledger">
-        <thead><tr><th>Topik</th><th>Pertanyaan BEI</th><th>Jawaban emiten</th><th>Analisa</th><th>Nada</th></tr></thead>
+        <thead><tr><th v-if="adaNo">No</th><th>Topik</th><th>Pertanyaan BEI</th><th>Jawaban emiten</th><th>Analisa</th><th>Nada</th></tr></thead>
         <tbody>
           <tr v-for="(x, i) in pb.poin || []" :key="i">
+            <td v-if="adaNo" class="num">{{ x.no }}</td>
             <td><b>{{ x.topik }}</b></td>
             <td class="small">{{ x.tanya }}</td>
             <td class="small">{{ x.jawab }}</td>

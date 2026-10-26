@@ -306,7 +306,7 @@ export function buildVideo(d, mode = 'ringkas') {
     add('penjelasan-bursa', 'Penjelasan bursa', 'Analisa penjelasan atas permintaan penjelasan bursa', {
       type: 'list', items: pbx.poin.slice(0, 6).map(x => `${x.nada === 'negatif' ? '− ' : x.nada === 'positif' ? '+ ' : '· '}${x.topik}`),
     }, [
-      `Penjelasan terakhir kepada bursa terbit pada ${fmtDate(pbx.tanggal)}, menjawab ${pbx.poin.length} pertanyaan.`,
+      `Penjelasan terakhir kepada bursa terbit pada ${fmtDate(pbx.tanggal)}, menjawab ${pbx.poin.length} butir pertanyaan.`,
       first(pbx.ringkas, 1),
       neg.length ? `Catatan utama: ${neg.slice(0, full ? 4 : 2).map(x => lower1(x.analisa).replace(/\.$/, '')).join('; ')}.` : null,
       pos.length ? `Sisi positifnya: ${pos.slice(0, 2).map(x => lower1(x.analisa).replace(/\.$/, '')).join('; ')}.` : null,
