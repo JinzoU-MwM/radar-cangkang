@@ -5,7 +5,7 @@ import { fmtDate } from './domain.js'
 import { PT_STATUS, ptStatusTxt, confLvl } from './patterns.js'
 import { phaseName } from './cycle.js'
 import { mergeBoard } from './profil.js'
-import { riCalc, riVerdict, noRights, riFunding, asetDetail, riPriceNeeded, riScenarios, asetLaba, labaSebelumSesudah, riLayak, riExercise } from './rightsIssue.js'
+import { riCalc, riVerdict, noRights, riFunding, asetDetail, riPriceNeeded, riScenarios, asetLaba, labaSebelumSesudah, riLayak, riExercise, riTrading, riRating } from './rightsIssue.js'
 import { valuasiSim, bandarView } from './valuasi.js'
 import { sentences } from './analysis.js'
 
@@ -1390,8 +1390,9 @@ function riSlides(K, th, d, opt = {}) {
     const lbA = c.doc ? asetLaba(c.doc, { S1: r.S1, P }) : null
     const ls = labaSebelumSesudah(c, r, lbA)
     const ly = riLayak(c, r, lbA, ls)
+    const rt = riRating(ly, riTrading(c, r))
     if (ly) {
-      const s = slide('Kelayakan', 'Laba Setelah Aset Masuk dan Kelayakan Investasi', ly.label)
+      const s = slide('Kelayakan', 'Laba Setelah Aset Masuk dan Rekomendasi Investasi', rt.partTxt)
       const lw = 5.0
       if (ls) {
         const rows = [['', 'Sebelum', 'Setelah'], ['Laba bersih setahun', bigS(ls.before.laba), bigS(ls.after.laba)], ['Jumlah saham', shS(ls.before.saham), shS(ls.after.saham)],
@@ -1406,11 +1407,13 @@ function riSlides(K, th, d, opt = {}) {
       } else T(s, 'Laba sebelum vs setelah aset masuk belum dapat dihitung: laba aset belum diungkap di dokumen.', { x: M, y: TOP, w: lw, h: 0.6, fontSize: 10, color: th.muted })
       const x = M + lw + 0.25, w = CW - lw - 0.25
       card(s, x, TOP, w, 3.35, { fill: th.dark, line: th.dark })
-      T(s, 'KESIMPULAN INVESTASI', { x: x + 0.18, y: TOP + 0.12, w: w - 0.3, h: 0.22, fontSize: 7.5, bold: true, color: th.accent2, charSpacing: 2 })
-      T(s, ly.label, { x: x + 0.18, y: TOP + 0.36, w: w - 0.3, h: 0.55, fontFace: th.head, fontSize: 15, bold: true, color: 'FFFFFF', valign: 'middle', fit: 'shrink' })
-      const rs = ly.reasons.slice(0, 7)
+      T(s, 'REKOMENDASI', { x: x + 0.18, y: TOP + 0.12, w: w - 0.3, h: 0.22, fontSize: 7.5, bold: true, color: th.accent2, charSpacing: 2 })
+      T(s, rt.rating, { x: x + 0.18, y: TOP + 0.36, w: w - 0.3, h: 0.45, fontFace: th.head, fontSize: 18, bold: true, color: 'FFFFFF', valign: 'middle', fit: 'shrink' })
+      T(s, rt.sub, { x: x + 0.18, y: TOP + 0.82, w: w - 0.3, h: 0.42, fontSize: 8.5, color: 'EAF2FA', fit: 'shrink' })
+      T(s, `Partisipasi rights issue: ${rt.partisipasi}`, { x: x + 0.18, y: TOP + 1.26, w: w - 0.3, h: 0.24, fontSize: 8.5, bold: true, color: th.accent2 })
+      const rs = ly.reasons.slice(0, 5)
       T(s, rs.map((x2, i) => ({ text: `${x2.s > 0 ? '+' : x2.s < 0 ? '−' : '·'} ${short(x2.t, 95)}`, options: { breakLine: i < rs.length - 1, paraSpaceAfter: 2 } })),
-        { x: x + 0.18, y: TOP + 0.98, w: w - 0.3, h: 2.3, fontSize: 8, color: 'EAF2FA', fit: 'shrink' })
+        { x: x + 0.18, y: TOP + 1.55, w: w - 0.3, h: 1.75, fontSize: 7.5, color: 'EAF2FA', fit: 'shrink' })
     }
   }
 
