@@ -1,6 +1,6 @@
 <script setup>
 // Seasonality: pola bulanan berulang IHSG, sektor, dan saham (5/10 tahun) + sinyal broker, katalis, dan
-// alasan historis (aksi korporasi). Data dari /api/seasonality (diperbarui mingguan otomatis di server).
+// alasan historis (aksi korporasi). Data dari /api/seasonality (diperbarui otomatis Senin-Jumat pukul 00.01 WIB).
 import { computed, ref, watch } from 'vue'
 import { api } from '../api.js'
 import { fmt } from '../lib/domain.js'

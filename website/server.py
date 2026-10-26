@@ -1913,33 +1913,59 @@ def season_universe() -> list[str]:
     return sorted(x for x in t if re.match(r"^[A-Z]{4}$", x))
 
 
-def season_loop(max_age: float = 7 * 86400) -> None:
+WIB = timezone(timedelta(hours=7))
+
+
+def season_next_run(now: datetime) -> datetime:
+    """Jadwal pembaruan: Senin-Jumat pukul 00.01 WIB; Sabtu dan Minggu libur."""
+    t = now.astimezone(WIB).replace(hour=0, minute=1, second=0, microsecond=0)
+    if t <= now.astimezone(WIB):
+        t += timedelta(days=1)
+    while t.weekday() >= 5:  # 5 = Sabtu, 6 = Minggu
+        t += timedelta(days=1)
+    return t
+
+
+def season_build() -> None:
+    uni = season_universe()
+    print(f"[seasonality] membangun data {len(uni)} saham")
+    data = SZ.build(lambda p: sb_fetch(p), uni, log=lambda m: print(m, file=sys.stderr))
+    # Hasil gagal/kosong (mis. token ditolak) tidak disimpan agar dicoba lagi.
+    if "IHSG" not in data["index"] or len(data["stock"]) < min(20, len(uni) // 2):
+        raise RuntimeError(f"data tidak lengkap ({len(data['stock'])} saham)")
+    tmp = SEASON_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(SEASON_PATH)
+    print(f"[seasonality] selesai: {len(data['stock'])} saham")
+
+
+def season_loop() -> None:
     time.sleep(120)  # beri waktu loop kandidat/tsa mengisi universe lebih dulu
-    while True:
+    # Belum ada data sama sekali: bangun sekarang agar halaman tidak kosong, lalu ikuti jadwal.
+    while not SEASON_PATH.exists():
         try:
-            age = time.time() - SEASON_PATH.stat().st_mtime if SEASON_PATH.exists() else max_age
-            if age >= max_age and get_token():
-                uni = season_universe()
-                print(f"[seasonality] membangun data {len(uni)} saham")
-                data = SZ.build(lambda p: sb_fetch(p), uni, log=lambda m: print(m, file=sys.stderr))
-                # Hasil gagal/kosong (mis. token ditolak) tidak disimpan agar dicoba lagi, bukan menunggu seminggu.
-                if "IHSG" not in data["index"] or len(data["stock"]) < min(20, len(uni) // 2):
-                    raise RuntimeError(f"data tidak lengkap ({len(data['stock'])} saham)")
-                tmp = SEASON_PATH.with_suffix(".tmp")
-                tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-                tmp.replace(SEASON_PATH)
-                print(f"[seasonality] selesai: {len(data['stock'])} saham")
+            if get_token():
+                season_build()
+                break
         except Exception as e:
             print(f"[seasonality] gagal: {e}; dicoba lagi 30 menit", file=sys.stderr)
-            time.sleep(1800)
-            continue
-        time.sleep(6 * 3600)
+        time.sleep(1800)
+    while True:
+        nxt = season_next_run(datetime.now(timezone.utc))
+        time.sleep(max(1.0, (nxt - datetime.now(timezone.utc)).total_seconds()))
+        for _ in range(6):  # gagal: coba lagi tiap 30 menit, maksimal 3 jam
+            try:
+                season_build()
+                break
+            except Exception as e:
+                print(f"[seasonality] gagal: {e}; dicoba lagi 30 menit", file=sys.stderr)
+                time.sleep(1800)
 
 
 def season_api(month: int, years: int) -> dict:
     data = season_data()
     if not data:
-        return {"error": "Data seasonality sedang disiapkan (pembaruan mingguan otomatis). Coba lagi beberapa menit lagi."}
+        return {"error": "Data seasonality sedang disiapkan (pembaruan otomatis Senin-Jumat pukul 00.01 WIB). Coba lagi beberapa menit lagi."}
     kd = {k["ticker"] for k in (_kd_memo[1].get("items", []) if _kd_memo else [])}
     return SZ.analyze(data, month, years, tsa_load("signals"), {i["ticker"] for i in items_all()}, kd)
 
