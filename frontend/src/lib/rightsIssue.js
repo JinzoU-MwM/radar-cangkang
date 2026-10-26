@@ -313,7 +313,8 @@ export function riLayak(c, r, lb, ls) {
   if (ls) plus(ls.akresi ? 1 : -1, ls.akresi ? 'Laba per saham emiten naik setelah aset masuk (akresi).' : 'Laba per saham emiten turun setelah penerbitan (dilutif).')
   if (r?.terp && c.price) {
     const prem = c.price / r.terp - 1
-    if (prem > 0.3) plus(-1, `Harga kini ${Math.round(prem * 100)}% di atas harga teoretis setelah RI: risiko turun setelah cum date.`)
+    const asm = c.exAssumed && r.N && r.total ? ` (memakai harga RI asumsi Rp${Math.round(r.total / r.N).toLocaleString('id-ID')}; harga resmi belum ditetapkan)` : ''
+    if (prem > 0.3) plus(-1, `Harga kini ${Math.round(prem * 100)}% di atas harga teoretis setelah RI${asm}: risiko turun setelah cum date.`)
     else if (prem < -0.1) plus(1, 'Harga kini di bawah harga teoretis setelah RI.')
   }
   // Pembeli siaga hanya menentukan bila porsi tunai berarti (> 30% penerbitan); sisanya disetor pemilik aset.
@@ -327,8 +328,52 @@ export function riLayak(c, r, lb, ls) {
   const key = sc >= 2 ? 'layak' : sc >= -1 ? 'spekulatif' : 'tidak'
   return {
     key, score: sc, reasons: why,
-    label: { layak: 'Layak dipertimbangkan', spekulatif: 'Spekulatif: hanya porsi kecil, tunggu konfirmasi', tidak: 'Tidak layak investasi saat ini' }[key],
+    // Menilai skenario membeli dan menahan melewati rights issue (atau ikut menebus), bukan trading jangka pendek.
+    label: { layak: 'Layak dipertimbangkan untuk ikut rights issue', spekulatif: 'Spekulatif: ikut rights issue hanya porsi kecil, tunggu konfirmasi', tidak: 'Tidak layak ikut rights issue / menahan melewati cum date' }[key],
     tone: { layak: 'good', spekulatif: 'warn', tidak: 'strong' }[key],
+  }
+}
+
+// Peluang trading jangka pendek memanfaatkan aksi korporasi (berbeda dari menahan melewati rights issue):
+// ada katalis terjadwal di depan, likuiditas cukup, dan transaksi belum tereksekusi. Mengembalikan
+// { key: ada|tipis|tidak, label, tone, reasons, aturan } beserta aturan main keluar sebelum cum date.
+const BULAN_TR = { jan: 0, feb: 1, mar: 2, apr: 3, mei: 4, may: 4, jun: 5, jul: 6, agu: 7, aug: 7, sep: 8, okt: 9, oct: 9, nov: 10, des: 11, dec: 11 }
+function tglDari(s) {
+  const m = String(s || '').match(/(\d{1,2})\s+([A-Za-z]{3})[a-z]*\.?\s+(20\d\d)/)
+  if (!m || BULAN_TR[m[2].toLowerCase()] == null) return null
+  return new Date(+m[3], BULAN_TR[m[2].toLowerCase()], +m[1])
+}
+export function riTrading(c, r, now = new Date()) {
+  if (!c) return null
+  const why = [], add = (s, t) => why.push({ s, t })
+  if (c.status === 'tereksekusi') {
+    return { key: 'tidak', label: 'Tidak ada lagi katalis aksi korporasi', tone: 'warn', reasons: [{ s: 0, t: 'Penambahan modal sudah tereksekusi; sentimen aksi korporasi sudah lewat.' }], aturan: [] }
+  }
+  // Katalis terjadwal di depan (dari jadwal dokumen yang belum selesai).
+  const jd = (c.doc?.jadwal || []).filter(j => j.status !== 'selesai')
+  const dated = jd.map(j => ({ ...j, t: tglDari(j.waktu) })).filter(j => j.t && j.t >= now).sort((a, b) => a.t - b.t)
+  const next = dated[0] || jd[0] || null
+  if (next) add(1, `Ada katalis di depan: ${next.tahap} (${next.waktu}).`)
+  else add(-1, 'Belum ada katalis terjadwal yang jelas.')
+  const liq = c.avgVal
+  if (liq != null) {
+    if (liq >= 1e9) add(1, `Likuiditas memadai: nilai transaksi rata-rata ±Rp${(liq / 1e9).toLocaleString('id-ID', { maximumFractionDigits: 1 })} M/hari.`)
+    else if (liq < 2e8) add(-1, 'Likuiditas tipis: sulit keluar saat berbalik.')
+  }
+  if (r?.terp && c.price && c.price > r.terp * 1.3) add(-1, 'Semua posisi harus ditutup sebelum cum date: setelah itu harga cenderung turun ke harga teoretis.')
+  if (c.exAssumed) add(0, 'Harga RI resmi belum ditetapkan; pengumuman harga yang jauh di bawah pasar biasanya menekan harga.')
+  const pos = why.filter(x => x.s > 0).length, neg = why.filter(x => x.s < 0).length
+  const key = next && pos >= neg ? 'ada' : next ? 'tipis' : 'tidak'
+  return {
+    key, reasons: why,
+    label: { ada: 'Ada peluang trading spekulatif jangka pendek', tipis: 'Peluang trading tipis', tidak: 'Belum ada peluang trading' }[key],
+    tone: { ada: 'warn', tipis: 'warn', tidak: 'strong' }[key],
+    aturan: key === 'tidak' ? [] : [
+      'Hanya porsi kecil (misalnya maks. 1–2% modal) dan uang dingin.',
+      next ? `Fokus pada katalis terdekat (${next.tahap}); ambil untung bertahap saat harga naik menjelang katalis.` : 'Ambil untung bertahap saat harga naik.',
+      'Keluar seluruhnya sebelum cum date, atau segera bila harga RI resmi diumumkan jauh di bawah harga pasar.',
+      'Pasang batas rugi tegas (misalnya 8–10% dari harga masuk).',
+    ],
   }
 }
 

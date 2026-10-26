@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { riCase, riCalc, riRange, riVerdict, riPriceNeeded, riScenarios, riExercise, asetLaba } from '../rightsIssue.js'
+import { riCase, riCalc, riRange, riVerdict, riPriceNeeded, riScenarios, riExercise, asetLaba, riTrading } from '../rightsIssue.js'
 
 // Data mirip NINE: PMHMETD I 2,44 miliar saham, asumsi harga Rp81, aset tambang ±Rp2,475 T lewat inbreng tahap II.
 const A = {
@@ -185,5 +185,15 @@ describe('asetLaba', () => {
   it('tanpa laba & pendapatan → null; aset rugi ditandai', () => {
     expect(asetLaba({ aset: { keuangan: {} } })).toBeNull()
     expect(asetLaba({ aset: { keuangan: { labaBersihRp: -12e9, periode: '4 bulan' } } }).rugi).toBe(true)
+  })
+})
+
+describe('riTrading', () => {
+  it('katalis di depan + likuiditas cukup = ada peluang trading; tereksekusi = tidak', () => {
+    const c = { status: 'rencana', price: 264, avgVal: 5e9, exAssumed: true, doc: { jadwal: [{ tahap: 'RUPSLB', waktu: '9 Nov 2026', status: 'rencana' }] } }
+    const t = riTrading(c, { terp: 25 }, new Date(2026, 9, 26))
+    expect(t.key).toBe('ada')
+    expect(t.aturan.join(' ')).toMatch(/sebelum cum date/)
+    expect(riTrading({ ...c, status: 'tereksekusi' }, null).key).toBe('tidak')
   })
 })
