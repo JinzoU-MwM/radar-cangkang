@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { riCase, riCalc, riRange, riVerdict, riPriceNeeded, riScenarios, riExercise, asetLaba, riTrading } from '../rightsIssue.js'
+import { riCase, riCalc, riRange, riVerdict, riPriceNeeded, riScenarios, riExercise, asetLaba, riTrading, riRating, riLevels } from '../rightsIssue.js'
 
 // Data mirip NINE: PMHMETD I 2,44 miliar saham, asumsi harga Rp81, aset tambang ±Rp2,475 T lewat inbreng tahap II.
 const A = {
@@ -195,5 +195,24 @@ describe('riTrading', () => {
     expect(t.key).toBe('ada')
     expect(t.aturan.join(' ')).toMatch(/sebelum cum date/)
     expect(riTrading({ ...c, status: 'tereksekusi' }, null).key).toBe('tidak')
+  })
+})
+
+describe('riLevels / riRating (angka rekomendasi)', () => {
+  const c = { price: 262, status: 'rencana', kind: 'PMHMETD', exAssumed: true, doc: { pembeliSiaga: { ada: false }, rasio: '1 : 20 HMETD (bersama Waran Seri II)' } }
+  const r = { terp: 25, N: 154.78e9, total: 2012e9, pubAfter: 0.016 }
+  it('menampilkan potensi turun, batas rugi ber-tick, asumsi, dan risiko kunci', () => {
+    const lv = riLevels(c, r, 'TRADING BUY (Spekulatif)')
+    const m = Object.fromEntries(lv.angka.map(x => [x.k, x.v]))
+    expect(m['Potensi turun bila ditahan melewati cum date']).toBe('±90%')
+    expect(m['Batas rugi']).toBe('Rp234 (−10%)')
+    expect(lv.asumsi).toMatch(/asumsi Rp13/)
+    expect(lv.risiko.join(' ')).toMatch(/pembeli siaga.*free float.*waran/s)
+  })
+  it('transaksi tereksekusi tidak memakai cum date dan teks partisipasinya disesuaikan', () => {
+    const lv = riLevels({ ...c, status: 'tereksekusi' }, r, 'BUY')
+    expect(lv.angka.map(x => x.k)).toEqual(['Harga sekarang'])
+    const rt = riRating({ key: 'layak' }, { key: 'tidak', reasons: [{ s: 0, t: 'Penambahan modal sudah tereksekusi.' }] }, { ...c, status: 'tereksekusi' }, r)
+    expect(rt.partTxt).toMatch(/sudah terlaksana/)
   })
 })

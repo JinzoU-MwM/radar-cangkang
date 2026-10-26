@@ -180,7 +180,7 @@ export function buildVideo(d, mode = 'ringkas') {
   // 6. Penambahan modal (rights issue)
   if (d.ri && d.riR) {
     const c = d.ri, r = d.riR, f = d.riF, nd = riPriceNeeded(c, d.riP)
-    const lbR = c.doc ? asetLaba(c.doc, { S1: r.S1, P: d.riP }) : null, ls = labaSebelumSesudah(c, r, lbR), ly = riLayak(c, r, lbR, ls), rt = riRating(ly, riTrading(c, r))
+    const lbR = c.doc ? asetLaba(c.doc, { S1: r.S1, P: d.riP }) : null, ls = labaSebelumSesudah(c, r, lbR), ly = riLayak(c, r, lbR, ls), rt = riRating(ly, riTrading(c, r), c, r)
     const tgt = Math.max(0.1e12, Math.round(((r.total || 0) + (c.mcap || 0)) / 1e11) * 1e11)
     const vs = valuasiSim(c, r, { target: tgt }), bv = bandarView(c, r, d.riP, c.doc?.pengendali || {}, tgt)
     add('ri', 'Penambahan modal', c.label, {
