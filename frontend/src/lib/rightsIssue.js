@@ -329,7 +329,7 @@ export function riLayak(c, r, lb, ls) {
   return {
     key, score: sc, reasons: why,
     // Menilai skenario membeli dan menahan melewati rights issue (atau ikut menebus), bukan trading jangka pendek.
-    label: { layak: 'Layak dipertimbangkan untuk ikut rights issue', spekulatif: 'Spekulatif: ikut rights issue hanya porsi kecil, tunggu konfirmasi', tidak: 'Tidak layak ikut rights issue / menahan melewati cum date' }[key],
+    label: { layak: 'Potensi menarik: layak dipertimbangkan untuk ikut rights issue', spekulatif: 'Berpotensi, tetapi spekulatif: ikut rights issue cukup dengan porsi kecil', tidak: 'Belum layak ikut rights issue / menahan melewati cum date' }[key],
     tone: { layak: 'good', spekulatif: 'warn', tidak: 'strong' }[key],
   }
 }
@@ -353,11 +353,11 @@ export function riTrading(c, r, now = new Date()) {
   const jd = (c.doc?.jadwal || []).filter(j => j.status !== 'selesai')
   const dated = jd.map(j => ({ ...j, t: tglDari(j.waktu) })).filter(j => j.t && j.t >= now).sort((a, b) => a.t - b.t)
   const next = dated[0] || jd[0] || null
-  if (next) add(1, `Ada katalis di depan: ${next.tahap} (${next.waktu}).`)
+  if (next) add(1, `Katalis yang dapat menggerakkan harga: ${next.tahap} (${next.waktu}).`)
   else add(-1, 'Belum ada katalis terjadwal yang jelas.')
   const liq = c.avgVal
   if (liq != null) {
-    if (liq >= 1e9) add(1, `Likuiditas memadai: nilai transaksi rata-rata ±Rp${(liq / 1e9).toLocaleString('id-ID', { maximumFractionDigits: 1 })} M/hari.`)
+    if (liq >= 1e9) add(1, `Likuiditas ramai, mudah masuk dan keluar: nilai transaksi rata-rata ±Rp${(liq / 1e9).toLocaleString('id-ID', { maximumFractionDigits: 1 })} M/hari.`)
     else if (liq < 2e8) add(-1, 'Likuiditas tipis: sulit keluar saat berbalik.')
   }
   if (r?.terp && c.price && c.price > r.terp * 1.3) add(-1, 'Semua posisi harus ditutup sebelum cum date: setelah itu harga cenderung turun ke harga teoretis.')
@@ -366,7 +366,7 @@ export function riTrading(c, r, now = new Date()) {
   const key = next && pos >= neg ? 'ada' : next ? 'tipis' : 'tidak'
   return {
     key, reasons: why,
-    label: { ada: 'Ada peluang trading spekulatif jangka pendek', tipis: 'Peluang trading tipis', tidak: 'Belum ada peluang trading' }[key],
+    label: { ada: 'Berpotensi untuk trading jangka pendek: momentum aksi korporasi', tipis: 'Potensi trading ada, tetapi terbatas', tidak: 'Belum ada potensi trading' }[key],
     tone: { ada: 'warn', tipis: 'warn', tidak: 'strong' }[key],
     aturan: key === 'tidak' ? [] : [
       'Hanya porsi kecil (misalnya maks. 1–2% modal) dan uang dingin.',

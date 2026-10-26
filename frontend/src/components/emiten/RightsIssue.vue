@@ -400,14 +400,14 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
           <span class="small muted">Kesimpulan investasi</span>
           <b>{{ layak.label }}</b>
         </div>
-        <p class="small"><b>{{ layak.key === 'layak' ? 'Layak dipertimbangkan' : layak.key === 'tidak' ? 'Tidak layak' : 'Spekulatif' }}, karena:</b></p>
+        <p class="small"><b>{{ layak.key === 'layak' ? 'Potensi menarik' : layak.key === 'tidak' ? 'Belum layak ikut rights issue' : 'Berpotensi, tetapi spekulatif' }}, karena:</b></p>
         <ol class="why abc">
           <li v-for="(x, i) in layakWhy.utama" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
             <span class="ic" aria-hidden="true">{{ 'ABCDEFGHIJ'[i] }}.</span>{{ x.t }}
           </li>
         </ol>
         <template v-if="layakWhy.lawan.length">
-          <p class="small"><b>{{ layak.key === 'layak' ? 'Catatan risiko' : 'Faktor positif' }}:</b></p>
+          <p class="small"><b>{{ layak.key === 'layak' ? 'Catatan risiko' : 'Sisi positif' }}:</b></p>
           <ul class="why">
             <li v-for="(x, i) in layakWhy.lawan" :key="i" :class="x.s > 0 ? 'p' : 'n'"><span class="ic" aria-hidden="true">{{ x.s > 0 ? '+' : '−' }}</span>{{ x.t }}</li>
           </ul>
@@ -417,7 +417,7 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
       <!-- Skenario kedua: trading jangka pendek memanfaatkan aksi korporasi. -->
       <div v-if="trade" class="fund-ok" :class="trade.tone">
         <div class="fh">
-          <span class="small muted">Trading jangka pendek (memanfaatkan aksi korporasi)</span>
+          <span class="small muted">Potensi trading jangka pendek (momentum aksi korporasi)</span>
           <b>{{ trade.label }}</b>
         </div>
         <ul class="why">
@@ -426,10 +426,10 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
           </li>
         </ul>
         <template v-if="trade.aturan.length">
-          <p class="small"><b>Aturan main:</b></p>
+          <p class="small"><b>Cara memanfaatkan potensinya:</b></p>
           <ol class="small aturan"><li v-for="x in trade.aturan" :key="x">{{ x }}</li></ol>
         </template>
-        <p class="small muted">Skenario ini berbeda dari kesimpulan di atas: aksi korporasi dapat menggerakkan harga sebelum katalis, tetapi posisi harus ditutup sebelum cum date.</p>
+        <p class="small muted">Potensi ini berbeda dari kesimpulan di atas: aksi korporasi sering mendorong harga menjelang katalis, sehingga peluangnya ada pada momentum sebelum cum date, bukan pada menahan saham melewati rights issue.</p>
       </div>
       <p v-if="verdict" class="verdict"><b>Kesimpulan:</b> {{ verdict }}</p>
       <p class="small muted">Catatan: <b>skor enam dimensi</b> di atas menilai profil saham backdoor secara umum, <b>sikap analis</b> adalah penilaian manual, dan <b>kesimpulan investasi</b> ini khusus menilai transaksi penambahan modal dan asetnya. Bila berbeda, kesimpulan ini yang menentukan kelayakan ikut serta dalam rights issue.</p>
