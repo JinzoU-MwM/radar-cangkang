@@ -68,7 +68,7 @@ const n = x => PB_NADA[x] || PB_NADA.netral
               <td><b>{{ x.topik }}</b></td>
               <td class="small">{{ x.tanya }}</td>
               <td class="small">{{ x.jawab }}</td>
-              <td><span class="tag" :class="'t-' + n(x.nada)[1]">{{ n(x.nada)[0] }}</span><div v-if="PB_DASAR[x.dasar]" class="dasar">{{ PB_DASAR[x.dasar] }}</div></td>
+              <td><span class="tag" :class="'t-' + n(x.nada)[1]">{{ n(x.nada)[0] }}</span><div v-if="PB_DASAR[x.dasar]" class="dasar"><b>{{ PB_DASAR[x.dasar] }}</b><span v-if="x.alasanNada">: {{ x.alasanNada }}</span></div></td>
               <td class="small">{{ x.analisa }}</td>
             </tr>
           </tbody>
@@ -96,5 +96,5 @@ const n = x => PB_NADA[x] || PB_NADA.netral
 .lamp{margin-top:12px}
 .lamp summary{cursor:pointer;font-weight:600}
 .pb td{vertical-align:top}
-.dasar{font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap}
+.dasar{font-size:11px;color:var(--muted);margin-top:3px;min-width:170px;max-width:240px}
 </style>
