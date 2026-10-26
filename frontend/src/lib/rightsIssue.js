@@ -329,7 +329,7 @@ export function riLayak(c, r, lb, ls) {
   return {
     key, score: sc, reasons: why,
     // Menilai skenario membeli dan menahan melewati rights issue (atau ikut menebus), bukan trading jangka pendek.
-    label: { layak: 'Potensi menarik: layak dipertimbangkan untuk ikut rights issue', spekulatif: 'Berpotensi, tetapi spekulatif: ikut rights issue cukup dengan porsi kecil', tidak: 'Belum layak ikut rights issue / menahan melewati cum date' }[key],
+    label: { layak: 'Potensi menarik: layak dipertimbangkan untuk ikut rights issue', spekulatif: 'Berpotensi, tetapi spekulatif: ikut rights issue cukup dengan porsi kecil', tidak: 'Waspadai bila menahan saham melewati cum date' }[key],
     tone: { layak: 'good', spekulatif: 'warn', tidak: 'strong' }[key],
   }
 }
