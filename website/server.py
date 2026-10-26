@@ -1922,12 +1922,17 @@ def season_loop(max_age: float = 7 * 86400) -> None:
                 uni = season_universe()
                 print(f"[seasonality] membangun data {len(uni)} saham")
                 data = SZ.build(lambda p: sb_fetch(p), uni, log=lambda m: print(m, file=sys.stderr))
+                # Hasil gagal/kosong (mis. token ditolak) tidak disimpan agar dicoba lagi, bukan menunggu seminggu.
+                if "IHSG" not in data["index"] or len(data["stock"]) < min(20, len(uni) // 2):
+                    raise RuntimeError(f"data tidak lengkap ({len(data['stock'])} saham)")
                 tmp = SEASON_PATH.with_suffix(".tmp")
                 tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
                 tmp.replace(SEASON_PATH)
                 print(f"[seasonality] selesai: {len(data['stock'])} saham")
         except Exception as e:
-            print(f"[seasonality] gagal: {e}", file=sys.stderr)
+            print(f"[seasonality] gagal: {e}; dicoba lagi 30 menit", file=sys.stderr)
+            time.sleep(1800)
+            continue
         time.sleep(6 * 3600)
 
 
