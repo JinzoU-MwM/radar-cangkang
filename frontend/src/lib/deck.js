@@ -1044,6 +1044,24 @@ function docSlides(K, th, doc, which = '') {
     T(s, al.map((t, i) => ({ text: short(t, 150), options: { bullet: { type: 'number' }, breakLine: i < al.length - 1, paraSpaceAfter: 2 } })),
       { x, y: ay + 0.22, w, h: ah - 0.22, fontSize: 8, color: th.ink, fit: 'shrink' })
   }
+  // Struktur rencana korporasi (langkah berurutan dari dokumen), sebelum fakta dokumen.
+  const rk = doc.rencanaKorporasi
+  if (rk && (rk.langkah || []).length && which !== 'kewajaran') {
+    const st = rk.langkah.slice(0, 9)
+    const s = slide('Rencana korporasi', 'Struktur Rencana Korporasi', rk.ringkas)
+    const rh = 3.35 / st.length
+    const col = x => x === 'selesai' ? th.good : x === 'berjalan' ? th.accent : th.warn
+    st.forEach((x, i) => {
+      const y = TOP + i * rh, bh = Math.min(0.3, rh - 0.08)
+      card(s, M + 0.05, y + (rh - bh) / 2, 0.3, bh, { fill: col(x.status), line: col(x.status), flat: true })
+      T(s, String(i + 1), { x: M + 0.05, y: y + (rh - bh) / 2, w: 0.3, h: bh, fontSize: 9, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle' })
+      T(s, [{ text: short(x.judul, 60), options: { bold: true } }, { text: `  ${x.status || 'rencana'}${x.waktu && x.waktu !== '–' ? ' · ' + short(x.waktu, 40) : ''}`, options: { color: th.muted } }],
+        { x: M + 0.5, y, w: 4.6, h: rh * 0.5, fontSize: 8.5, color: th.ink, valign: 'bottom', fit: 'shrink' })
+      T(s, short(x.nilai && x.nilai !== '–' ? x.nilai : x.pihak || '', 90), { x: M + 0.5, y: y + rh * 0.5, w: 4.6, h: rh * 0.48, fontSize: 7.5, color: th.muted, valign: 'top', fit: 'shrink' })
+      T(s, short(x.ket || '', 190), { x: M + 5.2, y, w: CW - 5.2, h: rh, fontSize: 7.5, color: th.ink, valign: 'middle', fit: 'shrink' })
+    })
+  }
+
   // Fakta dokumen & jadwal.
   if (which !== 'kewajaran') {
     const hp = doc.hargaPelaksanaan || {}, ke = a.keuangan || {}

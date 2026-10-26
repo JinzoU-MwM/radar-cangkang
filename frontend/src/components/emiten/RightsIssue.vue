@@ -11,6 +11,7 @@ import { buildRiDeck, riDeckFileName } from '../../lib/deck.js'
 import { sectorOf, pickTheme } from '../../lib/deckThemes.js'
 import DeckDownload from './DeckDownload.vue'
 import RiDokumen from './RiDokumen.vue'
+import RencanaKorporasi from './RencanaKorporasi.vue'
 import RiValuasi from './RiValuasi.vue'
 
 const props = defineProps({ c: { type: Object, required: true }, ticker: { type: String, default: '' }, name: { type: String, default: '' } })
@@ -46,6 +47,11 @@ const num = v => fmt(v, Number.isInteger(+v.toFixed(2)) ? 0 : 2)
 const lbA = computed(() => props.c.doc ? asetLaba(props.c.doc, { S1: r.value?.S1, P: +P.value }) : null)
 const ls = computed(() => labaSebelumSesudah(props.c, r.value, lbA.value))
 const layak = computed(() => riLayak(props.c, r.value, lbA.value, ls.value))
+// Alasan searah putusan (utama) dipisah dari faktor sebaliknya agar poin positif tidak tercantum di bawah "Tidak layak, karena".
+const layakWhy = computed(() => {
+  const rs = layak.value?.reasons || [], pos = layak.value?.key === 'layak'
+  return { utama: rs.filter(x => pos ? x.s >= 0 : x.s <= 0), lawan: rs.filter(x => pos ? x.s < 0 : x.s > 0) }
+})
 const R = ref(1)
 const ex = computed(() => riExercise(props.c, +R.value))
 const rp2 = v => 'Rp' + fmt(v, 2)
@@ -115,6 +121,8 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
         <em class="small muted">{{ pSrc }}<template v-if="r.disc != null"> · {{ r.disc >= 0 ? 'premi' : 'diskon' }} {{ fmt(Math.abs(r.disc) * 100, 0) }}% vs pasar {{ rp(c.price) }}</template></em>
       </div>
     </div>
+    <!-- Struktur rencana korporasi (langkah berurutan dari dokumen), bila tersedia. -->
+    <RencanaKorporasi v-if="c.doc?.rencanaKorporasi" :rk="c.doc.rencanaKorporasi" />
 
     <h3 class="sec">2. Pengendali dan key person</h3>
     <RiDokumen v-if="c.doc" :doc="c.doc" part="pengendali" />
@@ -392,10 +400,16 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
         </div>
         <p class="small"><b>{{ layak.key === 'layak' ? 'Layak dipertimbangkan' : layak.key === 'tidak' ? 'Tidak layak' : 'Spekulatif' }}, karena:</b></p>
         <ol class="why abc">
-          <li v-for="(x, i) in layak.reasons" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
+          <li v-for="(x, i) in layakWhy.utama" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
             <span class="ic" aria-hidden="true">{{ 'ABCDEFGHIJ'[i] }}.</span>{{ x.t }}
           </li>
         </ol>
+        <template v-if="layakWhy.lawan.length">
+          <p class="small"><b>{{ layak.key === 'layak' ? 'Catatan risiko' : 'Faktor positif' }}:</b></p>
+          <ul class="why">
+            <li v-for="(x, i) in layakWhy.lawan" :key="i" :class="x.s > 0 ? 'p' : 'n'"><span class="ic" aria-hidden="true">{{ x.s > 0 ? '+' : '−' }}</span>{{ x.t }}</li>
+          </ul>
+        </template>
         <p class="small muted">Skor {{ layak.score }} (≥ 2 layak dipertimbangkan; −1 s.d. 1 spekulatif; ≤ −2 tidak layak). Kerangka analisis otomatis dari dokumen dan simulasi, bukan anjuran membeli atau menjual efek.</p>
       </div>
       <p v-if="verdict" class="verdict"><b>Kesimpulan:</b> {{ verdict }}</p>

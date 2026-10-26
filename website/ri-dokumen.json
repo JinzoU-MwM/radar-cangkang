@@ -9374,8 +9374,9 @@
       "kjpp": {
         "nama": "KJPP Toha, Okky, Heru & Rekan (Okky Danuza)",
         "status": "terbit",
-        "nilaiRp": 296,
-        "tanggal": "2026-09-29"
+        "tanggal": "2026-09-29",
+        "nilaiPerSahamRp": 296,
+        "nilaiRp": null
       },
       "keuangan": {
         "periode": "30 Jun 2026 (6 bulan)",
@@ -9858,6 +9859,84 @@
           "hal": "19-21, 45"
         }
       ]
+    },
+    "rencanaKorporasi": {
+      "ringkas": "Pengendali baru (SII) masuk murah di Rp50, lalu DOOH lewat anak usaha CNI membeli 29,88% INET senilai Rp2.005,5 M yang 94% didanai pinjaman SII; pinjaman itu kemudian dilunasi dengan rights issue raksasa (hingga 20 saham baru per 1 saham lama). Hasil akhirnya: DOOH menjadi perusahaan induk ekosistem AI dengan saham minoritas INET, sedangkan publik yang tidak menebus terdilusi hingga ±1,6%.",
+      "langkah": [
+        {
+          "judul": "Bersih-bersih anak usaha lama",
+          "pihak": "DOOH → PT Wisdom Crowd Indonesia; PT Investasi Gemilang Maju",
+          "nilai": "Rp23,3 M (KSP)",
+          "waktu": "Mar–Mei 2026",
+          "status": "selesai",
+          "ket": "KSP dilepas padahal menyumbang 38% pendapatan dan 49% laba DOOH (9 bulan 2025); Triuslive juga dilepas. Bisnis lama dikosongkan sebelum pengendali baru masuk."
+        },
+        {
+          "judul": "Pendirian kendaraan investasi CNI",
+          "pihak": "DOOH (99,99%)",
+          "nilai": "–",
+          "waktu": "13 Jul 2026",
+          "status": "selesai",
+          "ket": "CNI menjadi pihak yang membeli saham INET, sehingga akuisisi terjadi di level anak usaha."
+        },
+        {
+          "judul": "SII mengambil alih 51% DOOH",
+          "pihak": "PT Prambanan Investasi Sukses → PT Sinergi Internasional Investama (SII; Tinawati 99,9%)",
+          "nilai": "Rp50/saham",
+          "waktu": "30 Jul 2026",
+          "status": "selesai",
+          "ket": "SII baru didirikan 17 Jul 2026 dengan modal disetor Rp1 M dan belum punya pendapatan. Harga masuk Rp50, jauh di bawah harga pasar."
+        },
+        {
+          "judul": "Penawaran tender wajib",
+          "pihak": "SII → pemegang saham publik",
+          "nilai": "Rp148/saham",
+          "waktu": "5 Okt–3 Nov 2026",
+          "status": "berjalan",
+          "ket": "Harga tender (rata-rata harga tertinggi 90 hari) jauh di bawah harga pasar, sehingga hampir tidak ada publik yang menjual."
+        },
+        {
+          "judul": "Pembelian 29,88% INET oleh CNI",
+          "pihak": "AKUN (penjual, bukan afiliasi) → CNI",
+          "nilai": "6,685 miliar saham × Rp300 = Rp2.005,5 M",
+          "waktu": "PPJB 1 Sep 2026; eksekusi setelah RUPSLB",
+          "status": "rencana",
+          "ket": "Dibayar tunai: Rp120 M dari sisa dana IPO DOOH dan Rp1.885,5 M dari pinjaman SII. KJPP menilai wajar karena dekat rata-rata harga tertinggi 90 hari (Rp296), padahal harga INET kini ±Rp186. Porsi 29,88% tidak memberi kendali."
+        },
+        {
+          "judul": "Pinjaman pemegang saham dari SII",
+          "pihak": "SII → DOOH/CNI",
+          "nilai": "Plafon Rp5 T (versi Inggris Rp8 T); tahap awal Rp2 T",
+          "waktu": "setelah RUPSLB",
+          "status": "rencana",
+          "ket": "Bunga 7,5%, tenor 10 tahun, tanpa jaminan, dan dapat dikonversi menjadi saham lewat rights issue. Plafon berubah antar-dokumen dan belum diklarifikasi."
+        },
+        {
+          "judul": "RUPSLB 9 mata acara",
+          "pihak": "Pemegang saham DOOH",
+          "nilai": "–",
+          "waktu": "9 Nov 2026",
+          "status": "rencana",
+          "ket": "Memutuskan PMHMETD I + Waran Seri II, transaksi material INET, pinjaman SII, perubahan penggunaan dana IPO, dan perubahan kegiatan usaha menjadi perusahaan induk (KBLI 64210)."
+        },
+        {
+          "judul": "PMHMETD I (rights issue)",
+          "pihak": "DOOH → seluruh pemegang saham",
+          "nilai": "Maks. 154,78 miliar saham (indikatif 1 : 20); harga belum ditetapkan",
+          "waktu": "≤12 bulan setelah RUPSLB",
+          "status": "rencana",
+          "ket": "Dananya dipakai melunasi pinjaman SII (yang membiayai INET) dan ekspansi AI. Belum ada pembeli siaga; SII hanya menyatakan dukungan. Pinjaman SII bisa dikonversi menjadi saham dalam rights issue ini."
+        },
+        {
+          "judul": "Hasil akhir",
+          "pihak": "DOOH sebagai perusahaan induk",
+          "nilai": "Porsi publik 33,91% → ±1,61% bila tidak menebus",
+          "waktu": "–",
+          "status": "rencana",
+          "ket": "Operasional iklan dialihkan ke PT Media Sejahtera Selaras; DOOH memegang 29,88% INET dan rencana usaha AI (data center, fiber, PLTS) yang belum memiliki angka resmi."
+        }
+      ],
+      "catatan": "Disusun dari keterbukaan informasi DOOH Mar–Okt 2026 (PPJB 1 Sep, keterbukaan PMHMETD & transaksi material 1 Okt, pemanggilan RUPSLB koreksi 16 Okt, tanggapan BEI Agu 2026)."
     }
   },
   "KRYA": {

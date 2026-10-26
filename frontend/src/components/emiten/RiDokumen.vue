@@ -46,7 +46,7 @@ const facts = computed(() => {
     ['Nilai 100% aset', a.value.nilai100Rp ? big(a.value.nilai100Rp) : null],
     ['Nilai porsi yang diambil', a.value.nilaiTransaksiRp ? big(a.value.nilaiTransaksiRp) : null],
     ['Dasar nilai', a.value.dasarNilai || null],
-    ['KJPP', a.value.kjpp ? [a.value.kjpp.nama, a.value.kjpp.status, a.value.kjpp.nilaiRp ? big(a.value.kjpp.nilaiRp) : null, a.value.kjpp.tanggal ? fmtDate(a.value.kjpp.tanggal) : null].filter(Boolean).join(' · ') : null],
+    ['KJPP', a.value.kjpp ? [a.value.kjpp.nama, a.value.kjpp.status, a.value.kjpp.nilaiRp ? big(a.value.kjpp.nilaiRp) : a.value.kjpp.nilaiPerSahamRp ? rp(a.value.kjpp.nilaiPerSahamRp) + '/saham' : null, a.value.kjpp.tanggal ? fmtDate(a.value.kjpp.tanggal) : null].filter(Boolean).join(' · ') : null],
     ['Keuangan aset', ke.ekuitasRp != null || ke.totalAsetRp != null || ke.labaBersihRp != null
       ? [ke.periode, ke.standar, ke.auditor && 'audit ' + ke.auditor].filter(Boolean).join(' · ') + ': ' +
         [ke.totalAsetRp != null && 'aset ' + val(ke.totalAsetRp), ke.ekuitasRp != null && 'ekuitas ' + val(ke.ekuitasRp),
