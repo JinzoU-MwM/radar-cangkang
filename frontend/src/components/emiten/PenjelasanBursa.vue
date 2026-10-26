@@ -1,13 +1,12 @@
 <script setup>
 // Analisa tanggapan emiten atas permintaan penjelasan BEI yang terakhir (ri-dokumen.json → penjelasanBursa):
-// tiap pertanyaan, jawaban emiten, analisa, dan nadanya, ditutup kesimpulan dampak.
-import { fmtDate, PB_DASAR, PB_KRITERIA } from '../../lib/domain.js'
+// tiap pertanyaan, jawaban emiten, kelengkapan jawabannya, dan analisa, ditutup kesimpulan dampak.
+import { fmtDate, PB_JAWABAN, PB_KRITERIA } from '../../lib/domain.js'
 import { computed } from 'vue'
 const props = defineProps({ pb: { type: Object, required: true } })
 // Nomor pertanyaan BEI (1a, 2b, ...) bila datanya tersedia.
 const adaNo = computed(() => (props.pb.poin || []).some(x => x.no))
-const NADA = { positif: ['Positif', 't-good'], netral: ['Netral', 't-calm'], negatif: ['Negatif', 't-strong'] }
-const n = x => NADA[x] || NADA.netral
+const n = x => PB_JAWABAN[x] || PB_JAWABAN.sebagian
 </script>
 
 <template>
@@ -20,15 +19,15 @@ const n = x => NADA[x] || NADA.netral
     <p v-if="pb.ringkas" class="lead">{{ pb.ringkas }}</p>
     <div class="scroll">
       <table class="ledger">
-        <thead><tr><th v-if="adaNo">No</th><th>Topik</th><th>Pertanyaan BEI</th><th>Jawaban emiten</th><th>Analisa</th><th>Nada</th></tr></thead>
+        <thead><tr><th v-if="adaNo">No</th><th>Topik</th><th>Pertanyaan BEI</th><th>Jawaban emiten</th><th>Kelengkapan jawaban</th><th>Analisa</th></tr></thead>
         <tbody>
           <tr v-for="(x, i) in pb.poin || []" :key="i">
             <td v-if="adaNo" class="num">{{ x.no }}</td>
             <td><b>{{ x.topik }}</b></td>
             <td class="small">{{ x.tanya }}</td>
             <td class="small">{{ x.jawab }}</td>
+            <td><span class="tag" :class="'t-' + n(x.jawaban)[1]">{{ n(x.jawaban)[0] }}</span><div v-if="x.kurang" class="dasar">{{ x.kurang }}</div></td>
             <td class="small">{{ x.analisa }}</td>
-            <td><span class="tag" :class="n(x.nada)[1]">{{ n(x.nada)[0] }}</span><div v-if="PB_DASAR[x.dasar]" class="dasar">{{ PB_DASAR[x.dasar] }}</div></td>
           </tr>
         </tbody>
       </table>
@@ -42,7 +41,7 @@ const n = x => NADA[x] || NADA.netral
 .pb{margin-bottom:14px}
 .lead{font-weight:600;max-width:100ch;margin:6px 0}
 .pb td{vertical-align:top}
-.dasar{font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap}
+.dasar{font-size:11px;color:var(--muted);margin-top:4px;min-width:150px}
 .kes{margin:10px 0 0;padding:10px 12px;border:1px solid var(--rule);border-left:4px solid var(--rule-2);background:var(--sheet);max-width:100ch}
 .k-negatif{border-left-color:var(--strong)} .k-positif{border-left-color:var(--good)}
 </style>

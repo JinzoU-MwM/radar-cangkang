@@ -302,14 +302,15 @@ export function buildVideo(d, mode = 'ringkas') {
   // 11d. Analisa penjelasan atas permintaan penjelasan bursa (terakhir)
   const pbx = (d.ri?.doc || d.riDoc)?.penjelasanBursa
   if (pbx && (pbx.poin || []).length) {
-    const neg = pbx.poin.filter(x => x.nada === 'negatif'), pos = pbx.poin.filter(x => x.nada === 'positif')
+    // Butir yang belum dijawab lengkap (dapat dicek di dokumen) menjadi catatan utama.
+    const kurang = pbx.poin.filter(x => x.jawaban !== 'lengkap' && x.kurang), lengkap = pbx.poin.filter(x => x.jawaban === 'lengkap').length
     add('penjelasan-bursa', 'Penjelasan bursa', 'Analisa penjelasan atas permintaan penjelasan bursa', {
-      type: 'list', items: pbx.poin.slice(0, 6).map(x => `${x.nada === 'negatif' ? '− ' : x.nada === 'positif' ? '+ ' : '· '}${x.topik}`),
+      type: 'list', items: pbx.poin.slice(0, 6).map(x => `${x.jawaban === 'tidak' ? '− ' : x.jawaban === 'lengkap' ? '+ ' : '· '}${x.topik}`),
     }, [
       `Penjelasan terakhir kepada bursa terbit pada ${fmtDate(pbx.tanggal)}, menjawab ${pbx.poin.length} butir pertanyaan.`,
       first(pbx.ringkas, 1),
-      neg.length ? `Catatan utama: ${neg.slice(0, full ? 4 : 2).map(x => lower1(x.analisa).replace(/\.$/, '')).join('; ')}.` : null,
-      pos.length ? `Sisi positifnya: ${pos.slice(0, 2).map(x => lower1(x.analisa).replace(/\.$/, '')).join('; ')}.` : null,
+      `${lengkap} dari ${pbx.poin.length} butir dijawab lengkap.`,
+      kurang.length ? `Yang belum terjawab: ${kurang.slice(0, full ? 4 : 2).map(x => lower1(x.kurang).replace(/\.$/, '')).join('; ')}.` : null,
       pbx.kesimpulan,
     ])
   }

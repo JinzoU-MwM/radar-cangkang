@@ -194,6 +194,7 @@ export function isNewSince(u, seenAt) {
 // Warna tag sikap analis; dipakai SikapTag dan Berita supaya sama di semua halaman.
 export const SIKAP_CLS = { 'Hindari': 't-strong', 'Spekulatif tinggi': 't-warn', 'Netral': 't-calm', 'Asimetri positif': 't-good' }
 
-// Dasar objektif nada penjelasan bursa (ri-dokumen.json → penjelasanBursa.poin[].dasar).
-export const PB_DASAR = { ditunda: 'Tidak dijawab/ditunda', risiko: 'Risiko terukur', inkonsisten: 'Data tidak konsisten', fakta: 'Fakta/kepatuhan', kepastian: 'Menambah kepastian' }
-export const PB_KRITERIA = 'Dasar nada: Negatif bila pertanyaan tidak dijawab atau ditunda, ada risiko terukur bagi publik, atau data tidak konsisten; Netral untuk fakta, prosedur, atau kepatuhan aturan tanpa dampak terukur; Positif bila menambah kepastian atau mengurangi risiko.'
+// Kelengkapan jawaban emiten atas tiap pertanyaan BEI (ri-dokumen.json → penjelasanBursa.poin[].jawaban):
+// ukuran yang dapat dicek langsung di dokumen, terpisah dari pendapat analis (kolom Analisa).
+export const PB_JAWABAN = { lengkap: ['Lengkap', 'good'], sebagian: ['Sebagian', 'calm'], tidak: ['Tidak dijawab', 'strong'] }
+export const PB_KRITERIA = 'Kelengkapan jawaban: Lengkap bila semua unsur pertanyaan BEI dijawab dengan data spesifik; Sebagian bila ada unsur yang tidak dijawab, jawabannya normatif, atau dirujuk ke dokumen lain; Tidak dijawab bila inti pertanyaan tidak dijawab atau pengungkapannya ditunda. Kolom Analisa adalah pendapat analis.'
