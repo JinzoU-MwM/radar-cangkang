@@ -4,7 +4,7 @@
 // penebusan publik bisa digeser untuk simulasi; nilai awal dari data kurasi.
 import { computed, ref, watch } from 'vue'
 import { fmt, rp, big } from '../../lib/domain.js'
-import { riCalc, riRange, riVerdict, noRights, riFunding, riPriceNeeded, riScenarios, riExercise, asetLaba, labaSebelumSesudah, riLayak, riTrading } from '../../lib/rightsIssue.js'
+import { riCalc, riRange, riVerdict, noRights, riFunding, riPriceNeeded, riScenarios, riExercise, asetLaba, labaSebelumSesudah, riLayak, riTrading, riRating } from '../../lib/rightsIssue.js'
 import { fmtDate } from '../../lib/domain.js'
 import { store, storyOf } from '../../store.js'
 import { buildRiDeck, riDeckFileName } from '../../lib/deck.js'
@@ -49,6 +49,8 @@ const ls = computed(() => labaSebelumSesudah(props.c, r.value, lbA.value))
 const layak = computed(() => riLayak(props.c, r.value, lbA.value, ls.value))
 // Skenario kedua: trading jangka pendek memanfaatkan aksi korporasi.
 const trade = computed(() => riTrading(props.c, r.value))
+// Rekomendasi bergaya manajer investasi (rating + sikap atas partisipasi rights issue).
+const rating = computed(() => riRating(layak.value, trade.value))
 // Alasan searah putusan (utama) dipisah dari faktor sebaliknya agar poin positif tidak tercantum di bawah "Tidak layak, karena".
 const layakWhy = computed(() => {
   const rs = layak.value?.reasons || [], pos = layak.value?.key === 'layak'
@@ -394,10 +396,19 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
 
     <h3 class="sec">7. Kesimpulan investasi</h3>
     <template v-if="r">
+      <!-- Rekomendasi bergaya manajer investasi: rating + sikap atas partisipasi rights issue. -->
+      <div v-if="rating" class="fund-ok rating" :class="rating.tone">
+        <div class="fh">
+          <span class="small muted">Rekomendasi</span>
+          <b>{{ rating.rating }}</b>
+        </div>
+        <p class="small">{{ rating.sub }}</p>
+        <p class="small"><b>{{ rating.partTxt }}</b></p>
+      </div>
       <!-- Skenario kedua: trading jangka pendek memanfaatkan aksi korporasi. -->
       <div v-if="trade" class="fund-ok" :class="trade.tone">
         <div class="fh">
-          <span class="small muted">Potensi aksi korporasi (trading jangka pendek)</span>
+          <span class="small muted">Strategi trading jangka pendek</span>
           <b>{{ trade.label }}</b>
         </div>
         <ul class="why">
@@ -406,7 +417,7 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
           </li>
         </ul>
         <template v-if="trade.aturan.length">
-          <p class="small"><b>Cara memanfaatkan potensinya:</b></p>
+          <p class="small"><b>Strategi eksekusi:</b></p>
           <ol class="small aturan"><li v-for="x in trade.aturan" :key="x">{{ x }}</li></ol>
         </template>
         <p class="small muted">Aksi korporasi sering mendorong harga menjelang katalis; peluang terbesarnya ada pada momentum sebelum cum date.</p>
@@ -414,17 +425,17 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
       <!-- Kesimpulan akhir: layak investasi atau tidak. -->
       <div v-if="layak" class="fund-ok" :class="layak.tone">
         <div class="fh">
-          <span class="small muted">Bila menahan saham melewati rights issue / ikut menebus</span>
+          <span class="small muted">Partisipasi rights issue (menebus / menahan melewati cum date)</span>
           <b>{{ layak.label }}</b>
         </div>
-        <p class="small"><b>{{ layak.key === 'layak' ? 'Potensi menarik, karena:' : layak.key === 'tidak' ? 'Yang perlu diwaspadai:' : 'Berpotensi, tetapi spekulatif, karena:' }}</b></p>
+        <p class="small"><b>{{ layak.key === 'layak' ? 'Faktor pendukung:' : 'Faktor risiko:' }}</b></p>
         <ol class="why abc">
           <li v-for="(x, i) in layakWhy.utama" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
             <span class="ic" aria-hidden="true">{{ 'ABCDEFGHIJ'[i] }}.</span>{{ x.t }}
           </li>
         </ol>
         <template v-if="layakWhy.lawan.length">
-          <p class="small"><b>{{ layak.key === 'layak' ? 'Catatan risiko' : 'Sisi positif' }}:</b></p>
+          <p class="small"><b>{{ layak.key === 'layak' ? 'Faktor risiko' : 'Faktor pendukung' }}:</b></p>
           <ul class="why">
             <li v-for="(x, i) in layakWhy.lawan" :key="i" :class="x.s > 0 ? 'p' : 'n'"><span class="ic" aria-hidden="true">{{ x.s > 0 ? '+' : '−' }}</span>{{ x.t }}</li>
           </ul>

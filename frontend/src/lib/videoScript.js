@@ -4,7 +4,7 @@
 // mengikuti presentasi (ORDER): profil → pengendali → transformasi → berita → analisa → rights issue → teknikal → penutup.
 import { fmtDate } from './domain.js'
 import { phaseName } from './cycle.js'
-import { riPriceNeeded, asetLaba, labaSebelumSesudah, riLayak, riScenarios } from './rightsIssue.js'
+import { riPriceNeeded, asetLaba, labaSebelumSesudah, riLayak, riScenarios, riTrading, riRating } from './rightsIssue.js'
 import { valuasiSim, bandarView } from './valuasi.js'
 
 const id = (v, d = 0) => v == null || isNaN(v) ? '–' : (+v).toLocaleString('id-ID', { maximumFractionDigits: d })
@@ -180,7 +180,7 @@ export function buildVideo(d, mode = 'ringkas') {
   // 6. Penambahan modal (rights issue)
   if (d.ri && d.riR) {
     const c = d.ri, r = d.riR, f = d.riF, nd = riPriceNeeded(c, d.riP)
-    const lbR = c.doc ? asetLaba(c.doc, { S1: r.S1, P: d.riP }) : null, ls = labaSebelumSesudah(c, r, lbR), ly = riLayak(c, r, lbR, ls)
+    const lbR = c.doc ? asetLaba(c.doc, { S1: r.S1, P: d.riP }) : null, ls = labaSebelumSesudah(c, r, lbR), ly = riLayak(c, r, lbR, ls), rt = riRating(ly, riTrading(c, r))
     const tgt = Math.max(0.1e12, Math.round(((r.total || 0) + (c.mcap || 0)) / 1e11) * 1e11)
     const vs = valuasiSim(c, r, { target: tgt }), bv = bandarView(c, r, d.riP, c.doc?.pengendali || {}, tgt)
     add('ri', 'Penambahan modal', c.label, {
@@ -193,7 +193,7 @@ export function buildVideo(d, mode = 'ringkas') {
       `Bila pemegang saham publik tidak ikut menebus, porsi publik turun dari ${pct(c.float, 1)} menjadi ${pct(r.pubAfter * 100, 1)}${r.pubAfterInj != null ? `, dan dapat turun hingga ${pct(r.pubAfterInj * 100, 1)} setelah injeksi aset` : ''}.`,
       !full && vs ? `Bila perusahaan dihargai ${big(vs.target)} setelah rights issue, harga per saham sekitar ${rp(Math.round(vs.harga))}${vs.x ? `, atau ${id(vs.x, 2)} kali harga kini` : ''}${vs.pbvReal ? `, setara ${id(vs.pbvReal, 0)} kali nilai buku riil` : ''}.` : null,
       !full && bv ? `Dari sisi pengendali, harga impasnya sekitar ${rp(Math.round(bv.impas))}${bv.kelipatanAwal ? ` dan modal awalnya sudah berlipat ${id(bv.kelipatanAwal, 1)} kali` : ''}.` : null,
-      !full && ly ? `Kesimpulan investasinya: ${ly.label.toLowerCase()}.${ls ? (ls.akresi ? ' Laba per saham emiten naik setelah aset masuk.' : ' Laba per saham emiten justru turun setelah penerbitan.') : ''}` : null,
+      !full && rt ? `Rekomendasinya ${rt.rating}. ${rt.sub} ${rt.partTxt}${ls ? (ls.akresi ? ' Laba per saham emiten naik setelah aset masuk.' : ' Laba per saham emiten justru turun setelah penerbitan.') : ''}` : null,
       !full && nd ? `Agar dana tunai ${big(nd.cash)} tercapai, harga saham sebaiknya berada di atas ${rp(Math.ceil(nd.ref))}, yaitu harga pelaksanaan ${rp(d.riP)} ditambah diskon dua puluh persen${nd.gap != null ? (nd.gap > 0 ? `; harga saat ini masih perlu naik ${id(nd.gap * 100, 0)} persen` : '; harga saat ini sudah memenuhi syarat tersebut') : ''}.` : null,
       f ? `Berdasarkan keterbukaan informasi terakhir${f.last ? ' pada ' + fmtDate(f.last.date) : ''}, peluang terkumpulnya dana dinilai ${f.label.toLowerCase()}.` : null,
       f ? first(f.reasons.filter(x => x.s < 0).map(x => x.t).join(' '), full ? 3 : 2) : null,
@@ -230,7 +230,7 @@ export function buildVideo(d, mode = 'ringkas') {
       ])
       if (ly) add('ri-kelayakan', 'Rights issue', 'Laba setelah aset masuk dan kelayakan investasi', { type: 'list', items: ly.reasons.slice(0, 5).map(x => (x.s > 0 ? '+ ' : x.s < 0 ? '− ' : '· ') + x.t) }, [
         ls ? `Laba bersih setahun berubah dari ${big(ls.before.laba)} menjadi ${big(ls.after.laba)}, dan laba per saham ${ls.akresi ? 'naik' : 'turun'} setelah penerbitan.` : 'Laba sebelum dan sesudah aset masuk belum dapat dihitung karena laba aset belum diungkap.',
-        `Kesimpulan investasinya: ${ly.label.toLowerCase()}.`,
+        `Rekomendasinya ${rt.rating}. ${rt.sub} ${rt.partTxt}`,
         ...ly.reasons.filter(x => x.s < 0).slice(0, 2).map(x => first(x.t, 1)),
       ])
     }

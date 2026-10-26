@@ -329,7 +329,7 @@ export function riLayak(c, r, lb, ls) {
   return {
     key, score: sc, reasons: why,
     // Menilai skenario membeli dan menahan melewati rights issue (atau ikut menebus), bukan trading jangka pendek.
-    label: { layak: 'Potensi menarik: layak dipertimbangkan untuk ikut rights issue', spekulatif: 'Berpotensi, tetapi spekulatif: ikut rights issue cukup dengan porsi kecil', tidak: 'Waspadai bila menahan saham melewati cum date' }[key],
+    label: { layak: 'OVERWEIGHT: layak menebus HMETD', spekulatif: 'NEUTRAL: menebus dengan porsi terbatas', tidak: 'UNDERWEIGHT: tidak disarankan menebus atau menahan melewati cum date' }[key],
     tone: { layak: 'good', spekulatif: 'warn', tidak: 'strong' }[key],
   }
 }
@@ -353,7 +353,7 @@ export function riTrading(c, r, now = new Date()) {
   const jd = (c.doc?.jadwal || []).filter(j => j.status !== 'selesai')
   const dated = jd.map(j => ({ ...j, t: tglDari(j.waktu) })).filter(j => j.t && j.t >= now).sort((a, b) => a.t - b.t)
   const next = dated[0] || jd[0] || null
-  if (next) add(1, `Katalis yang dapat menggerakkan harga: ${next.tahap} (${next.waktu}).`)
+  if (next) add(1, `Katalis yang dapat menggerakkan harga: ${next.tahap} pada ${next.waktu}.`)
   else add(-1, 'Belum ada katalis terjadwal yang jelas.')
   const liq = c.avgVal
   if (liq != null) {
@@ -366,15 +366,35 @@ export function riTrading(c, r, now = new Date()) {
   const key = next && pos >= neg ? 'ada' : next ? 'tipis' : 'tidak'
   return {
     key, reasons: why,
-    label: { ada: 'Berpotensi untuk trading jangka pendek: momentum aksi korporasi', tipis: 'Potensi trading ada, tetapi terbatas', tidak: 'Belum ada potensi trading' }[key],
+    label: { ada: 'TRADING BUY: momentum aksi korporasi jangka pendek', tipis: 'TRADING BUY terbatas: momentum lemah', tidak: 'Belum ada setup trading' }[key],
     tone: { ada: 'warn', tipis: 'warn', tidak: 'strong' }[key],
     aturan: key === 'tidak' ? [] : [
       'Hanya porsi kecil (misalnya maks. 1–2% modal) dan uang dingin.',
-      next ? `Fokus pada katalis terdekat (${next.tahap}); ambil untung bertahap saat harga naik menjelang katalis.` : 'Ambil untung bertahap saat harga naik.',
+      next ? `Fokus pada katalis terdekat, ${next.tahap} pada ${next.waktu}; ambil untung bertahap saat harga naik menjelang katalis.` : 'Ambil untung bertahap saat harga naik.',
       'Keluar seluruhnya sebelum cum date, atau segera bila harga RI resmi diumumkan jauh di bawah harga pasar.',
       'Pasang batas rugi tegas (misalnya 8–10% dari harga masuk).',
     ],
   }
+}
+
+// Rekomendasi bergaya manajer investasi dari dua penilaian: kelayakan menahan/ikut rights issue (riLayak) dan
+// potensi trading aksi korporasi (riTrading). rating = BUY | TRADING BUY | SPECULATIVE BUY | AVOID;
+// partisipasi = sikap atas rights issue (OVERWEIGHT | NEUTRAL | UNDERWEIGHT).
+export function riRating(ly, tr) {
+  if (!ly) return null
+  const part = { layak: 'OVERWEIGHT', spekulatif: 'NEUTRAL', tidak: 'UNDERWEIGHT' }[ly.key]
+  const partTxt = {
+    OVERWEIGHT: 'Partisipasi rights issue: OVERWEIGHT (layak menebus HMETD).',
+    NEUTRAL: 'Partisipasi rights issue: NEUTRAL (menebus dengan porsi terbatas).',
+    UNDERWEIGHT: 'Partisipasi rights issue: UNDERWEIGHT (tidak disarankan menebus atau menahan melewati cum date).',
+  }[part]
+  const kat = tr?.reasons?.find(x => /^Katalis/.test(x.t))?.t.replace(/^Katalis yang dapat menggerakkan harga:\s*/, '').replace(/\.$/, '')
+  let rating, tone, sub
+  if (ly.key === 'layak') { rating = 'BUY'; tone = 'good'; sub = 'Fundamental transaksi mendukung; partisipasi rights issue layak dipertimbangkan.' }
+  else if (tr?.key === 'ada') { rating = 'TRADING BUY (Spekulatif)'; tone = 'warn'; sub = `Horizon jangka pendek${kat ? ' menjelang ' + kat : ''}; realisasikan keuntungan sebelum cum date.` }
+  else if (ly.key === 'spekulatif') { rating = 'SPECULATIVE BUY'; tone = 'warn'; sub = 'Potensi ada, namun eksposur dibatasi sampai katalis terkonfirmasi.' }
+  else { rating = 'AVOID'; tone = 'strong'; sub = 'Belum ada katalis yang menopang harga dalam waktu dekat.' }
+  return { rating, tone, sub, partisipasi: part, partTxt, text: `${rating}: ${sub}` }
 }
 
 // Warna putusan kewajaran aset injeksi dari dokumen (wajar/cenderung mahal/tidak wajar/belum dapat dinilai).
