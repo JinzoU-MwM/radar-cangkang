@@ -61,7 +61,7 @@ const n = x => PB_JAWABAN[x] || PB_JAWABAN.sebagian
       <summary>Analisa per pertanyaan BEI ({{ (pb.poin || []).length }} butir)</summary>
       <div class="scroll">
         <table class="ledger">
-          <thead><tr><th v-if="adaNo">No</th><th>Topik</th><th>Pertanyaan BEI</th><th>Jawaban emiten</th><th>Kelengkapan</th><th>Catatan analis</th></tr></thead>
+          <thead><tr><th v-if="adaNo">No</th><th>Topik</th><th>Pertanyaan BEI</th><th>Jawaban emiten</th><th>Kelengkapan jawaban</th><th>Analisa</th></tr></thead>
           <tbody>
             <tr v-for="(x, i) in pb.poin || []" :key="i">
               <td v-if="adaNo" class="num">{{ x.no }}</td>
