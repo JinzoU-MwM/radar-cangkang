@@ -34,6 +34,8 @@ from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+import seasonality as SZ
+
 ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / "stockbit.config.json"
 TOKEN_PATH = ROOT / ".stockbit-token"
@@ -1887,6 +1889,56 @@ def get_pov(fresh: bool = False) -> dict:
         return _pov_memo[1] if not users and _pov_memo[1].get("users") else res
 
 
+# ------------------------------------------------------------- seasonality ----
+# Pola bulanan berulang IHSG, sektor, dan saham. Data mentah dikumpulkan mingguan ke .seasonality.json
+# (seasonality.build); permintaan pengunjung hanya membaca file itu, tanpa memanggil Stockbit.
+SEASON_PATH = ROOT / ".seasonality.json"
+_season_memo: tuple[float, dict] = (0.0, {})
+
+
+def season_data() -> dict:
+    global _season_memo
+    try:
+        m = SEASON_PATH.stat().st_mtime
+    except OSError:
+        return {}
+    if _season_memo[0] != m:
+        _season_memo = (m, SZ.load(SEASON_PATH))
+    return _season_memo[1]
+
+
+def season_universe() -> list[str]:
+    """Saham yang dihitung: semua saham di data tradersaham (likuid) + radar + kandidat."""
+    t = set(tsa_load("signals").keys()) | radar_tickers()
+    return sorted(x for x in t if re.match(r"^[A-Z]{4}$", x))
+
+
+def season_loop(max_age: float = 7 * 86400) -> None:
+    time.sleep(120)  # beri waktu loop kandidat/tsa mengisi universe lebih dulu
+    while True:
+        try:
+            age = time.time() - SEASON_PATH.stat().st_mtime if SEASON_PATH.exists() else max_age
+            if age >= max_age and get_token():
+                uni = season_universe()
+                print(f"[seasonality] membangun data {len(uni)} saham")
+                data = SZ.build(lambda p: sb_fetch(p), uni, log=lambda m: print(m, file=sys.stderr))
+                tmp = SEASON_PATH.with_suffix(".tmp")
+                tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+                tmp.replace(SEASON_PATH)
+                print(f"[seasonality] selesai: {len(data['stock'])} saham")
+        except Exception as e:
+            print(f"[seasonality] gagal: {e}", file=sys.stderr)
+        time.sleep(6 * 3600)
+
+
+def season_api(month: int, years: int) -> dict:
+    data = season_data()
+    if not data:
+        return {"error": "Data seasonality sedang disiapkan (pembaruan mingguan otomatis). Coba lagi beberapa menit lagi."}
+    kd = {k["ticker"] for k in (_kd_memo[1].get("items", []) if _kd_memo else [])}
+    return SZ.analyze(data, month, years, tsa_load("signals"), {i["ticker"] for i in items_all()}, kd)
+
+
 def pov_loop() -> None:
     """Hitung POV di latar belakang (setelah start, lalu tiap 6 jam) supaya halaman publik tidak menunggu.
     Bila gagal (mis. token kedaluwarsa), dicoba lagi tiap 30 menit sehingga pulih sendiri setelah token diganti."""
@@ -2256,6 +2308,17 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:
                 days = 1
             self.reply_json(get_diff(days))
+        elif path == "api/seasonality":
+            try:
+                month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month % 12 + 1))
+                years = 5 if self.qs("tahun") == "5" else 10
+            except ValueError:
+                month, years = datetime.now().month % 12 + 1, 10
+            self.reply_json(season_api(month, years))
+        elif path == "api/seasonality-detail":
+            sym = (self.qs("kode") or "").upper()
+            d = SZ.detail(season_data(), sym, 5 if self.qs("tahun") == "5" else 10) if re.match(r"^[A-Z0-9]{3,10}$", sym) else None
+            self.reply_json(d or {"error": "Kode tidak ada di data seasonality."}, 200 if d else 404)
         elif path == "api/pov":
             self.reply_json(get_pov(fresh and not is_public_request()))
         elif path == "api/kandidat":
@@ -2551,6 +2614,7 @@ def main() -> int:
     threading.Thread(target=kandidat_loop, daemon=True).start()
     threading.Thread(target=news_loop, daemon=True).start()
     threading.Thread(target=pov_loop, daemon=True).start()
+    threading.Thread(target=season_loop, daemon=True).start()
     threading.Thread(target=snapshot_loop, daemon=True).start()
     threading.Thread(target=tsa_loop, daemon=True).start()
     print(f"Radar Backdoor berjalan di http://localhost:{args.port}")
