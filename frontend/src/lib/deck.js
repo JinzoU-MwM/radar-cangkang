@@ -1,7 +1,7 @@
 // Pembuat presentasi analisa emiten (.pptx) dengan pptxgenjs. Prinsip: analisa dalam, teks sedikit —
 // angka besar, meteran, diagram, dan grafik PowerPoint asli (bisa diklik/diedit). Satu pesan per slide,
 // pita KESIMPULAN di bawah. Dipakai di browser (unduhan) dan di Node (uji).
-import { fmtDate, PB_JAWABAN } from './domain.js'
+import { fmtDate } from './domain.js'
 import { PT_STATUS, ptStatusTxt, confLvl } from './patterns.js'
 import { phaseName } from './cycle.js'
 import { mergeBoard } from './profil.js'
@@ -445,26 +445,19 @@ export function buildDeck(PptxGenJS, d, th) {
   {
     const pb = (d.ri?.doc || d.riDoc)?.penjelasanBursa
     if (pb && (pb.poin || []).length) {
-      // Semua butir ditampilkan; dipecah per 8 baris, kesimpulan di slide terakhir.
-      // Label = kelengkapan jawaban atas pertanyaan BEI (dapat dicek di dokumen); pendapat analis di kolom kanan.
-      const col = x => x === 'lengkap' ? th.good : x === 'tidak' ? th.bad : th.muted
-      const pages = []
-      for (let i = 0; i < pb.poin.length; i += 8) pages.push(pb.poin.slice(i, i + 8))
-      pages.forEach((rows, p) => {
-        const last = p === pages.length - 1
-        const s = slide('Penjelasan bursa', `Analisa Penjelasan atas Permintaan Penjelasan Bursa${pages.length > 1 ? ` (${p + 1}/${pages.length})` : ''}`, last ? pb.kesimpulan : null)
-        T(s, `${pb.tanggal ? fmtDate(pb.tanggal) + ' · ' : ''}${short(pb.judul || '', 90)}`, { x: M, y: TOP - 0.05, w: CW, h: 0.22, fontSize: 8.5, color: th.muted })
-        const rh = 3.05 / 8
-        if (last) T(s, 'Kelengkapan jawaban · Lengkap: semua unsur pertanyaan BEI dijawab dengan data · Sebagian: ada unsur tidak dijawab, normatif, atau dirujuk ke dokumen lain · Tidak dijawab: inti pertanyaan tidak dijawab atau ditunda', { x: M, y: TOP + 3.3, w: CW, h: 0.18, fontSize: 7, color: th.muted, fit: 'shrink' })
-        rows.forEach((x, i) => {
-          const y = TOP + 0.25 + i * rh
-          if (i) line(s, M, y, CW, 0, th.line, { w: 0.5 })
-          pill(s, M, y + (rh - 0.2) / 2, (PB_JAWABAN[x.jawaban] || PB_JAWABAN.sebagian)[0], col(x.jawaban), { size: 7, h: 0.2, w: 0.75 })
-          T(s, short(`${x.no ? x.no + '. ' : ''}${x.topik}`, 38), { x: M + 0.85, y, w: 1.6, h: rh, fontSize: 8.5, bold: true, color: th.ink, valign: 'middle', fit: 'shrink' })
-          T(s, short(x.kurang ? `${x.jawab} Belum dijawab: ${x.kurang.charAt(0).toLowerCase() + x.kurang.slice(1)}` : x.jawab, 340), { x: M + 2.5, y, w: 3.25, h: rh, fontSize: 7.5, color: th.ink, valign: 'middle', fit: 'shrink' })
-          T(s, short(x.analisa, 240), { x: M + 5.85, y, w: CW - 5.85, h: rh, fontSize: 7.5, color: th.muted, valign: 'middle', fit: 'shrink' })
-        })
-      })
+      // Memo riset gaya fund manager: kesimpulan + dampak terhadap tesis, poin utama, implikasi, belum terjawab, dipantau.
+      const m = pb.memo || {}
+      const belum = pb.poin.filter(x => x.jawaban !== 'lengkap' && x.kurang)
+      const lengkap = pb.poin.filter(x => x.jawaban === 'lengkap').length
+      const DMP = { negatif: ['Negatif', th.bad], positif: ['Positif', th.good], netral: ['Netral', th.muted] }[pb.dampak] || ['Netral', th.muted]
+      const s = slide('Penjelasan bursa', short(m.judul || 'Tanggapan atas Permintaan Penjelasan Bursa', 70), pb.kesimpulan)
+      T(s, `Memo riset · tanggapan atas permintaan penjelasan BEI ${pb.tanggal ? fmtDate(pb.tanggal) : ''} · ${lengkap} dari ${pb.poin.length} butir dijawab lengkap`, { x: M, y: TOP - 0.05, w: CW - 2.6, h: 0.22, fontSize: 8.5, color: th.muted })
+      pill(s, W - M - 2.5, TOP - 0.05, `Dampak terhadap tesis: ${DMP[0]}`, DMP[1], { size: 7.5, h: 0.22, w: 2.5 })
+      const gw = (CW - 0.16) / 2, gh = 1.52, y0 = TOP + 0.26
+      pointCard(s, M, y0, gw, gh, '1', th.accent, 'Poin utama', m.inti, { max: 3, n: 150, size: 8.5 })
+      pointCard(s, M + gw + 0.16, y0, gw, gh, '2', th.accent, 'Implikasi investasi', m.implikasi, { max: 3, n: 150, size: 8.5 })
+      pointCard(s, M, y0 + gh + 0.12, gw, gh, '!', th.bad, 'Belum terjawab', [...belum].sort((p, q) => (p.jawaban === 'tidak' ? 0 : 1) - (q.jawaban === 'tidak' ? 0 : 1)).map(x => `${x.no ? x.no + '. ' : ''}${x.topik} (${x.jawaban === 'tidak' ? 'tidak dijawab' : 'dijawab sebagian'})`), { max: 5, n: 90, size: 8.5, empty: 'Seluruh pertanyaan dijawab lengkap.' })
+      pointCard(s, M + gw + 0.16, y0 + gh + 0.12, gw, gh, '→', th.accent, 'Yang dipantau', m.pantau, { max: 3, n: 130, size: 8.5 })
     }
   }
 
