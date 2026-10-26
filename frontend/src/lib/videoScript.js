@@ -39,7 +39,7 @@ export function speakable(text) {
 }
 
 // Urutan adegan mengikuti urutan slide presentasi (deck.js buildDeck).
-const ORDER = ['buka', 'profilp', 'pengurus', 'pengendali', 'profil', 'transformasi', 'progres', 'berita', 'tesis', 'skor', 'kasus',
+const ORDER = ['buka', 'profilp', 'pengurus', 'pengendali', 'profil', 'transformasi', 'progres', 'berita', 'penjelasan-bursa', 'tesis', 'skor', 'kasus',
   'aset', 'rencana-korporasi', 'valuasi', 'ri', 'ri-kewajaran', 'ri-penilaian', 'ri-bisnis', 'ri-simulasi', 'ri-valuasi', 'ri-kelayakan',
   'teknikal', 'rencana', 'skenario', 'rekomendasi', 'tindakan', 'penutup']
 
@@ -298,6 +298,21 @@ export function buildVideo(d, mode = 'ringkas') {
     full && bear[1] ? `Selain itu, ${lower1(first(bear[1], 1)).replace(/\.$/, '')}.` : null,
     full && (A.notes || [])[0] ? `Catatan analis: ${lower1(first(A.notes[0], 1))}` : null,
   ])
+
+  // 11d. Analisa penjelasan atas permintaan penjelasan bursa (terakhir)
+  const pbx = (d.ri?.doc || d.riDoc)?.penjelasanBursa
+  if (pbx && (pbx.poin || []).length) {
+    const neg = pbx.poin.filter(x => x.nada === 'negatif'), pos = pbx.poin.filter(x => x.nada === 'positif')
+    add('penjelasan-bursa', 'Penjelasan bursa', 'Analisa penjelasan atas permintaan penjelasan bursa', {
+      type: 'list', items: pbx.poin.slice(0, 6).map(x => `${x.nada === 'negatif' ? '− ' : x.nada === 'positif' ? '+ ' : '· '}${x.topik}`),
+    }, [
+      `Penjelasan terakhir kepada bursa terbit pada ${fmtDate(pbx.tanggal)}, menjawab ${pbx.poin.length} pertanyaan.`,
+      first(pbx.ringkas, 1),
+      neg.length ? `Catatan utama: ${neg.slice(0, full ? 4 : 2).map(x => lower1(x.analisa).replace(/\.$/, '')).join('; ')}.` : null,
+      pos.length ? `Sisi positifnya: ${pos.slice(0, 2).map(x => lower1(x.analisa).replace(/\.$/, '')).join('; ')}.` : null,
+      pbx.kesimpulan,
+    ])
+  }
 
   // 11c. Perkembangan berita terkini
   const ns = d.newsSum, nr = d.newsRecent || []
