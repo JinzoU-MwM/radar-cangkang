@@ -465,10 +465,10 @@ export function buildDeck(PptxGenJS, d, th) {
       for (let i = 0; i < pb.poin.length; i += 8) pages.push(pb.poin.slice(i, i + 8))
       pages.forEach((rows, p) => {
         const last = p === pages.length - 1
-        const s2 = slide('Penjelasan bursa', `Analisa Penjelasan atas Permintaan Penjelasan Bursa${pages.length > 1 ? ` (${p + 1}/${pages.length})` : ''}`, null)
+        const s2 = slide('Penjelasan bursa', `Analisa Penjelasan atas Permintaan Penjelasan Bursa${pages.length > 1 ? ` (${p + 1}/${pages.length})` : ''}`, last ? pb.kesimpulan : null)
         T(s2, `${pb.tanggal ? fmtDate(pb.tanggal) + ' · ' : ''}${short(pb.judul || '', 90)}`, { x: M, y: TOP - 0.05, w: CW, h: 0.22, fontSize: 8.5, color: th.muted })
-        const rh = 3.25 / 8
-        if (last) T(s2, 'Kelengkapan jawaban · Lengkap: semua unsur pertanyaan BEI dijawab dengan data · Sebagian: ada unsur tidak dijawab, normatif, atau dirujuk ke dokumen lain · Tidak dijawab: inti pertanyaan tidak dijawab atau ditunda. Kolom kanan: catatan analis.', { x: M, y: TOP + 3.55, w: CW, h: 0.18, fontSize: 7, color: th.muted, fit: 'shrink' })
+        const rh = 3.05 / 8
+        if (last) T(s2, 'Kelengkapan jawaban · Lengkap: semua unsur pertanyaan BEI dijawab dengan data · Sebagian: ada unsur tidak dijawab, normatif, atau dirujuk ke dokumen lain · Tidak dijawab: inti pertanyaan tidak dijawab atau ditunda. Kolom kanan: analisa.', { x: M, y: TOP + 3.32, w: CW, h: 0.18, fontSize: 7, color: th.muted, fit: 'shrink' })
         rows.forEach((x, i) => {
           const y = TOP + 0.25 + i * rh
           if (i) line(s2, M, y, CW, 0, th.line, { w: 0.5 })

@@ -482,7 +482,7 @@
           "topik": "Harga akuisisi",
           "tanya": "Harga Rp23,5 di bawah harga penutupan Rp63 (19 Agu 2026).",
           "jawab": "Hasil negosiasi CSPA dalam jual beli saham signifikan, bukan karena penurunan kinerja.",
-          "analisa": "Harga masuk pengendali Rp23,5 hasil negosiasi CSPA menjadi acuan nilai; selisih dengan harga pasar Rp63 adalah fakta yang perlu diperhatikan, bukan kerugian langsung.",
+          "analisa": "Harga masuk pengendali jauh di bawah pasar; patokan nilai sebenarnya rendah.",
           "jawaban": "sebagian",
           "kurang": "Hanya disebut hasil negosiasi; dasar perhitungan harga tidak dijelaskan."
         },
@@ -1150,7 +1150,7 @@
           "topik": "Utang lain-lain",
           "tanya": "Sifat dan latar belakang utang lain-lain Rp3,3 miliar yang muncul per Juni 2026.",
           "jawab": "Tagihan konsultan terkait penambahan kegiatan usaha, persiapan proyek WTE, dan uji tuntas prospek usaha, yang dibayar lebih dulu oleh pemegang saham mengingat kondisi keuangan Perseroan; transaksi terjadi pada tahun berjalan.",
-          "analisa": "Biaya persiapan aksi korporasi Rp3,3 M ditalangi pemegang saham dan dicatat sebagai utang Perseroan; menunjukkan dukungan sekaligus kas yang terbatas.",
+          "analisa": "Biaya persiapan aksi korporasi ditalangi pemegang saham, menandakan kas Perseroan terbatas.",
           "jawaban": "lengkap"
         },
         {
@@ -1816,7 +1816,7 @@
           "topik": "Proyek roda tiga Rp1,25 T",
           "tanya": "Deskripsi, nilai, analisis biaya-manfaat proyek, dan apakah dikerjakan bersama target.",
           "jawab": "Proyek pengadaan kendaraan roda tiga sekitar Rp1,25 T dari salah satu entitas anak grup Danantara (Maret 2026), margin diperkirakan 7% sampai 8%; belum dimulai karena keterbatasan dana operasional target. Dikerjakan oleh target dan dikonsolidasikan sesuai porsi 90%.",
-          "analisa": "Nilai ekonomi akuisisi bertumpu pada satu proyek yang belum berjalan; kontraknya belum dilampirkan sehingga belum dapat dinilai.",
+          "analisa": "Nilai ekonomi akuisisi bertumpu pada satu proyek yang belum berjalan dan kontraknya tidak dilampirkan.",
           "jawaban": "lengkap"
         },
         {
@@ -5959,7 +5959,7 @@
           "topik": "Sumber dana",
           "tanya": "Sumber dana akuisisi, mengingat kas dan bank 30 Jun 2026 Rp27,02 M.",
           "jawab": "Dari inbreng saham milik LSO dan dana tunai partisipasi publik dalam PMHMETD; dana PMHMETD juga untuk membeli sebagian saham PAA dan LOH.",
-          "analisa": "Sumber dana sudah disebut; kas Rp27,02 M belum cukup sehingga porsi tunai bergantung pada partisipasi publik. Pembeli siaga belum ditanyakan dan belum diungkap.",
+          "analisa": "Bagian tunai bergantung pada uang publik; jumlahnya dan ada tidaknya pembeli siaga tidak diungkap.",
           "jawaban": "lengkap"
         },
         {
@@ -5967,7 +5967,7 @@
           "topik": "Pemilik manfaat",
           "tanya": "Pemilik manfaat PAA dan LSO serta struktur grup setelah akuisisi.",
           "jawab": "UBO: Chen Pei Ling Catherine, Lim Yu Victoria, dan Chong Chee Hoong. Bagan indikatif: LSO 25%, masyarakat 75%; porsi SMKM di PAA dan LOH tertulis XX%.",
-          "analisa": "UBO kini terungkap; bagan pascaakuisisi masih indikatif (porsi SMKM di PAA dan LOH tertulis XX%), sehingga dilusi belum dapat dihitung.",
+          "analisa": "UBO kini terbuka, tetapi bagan masih draf (persentase kosong) dan porsi LSO 25% belum sejalan dengan inbreng aset besar milik LSO; angka dilusi belum bisa dipegang.",
           "jawaban": "sebagian",
           "kurang": "Porsi SMKM di PAA dan LOH masih tertulis XX%."
         },
@@ -5976,7 +5976,7 @@
           "topik": "Transaksi afiliasi",
           "tanya": "Apakah termasuk transaksi afiliasi (POJK 42/2020)?",
           "jawab": "Ya, karena penyetor inbreng adalah LSO, pengendali Perseroan; Perseroan akan memenuhi POJK 42/2020.",
-          "analisa": "Status afiliasi adalah fakta hukum, bukan kelemahan; POJK 42/2020 mewajibkan penilai independen. Penilaian akhir bergantung pada hasil penilai dan persetujuan pemegang saham independen.",
+          "analisa": "Pengendali berada di kedua sisi transaksi; perlindungan investor publik bergantung pada penilai independen dan suara pemegang saham independen.",
           "jawaban": "lengkap"
         },
         {
@@ -5984,7 +5984,7 @@
           "topik": "Penilai independen",
           "tanya": "Identitas penilai, tanggal penilaian, cut-off, metode, dan target penyelesaian.",
           "jawab": "Baru diungkap saat pengumuman RUPSLB, untuk menghindari diskrepansi informasi selama finalisasi.",
-          "analisa": "Pengungkapan identitas penilai, metode, dan tanggal penilaian ditunda sampai pengumuman RUPSLB; investor belum dapat menguji nilai aset.",
+          "analisa": "Sampai RUPSLB, investor tidak dapat menguji nilai aset yang akan ditukar dengan saham baru.",
           "jawaban": "tidak",
           "kurang": "Identitas penilai, tanggal, cut-off, metode, dan target ditunda sampai pengumuman RUPSLB."
         },
@@ -6001,7 +6001,7 @@
           "topik": "Hubungan ASA, PAA, LOH",
           "tanya": "Hubungan kepemilikan, kepengurusan, dan keluarga serta jabatan di Perseroan.",
           "jawab": "PAA 100% milik LSO; LOH 100% milik ASA. Lim Chen Chong, Lim Wee Beng Eddie, dan Chang Yun Peng (Direktur SMKM) serta Chong Chee Hoong (Komisaris Utama SMKM, juga UBO) merangkap di PAA, LOH, LSO, atau ASA; diangkat RUPSLB 15 Jul 2026.",
-          "analisa": "Hubungan pengurus diungkap lengkap; rangkap jabatan lazim dalam satu grup dan konsekuensi dari transaksi afiliasi. Keputusan akhir perlu persetujuan pemegang saham independen.",
+          "analisa": "Direksi dan Komisaris Utama SMKM juga pengurus pihak penjual; keputusan akuisisi tidak independen dari kepentingan penjual.",
           "jawaban": "lengkap"
         },
         {
@@ -6009,7 +6009,7 @@
           "topik": "Piutang ke PAA Rp30 M",
           "tanya": "Latar belakang, ketentuan, jaminan, dan pengembalian bila akuisisi batal.",
           "jawab": "Merujuk keterbukaan 2 Jun 2026: fasilitas hingga Rp30 M, bunga 6% per tahun, tenor 1 tahun, untuk belanja modal, modal kerja, dan investasi; KJPP IDR menilai wajar. Bila akuisisi batal, Perseroan berkeyakinan PAA mampu membayar.",
-          "analisa": "Dana Rp30 M (14,52% ekuitas) keluar ke afiliasi tanpa jaminan yang disebut, kepada holding berdiri Jan 2025 bermodal SGD3; KJPP IDR menilai syaratnya wajar.",
+          "analisa": "Setara 14,52% ekuitas SMKM, dipinjamkan ke holding yang berdiri Jan 2025 dengan modal SGD3 dan tanpa jaminan yang disebut; pengembalian bertumpu pada keyakinan, bukan agunan.",
           "jawaban": "sebagian",
           "kurang": "Rencana pengembalian bila akuisisi batal hanya berupa keyakinan, tanpa mekanisme atau jaminan."
         },
@@ -6018,7 +6018,7 @@
           "topik": "Arus kas operasi lainnya",
           "tanya": "Penyajian pinjaman ke PAA dan utang pihak ketiga, serta rincian arus kas operasi lainnya.",
           "jawab": "Keduanya dicatat di arus kas operasi bagian lainnya: utang lain-lain masuk Rp15 M, piutang PAA keluar Rp30 M, beban umum keluar Rp7,81 M, uang muka kembali Rp3,33 M, utang pajak Rp2,14 M; total Rp17,94 M (secara hitungan arus keluar bersih).",
-          "analisa": "Penyajian berbeda dari praktik umum PSAK 2: pinjaman diberikan lazimnya arus kas investasi dan utang diterima arus kas pendanaan; pemberi utang Rp15 M tidak disebut.",
+          "analisa": "Pinjaman ke afiliasi lazimnya arus kas investasi dan utang Rp15 M arus kas pendanaan; penggabungan ini mengaburkan kas dari usaha, dan pemberi utang Rp15 M tidak disebut.",
           "jawaban": "lengkap"
         },
         {
@@ -6026,7 +6026,7 @@
           "topik": "Pelanggan tunggal SSLA",
           "tanya": "Profil SSLA, hubungan afiliasi, dan rincian kontrak (seluruh pendapatan Rp54,25 M dari SSLA).",
           "jawab": "Tidak ada afiliasi SSLA dengan Perseroan maupun LSO; kontrak jasa konstruksi biasa dan tidak terkait aksi korporasi; rincian kontrak terlampir.",
-          "analisa": "100% pendapatan semester I (Rp54,25 M) dari satu pelanggan; konsentrasi pendapatan terukur.",
+          "analisa": "Seluruh pendapatan semester I dari satu pelanggan tambak; pernyataan tidak terafiliasi belum disertai data pemegang saham dan pengurus SSLA.",
           "jawaban": "sebagian",
           "kurang": "Susunan pemegang saham, pengurus, dan pemilik manfaat SSLA tidak dijelaskan; rincian kontrak hanya \"terlampir\"."
         },
@@ -6069,7 +6069,7 @@
           "topik": "PMHMETD kedaluwarsa",
           "tanya": "Perkembangan PMHMETD yang disetujui RUPSLB 24 Jun 2025, kaitannya dengan akuisisi, dan target RUPSLB ulang.",
           "jawab": "Pernyataan pendaftaran belum diajukan karena restrukturisasi dan finalisasi; persetujuan sudah lewat 12 bulan; PMHMETD bagian dari akuisisi PAA dan LOH; RUPSLB ulang selambatnya Semester I 2027.",
-          "analisa": "Persetujuan kedaluwarsa; jadwal RUPSLB ulang mundur hingga selambatnya Semester I 2027.",
+          "analisa": "Katalis utama mundur hingga 2027 dan seluruh skema harus disetujui ulang; waktu tunggu investor panjang.",
           "jawaban": "lengkap"
         },
         {
@@ -6618,7 +6618,7 @@
           "topik": "Pengendali dan inbreng BSS",
           "tanya": "Identitas dan dasar penetapan pengendali, serta keterkaitan dengan PMHMETD dan transaksi material/afiliasi.",
           "jawab": "JSI ditetapkan sebagai pengendali sesuai Pasal 45 POJK 45/2024 karena belum pernah ditetapkan melalui RUPS. Inbreng saham BSS Rp44,397 M (44,63% total aset) adalah bagian tak terpisahkan dari PMHMETD II, tergolong transaksi material dan afiliasi; karena ekuitas negatif Rp2,65 M dan modal kerja bersih negatif Rp26,45 M, Perseroan dikecualikan dari kewajiban penilai kewajaran dan RUPS independen (Pasal 11 huruf f POJK 17/2020).",
-          "analisa": "Inbreng aset afiliasi Rp44,4 M dikecualikan dari pendapat kewajaran dan RUPS independen karena ekuitas negatif; sah menurut aturan, tetapi perlindungan khusus bagi publik tidak berlaku.",
+          "analisa": "Pemegang saham independen tidak memberikan persetujuan terpisah atas inbreng aset milik pengendali, sehingga perlindungan publik bergantung pada penilaian KJPP.",
           "jawaban": "lengkap"
         },
         {
@@ -8069,7 +8069,7 @@
           "topik": "Kisaran harga dan dilusi",
           "tanya": "Dasar kisaran Rp450 s.d. Rp550 yang jauh di atas harga pasar, kondisi revisi harga, dan korelasi harga dengan dilusi publik (butir b, f, l).",
           "jawab": "Indikasi awal berdasarkan proyeksi nilai wajar TCP dan harga saham Perseroan; harga final menunggu kondisi pasar dan KJPP, valuasi masih berlangsung; harga lebih rendah berarti lebih banyak saham baru untuk share swap sehingga dilusi publik lebih besar; Rp450 s.d. Rp550 disebut estimasi terendah yang tidak memperbesar dilusi.",
-          "analisa": "Kisaran Rp450 s.d. Rp550 masih indikatif dan belum didukung valuasi independen; besaran dilusi baru dapat dihitung setelah harga final.",
+          "analisa": "Kisaran harga dapat direvisi dan belum didukung valuasi independen; bila harga final turun, dilusi pemegang saham publik membesar.",
           "jawaban": "lengkap"
         },
         {
@@ -11931,7 +11931,7 @@
           "topik": "Rasio keuangan",
           "tanya": "NPM turun dari -3,04% menjadi -71,30%; penilaian manajemen atas struktur modal dan leverage (DER 0,67x, DAR 0,40x).",
           "jawab": "NPM turun karena pendapatan berkurang Rp13,88 M dan beban usaha naik sekitar Rp2,53 M; leverage masih sesuai financial covenant, dan perbaikan kinerja tahun depan diharapkan melalui aksi korporasi.",
-          "analisa": "Perbaikan rasio keuangan dikaitkan dengan masuknya BP melalui aksi korporasi; belum ada target kinerja bisnis inti.",
+          "analisa": "Manajemen menggantungkan perbaikan kinerja pada aksi korporasi, bukan pada bisnis inti.",
           "jawaban": "lengkap"
         },
         {
@@ -11960,7 +11960,7 @@
           "topik": "Karhutla dan produksi BP",
           "tanya": "Dampak Karhutla Kalimantan Tengah terhadap konsesi, operasi, akses angkut, dan target produksi 2026; serta kapasitas produksi BP.",
           "jawab": "Tidak ada dampak signifikan karena lokasi jauh dari wilayah terdampak dan berada di elevasi di atas 600 mdpl; hanya sedikit asap tanpa mengganggu jarak pandang; tidak ada potensi gangguan target produksi 2026. Kapasitas produksi BP tidak diungkap.",
-          "analisa": "Risiko karhutla dinyatakan rendah, tetapi kapasitas produksi BP yang diminta BEI tidak dijawab.",
+          "analisa": "Risiko Karhutla jangka pendek rendah, tetapi kapasitas produksi yang diminta BEI tetap tidak dijawab.",
           "jawaban": "sebagian",
           "kurang": "Kapasitas produksi BP tidak dijawab."
         }
