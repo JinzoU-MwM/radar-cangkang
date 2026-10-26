@@ -450,7 +450,8 @@ export function riVerdict(c, r) {
     else out.push(r.vsMcap >= 1 ? `Dana tunai yang dibutuhkan ${fmtX(r.tunai / c.mcap)} kapitalisasi pasar: penyerapan sangat bergantung pada pengendali/pembeli siaga.` : `Nilai penerbitan setara ${pc(r.vsMcap)} kapitalisasi pasar.`)
   }
   if (r.cover != null && r.cover < 0.95 && !c.laterInj) out.push(`Nilai penerbitan hanya menutup ${pc(r.cover)} nilai aset; sisanya perlu utang, kas internal, atau tahap lanjutan.`)
-  if (c.kjpp && c.inj) out.push(c.inj > c.kjpp * 1.05 ? `Harga aset ${pc(c.inj / c.kjpp - 1)} di atas penilaian KJPP.` : 'Harga aset sejalan dengan penilaian KJPP.')
+  // Nilai KJPP kadang berupa harga per saham (mis. Rp296); bandingkan hanya bila setara nilai total transaksi.
+  if (c.kjpp && c.inj && c.kjpp >= c.inj * 0.2) out.push(c.inj > c.kjpp * 1.05 ? `Harga aset ${pc(c.inj / c.kjpp - 1)} di atas penilaian KJPP.` : 'Harga aset sejalan dengan penilaian KJPP.')
   else if (c.inj && c.kjppStatus === 'belum') out.push('Nilai aset belum diuji KJPP.')
   if (r.disc != null && r.disc < -0.3) out.push(`Harga pelaksanaan diskon ${pc(-r.disc)} dari pasar: tekanan harga ke arah TERP.`)
   if (r.pubAfter < 0.075) out.push(`Bila publik tidak menebus, porsi publik turun ke ${(r.pubAfter * 100).toFixed(1).replace('.', ',')}% (di bawah batas free float 7,5%).`)
