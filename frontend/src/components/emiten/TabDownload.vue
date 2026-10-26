@@ -24,7 +24,7 @@ const SECTIONS = [
   ['Profil', [['Profil perusahaan', 'angka kunci, pemegang saham, potensi target harga'], ['Pengurus', 'direksi & komisaris']]],
   ['Story & Pengendali', [['Pengendali', 'struktur & aktor'], ['Pengendali & key person', 'UBO, harga masuk, riwayat hukum'],
     ['Transformasi bisnis', 'bisnis lama → aset injeksi → bisnis baru'], ['Progres', 'tonggak transaksi']]],
-  ['Berita', [['Berita terkini', 'berita material & kesimpulannya'], ['Penjelasan bursa', 'memo riset atas tanggapan BEI terakhir']]],
+  ['Berita', [['Berita terkini', 'berita material & kesimpulannya'], ['Penjelasan bursa', 'memo riset & analisa per pertanyaan BEI']]],
   ['Analisa', [['Tesis analis', '4 poin alasan sikap'], ['Enam dimensi', 'skor & alasan singkat'],
     ['Aset & valuasi', 'bila tidak ada rights issue'], ['Kasus naik vs turun', 'pendorong, risiko, catatan analis']]],
   // Bagian Rights Issue: inti analisa rights issue (hanya bila ada rencana penambahan modal).
