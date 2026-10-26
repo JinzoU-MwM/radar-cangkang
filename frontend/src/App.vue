@@ -63,6 +63,8 @@ function toggleTheme() {
 }
 
 // Pintasan: Ctrl/⌘ K buka emiten, / cari, 1–3 pindah menu. Tidak aktif saat mengetik atau dialog terbuka.
+// Muat ulang ke versi terbaru (mempertahankan halaman yang sedang dibuka).
+function reloadApp() { location.reload() }
 const jump = ref(false)
 function onKey(e) {
   // Ctrl/⌘ K: lompat ke emiten dari halaman mana pun.
@@ -112,6 +114,10 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
       </div>
     </nav>
     <main class="content">
+      <p v-if="store.newVersion" class="newver" role="status">
+        Versi baru website tersedia; tab ini masih memakai versi lama.
+        <button type="button" class="btn" @click="reloadApp">Muat ulang</button>
+      </p>
       <p v-if="dataWarn" class="mwarn" role="status">{{ dataWarn }}</p>
       <div v-if="!store.ready" class="skel" aria-busy="true">
         <span class="sr-only">Memuat data…</span>
@@ -162,6 +168,7 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
 @keyframes sk{from{background-position:100% 0}to{background-position:0 0}}
 @media (prefers-reduced-motion:reduce){.sk{animation:none}}
 .mwarn{display:none}
+.newver{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:8px 12px;background:var(--now-bg, var(--sheet-2));border:1px solid var(--rule);font-weight:600;font-size:13px;border-radius:3px}
 .cmp-tray{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:45;display:flex;gap:8px;align-items:center;padding:10px 16px;border-radius:999px;background:var(--accent);color:var(--accent-ink);text-decoration:none;font-weight:600;box-shadow:var(--shadow)}
 .cmp-tray b{font-family:var(--f-display);letter-spacing:.03em}
 .cmp-tray ~ .toasts{bottom:76px}
