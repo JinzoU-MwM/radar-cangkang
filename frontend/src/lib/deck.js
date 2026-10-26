@@ -439,6 +439,25 @@ export function buildDeck(PptxGenJS, d, th) {
     }
   }
 
+  // ===== 11d. Analisa penjelasan atas permintaan penjelasan bursa (terakhir) =====
+  {
+    const pb = (d.ri?.doc || d.riDoc)?.penjelasanBursa
+    if (pb && (pb.poin || []).length) {
+      const s = slide('Penjelasan bursa', 'Analisa Penjelasan atas Permintaan Penjelasan Bursa', pb.kesimpulan)
+      T(s, `${pb.tanggal ? fmtDate(pb.tanggal) + ' · ' : ''}${short(pb.judul || '', 90)}`, { x: M, y: TOP - 0.05, w: CW, h: 0.22, fontSize: 8.5, color: th.muted })
+      const rows = pb.poin.slice(0, 8), rh = 3.05 / rows.length
+      const col = x => x === 'positif' ? th.good : x === 'negatif' ? th.bad : th.muted
+      rows.forEach((x, i) => {
+        const y = TOP + 0.25 + i * rh
+        if (i) line(s, M, y, CW, 0, th.line, { w: 0.5 })
+        pill(s, M, y + (rh - 0.2) / 2, x.nada || 'netral', col(x.nada), { size: 7, h: 0.2, w: 0.75 })
+        T(s, short(x.topik, 34), { x: M + 0.85, y, w: 1.6, h: rh, fontSize: 8.5, bold: true, color: th.ink, valign: 'middle', fit: 'shrink' })
+        T(s, short(x.jawab, 150), { x: M + 2.5, y, w: 3.25, h: rh, fontSize: 7.5, color: th.ink, valign: 'middle', fit: 'shrink' })
+        T(s, short(x.analisa, 150), { x: M + 5.85, y, w: CW - 5.85, h: rh, fontSize: 7.5, color: th.muted, valign: 'middle', fit: 'shrink' })
+      })
+    }
+  }
+
   // ---------- Bagian: Analisa (struktur karya ilmiah: kesimpulan di akhir) ----------
   K.setSec('Analisa')
   // ===== 2b. Tesis analis (lengkap, per kalimat bernomor) =====

@@ -4,6 +4,7 @@ import { store, userRefresh } from '../../store.js'
 import { fmtDate } from '../../lib/domain.js'
 import { newsConclusion } from '../../lib/newsConclusion.js'
 import NewsItem from '../NewsItem.vue'
+import PenjelasanBursa from './PenjelasanBursa.vue'
 
 const props = defineProps({ ticker: { type: String, required: true } })
 const list = computed(() => store.updates.filter(u => u.ticker === props.ticker)
@@ -25,6 +26,7 @@ const newsAt = computed(() => store.status?.newsAt ? new Date(store.status.newsA
 </script>
 
 <template>
+  <PenjelasanBursa v-if="store.riDoc?.[ticker]?.penjelasanBursa" :pb="store.riDoc[ticker].penjelasanBursa" />
   <section class="rule-top">
     <div class="bar">
       <h2 class="lbl">Laporan dan berita {{ ticker }}</h2>

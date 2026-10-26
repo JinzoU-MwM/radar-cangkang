@@ -850,7 +850,7 @@
   },
   "SMKM": {
     "sikap": "Spekulatif tinggi",
-    "ringkas": "Diperdagangkan 0,50× nilai buku dan di bawah PTW Rp93, tetapi inbreng Panasia (±USD100 juta, estimasi CSPA) milik pengendali lewat PMHMETD bisa membuat porsi publik tersisa ±4%; nilai, harga, dan jumlah saham belum ditetapkan dan KJPP belum ditunjuk.",
+    "ringkas": "Diperdagangkan sekitar 0,5 kali nilai buku dan di bawah harga tender Rp93, tetapi inbreng PanAsia (hingga USD100 juta, batas atas CSPA) milik pengendali bisa membuat porsi publik tersisa sekitar 4%; persetujuan PMHMETD kedaluwarsa sehingga RUPSLB ulang baru selambatnya Semester I 2027, dan SMKM sudah meminjamkan Rp30 M ke Panasia (modal SGD3) sebelum akuisisi pasti.",
     "tesis": "Lim Shrimp Org (Singapura) menguasai 25% hanya dengan Rp11,59 M (Rp37/saham; PTW Rp93 tidak menyerap satu saham pun) dan berencana memasukkan PanAsia Aquaculture (Panasia, estimasi ±USD100 juta menurut CSPA 22 Des 2025) milik pengendali melalui PMHMETD sebagai mekanisme inbreng, serta mengakuisisi LSO Holdings (estimasi ±SGD13 juta dari Advanced Systems Automation, cara bayar belum diungkap). Porsi inbreng/tunai, jumlah saham, harga pelaksanaan, dan kurs belum ditetapkan; laporan keuangan audit dan penilaian KJPP atas Panasia belum tersedia, dan RUPSLB yang semula ditargetkan selambatnya kuartal III 2026 belum dipanggil. Kewajaran aset belum dapat dinilai: nilai USD100 juta adalah angka kesepakatan pihak afiliasi atas holding yang baru dibentuk, berlipat ganda dibanding ekuitas SMKM Rp206,67 M dan kapitalisasi ±Rp100 M. Dengan asumsi kurs Rp16.500/USD dan harga pelaksanaan = harga pasar Rp80, inbreng Panasia saja memerlukan ±20,6 miliar saham baru (16× saham beredar); NAV pasca-transaksi ±Rp85 — sedikit di atas harga kini, sehingga nilai publik bergantung sepenuhnya pada valuasi KJPP dan harga saham baru. Hari ini harga Rp80 di bawah BVPS ±Rp161 (0,50×) dan di bawah PTW Rp93 (0,86×), sehingga ada bantalan buku bila transaksi batal. Red flag: pinjaman Rp30 M (14,52% ekuitas) dari SMKM ke Panasia sebelum akuisisi, long stop date CSPA Panasia per dokumen Maret 2026 adalah 30 Juni 2026 tanpa keterbukaan perpanjangan, dan RUPST baru terlaksana pada panggilan kedua (15 Juli 2026).",
     "dilusi": {
       "berlaku": true,
@@ -876,21 +876,25 @@
     "pengendaliBergerak": "Vina Nauli Jordania keluar 44,98%→0 (13 jual Okt 2025–Apr 2026, sebagian ke LSO @Rp37); LSO diam di 25%; direktur Lim Wee Beng Eddie masuk 5,00% (Apr 2026; kini tidak tercatat di daftar KSEI ≥1% atas nama sendiri) dan Bondra Uji Pratama menambah ke 5,03% (keterbukaan 13–16 Okt 2026; KSEI bulanan sebelumnya 4,99%).",
     "likuiditas": "Nilai transaksi harian ±Rp442 juta (5,52 jt lembar × Rp80); keluar Rp100 juta ±1,1 hari pada 20% volume.",
     "variabelKunci": [
+      "Jadwal RUPSLB ulang PMHMETD (selambatnya Semester I 2027) beserta identitas dan hasil penilai independen atas PAA dan LOH",
       "Penunjukan KJPP dan valuasi independen Panasia (cut-off LK audit Juni 2026) vs estimasi USD100 juta",
       "Harga pelaksanaan, rasio, dan porsi inbreng/tunai PMHMETD serta jadwal RUPSLB yang belum dipanggil",
       "Status long stop date CSPA Panasia (30 Juni 2026 per dokumen Maret 2026)",
       "Pengembalian pinjaman Rp30 M dari Panasia"
     ],
     "tesisSalahBila": [
+      "Pinjaman Rp30 M ke Panasia dilunasi atau dijamin, dan penilai independen menetapkan nilai PAA pada kelipatan wajar terhadap laba audit",
       "Harga saham baru dipatok jauh di bawah harga pasar Rp80 atau Panasia dinilai di atas laba wajarnya (NAV publik tergerus)",
       "Akuisisi batal tetapi pinjaman Rp30 M kepada Panasia tidak kembali sehingga BV tidak terealisasi"
     ],
     "hargaAcuan": 80,
-    "asOf": "2026-10-22",
+    "asOf": "2026-10-26",
     "pembaruan": [
+      "Tanggapan BEI 23 Okt 2026: persetujuan PMHMETD RUPSLB 24 Jun 2025 kedaluwarsa (lebih dari 12 bulan); persetujuan ulang selambatnya Semester I 2027, dan identitas penilai baru diungkap saat pengumuman RUPSLB.",
+      "Dana SMKM Rp30 M dipinjamkan ke Panasia (100% milik LSO, modal SGD3, bunga 6%, tanpa jaminan yang diungkap), sebagian didanai utang pihak ketiga Rp15 M; bila akuisisi batal, Perseroan hanya menyatakan berkeyakinan dana kembali.",
+      "Seluruh pendapatan semester I 2026 (Rp54,25 M) dari satu pelanggan akuakultur (SSLA); beban pokok Rp48,47 M dari 13 toko bangunan tanpa arus kas pembayaran, dan pengurus SMKM kini merangkap di PAA, LOH, dan ASA.",
       "Diselaraskan dengan dokumen keterbukaan (22 Okt 2026): nilai LSO Holdings adalah ±SGD13 juta dengan cara bayar belum diungkap (bukan Rp172,25 M), sehingga simulasi inbreng hanya memakai Panasia ±USD100 juta; kurs tidak diungkap dokumen (Rp16.500 tetap asumsi); KJPP belum ditunjuk dan RUPSLB belum dipanggil; perpanjangan long stop date ke 30 Juni 2027 tidak ditemukan di dokumen. NAV pasca-transaksi menjadi ±Rp85; sikap dan nilai wajar tetap.",
-      "Tidak ada keterbukaan baru sejak 15 Okt 2026; transaksi pemegang ≥5% terakhir adalah pembelian Bondra Uji Pratama (13–16 Okt, 4,99% → 5,03%) yang sudah tercatat. Harga turun dari Rp91 ke Rp80 (−12,1%) dan kini di bawah batas bawah nilai wajar Rp95 serta setara 0,50× BVPS.",
-      "Sikap tetap Spekulatif tinggi karena batas bawah itu bergantung pada harga rights: bila harga pelaksanaan mengikuti harga pasar Rp80, NAV pasca-transaksi turun ke ±Rp84, sehingga bantalan terhadap harga kini tipis selama valuasi PAA dan harga rights belum diumumkan."
+      "Tidak ada keterbukaan baru sejak 15 Okt 2026; transaksi pemegang ≥5% terakhir adalah pembelian Bondra Uji Pratama (13–16 Okt, 4,99% → 5,03%) yang sudah tercatat. Harga turun dari Rp91 ke Rp80 (−12,1%) dan kini di bawah batas bawah nilai wajar Rp95 serta setara 0,50× BVPS."
     ]
   },
   "LAPD": {

@@ -471,6 +471,72 @@
           "hal": "1, 3"
         }
       ]
+    },
+    "penjelasanBursa": {
+      "tanggal": "2026-10-22",
+      "judul": "Penjelasan atas Permintaan Penjelasan Bursa (KOREKSI)",
+      "url": "https://emitten-announcement.stockbit.com/attachments/f-32168378-0_NAYZ_Tanggapan_atas_Permintaan_Penjelasan_Bursa_32168378_lamp1.pdf",
+      "ringkas": "BEI menyoroti harga akuisisi Rp23,5, sumber dana pembelian 20% saham BTL, dan valuasi USD125 juta yang 80,4× nilai buku. Perseroan menegaskan dana dari PMHMETD dan nilai final menunggu KJPP; jadwal efektif bergeser ke 2027.",
+      "poin": [
+        {
+          "topik": "Harga akuisisi",
+          "tanya": "Harga Rp23,5 di bawah harga penutupan Rp63 (19 Agu 2026).",
+          "jawab": "Hasil negosiasi CSPA dalam jual beli saham signifikan, bukan karena penurunan kinerja.",
+          "analisa": "Harga masuk pengendali jauh di bawah pasar; patokan nilai sebenarnya rendah.",
+          "nada": "negatif"
+        },
+        {
+          "topik": "Dividen, covenant, pengurus",
+          "tanya": "Dampak pengambilalihan terhadap dividen, perjanjian penting, dan pengurus.",
+          "jawab": "Tidak ada perubahan dividen maupun covenant; Nusttanakit Sasiarnon (Direktur) dan Sawin Laosethakul (Komisaris) diangkat RUPSLB 2 Okt 2026.",
+          "analisa": "Tidak ada kejutan; pengurus wakil Saiko.",
+          "nada": "netral"
+        },
+        {
+          "topik": "Rencana jual pengendali",
+          "tanya": "Rencana Saiko/SCG menjual saham dalam 10 tahun.",
+          "jawab": "Tidak ada rencana melepas kepemilikan.",
+          "analisa": "Sinyal komitmen jangka panjang pengendali.",
+          "nada": "positif"
+        },
+        {
+          "topik": "Sumber dana 20% BTL",
+          "tanya": "Sumber dana Rp448,3 M untuk membeli 1.138.500 saham BTL, mengingat kas Rp6,1 M.",
+          "jawab": "Dari dana PMHMETD yang dilaksanakan bersamaan dengan inbreng BT oleh Saiko; dapat juga memakai hasil penjualan aset dari dana IPO.",
+          "analisa": "Uang publik dipakai membayar pengendali (penjual BTL); bergantung tingkat partisipasi publik.",
+          "nada": "negatif"
+        },
+        {
+          "topik": "Valuasi USD125 juta",
+          "tanya": "Dasar nilai Rp2,24 T (80,4× nilai buku BTL Rp27,9 M).",
+          "jawab": "Valuation report Avison Young (penasihat BT) metode DCF; nilai final mengacu KJPP terdaftar OJK.",
+          "analisa": "Penilai berasal dari pihak penjual; kelipatan nilai buku sangat tinggi.",
+          "nada": "negatif"
+        },
+        {
+          "topik": "Rincian aset BT",
+          "tanya": "Rincian aset BT dan kegunaannya.",
+          "jawab": "Total aset Rp74,05 M (IFRS, audit PKF, THB Rp538); BT masih restrukturisasi dan peningkatan modal.",
+          "analisa": "Aset kecil dibanding nilai transaksi; laba dan pendapatan belum diungkap.",
+          "nada": "negatif"
+        },
+        {
+          "topik": "Jadwal penyelesaian",
+          "tanya": "Timeline perjanjian pengalihan saham bersyarat.",
+          "jawab": "RUPS Independen dan pernyataan pendaftaran Q1 2027; pembelian 20% BTL dan efektif Q2 2027; konsolidasi di laporan keuangan 31 Des 2027.",
+          "analisa": "Katalis utama di 2027; waktu tunggu panjang.",
+          "nada": "netral"
+        },
+        {
+          "topik": "Rencana aksi korporasi",
+          "tanya": "Konfirmasi perubahan rencana.",
+          "jawab": "Tidak ada perubahan: PMHMETD dengan inbreng BT dan perubahan usaha ke telekomunikasi dan teknologi; MTO masih berjalan.",
+          "analisa": "Rencana konsisten.",
+          "nada": "netral"
+        }
+      ],
+      "kesimpulan": "Penjelasan menegaskan struktur yang menguntungkan pengendali: masuk di Rp23,5, nilai BTL dari penasihat penjual, dan sebagian dana publik untuk membayar pengendali. Katalis resmi baru pada 2027.",
+      "dampak": "negatif"
     }
   },
   "SOFA": {
@@ -4946,9 +5012,9 @@
     }
   },
   "SMKM": {
-    "asOf": "2026-10-23",
+    "asOf": "2026-10-26",
     "jenis": "inbreng",
-    "status": "rencana",
+    "status": "rencana (persetujuan PMHMETD Juni 2025 kedaluwarsa; RUPSLB ulang selambatnya Semester I 2027)",
     "sahamBeredar": 1253000000,
     "nominal": 100,
     "sahamBaruMaks": null,
@@ -4956,7 +5022,7 @@
     "hargaPelaksanaan": {
       "nilai": null,
       "status": "belum ditetapkan",
-      "keterangan": "PMHMETD direncanakan sebagai mekanisme inbreng aset pengendali baru; RUPSLB belum dipanggil (menunggu audit target, laporan penilaian, pendapat kewajaran, studi kelayakan)."
+      "keterangan": "Belum ditetapkan. Persetujuan PMHMETD RUPSLB 24 Jun 2025 sudah melewati batas 12 bulan (POJK 32/2015); Perseroan akan meminta persetujuan ulang dalam RUPSLB selambatnya Semester I 2027. Identitas penilai, tanggal penilaian, cut-off, dan metode baru diungkap saat pengumuman RUPSLB."
     },
     "kurs": {
       "nilai": null,
@@ -4967,7 +5033,7 @@
     "setoran": {
       "asetRp": null,
       "tunaiRp": null,
-      "keterangan": "Belum diungkap. Tanggapan BEI 4 Mar 2026: PMHMETD 'dimaksudkan sebagai mekanisme untuk melakukan inbreng aset milik Pengendali Baru'; porsi inbreng vs tunai, jumlah saham, dan harga belum ditetapkan."
+      "keterangan": "Belum diungkap. Tanggapan BEI (23 Okt 2026): akuisisi PAA dan LOH melalui inbreng dalam PMHMETD; LSO menyetor saham PAA, sedangkan saham LOH diambil dari Advanced Systems Automation Limited (ASA); sisa dana dari partisipasi tunai publik. Porsi inbreng vs tunai, jumlah saham, dan harga belum ditetapkan."
     },
     "penggunaanDana": [],
     "pembeliSiaga": {
@@ -5104,7 +5170,7 @@
     },
     "kewajaran": {
       "putusan": "belum dapat dinilai",
-      "ringkas": "Nilai ±USD100 juta untuk PAA masih angka perkiraan CSPA dari pihak afiliasi (pengendali); audit dan penilaian independen baru berjalan, sementara objek transaksi terus bertambah (tambak baru 68,07 ha, ekspansi Malaysia dan Pasifik) sehingga nilai akhirnya belum dapat diuji.",
+      "ringkas": "Nilai PAA (hingga USD100 juta, sekitar 8,6 kali ekuitas SMKM) masih batas atas CSPA dari pihak pengendali; penilai belum diungkap, persetujuan PMHMETD kedaluwarsa, dan dana Perseroan sudah mengalir Rp30 M ke Panasia (modal SGD3) sebelum akuisisi pasti.",
       "metrik": [
         {
           "nama": "Nilai PAA ÷ ekuitas SMKM",
@@ -5150,16 +5216,13 @@
         }
       ],
       "alasan": [
-        "Penjual PAA (Lim Shrimp Org Pte. Ltd.) adalah pengendali SMKM: transaksi afiliasi; nilai USD100 juta adalah estimasi CSPA, bukan hasil penilai.",
-        "Per 6 Okt 2026 audit dan penilaian independen PAA dan LOH masih berjalan; RUPSLB belum dijadwalkan sehingga belum ada angka KJPP untuk diuji.",
-        "Lingkup aset berubah: PAA menambah Ark Abundance dan 75% PMA tambak 68,07 ha (Jul 2026) serta merencanakan ekspansi Malaysia dan Pasifik; lahan tambak bertambah dari ±85 ha menjadi ±153 ha, tetapi nilai dan kinerja aset baru belum diungkap.",
-        "Nilai transaksi (USD100 juta + SGD13 juta) jauh melampaui ekuitas SMKM Rp206,67 M dan kapitalisasi pasar ±Rp100 M: inbreng akan menghasilkan dilusi sangat besar bagi publik (55,02% saat ini; VNJ masih 19,98%).",
-        "Penyelesaian mundur: long stop date CSPA PAA diperpanjang ke 30 Jun 2027 dan penyelesaian diperkirakan paling lambat 31 Mar 2027 (semula RUPSLB selambatnya Q3 2026).",
-        "Pengendali membeli di Rp37/saham, sedangkan PTW Rp93 tidak diminati publik (0 saham): harga pelaksanaan inbreng menjadi penentu utama keadilan bagi publik.",
-        "SMKM telah meminjamkan Rp30 M (bunga 6%, tenor 1 tahun) kepada PAA sebelum akuisisi: dana emiten mengalir ke calon aset milik pengendali, dan tenornya jatuh tempo sebelum transaksi selesai.",
-        "Nilai USD100 juta dan SGD13 juta hanyalah batas atas CSPA ('sampai dengan'); nilai final bergantung pada laporan penilai independen, sehingga besarnya inbreng dan dilusi baru dapat diuji setelah laporan KJPP terbit."
+        "Nilai PAA hingga USD100 juta adalah batas atas CSPA dengan pengendali sendiri; penilai, metode, dan cut-off baru diungkap saat RUPSLB.",
+        "Transaksi afiliasi penuh: penjual PAA adalah LSO (pengendali 25%), dan pengurus SMKM merangkap di PAA, LOH, dan ASA.",
+        "Dana SMKM sudah mengalir Rp30 M ke Panasia (modal SGD3, tanpa jaminan), sebagian didanai utang pihak ketiga Rp15 M.",
+        "Persetujuan PMHMETD kedaluwarsa dan RUPSLB ulang baru selambatnya Semester I 2027: kepastian transaksi rendah.",
+        "Kualitas pendapatan lemah: 100% dari satu pelanggan (SSLA), beban dari toko bangunan tanpa arus kas pembayaran, uang muka Rp108,94 M."
       ],
-      "syaratWajar": "Nilai PAA dan LOH ditetapkan KJPP berdasarkan laporan keuangan audit cut-off 2026 (termasuk aset baru AAPL dan PMA), dengan kelipatan PBV/PER setara emiten akuakultur, dan harga saham baru untuk inbreng tidak di bawah harga pasar/NAV sehingga publik tidak terdilusi secara tidak proporsional."
+      "syaratWajar": "Laporan penilai independen atas PAA dan LOH dengan kelipatan wajar terhadap laba audit, RUPS independen menyetujui, pinjaman Rp30 M dilunasi atau dijamin, serta pendapatan SMKM terdiversifikasi."
     },
     "dampakPublik": "Belum dapat dihitung dari dokumen (jumlah saham baru dan harga belum ada). Struktur setelah tahap 1 dan PTW: LSO 25,00% (313.250.000), PT Vina Nauli Jordania 19,98% (250.330.144), publik 55,02% (689.419.856 saham); realisasi tahap 2 (maks. 136.750.000 saham dari VNJ) belum diungkap. Setelah kedua transaksi, SMKM akan memiliki 75%–100% kegiatan usaha grup PAA dan LOH; dengan nilai aset yang berlipat ganda dari kapitalisasi pasar, porsi publik pasca-inbreng berpotensi turun drastis.",
     "jadwal": [
@@ -5204,16 +5267,6 @@
         "status": "selesai"
       },
       {
-        "tahap": "RUPST pertama (tidak kuorum, kehadiran 33,78%)",
-        "waktu": "24 Juni 2026",
-        "status": "selesai"
-      },
-      {
-        "tahap": "RUPST kedua",
-        "waktu": "15 Juli 2026",
-        "status": "selesai"
-      },
-      {
         "tahap": "PAA menyelesaikan akuisisi Ark Abundance Pte. Ltd.",
         "waktu": "18 Juni 2026",
         "status": "selesai"
@@ -5247,22 +5300,65 @@
         "tahap": "Penyelesaian Pengambilalihan PAA dan LOH",
         "waktu": "Paling lambat 31 Maret 2027 (kuartal I 2027)",
         "status": "rencana"
+      },
+      {
+        "tahap": "RUPSLB menyetujui PMHMETD (persetujuan pertama)",
+        "waktu": "24 Juni 2025",
+        "status": "selesai"
+      },
+      {
+        "tahap": "Pinjaman SMKM ke Panasia hingga Rp30 M (bunga 6%, tenor 1 tahun; KJPP IDR: wajar)",
+        "waktu": "26 Mei 2026",
+        "status": "selesai"
+      },
+      {
+        "tahap": "RUPST pertama gagal kuorum",
+        "waktu": "24 Juni 2026",
+        "status": "selesai"
+      },
+      {
+        "tahap": "RUPST kedua (kuorum 36,73%) dan RUPSLB mengangkat pengurus dari pihak pengendali",
+        "waktu": "15 Juli 2026",
+        "status": "selesai"
+      },
+      {
+        "tahap": "Persetujuan PMHMETD 2025 kedaluwarsa (lewat 12 bulan)",
+        "waktu": "24 Juni 2026",
+        "status": "selesai"
+      },
+      {
+        "tahap": "RUPSLB ulang untuk persetujuan PMHMETD (inbreng PAA dan LOH)",
+        "waktu": "Selambatnya Semester I 2027",
+        "status": "rencana"
       }
     ],
     "temuan": [
+      "PMHMETD yang disetujui RUPSLB 24 Jun 2025 belum diajukan ke OJK dan kini kedaluwarsa (lebih dari 12 bulan); persetujuan ulang direncanakan selambatnya Semester I 2027, sehingga katalis utama mundur.",
+      "SMKM meminjamkan Rp30 M (14,52% ekuitas) kepada Panasia, milik 100% pengendali (LSO), dengan bunga 6%, tenor 1 tahun, dan tanpa jaminan yang diungkap. Panasia berdiri 6 Jan 2025 dengan modal ditempatkan hanya SGD3.",
+      "Dana pinjaman berasal dari penagihan piutang Rp38 M dan utang jangka pendek dari pihak ketiga Rp15 M: Perseroan berutang untuk meminjamkan dana kepada afiliasi pengendali.",
+      "Bila akuisisi PAA batal, Perseroan hanya menyatakan berkeyakinan PAA mampu melunasi; tidak ada mekanisme pengembalian atau jaminan yang diungkap.",
+      "Pinjaman ke Panasia dan utang Rp15 M disajikan di arus kas operasi (lain-lain Rp17,94 M), bukan arus kas investasi atau pendanaan.",
+      "Seluruh pendapatan semester I 2026 (Rp54,25 M) berasal dari satu pelanggan, PT Sumbawa Sukses Lestari Aquaculture (SSLA), berdasarkan kontrak 5 Mar 2025 senilai Rp54,25 M (gudang, tambak, irigasi; 2 tahun). Perseroan menyatakan SSLA tidak terafiliasi, padahal SSLA bergerak di akuakultur, bidang yang sama dengan pengendali (Lim Shrimp Org).",
+      "Beban pokok proyek SSLA Rp48,47 M (margin kotor sekitar 10,7%) berasal dari 13 toko bangunan/UD (Rp1,25–4,28 M masing-masing; total Rp43,14 M) dan upah Rp5,33 M, tetapi tidak ada pembayaran ke pemasok di arus kas semester I 2026.",
+      "Proyek di Sumatera Utara dan Jambi belum diserahterimakan; uang muka di neraca 31 Des 2025 Rp108,94 M (sekitar 53% ekuitas).",
+      "Pengurus SMKM kini dari pihak pengendali (diangkat 15 Jul 2026): Chong Chee Hoong (Komisaris Utama; Direktur PAA, LSO BVI, LSO Org; UBO), Lim Chen Chong (Direktur SMKM dan LOH, mantan Direktur ASA), Lim Wee Beng Eddie (Direktur SMKM dan PAA, penasihat ASA), Chang Yun Peng (Direktur SMKM dan PAA).",
+      "Pemilik manfaat akhir PAA dan LSO: Chen Pei Ling Catherine, Lim Yu Victoria, dan Chong Chee Hoong. Struktur indikatif setelah akuisisi: LSO 25% dan masyarakat 75% atas SMKM, yang memegang PAA dan LOH (porsi belum ditetapkan).",
+      "Kas dan bank 30 Jun 2026 Rp27,02 M; piutang lain-lain ke PAA Rp29,999 M. RUPST kedua hanya dihadiri 36,73% saham.",
       "Long stop date CSPA PAA resmi diperpanjang ke 30 Juni 2027 (keterbukaan 6 Okt 2026); penyelesaian diperkirakan paling lambat 31 Maret 2027, mundur dari rencana RUPSLB selambatnya Q3 2026.",
       "Objek transaksi bertambah: PAA mengakuisisi Ark Abundance (18 Jun 2026), yang lalu mengakuisisi 75% PMA pemilik tambak 68,07 ha di Indonesia (20 Jul 2026); nilai akuisisi dan sumber dananya tidak diungkap.",
-      "Setelah kedua transaksi SMKM disebut memiliki 75%–100% kegiatan usaha grup PAA dan LOH, berbeda dengan dokumen Maret 2026 yang menyatakan LOH hanya pihak lawan dan tidak dikonsolidasikan.",
-      "Pengambilalihan LOH diperkirakan selesai lebih cepat dari rencana semula, juga pada kuartal I 2027.",
       "Nilai LSO Holdings di dokumen adalah ±SGD13 juta, bukan Rp172,25 M; kurs konversi tidak diungkap.",
-      "Penerima manfaat akhir PAA: Chen Pei Ling Catherine; Lim Yu, Victoria; dan Structured Capital Solutions Inc.",
-      "Rencana PMHMETD disebut pada 2026 dan 2027 (lebih dari satu tahap).",
       "Porsi publik sebenarnya 55,02%: pengendali lama PT Vina Nauli Jordania masih memegang 19,98% setelah tahap 1, dan realisasi tahap 2 (maks. 10,91% @Rp37, selambatnya 30 Jun 2026) belum pernah diungkap.",
       "LSO baru didirikan 23 Juli 2024 di Singapura; PTW dilaksanakan oleh PT Lim Shrimp Org (didirikan 15 Sep 2025, 99% LSO dan 1% Lim Chen Chong, modal disetor Rp10,01 M).",
-      "Nilai PAA dan LOH adalah batas atas CSPA ('sampai dengan'), bukan harga final; PMHMETD untuk LOH direncanakan 2027, terpisah dari PMHMETD PAA.",
       "Sebelum pengambilalihan, pendapatan SMKM merosot (semester I 2025 Rp35,81 M vs 2023 Rp130,02 M), kas tergerus, dan manajemen menyatakan belum ada rencana diversifikasi (Okt 2025)."
     ],
     "sumber": [
+      {
+        "tanggal": "2026-10-23",
+        "judul": "Tanggapan atas Permintaan Penjelasan Bursa (12 pertanyaan; lampiran keterbukaan pinjaman ke Panasia dan kontrak SSLA)",
+        "file": "f-32168985-0_SMKM_Tanggapan_atas_Permintaan_Penjelasan_Bursa_32168985_lamp1.pdf",
+        "url": "https://emitten-announcement.stockbit.com/attachments/f-32168985-0_SMKM_Tanggapan_atas_Permintaan_Penjelasan_Bursa_32168985_lamp1.pdf",
+        "hal": "1-26"
+      },
       {
         "tanggal": "2025-10-23",
         "judul": "Penjelasan atas Permintaan Penjelasan Bursa (kinerja keuangan & rencana pengambilalihan)",
@@ -5532,6 +5628,192 @@
       ],
       "proyeksi": [],
       "catatan": "Laba bersih 2025 Rp567.684.785 (RUPST kedua 15 Jul 2026). Per 30 Jun 2025: total aset Rp212,20 M, uang muka Rp90,45 M dan piutang usaha Rp84,56 M (90,14% aset lancar), kas turun ke Rp19,11 M, arus kas operasi negatif, tanpa penyisihan piutang; pendapatan semester I 2025 Rp35,81 M (semester I 2024 Rp44,62 M; 2023 Rp130,02 M) karena jumlah proyek menurun. Kontrak berjalan per Okt 2025: 10 proyek senilai total Rp106,37 M (perhitungan dari tabel) dengan target selesai Agustus 2025 sampai Juni 2026, mayoritas di Sumatera Utara. Manajemen saat itu menyatakan belum ada rencana diversifikasi; pengendali baru kemudian merencanakan penambahan kegiatan usaha melalui RUPSLB dan PMHMETD (tanggapan BEI 23 Okt 2025). Permintaan penjelasan BEI tersebut bukan sanksi. Tidak ada proyeksi laba/pendapatan dalam dokumen."
+    },
+    "rencanaKorporasi": {
+      "ringkas": "Lim Shrimp Org (LSO) masuk 25% di Rp37, lalu menyiapkan inbreng PanAsia Aquaculture (hingga USD100 juta) dan LSO Holdings (hingga SGD13 juta) melalui PMHMETD. Sebelum akuisisi pasti, SMKM sudah meminjamkan Rp30 M ke Panasia; persetujuan PMHMETD 2025 kedaluwarsa sehingga RUPSLB ulang baru selambatnya Semester I 2027.",
+      "langkah": [
+        {
+          "judul": "LSO mengambil alih 25% SMKM",
+          "pihak": "PT Vina Nauli Jordania → Lim Shrimp Org Pte. Ltd.",
+          "nilai": "313,25 juta saham × Rp37",
+          "waktu": "27 Okt 2025",
+          "status": "selesai",
+          "ket": "Tahap 2 (maks. 136,75 juta saham @Rp37) dijadwalkan selambatnya 30 Jun 2026; realisasinya belum diungkap."
+        },
+        {
+          "judul": "Penawaran tender wajib",
+          "pihak": "PT Lim Shrimp Org → publik",
+          "nilai": "Rp93/saham",
+          "waktu": "10 Des 2025 – 9 Jan 2026",
+          "status": "selesai",
+          "ket": "Tidak ada satu pun saham yang ditenderkan."
+        },
+        {
+          "judul": "CSPA PanAsia Aquaculture (PAA)",
+          "pihak": "LSO → SMKM",
+          "nilai": "Hingga USD100 juta (batas atas)",
+          "waktu": "22 Des 2025; long stop 30 Jun 2027",
+          "status": "berjalan",
+          "ket": "PAA menambah aset: Ark Abundance dan 75% PMA tambak udang 68,07 ha di Indonesia. Akuisisi menunggu restrukturisasi internal PAA."
+        },
+        {
+          "judul": "CSPA LSO Holdings (LOH)",
+          "pihak": "Advanced Systems Automation Ltd (ASA) → SMKM",
+          "nilai": "Hingga SGD13 juta",
+          "waktu": "30 Jan 2026",
+          "status": "berjalan",
+          "ket": "Lim Chen Chong (Direktur SMKM dan LOH) pernah menjabat direktur ASA; Lim Wee Beng Eddie penasihat ASA."
+        },
+        {
+          "judul": "Pinjaman SMKM ke Panasia",
+          "pihak": "SMKM → Panasia (100% milik LSO)",
+          "nilai": "Hingga Rp30 M (bunga 6%, 1 tahun)",
+          "waktu": "26 Mei 2026",
+          "status": "selesai",
+          "ket": "Didanai penagihan piutang Rp38 M dan utang pihak ketiga Rp15 M; KJPP IDR menyatakan wajar. Panasia bermodal SGD3; tanpa jaminan yang diungkap."
+        },
+        {
+          "judul": "Pengurus dari pihak pengendali",
+          "pihak": "RUPSLB SMKM",
+          "nilai": "–",
+          "waktu": "15 Jul 2026",
+          "status": "selesai",
+          "ket": "Chong Chee Hoong (Komisaris Utama), Lim Chen Chong, Lim Wee Beng Eddie, dan Chang Yun Peng (Direktur) merangkap di PAA, LOH, atau ASA."
+        },
+        {
+          "judul": "Persetujuan PMHMETD 2025 kedaluwarsa",
+          "pihak": "SMKM",
+          "nilai": "–",
+          "waktu": "Juni 2026",
+          "status": "selesai",
+          "ket": "Disetujui RUPSLB 24 Jun 2025, tetapi pernyataan pendaftaran tidak diajukan dalam 12 bulan (POJK 32/2015)."
+        },
+        {
+          "judul": "RUPSLB ulang: PMHMETD dan inbreng PAA serta LOH",
+          "pihak": "Pemegang saham SMKM",
+          "nilai": "Harga, rasio, dan jumlah saham belum ditetapkan",
+          "waktu": "Selambatnya Semester I 2027",
+          "status": "rencana",
+          "ket": "Transaksi afiliasi (POJK 42/2020); identitas penilai dan hasil penilaian diumumkan bersamaan dengan pengumuman RUPSLB."
+        },
+        {
+          "judul": "Hasil akhir",
+          "pihak": "SMKM sebagai induk usaha akuakultur",
+          "nilai": "Struktur indikatif: LSO 25%, masyarakat 75% sebelum PMHMETD",
+          "waktu": "–",
+          "status": "rencana",
+          "ket": "Setelah inbreng, porsi LSO naik tajam dan porsi publik turun; besarnya bergantung pada nilai penilai dan harga pelaksanaan."
+        }
+      ],
+      "catatan": "Disusun dari tanggapan atas permintaan penjelasan BEI (23 Okt 2026) beserta lampirannya, dan keterbukaan SMKM Okt 2025 – Okt 2026."
+    },
+    "penjelasanBursa": {
+      "tanggal": "2026-10-23",
+      "judul": "Tanggapan atas Permintaan Penjelasan Bursa (12 pertanyaan BEI)",
+      "url": "https://emitten-announcement.stockbit.com/attachments/f-32168985-0_SMKM_Tanggapan_atas_Permintaan_Penjelasan_Bursa_32168985_lamp1.pdf",
+      "ringkas": "BEI menyoroti skema akuisisi PAA dan LOH, pinjaman Rp30 M ke Panasia, kualitas pendapatan, dan rencana PMHMETD yang tertunda. Jawaban Perseroan menegaskan transaksi afiliasi dan menunda pengungkapan penilai, sementara persetujuan PMHMETD sudah kedaluwarsa.",
+      "poin": [
+        {
+          "topik": "Skema akuisisi",
+          "tanya": "Skema akuisisi PAA dan LOH.",
+          "jawab": "Melalui inbreng dalam PMHMETD: LSO menyetor saham PAA; saham LOH diambil dari ASA.",
+          "analisa": "Aset dibayar dengan saham baru, sehingga porsi publik akan terdilusi; nilai tukar belum ada.",
+          "nada": "netral"
+        },
+        {
+          "topik": "Sumber dana",
+          "tanya": "Sumber dana akuisisi, mengingat kas Rp27,02 M.",
+          "jawab": "Inbreng saham milik LSO ditambah dana tunai dari partisipasi publik dalam PMHMETD.",
+          "analisa": "Bagian tunai bergantung pada uang publik; belum ada pembeli siaga.",
+          "nada": "negatif"
+        },
+        {
+          "topik": "Pemilik manfaat",
+          "tanya": "Pemilik manfaat PAA dan LSO serta struktur grup.",
+          "jawab": "Chen Pei Ling Catherine, Lim Yu Victoria, dan Chong Chee Hoong; struktur indikatif LSO 25%, masyarakat 75%.",
+          "analisa": "UBO terungkap (positif), tetapi porsi SMKM atas PAA/LOH masih XX%.",
+          "nada": "netral"
+        },
+        {
+          "topik": "Transaksi afiliasi",
+          "tanya": "Apakah termasuk transaksi afiliasi (POJK 42/2020)?",
+          "jawab": "Ya, karena penyetor inbreng adalah LSO, pengendali Perseroan.",
+          "analisa": "Nilai aset ditentukan pihak yang sama di kedua sisi; perlu RUPS independen dan penilai yang kredibel.",
+          "nada": "negatif"
+        },
+        {
+          "topik": "Penilai independen",
+          "tanya": "Identitas penilai, tanggal, cut-off, metode, dan target penyelesaian.",
+          "jawab": "Baru diungkap saat pengumuman RUPSLB untuk menghindari diskrepansi informasi.",
+          "analisa": "Investor belum dapat menguji nilai USD100 juta; transparansi penilaian ditunda.",
+          "nada": "negatif"
+        },
+        {
+          "topik": "Pengurus dan hubungan keluarga",
+          "tanya": "Hubungan Perseroan dengan ASA, PAA, dan LOH.",
+          "jawab": "Chong Chee Hoong, Lim Chen Chong, Lim Wee Beng Eddie, dan Chang Yun Peng merangkap jabatan di SMKM dan PAA/LOH/ASA (diangkat 15 Jul 2026).",
+          "analisa": "Kendali penuh pihak pengendali atas kedua sisi transaksi; independensi keputusan rendah.",
+          "nada": "negatif"
+        },
+        {
+          "topik": "Piutang ke PAA Rp30 M",
+          "tanya": "Latar belakang, ketentuan, dan rencana pengembalian bila akuisisi batal.",
+          "jawab": "Mengacu keterbukaan 2 Jun 2026; bila batal, Perseroan berkeyakinan PAA mampu melunasi karena usahanya berkembang.",
+          "analisa": "Dana Perseroan (sebagian dari utang Rp15 M) mengalir ke afiliasi bermodal SGD3 tanpa jaminan yang diungkap.",
+          "nada": "negatif"
+        },
+        {
+          "topik": "Arus kas operasi lain-lain",
+          "tanya": "Penyajian pinjaman ke PAA dan utang pihak ketiga di laporan arus kas.",
+          "jawab": "Disajikan di arus kas operasi bagian lain-lain (total Rp17,94 M).",
+          "analisa": "Penyajian tidak lazim: pinjaman ke afiliasi seharusnya arus kas investasi.",
+          "nada": "negatif"
+        },
+        {
+          "topik": "Pelanggan tunggal SSLA",
+          "tanya": "Profil PT SSLA dan hubungan afiliasi.",
+          "jawab": "Tidak ada afiliasi dengan Perseroan maupun LSO; kontrak jasa konstruksi biasa.",
+          "analisa": "Seluruh pendapatan semester I 2026 (Rp54,25 M) dari satu pelanggan di bidang akuakultur; risiko konsentrasi tinggi.",
+          "nada": "negatif"
+        },
+        {
+          "topik": "Beban pokok Rp48,47 M",
+          "tanya": "Rincian beban pokok dan tidak adanya pembayaran ke pemasok.",
+          "jawab": "Material dari 13 toko bangunan (Rp43,14 M) dan upah Rp5,33 M; dibayar saat material on site, sehingga tidak ada arus kas ke pemasok di semester I.",
+          "analisa": "Beban diakui tanpa arus kas keluar dan pemasok berskala toko; kualitas laba perlu diuji auditor.",
+          "nada": "negatif"
+        },
+        {
+          "topik": "Proyek Sumut dan Jambi",
+          "tanya": "Status proyek dan pelanggan lain.",
+          "jawab": "Sedang dikerjakan, belum serah terima.",
+          "analisa": "Belum ada diversifikasi pendapatan dalam waktu dekat.",
+          "nada": "netral"
+        },
+        {
+          "topik": "Kuorum RUPST",
+          "tanya": "Rencana RUPST mengingat kehadiran 36,73%.",
+          "jawab": "RUPST kedua sah dengan kuorum 1/3; tidak ada RUPST lanjutan.",
+          "analisa": "Partisipasi pemegang saham rendah, tetapi sesuai ketentuan.",
+          "nada": "netral"
+        },
+        {
+          "topik": "PMHMETD tertunda",
+          "tanya": "Perkembangan PMHMETD yang disetujui 24 Jun 2025.",
+          "jawab": "Persetujuan sudah lewat 12 bulan; RUPSLB ulang selambatnya Semester I 2027 sebagai bagian akuisisi PAA dan LOH.",
+          "analisa": "Katalis utama mundur hingga 2027; waktu tunggu panjang bagi investor.",
+          "nada": "negatif"
+        },
+        {
+          "topik": "Informasi material lain",
+          "tanya": "Informasi material lain yang belum diungkap.",
+          "jawab": "Tidak ada.",
+          "analisa": "–",
+          "nada": "netral"
+        }
+      ],
+      "kesimpulan": "Jawaban Perseroan atas pertanyaan BEI tidak menghilangkan keraguan utama: transaksi afiliasi tanpa penilaian yang bisa diuji, dana Perseroan sudah mengalir ke Panasia, kualitas pendapatan lemah, dan katalis PMHMETD mundur ke 2027. Dampak jangka pendek cenderung negatif; potensi kembali bila penilai dan RUPSLB diumumkan.",
+      "dampak": "negatif"
     }
   },
   "LAPD": {
