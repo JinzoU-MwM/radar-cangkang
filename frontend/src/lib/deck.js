@@ -468,7 +468,7 @@ export function buildDeck(PptxGenJS, d, th) {
         const s2 = slide('Penjelasan bursa', `Analisa Penjelasan atas Permintaan Penjelasan Bursa${pages.length > 1 ? ` (${p + 1}/${pages.length})` : ''}`, last ? pb.kesimpulan : null)
         T(s2, `${pb.tanggal ? fmtDate(pb.tanggal) + ' · ' : ''}${short(pb.judul || '', 90)}`, { x: M, y: TOP - 0.05, w: CW, h: 0.22, fontSize: 8.5, color: th.muted })
         const rh = 3.05 / 8
-        if (last) T(s2, 'Dasar nada · Negatif: tidak dijawab/ditunda, atau fakta merugikan yang dinyatakan emiten · Netral: fakta/prosedur/kepatuhan · Positif: menambah kepastian · Kolom kanan: analisa', { x: M, y: TOP + 3.32, w: CW, h: 0.18, fontSize: 7, color: th.muted, fit: 'shrink' })
+        if (last) T(s2, 'Dasar nada · Negatif: tidak dijawab/ditunda, atau fakta merugikan yang dinyatakan emiten · Netral: fakta/prosedur/kepatuhan · Positif: pengungkapan spesifik, kepastian, atau perlindungan bagi publik · Kolom kanan: analisa', { x: M, y: TOP + 3.32, w: CW, h: 0.18, fontSize: 7, color: th.muted, fit: 'shrink' })
         rows.forEach((x, i) => {
           const y = TOP + 0.25 + i * rh
           if (i) line(s2, M, y, CW, 0, th.line, { w: 0.5 })
