@@ -394,30 +394,10 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
 
     <h3 class="sec">7. Kesimpulan investasi</h3>
     <template v-if="r">
-      <!-- Kesimpulan akhir: layak investasi atau tidak. -->
-      <div v-if="layak" class="fund-ok" :class="layak.tone">
-        <div class="fh">
-          <span class="small muted">Kesimpulan investasi</span>
-          <b>{{ layak.label }}</b>
-        </div>
-        <p class="small"><b>{{ layak.key === 'layak' ? 'Potensi menarik' : layak.key === 'tidak' ? 'Belum layak ikut rights issue' : 'Berpotensi, tetapi spekulatif' }}, karena:</b></p>
-        <ol class="why abc">
-          <li v-for="(x, i) in layakWhy.utama" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
-            <span class="ic" aria-hidden="true">{{ 'ABCDEFGHIJ'[i] }}.</span>{{ x.t }}
-          </li>
-        </ol>
-        <template v-if="layakWhy.lawan.length">
-          <p class="small"><b>{{ layak.key === 'layak' ? 'Catatan risiko' : 'Sisi positif' }}:</b></p>
-          <ul class="why">
-            <li v-for="(x, i) in layakWhy.lawan" :key="i" :class="x.s > 0 ? 'p' : 'n'"><span class="ic" aria-hidden="true">{{ x.s > 0 ? '+' : '−' }}</span>{{ x.t }}</li>
-          </ul>
-        </template>
-        <p class="small muted">Skor {{ layak.score }} (≥ 2 layak dipertimbangkan; −1 s.d. 1 spekulatif; ≤ −2 tidak layak). Menilai skenario <b>membeli lalu menahan melewati rights issue atau ikut menebus</b>. Kerangka analisis otomatis dari dokumen dan simulasi, bukan anjuran membeli atau menjual efek.</p>
-      </div>
       <!-- Skenario kedua: trading jangka pendek memanfaatkan aksi korporasi. -->
       <div v-if="trade" class="fund-ok" :class="trade.tone">
         <div class="fh">
-          <span class="small muted">Potensi trading jangka pendek (momentum aksi korporasi)</span>
+          <span class="small muted">Potensi aksi korporasi (trading jangka pendek)</span>
           <b>{{ trade.label }}</b>
         </div>
         <ul class="why">
@@ -429,7 +409,27 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
           <p class="small"><b>Cara memanfaatkan potensinya:</b></p>
           <ol class="small aturan"><li v-for="x in trade.aturan" :key="x">{{ x }}</li></ol>
         </template>
-        <p class="small muted">Potensi ini berbeda dari kesimpulan di atas: aksi korporasi sering mendorong harga menjelang katalis, sehingga peluangnya ada pada momentum sebelum cum date, bukan pada menahan saham melewati rights issue.</p>
+        <p class="small muted">Aksi korporasi sering mendorong harga menjelang katalis; peluang terbesarnya ada pada momentum sebelum cum date.</p>
+      </div>
+      <!-- Kesimpulan akhir: layak investasi atau tidak. -->
+      <div v-if="layak" class="fund-ok" :class="layak.tone">
+        <div class="fh">
+          <span class="small muted">Bila menahan saham melewati rights issue / ikut menebus</span>
+          <b>{{ layak.label }}</b>
+        </div>
+        <p class="small"><b>{{ layak.key === 'layak' ? 'Potensi menarik, karena:' : layak.key === 'tidak' ? 'Yang perlu diwaspadai:' : 'Berpotensi, tetapi spekulatif, karena:' }}</b></p>
+        <ol class="why abc">
+          <li v-for="(x, i) in layakWhy.utama" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
+            <span class="ic" aria-hidden="true">{{ 'ABCDEFGHIJ'[i] }}.</span>{{ x.t }}
+          </li>
+        </ol>
+        <template v-if="layakWhy.lawan.length">
+          <p class="small"><b>{{ layak.key === 'layak' ? 'Catatan risiko' : 'Sisi positif' }}:</b></p>
+          <ul class="why">
+            <li v-for="(x, i) in layakWhy.lawan" :key="i" :class="x.s > 0 ? 'p' : 'n'"><span class="ic" aria-hidden="true">{{ x.s > 0 ? '+' : '−' }}</span>{{ x.t }}</li>
+          </ul>
+        </template>
+        <p class="small muted">Skor {{ layak.score }} (≥ 2 layak dipertimbangkan; −1 s.d. 1 spekulatif; ≤ −2 tidak layak). Menilai skenario membeli lalu <b>menahan melewati rights issue atau ikut menebus</b>. Kerangka analisis otomatis dari dokumen dan simulasi, bukan anjuran membeli atau menjual efek.</p>
       </div>
       <p v-if="verdict" class="verdict"><b>Kesimpulan:</b> {{ verdict }}</p>
       <p class="small muted">Catatan: <b>skor enam dimensi</b> di atas menilai profil saham backdoor secara umum, <b>sikap analis</b> adalah penilaian manual, dan <b>kesimpulan investasi</b> ini khusus menilai transaksi penambahan modal dan asetnya. Bila berbeda, kesimpulan ini yang menentukan kelayakan ikut serta dalam rights issue.</p>
