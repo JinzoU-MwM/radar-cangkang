@@ -200,4 +200,4 @@ export const PB_JAWABAN = { lengkap: ['Lengkap', 'good'], sebagian: ['Sebagian',
 // Nada objektif per butir (poin[].nada) dan dasarnya (poin[].dasar).
 export const PB_NADA = { positif: ['Positif', 'good'], netral: ['Netral', 'calm'], negatif: ['Negatif', 'strong'] }
 export const PB_DASAR = { ditunda: 'Tidak dijawab/ditunda', merugikan: 'Fakta merugikan dari emiten', fakta: 'Fakta/kepatuhan', kepastian: 'Menambah kepastian' }
-export const PB_KRITERIA = 'Dasar nada (objektif, dari isi dokumen): Negatif bila pertanyaan BEI tidak dijawab atau ditunda, atau emiten sendiri menyatakan fakta yang merugikan publik; Positif bila jawaban menambah kepastian yang menguntungkan publik; Netral untuk fakta, prosedur, atau kepatuhan aturan. Kolom Analisa adalah pendapat analis.'
+export const PB_KRITERIA = 'Dasar nada (objektif, dari isi dokumen): Negatif bila pertanyaan BEI tidak dijawab atau ditunda, atau emiten sendiri menyatakan fakta yang merugikan publik; Positif bila jawaban menambah kepastian yang menguntungkan publik; Netral untuk fakta, prosedur, atau kepatuhan aturan, termasuk hubungan dan transaksi afiliasi. Kolom Analisa adalah pendapat analis.'
