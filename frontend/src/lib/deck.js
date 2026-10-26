@@ -1,7 +1,7 @@
 // Pembuat presentasi analisa emiten (.pptx) dengan pptxgenjs. Prinsip: analisa dalam, teks sedikit —
 // angka besar, meteran, diagram, dan grafik PowerPoint asli (bisa diklik/diedit). Satu pesan per slide,
 // pita KESIMPULAN di bawah. Dipakai di browser (unduhan) dan di Node (uji).
-import { fmtDate } from './domain.js'
+import { fmtDate, PB_DASAR } from './domain.js'
 import { PT_STATUS, ptStatusTxt, confLvl } from './patterns.js'
 import { phaseName } from './cycle.js'
 import { mergeBoard } from './profil.js'
@@ -455,10 +455,12 @@ export function buildDeck(PptxGenJS, d, th) {
         const s = slide('Penjelasan bursa', `Analisa Penjelasan atas Permintaan Penjelasan Bursa${pages.length > 1 ? ` (${p + 1}/${pages.length})` : ''}`, last ? pb.kesimpulan : null)
         T(s, `${pb.tanggal ? fmtDate(pb.tanggal) + ' · ' : ''}${short(pb.judul || '', 90)}`, { x: M, y: TOP - 0.05, w: CW, h: 0.22, fontSize: 8.5, color: th.muted })
         const rh = 3.05 / 8
+        if (last) T(s, 'Dasar nada · Negatif: tidak dijawab/ditunda, risiko terukur, atau data tidak konsisten · Netral: fakta/kepatuhan aturan · Positif: menambah kepastian', { x: M, y: TOP + 3.3, w: CW, h: 0.18, fontSize: 7, color: th.muted, fit: 'shrink' })
         rows.forEach((x, i) => {
           const y = TOP + 0.25 + i * rh
           if (i) line(s, M, y, CW, 0, th.line, { w: 0.5 })
-          pill(s, M, y + (rh - 0.2) / 2, NADA[x.nada] || 'Netral', col(x.nada), { size: 7, h: 0.2, w: 0.75 })
+          pill(s, M, y + (rh - 0.2) / 2 - (PB_DASAR[x.dasar] ? 0.06 : 0), NADA[x.nada] || 'Netral', col(x.nada), { size: 7, h: 0.2, w: 0.75 })
+          if (PB_DASAR[x.dasar]) T(s, PB_DASAR[x.dasar], { x: M - 0.05, y: y + (rh - 0.2) / 2 + 0.15, w: 0.85, h: 0.14, fontSize: 5.5, color: th.muted, align: 'center', fit: 'shrink' })
           T(s, short(`${x.no ? x.no + '. ' : ''}${x.topik}`, 38), { x: M + 0.85, y, w: 1.6, h: rh, fontSize: 8.5, bold: true, color: th.ink, valign: 'middle', fit: 'shrink' })
           T(s, short(x.jawab, 240), { x: M + 2.5, y, w: 3.25, h: rh, fontSize: 7.5, color: th.ink, valign: 'middle', fit: 'shrink' })
           T(s, short(x.analisa, 240), { x: M + 5.85, y, w: CW - 5.85, h: rh, fontSize: 7.5, color: th.muted, valign: 'middle', fit: 'shrink' })
