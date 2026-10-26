@@ -7,6 +7,7 @@ import { store, storyOf, getBenchmark } from '../../store.js'
 import { api } from '../../api.js'
 import { collectDeck } from '../../lib/deckData.js'
 import { buildVideo, speakable, lineSecs, toSrt, toScript } from '../../lib/videoScript.js'
+import SceneVisual from '../SceneVisual.vue'
 
 const props = defineProps({ ticker: { type: String, required: true } })
 const loading = ref(true), error = ref(''), step = ref('')
@@ -73,6 +74,12 @@ onBeforeUnmount(() => { stop(); if (synth) synth.onvoiceschanged = null })
 let timer = null, token = 0
 const scene = computed(() => scenes.value[si.value] || null)
 const line = computed(() => scene.value?.lines[li.value] || '')
+// Poin daftar muncul sebanding kemajuan narasi adegan; kalimat terakhir menampilkan semuanya.
+const vStep = computed(() => {
+  const n = scene.value?.visual?.items?.length || 0, L = scene.value?.lines.length || 1
+  if (li.value >= L - 1) return Infinity
+  return Math.max(0, Math.ceil((li.value + 1) / L * n) - 1)
+})
 function stop() { playing.value = false; token++; clearTimeout(timer); synth?.cancel(); if (audio) { audio.pause(); audio = null } }
 function next() {
   const sc = scenes.value[si.value]
@@ -145,16 +152,6 @@ function save(name, text, type = 'text/plain') {
 }
 const fileBase = computed(() => `${props.ticker}_Video-${mode.value === 'lengkap' ? 'Lengkap' : 'Ringkas'}_${new Date().toISOString().slice(0, 10)}`)
 
-// ---- visual ----
-const pctW = (v, max) => `${Math.max(2, Math.min(100, (+v || 0) / (max || 1) * 100))}%`
-const ladder = computed(() => {
-  const v = scene.value?.visual
-  if (v?.type !== 'ladder') return null
-  const vals = [v.price, ...v.levels.map(l => l.v)].filter(x => x > 0), lo = Math.min(...vals), hi = Math.max(...vals), span = hi - lo || 1
-  const y = x => 92 - (x - lo) / span * 84
-  return { price: v.price, py: y(v.price), levels: v.levels.map(l => ({ ...l, y: y(l.v) })).sort((a, b) => a.y - b.y) }
-})
-const rpS = v => v == null ? '–' : 'Rp' + Math.round(v).toLocaleString('id-ID')
 </script>
 
 <template>
@@ -176,58 +173,11 @@ const rpS = v => v == null ? '–' : 'Rp' + Math.round(v).toLocaleString('id-ID'
           <div class="chap">{{ si + 1 }}. {{ scene.bab }}</div>
           <h3 class="ttl">{{ scene.judul }}</h3>
 
-          <div v-if="scene.visual.type === 'title'" class="v-title">
-            <b class="tk">{{ scene.visual.t }}</b>
-            <span class="nm">{{ scene.visual.name }}</span>
-            <span class="meta">{{ [scene.visual.sector, scene.visual.sikap, scene.visual.score != null ? `Skor ${scene.visual.score}/100` : ''].filter(Boolean).join(' · ') }}</span>
-          </div>
-
-          <div v-else-if="scene.visual.type === 'kpis'" class="v-kpis">
-            <div v-for="(k, i) in scene.visual.items" :key="i" class="kpi" :style="{ animationDelay: i * 0.35 + 's' }"><b>{{ k[0] }}</b><span>{{ k[1] }}</span></div>
-          </div>
-
-          <div v-else-if="scene.visual.type === 'bars'" class="v-bars">
-            <div v-for="(b, i) in scene.visual.items" :key="i" class="br" :style="{ animationDelay: i * 0.25 + 's' }">
-              <span class="bl">{{ b.label }}</span>
-              <span class="track">
-                <i v-if="b.from != null" class="from" :style="{ width: pctW(b.from, scene.visual.max || 100) }" />
-                <i class="to" :style="{ width: pctW(b.to, scene.visual.max || 100), animationDelay: i * 0.25 + 0.2 + 's' }" />
-              </span>
-              <span class="bv">{{ b.from != null ? `${b.from.toLocaleString('id-ID', { maximumFractionDigits: 2 })}${scene.visual.unit} → ` : '' }}{{ (+b.to).toLocaleString('id-ID', { maximumFractionDigits: 2 }) }}{{ scene.visual.unit }}</span>
-            </div>
-          </div>
-
-          <div v-else-if="scene.visual.type === 'compare'" class="v-cmp">
-            <div class="cmp">
-              <div class="col"><b>{{ scene.visual.from.v.toLocaleString('id-ID', { maximumFractionDigits: 1 }) }}%</b><span>{{ scene.visual.from.l }}</span><i :style="{ height: pctW(scene.visual.from.v, 100) }" /></div>
-              <div class="col"><b>{{ scene.visual.to.v.toLocaleString('id-ID', { maximumFractionDigits: 1 }) }}%</b><span>{{ scene.visual.to.l }}</span><i :style="{ height: pctW(scene.visual.to.v, 100), animationDelay: '.4s' }" /></div>
-              <div v-if="scene.visual.extra" class="col"><b>{{ scene.visual.extra.v.toLocaleString('id-ID', { maximumFractionDigits: 1 }) }}%</b><span>{{ scene.visual.extra.l }}</span><i :style="{ height: pctW(scene.visual.extra.v, 100), animationDelay: '.8s' }" /></div>
-            </div>
-            <div class="mini"><div v-for="(k, i) in scene.visual.kpis" :key="i" class="kpi sm" :style="{ animationDelay: 0.6 + i * 0.3 + 's' }"><b>{{ k[0] }}</b><span>{{ k[1] }}</span></div></div>
-          </div>
-
-          <div v-else-if="scene.visual.type === 'ladder' && ladder" class="v-ladder">
-            <div class="axis">
-              <div v-for="(l, i) in ladder.levels" :key="i" class="lv" :style="{ top: l.y + '%', animationDelay: i * 0.2 + 's' }"><span class="ln" /><b>{{ rpS(l.v) }}</b> <span>{{ l.l }}</span></div>
-              <div class="now" :style="{ top: ladder.py + '%' }"><span class="dot" /> <b>Harga kini {{ rpS(ladder.price) }}</b></div>
-            </div>
-          </div>
-
-          <ul v-else-if="scene.visual.type === 'list'" class="v-list">
-            <li v-for="(x, i) in scene.visual.items" :key="i" :style="{ animationDelay: i * 0.5 + 's' }">{{ x }}</li>
-          </ul>
-
-          <div v-else-if="scene.visual.type === 'rec'" class="v-rec">
-            <b class="act">{{ scene.visual.rec.label }}</b>
-            <div class="v-kpis">
-              <div class="kpi"><b>{{ scene.visual.rec.entry ? (scene.visual.rec.entry[1] ? `${rpS(scene.visual.rec.entry[0])}–${rpS(scene.visual.rec.entry[1])}` : `> ${rpS(scene.visual.rec.entry[0])}`) : 'Tidak ada' }}</b><span>Area beli</span></div>
-              <div class="kpi" style="animation-delay:.35s"><b>{{ rpS(scene.visual.rec.stop) }}</b><span>Batas risiko</span></div>
-              <div class="kpi" style="animation-delay:.7s"><b>{{ scene.visual.rec.targets[0] ? rpS(scene.visual.rec.targets[0].p) : '–' }}</b><span>Target</span></div>
-            </div>
-            <span class="por">{{ scene.visual.rec.porsi }}</span>
-          </div>
+          <SceneVisual :scene="scene" :step="vStep" />
         </div>
-        <div class="caption" aria-live="polite">{{ line }}</div>
+        <!-- Penanda kalimat dalam adegan ini. -->
+        <div class="ticks" aria-hidden="true"><i v-for="(l, k) in scene.lines" :key="k" :class="{ on: k <= li }" /></div>
+        <div class="caption" aria-live="polite"><span :key="si + '-' + li" class="cap">{{ line }}</span></div>
         <button v-if="!playing" type="button" class="bigplay" aria-label="Putar" @click.stop="play">▶</button>
       </div>
 
@@ -282,49 +232,17 @@ const rpS = v => v == null ? '–' : 'Rp' + Math.round(v).toLocaleString('id-ID'
 .keybox{margin:6px 0}.kf{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}
 .bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
 .lbl{margin:0}.grp{display:flex;gap:6px}
-.stage{position:relative;aspect-ratio:16/9;background:#f4f9fb;border:1px solid var(--rule);overflow:hidden;cursor:pointer;color:#1f2937}
+.stage{position:relative;aspect-ratio:16/9;background:linear-gradient(120deg,#f4f9fb,#e6f4f1,#f4f9fb);background-size:300% 300%;animation:drift 18s ease infinite;border:1px solid var(--rule);overflow:hidden;cursor:pointer;color:#1f2937}
 .stage:fullscreen{border:0}
-.scene{position:absolute;inset:0;padding:4% 5% 14%;display:flex;flex-direction:column;animation:fade .6s ease}
+.scene{position:absolute;inset:0;padding:4% 5% 14%;display:flex;flex-direction:column;animation:enter .7s cubic-bezier(.2,.7,.2,1)}
+.ticks{position:absolute;left:5%;right:5%;bottom:13%;display:flex;gap:4px}
+.ticks i{flex:1;height:3px;background:rgba(15,118,110,.18);border-radius:2px;transition:background .4s}
+.ticks i.on{background:#0f766e}
+.cap{display:inline-block;animation:capIn .5s ease}
 .chap{font-size:clamp(10px,1.2vw,14px);letter-spacing:.2em;text-transform:uppercase;color:#0f766e;font-weight:700}
 .ttl{font-family:Cambria,Georgia,serif;font-size:clamp(18px,3vw,38px);margin:.3em 0 .6em;color:#1f2937;animation:rise .7s ease}
 .caption{position:absolute;left:0;right:0;bottom:0;padding:1.2% 5%;background:#0f766e;color:#fff;font-size:clamp(12px,1.6vw,20px);line-height:1.4;min-height:12%}
 .bigplay{position:absolute;inset:0;margin:auto;width:84px;height:84px;border-radius:50%;border:0;background:rgba(15,118,110,.9);color:#fff;font-size:34px;cursor:pointer}
-.v-title{display:flex;flex-direction:column;gap:.4em;margin-top:3%}
-.v-title .tk{font-family:Cambria,Georgia,serif;font-size:clamp(48px,9vw,120px);line-height:1;color:#0f766e;animation:rise .8s ease}
-.v-title .nm{font-size:clamp(16px,2.4vw,30px);animation:rise 1s ease}
-.v-title .meta{font-size:clamp(12px,1.5vw,18px);opacity:.75;animation:rise 1.2s ease}
-.v-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(22%,1fr));gap:2.5%}
-.kpi{background:#fff;border:1px solid #d3e9e6;border-top:4px solid #0d9488;padding:4% 5%;display:flex;flex-direction:column;gap:.4em;animation:rise .7s ease both}
-.kpi b{font-family:Cambria,Georgia,serif;font-size:clamp(18px,3.2vw,42px);color:#1f2937}
-.kpi span{font-size:clamp(10px,1.3vw,16px);opacity:.75}
-.kpi.sm b{font-size:clamp(14px,2vw,26px)}
-.v-bars{display:grid;gap:3%}
-.br{display:grid;grid-template-columns:28% 1fr 20%;gap:2%;align-items:center;font-size:clamp(10px,1.3vw,16px);animation:rise .6s ease both}
-.bl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.track{position:relative;height:clamp(10px,1.6vw,20px);background:#e6eef3;border-radius:999px;overflow:hidden}
-.track i{position:absolute;left:0;top:0;bottom:0;border-radius:999px}
-.track .from{background:#bcccdc}
-.track .to{background:#0d9488;opacity:.85;animation:grow 1.2s ease both}
-.bv{text-align:right;font-weight:700}
-.v-cmp{display:grid;grid-template-columns:1.2fr 1fr;gap:4%;flex:1;min-height:0}
-.cmp{display:flex;gap:6%;align-items:flex-end;height:100%}
-.col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;font-size:clamp(10px,1.2vw,15px);text-align:center}
-.col b{font-family:Cambria,Georgia,serif;font-size:clamp(16px,2.4vw,32px)}
-.col i{display:block;background:#0d9488;margin-top:.4em;border-radius:4px 4px 0 0;animation:growUp 1.2s ease both}
-.col:first-child i{background:#486581}
-.mini{display:grid;gap:4%;align-content:center}
-.v-ladder{flex:1;position:relative}
-.axis{position:absolute;inset:2% 0;border-left:3px solid #bcccdc;margin-left:6%}
-.lv{position:absolute;left:0;right:0;display:flex;align-items:center;gap:1%;font-size:clamp(10px,1.3vw,16px);transform:translateY(-50%);animation:rise .6s ease both}
-.lv .ln{width:5%;border-top:2px dashed #94a3b8}
-.lv span{opacity:.75}
-.now{position:absolute;left:-1%;display:flex;align-items:center;gap:1%;transform:translateY(-50%);font-size:clamp(11px,1.5vw,18px);color:#0f766e}
-.now .dot{width:clamp(10px,1.4vw,18px);height:clamp(10px,1.4vw,18px);border-radius:50%;background:#0f766e;animation:pulse 1.4s infinite}
-.v-list{list-style:none;margin:0;padding:0;display:grid;gap:2.5%}
-.v-list li{background:#fff;border-left:4px solid #0d9488;padding:1.4% 2%;font-size:clamp(11px,1.5vw,18px);animation:rise .6s ease both}
-.v-rec{display:flex;flex-direction:column;gap:3%}
-.v-rec .act{font-family:Cambria,Georgia,serif;font-size:clamp(20px,3.4vw,44px);color:#0f766e;animation:rise .7s ease}
-.v-rec .por{font-size:clamp(11px,1.4vw,17px);opacity:.8}
 .ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
 .ctl .play{min-width:96px;font-weight:600}
 .prog{flex:1;min-width:140px;height:8px;background:var(--rule-2);border-radius:4px;cursor:pointer;position:relative;overflow:hidden}
@@ -339,9 +257,9 @@ const rpS = v => v == null ? '–' : 'Rp' + Math.round(v).toLocaleString('id-ID'
 .dl{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;align-items:center}
 .linkbtn{background:none;border:0;padding:0;color:var(--now-ink);text-decoration:underline;cursor:pointer;font:inherit}
 @keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes enter{from{opacity:0;transform:translateX(4%) scale(.98)}to{opacity:1;transform:none}}
+@keyframes capIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes drift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@media (prefers-reduced-motion:reduce){.stage,.scene,.cap{animation:none}}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-@keyframes grow{from{width:0}}
-@keyframes growUp{from{height:0}}
-@keyframes pulse{50%{transform:scale(1.3);opacity:.6}}
-@media (max-width:760px){ .v-cmp{grid-template-columns:1fr}.br{grid-template-columns:34% 1fr 26%} }
 </style>

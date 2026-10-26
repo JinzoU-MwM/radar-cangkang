@@ -17,9 +17,15 @@ import TabIntel from '../components/emiten/TabIntel.vue'
 import TabDownload from '../components/emiten/TabDownload.vue'
 import TabInsider from '../components/emiten/TabInsider.vue'
 import TabVideo from '../components/emiten/TabVideo.vue'
+import TabSlides from '../components/emiten/TabSlides.vue'
+import { SLIDE_TABS } from '../lib/slideTabs.js'
 import { api } from '../api.js'
 
 const props = defineProps({ ticker: { type: String, required: true } })
+// Tampilan tab: 'slide' (ringkas interaktif) atau 'lengkap' (teks penuh); pilihan diingat per perangkat.
+const view = ref((() => { try { return localStorage.getItem('emitenView') || 'slide' } catch { return 'slide' } })())
+watch(view, v => { try { localStorage.setItem('emitenView', v) } catch { /* penyimpanan tidak tersedia */ } })
+const slideOn = computed(() => view.value === 'slide' && SLIDE_TABS.includes(tab.value))
 const route = useRoute()
 const router = useRouter()
 
@@ -177,8 +183,13 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
           @click="pick(t.id)" @keydown="onTabKey($event, i)">{{ t.name }}</button>
       </div>
 
+      <div v-if="SLIDE_TABS.includes(tab)" class="viewsw" role="group" aria-label="Tampilan">
+        <button type="button" class="pill sm" :aria-pressed="String(view === 'slide')" @click="view = 'slide'">Slide</button>
+        <button type="button" class="pill sm" :aria-pressed="String(view === 'lengkap')" @click="view = 'lengkap'">Lengkap</button>
+      </div>
       <div :id="'panel-' + tab" role="tabpanel" :aria-labelledby="'tab-' + tab" class="panel">
-        <p v-if="!known && RADAR_ONLY.includes(tab)" class="muted none">{{ T }} belum ada di radar, jadi {{ tab === 'story' ? 'story dan pengendali' : 'ringkasan transaksi' }} belum ada. Tab Analisa, Teknikal, Spekulasi, Profil, dan Berita tetap memakai data Stockbit.</p>
+        <TabSlides v-if="slideOn" :ticker="T" :tab="tab" @full="view = 'lengkap'" />
+        <p v-else-if="!known && RADAR_ONLY.includes(tab)" class="muted none">{{ T }} belum ada di radar, jadi {{ tab === 'story' ? 'story dan pengendali' : 'ringkasan transaksi' }} belum ada. Tab Analisa, Teknikal, Spekulasi, Profil, dan Berita tetap memakai data Stockbit.</p>
         <TabRingkasan v-else-if="tab === 'ringkasan'" :ticker="T" />
         <TabStory v-else-if="tab === 'story'" :ticker="T" @flow="openFlow" />
         <TabInsider v-else-if="tab === 'insider'" :ticker="T" />
@@ -198,6 +209,7 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
 </template>
 
 <style scoped>
+.viewsw{display:flex;gap:6px;justify-content:flex-end;margin:8px 0 0}
 .em{display:flex;flex-direction:column;gap:16px;max-width:1200px}
 .back{font-size:13px;text-decoration:none;align-self:flex-start}
 .back:hover{text-decoration:underline}
