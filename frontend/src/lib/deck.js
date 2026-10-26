@@ -154,7 +154,9 @@ function makeKit(PptxGenJS, d, th, title) {
     if (take) {
       s.addShape(S.ROUNDED_RECTANGLE, { x: M, y: 4.72, w: CW, h: 0.42, rectRadius: 0.06, fill: { color: th.dark }, line: { color: th.dark, width: 0.5 } })
       T(s, 'KESIMPULAN', { x: M + 0.18, y: 4.72, w: 1.5, h: 0.42, fontSize: 8.5, bold: true, color: th.accent2, charSpacing: 3, valign: 'middle' })
-      T(s, short(take, 145), { x: M + 1.75, y: 4.72, w: CW - 1.9, h: 0.42, fontSize: 10.5, color: 'FFFFFF', valign: 'middle' })
+      // Kesimpulan panjang (dua kalimat) dikecilkan agar muat dua baris, bukan dipotong.
+      const long = take.length > 145
+      T(s, short(take, long ? 300 : 145), { x: M + 1.75, y: 4.72, w: CW - 1.9, h: 0.42, fontSize: long ? 8.5 : 10.5, color: 'FFFFFF', valign: 'middle', fit: 'shrink' })
     }
     T(s, `${d.t} | Riset Ekuitas Radar Backdoor | Data per ${fmtDate(d.date)}`, { x: M, y: 5.24, w: 6, h: 0.22, fontSize: 8, color: th.muted })
     T(s, String(page), { x: W - M - 0.5, y: 5.24, w: 0.5, h: 0.22, fontSize: 8, color: th.muted, align: 'right' })
@@ -443,17 +445,24 @@ export function buildDeck(PptxGenJS, d, th) {
   {
     const pb = (d.ri?.doc || d.riDoc)?.penjelasanBursa
     if (pb && (pb.poin || []).length) {
-      const s = slide('Penjelasan bursa', 'Analisa Penjelasan atas Permintaan Penjelasan Bursa', pb.kesimpulan)
-      T(s, `${pb.tanggal ? fmtDate(pb.tanggal) + ' · ' : ''}${short(pb.judul || '', 90)}`, { x: M, y: TOP - 0.05, w: CW, h: 0.22, fontSize: 8.5, color: th.muted })
-      const rows = pb.poin.slice(0, 8), rh = 3.05 / rows.length
+      // Semua butir ditampilkan; dipecah per 8 baris, kesimpulan di slide terakhir.
       const col = x => x === 'positif' ? th.good : x === 'negatif' ? th.bad : th.muted
-      rows.forEach((x, i) => {
-        const y = TOP + 0.25 + i * rh
-        if (i) line(s, M, y, CW, 0, th.line, { w: 0.5 })
-        pill(s, M, y + (rh - 0.2) / 2, x.nada || 'netral', col(x.nada), { size: 7, h: 0.2, w: 0.75 })
-        T(s, short(x.topik, 34), { x: M + 0.85, y, w: 1.6, h: rh, fontSize: 8.5, bold: true, color: th.ink, valign: 'middle', fit: 'shrink' })
-        T(s, short(x.jawab, 150), { x: M + 2.5, y, w: 3.25, h: rh, fontSize: 7.5, color: th.ink, valign: 'middle', fit: 'shrink' })
-        T(s, short(x.analisa, 150), { x: M + 5.85, y, w: CW - 5.85, h: rh, fontSize: 7.5, color: th.muted, valign: 'middle', fit: 'shrink' })
+      const NADA = { positif: 'Positif', negatif: 'Negatif', netral: 'Netral' }
+      const pages = []
+      for (let i = 0; i < pb.poin.length; i += 8) pages.push(pb.poin.slice(i, i + 8))
+      pages.forEach((rows, p) => {
+        const last = p === pages.length - 1
+        const s = slide('Penjelasan bursa', `Analisa Penjelasan atas Permintaan Penjelasan Bursa${pages.length > 1 ? ` (${p + 1}/${pages.length})` : ''}`, last ? pb.kesimpulan : null)
+        T(s, `${pb.tanggal ? fmtDate(pb.tanggal) + ' · ' : ''}${short(pb.judul || '', 90)}`, { x: M, y: TOP - 0.05, w: CW, h: 0.22, fontSize: 8.5, color: th.muted })
+        const rh = 3.05 / 8
+        rows.forEach((x, i) => {
+          const y = TOP + 0.25 + i * rh
+          if (i) line(s, M, y, CW, 0, th.line, { w: 0.5 })
+          pill(s, M, y + (rh - 0.2) / 2, NADA[x.nada] || 'Netral', col(x.nada), { size: 7, h: 0.2, w: 0.75 })
+          T(s, short(`${x.no ? x.no + '. ' : ''}${x.topik}`, 38), { x: M + 0.85, y, w: 1.6, h: rh, fontSize: 8.5, bold: true, color: th.ink, valign: 'middle', fit: 'shrink' })
+          T(s, short(x.jawab, 240), { x: M + 2.5, y, w: 3.25, h: rh, fontSize: 7.5, color: th.ink, valign: 'middle', fit: 'shrink' })
+          T(s, short(x.analisa, 240), { x: M + 5.85, y, w: CW - 5.85, h: rh, fontSize: 7.5, color: th.muted, valign: 'middle', fit: 'shrink' })
+        })
       })
     }
   }
