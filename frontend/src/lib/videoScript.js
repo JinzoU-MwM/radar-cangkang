@@ -40,7 +40,7 @@ export function speakable(text) {
 
 // Urutan adegan mengikuti urutan slide presentasi (deck.js buildDeck).
 const ORDER = ['buka', 'profilp', 'pengurus', 'pengendali', 'profil', 'transformasi', 'progres', 'berita', 'tesis', 'skor', 'kasus',
-  'aset', 'valuasi', 'ri', 'ri-kewajaran', 'ri-penilaian', 'ri-bisnis', 'ri-simulasi', 'ri-valuasi', 'ri-kelayakan',
+  'aset', 'rencana-korporasi', 'valuasi', 'ri', 'ri-kewajaran', 'ri-penilaian', 'ri-bisnis', 'ri-simulasi', 'ri-valuasi', 'ri-kelayakan',
   'teknikal', 'rencana', 'skenario', 'rekomendasi', 'tindakan', 'penutup']
 
 // Satu adegan: { id, bab, judul, visual, lines: [teks] }. visual.type: title | kpis | bars | compare | ladder | list | rec.
@@ -160,6 +160,22 @@ export function buildVideo(d, mode = 'ringkas') {
       : lbA.labaThn != null ? `Laba bersih aset setahun sekitar ${big(lbA.labaThn)}${lbA.per != null ? `, sehingga harga transaksi setara ${id(lbA.per, 1)} kali laba porsi yang diambil` : ''}.` : null)
       : (d.ri?.doc || d.riDoc) ? 'Laba aset belum diungkap dalam dokumen, sehingga nilai transaksi belum dapat diuji terhadap laba.' : null,
   ])
+
+  // 5b. Struktur rencana korporasi (dari dokumen keterbukaan)
+  const rkc = (d.ri?.doc || d.riDoc)?.rencanaKorporasi
+  if (rkc && (rkc.langkah || []).length) {
+    const st = rkc.langkah
+    // Ringkas: langkah bernilai/berstatus berjalan atau rencana yang paling menentukan; Lengkap: seluruh langkah.
+    const pick = full ? st : st.filter(x => /berjalan|rencana/.test(x.status || '') || /ambil alih|pengendali/i.test(x.judul)).slice(0, 4)
+    const stTxt = x => x.status === 'selesai' ? 'sudah selesai' : x.status === 'berjalan' ? 'sedang berjalan' : 'masih rencana'
+    add('rencana-korporasi', 'Rencana korporasi', 'Struktur rencana korporasi', {
+      type: 'list', items: st.slice(0, full ? 9 : 6).map((x, i) => `${i + 1}. ${x.judul}${x.nilai && x.nilai !== '–' ? ' · ' + (String(x.nilai).length > 48 ? String(x.nilai).slice(0, 46) + '…' : x.nilai) : ''}`),
+    }, [
+      `Struktur rencana korporasinya terdiri atas ${st.length} langkah.`,
+      first(rkc.ringkas, full ? 2 : 1),
+      ...pick.map(x => `${x.judul}${x.waktu && x.waktu !== '–' ? ', ' + x.waktu : ''}, ${stTxt(x)}.${x.nilai && x.nilai !== '–' ? ' Nilainya ' + lower1(x.nilai).replace(/\.$/, '') + '.' : ''}${full && x.ket ? ' ' + first(x.ket, 1) : ''}`),
+    ])
+  }
 
   // 6. Penambahan modal (rights issue)
   if (d.ri && d.riR) {
