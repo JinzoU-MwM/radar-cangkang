@@ -1418,7 +1418,7 @@ function riSlides(K, th, d, opt = {}) {
     const lbA = c.doc ? asetLaba(c.doc, { S1: r.S1, P }) : null
     const ls = labaSebelumSesudah(c, r, lbA)
     const ly = riLayak(c, r, lbA, ls)
-    const rt = riRating(ly, riTrading(c, r))
+    const rt = riRating(ly, riTrading(c, r), c, r)
     if (ly) {
       const s = slide('Kelayakan', 'Laba Setelah Aset Masuk dan Rekomendasi Investasi', rt.partTxt)
       const lw = 5.0

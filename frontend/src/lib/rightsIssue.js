@@ -353,7 +353,8 @@ export function riTrading(c, r, now = new Date()) {
   const jd = (c.doc?.jadwal || []).filter(j => j.status !== 'selesai')
   const dated = jd.map(j => ({ ...j, t: tglDari(j.waktu) })).filter(j => j.t && j.t >= now).sort((a, b) => a.t - b.t)
   const next = dated[0] || jd[0] || null
-  if (next) add(1, `Katalis yang dapat menggerakkan harga: ${next.tahap} pada ${next.waktu}.`)
+  const kapan = w => !w ? '' : /\d/.test(w) && !/^(belum|paling lambat|selambatnya)/i.test(w) ? ` pada ${w}` : ` (waktu: ${String(w).replace(/^./, x => x.toLowerCase())})`
+  if (next) add(1, `Katalis yang dapat menggerakkan harga: ${next.tahap}${kapan(next.waktu)}.`)
   else add(-1, 'Belum ada katalis terjadwal yang jelas.')
   const liq = c.avgVal
   if (liq != null) {
@@ -370,7 +371,7 @@ export function riTrading(c, r, now = new Date()) {
     tone: { ada: 'warn', tipis: 'warn', tidak: 'strong' }[key],
     aturan: key === 'tidak' ? [] : [
       'Hanya porsi kecil (misalnya maks. 1–2% modal) dan uang dingin.',
-      next ? `Fokus pada katalis terdekat, ${next.tahap} pada ${next.waktu}; ambil untung bertahap saat harga naik menjelang katalis.` : 'Ambil untung bertahap saat harga naik.',
+      next ? `Fokus pada katalis terdekat, ${next.tahap}${kapan(next.waktu)}; ambil untung bertahap saat harga naik menjelang katalis.` : 'Ambil untung bertahap saat harga naik.',
       'Keluar seluruhnya sebelum cum date, atau segera bila harga RI resmi diumumkan jauh di bawah harga pasar.',
       'Pasang batas rugi tegas (misalnya 8–10% dari harga masuk).',
     ],
@@ -380,21 +381,68 @@ export function riTrading(c, r, now = new Date()) {
 // Rekomendasi bergaya manajer investasi dari dua penilaian: kelayakan menahan/ikut rights issue (riLayak) dan
 // potensi trading aksi korporasi (riTrading). rating = BUY | TRADING BUY | SPECULATIVE BUY | AVOID;
 // partisipasi = sikap atas rights issue (OVERWEIGHT | NEUTRAL | UNDERWEIGHT).
-export function riRating(ly, tr) {
+export function riRating(ly, tr, c = null, r = null) {
   if (!ly) return null
   const part = { layak: 'OVERWEIGHT', spekulatif: 'NEUTRAL', tidak: 'UNDERWEIGHT' }[ly.key]
-  const partTxt = {
+  const done = tr?.key === 'tidak' && /tereksekusi/.test(tr?.reasons?.[0]?.t || '') || null
+  let partTxt = {
     OVERWEIGHT: 'Partisipasi rights issue: OVERWEIGHT (layak menebus HMETD).',
     NEUTRAL: 'Partisipasi rights issue: NEUTRAL (menebus dengan porsi terbatas).',
     UNDERWEIGHT: 'Partisipasi rights issue: UNDERWEIGHT (tidak disarankan menebus atau menahan melewati cum date).',
   }[part]
+  // Transaksi yang sudah terlaksana atau tanpa HMETD (private placement/merger): publik tidak lagi dapat menebus.
+  const pp = noRights(c), batas = pp ? 'pencatatan saham baru' : 'cum date'
+  if (done) partTxt = `Penambahan modal sudah terlaksana; sikap ${part} kini berarti ${part === 'OVERWEIGHT' ? 'layak menambah posisi' : part === 'NEUTRAL' ? 'cukup menahan posisi yang ada' : 'mengurangi posisi'}.`
+  else if (pp) partTxt = `Tanpa HMETD (publik tidak dapat ikut menebus): ${part}, ${part === 'OVERWEIGHT' ? 'layak menahan melewati pencatatan saham baru' : part === 'NEUTRAL' ? 'tahan dengan porsi terbatas' : 'tidak disarankan menahan melewati pencatatan saham baru'}.`
   const kat = tr?.reasons?.find(x => /^Katalis/.test(x.t))?.t.replace(/^Katalis yang dapat menggerakkan harga:\s*/, '').replace(/\.$/, '')
   let rating, tone, sub
-  if (ly.key === 'layak') { rating = 'BUY'; tone = 'good'; sub = 'Fundamental transaksi mendukung; partisipasi rights issue layak dipertimbangkan.' }
-  else if (tr?.key === 'ada') { rating = 'TRADING BUY (Spekulatif)'; tone = 'warn'; sub = `Horizon jangka pendek${kat ? ' menjelang ' + kat : ''}; realisasikan keuntungan sebelum cum date.` }
+  if (ly.key === 'layak') { rating = 'BUY'; tone = 'good'; sub = done ? 'Penambahan modal sudah terlaksana dan fundamental transaksinya mendukung; layak dikoleksi untuk jangka menengah.' : 'Fundamental transaksi mendukung; partisipasi rights issue layak dipertimbangkan.' }
+  else if (tr?.key === 'ada') { rating = 'TRADING BUY (Spekulatif)'; tone = 'warn'; sub = `Horizon jangka pendek${kat ? ' menjelang ' + kat : ''}; realisasikan keuntungan sebelum ${batas}.` }
   else if (ly.key === 'spekulatif') { rating = 'SPECULATIVE BUY'; tone = 'warn'; sub = 'Potensi ada, namun eksposur dibatasi sampai katalis terkonfirmasi.' }
   else { rating = 'AVOID'; tone = 'strong'; sub = 'Belum ada katalis yang menopang harga dalam waktu dekat.' }
-  return { rating, tone, sub, partisipasi: part, partTxt, text: `${rating}: ${sub}` }
+  const lv = riLevels(c, r, rating)
+  // Risiko terbesar (turun ke harga teoretis) ikut tertulis di kalimat utama rekomendasi.
+  const drop = lv.angka.find(x => x.bad)
+  if (drop && rating !== 'BUY') sub += ` ${drop.k.replace('Potensi turun', `Potensi turun ${drop.v}`)}${lv.asumsi ? ' (memakai harga pelaksanaan asumsi)' : ''}.`
+  return { rating, tone, sub, partisipasi: part, partTxt, text: `${rating}: ${sub}`, ...lv }
+}
+
+// Fraksi harga BEI (tick) untuk membulatkan batas rugi ke harga yang bisa diorder.
+const tick = p => p < 200 ? 1 : p < 500 ? 2 : p < 2000 ? 5 : p < 5000 ? 10 : 25
+const rpN = v => 'Rp' + Math.round(v).toLocaleString('id-ID')
+
+// Angka pendukung rekomendasi: harga kini vs harga teoretis setelah rights issue, potensi turun bila ditahan
+// melewati cum date, batas rugi dalam rupiah, asumsi yang dipakai, dan risiko kunci dari dokumen.
+export function riLevels(c, r, rating) {
+  if (!c) return { angka: [], risiko: [], asumsi: null }
+  const doc = c.doc || {}, angka = [], risiko = []
+  const p = c.price, terp = r?.terp
+  const done = c.status === 'tereksekusi', pp = noRights(c)
+  // Private placement/merger tidak punya cum date; acuannya pencatatan saham baru.
+  const batas = pp ? 'pencatatan saham baru' : 'cum date'
+  if (p) angka.push({ k: 'Harga sekarang', v: rpN(p) })
+  if (p && terp && !done) {
+    const chg = terp / p - 1
+    angka.push({ k: pp ? 'Harga teoretis setelah saham baru tercatat' : 'Harga teoretis setelah rights issue', v: rpN(terp) })
+    if (chg < -0.05) angka.push({ k: `Potensi turun bila ditahan melewati ${batas}`, v: `±${Math.round(-chg * 100)}%`, bad: true })
+    else if (chg > 0.05) risiko.push(`Harga pelaksanaan di atas harga pasar (harga teoretis ${rpN(terp)} > harga sekarang): publik cenderung tidak menebus, sehingga porsi publik bisa menyusut.`)
+  }
+  if (p && /TRADING|SPECULATIVE/.test(rating || '')) {
+    const sl = Math.floor(p * 0.9 / tick(p)) * tick(p)
+    angka.push({ k: 'Batas rugi', v: `${rpN(sl)} (−10%)` })
+  }
+  const cum = (doc.jadwal || []).find(j => /cum/i.test(j.tahap || '') && tglDari(j.waktu))
+  if (!done && rating !== 'BUY') angka.push({ k: 'Keluar paling lambat', v: cum ? `sebelum cum date ${cum.waktu}` : `sebelum ${batas} (tanggal belum ditetapkan)` })
+  // Harga pelaksanaan asumsi harus terbaca sebagai asumsi, bukan fakta.
+  const asumsi = !done && c.exAssumed && r?.N && r?.total
+    ? `Harga rights issue resmi belum ditetapkan; perhitungan memakai asumsi ${rpN(r.total / r.N)} per saham, sehingga harga teoretis dan potensi turun dapat berubah saat harga resmi diumumkan.`
+    : null
+  if (!done && !pp && doc.pembeliSiaga && doc.pembeliSiaga.ada === false) risiko.push('Belum ada pembeli siaga: dana tunai tidak terjamin.')
+  if (/konversi|dikonversi/i.test(`${doc.komitmenPengendali || ''} ${doc.setoran?.keterangan || ''}`)) risiko.push('Utang ke pengendali dapat dikonversi menjadi saham melalui rights issue: pengendali bisa menambah porsi tanpa setoran tunai baru.')
+  if (!done && !pp && r?.pubAfter != null && r.pubAfter < 0.075) risiko.push(`Bila publik tidak menebus, porsi publik turun ke ${r.pubAfter < 0.001 ? 'kurang dari 0,1' : (r.pubAfter * 100).toFixed(1).replace('.', ',')}% (di bawah batas free float 7,5%).`)
+  if (/waran/i.test(String(doc.rasio || ''))) risiko.push('Rights issue disertai waran: menambah dilusi bila waran dilaksanakan.')
+  if (/kedaluwarsa/i.test(String(doc.status || ''))) risiko.push('Persetujuan RUPS atas rights issue sudah kedaluwarsa; jadwal bergantung RUPSLB ulang.')
+  return { angka, risiko: risiko.slice(0, 4), asumsi }
 }
 
 // Warna putusan kewajaran aset injeksi dari dokumen (wajar/cenderung mahal/tidak wajar/belum dapat dinilai).

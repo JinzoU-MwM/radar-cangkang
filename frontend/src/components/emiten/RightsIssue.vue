@@ -50,7 +50,7 @@ const layak = computed(() => riLayak(props.c, r.value, lbA.value, ls.value))
 // Skenario kedua: trading jangka pendek memanfaatkan aksi korporasi.
 const trade = computed(() => riTrading(props.c, r.value))
 // Rekomendasi bergaya manajer investasi (rating + sikap atas partisipasi rights issue).
-const rating = computed(() => riRating(layak.value, trade.value))
+const rating = computed(() => riRating(layak.value, trade.value, props.c, r.value))
 // Alasan searah putusan (utama) dipisah dari faktor sebaliknya agar poin positif tidak tercantum di bawah "Tidak layak, karena".
 const layakWhy = computed(() => {
   const rs = layak.value?.reasons || [], pos = layak.value?.key === 'layak'
@@ -403,6 +403,15 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
           <b>{{ rating.rating }}</b>
         </div>
         <p class="small">{{ rating.sub }}</p>
+        <!-- Angka kunci rekomendasi: harga, harga teoretis, potensi turun, batas rugi, batas waktu keluar. -->
+        <dl v-if="rating.angka.length" class="lv small">
+          <template v-for="x in rating.angka" :key="x.k"><dt>{{ x.k }}</dt><dd :class="{ bad: x.bad }">{{ x.v }}</dd></template>
+        </dl>
+        <p v-if="rating.asumsi" class="small muted">{{ rating.asumsi }}</p>
+        <template v-if="rating.risiko.length">
+          <p class="small"><b>Risiko kunci:</b></p>
+          <ul class="small risk"><li v-for="x in rating.risiko" :key="x">{{ x }}</li></ul>
+        </template>
         <p class="small"><b>{{ rating.partTxt }}</b></p>
       </div>
       <!-- Skenario kedua: trading jangka pendek memanfaatkan aksi korporasi. -->
@@ -479,6 +488,9 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
 </template>
 
 <style scoped>
+.lv{display:grid;grid-template-columns:max-content 1fr;gap:3px 14px;margin:8px 0}
+.lv dt{color:var(--muted)} .lv dd{margin:0;font-weight:700} .lv dd.bad{color:var(--strong)}
+.risk{margin:4px 0 8px;padding-left:18px}
 .sec{margin:22px 0 8px;padding-top:10px;border-top:2px solid var(--rule);font:700 15px var(--f-display)}
 .hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .hd h2{margin:0}
