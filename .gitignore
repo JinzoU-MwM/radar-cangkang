@@ -41,3 +41,5 @@ website/tsa-*.json
 # suara video (kunci Azure & cache audio)
 **/.azure-speech
 **/.tts-cache/
+**/.seasonality.json
+**/.seasonality.tmp

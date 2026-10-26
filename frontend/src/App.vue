@@ -104,6 +104,7 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
       <RouterLink class="nav" to="/berita" active-class="on">Berita <span class="cnt">{{ nBaru || '' }}</span></RouterLink>
       <RouterLink class="nav" to="/intel" active-class="on">Intel Pasar <span class="cnt"></span></RouterLink>
       <RouterLink class="nav" to="/pov" active-class="on">POV <span class="cnt"></span></RouterLink>
+      <RouterLink class="nav" to="/seasonality" active-class="on">Seasonality <span class="cnt"></span></RouterLink>
       <div class="foot">
         <ChangelogPanel />
         <span v-if="store.status?.readOnly" class="tok">Versi publik · hanya baca</span>
