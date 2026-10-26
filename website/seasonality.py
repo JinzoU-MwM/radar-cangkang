@@ -1,6 +1,6 @@
 """Seasonality: pola return bulanan berulang untuk IHSG, indeks sektor, dan saham (data Stockbit /seasonality).
 
-Data mentah (return % per bulan per tahun, aksi korporasi, indeks keanggotaan) dikumpulkan Senin-Jumat pukul 00.01 WIB oleh
+Data mentah (return % per bulan per tahun, aksi korporasi, indeks keanggotaan) dikumpulkan Senin-Sabtu pukul 00.01 WIB oleh
 build() ke .seasonality.json; analyze() menghitung peringkat untuk bulan dan rentang tahun yang dipilih.
 Modul ini murni: fungsi pengambil data (fetch) disuntikkan dari server.py.
 """

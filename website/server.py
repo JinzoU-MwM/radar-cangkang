@@ -1917,11 +1917,11 @@ WIB = timezone(timedelta(hours=7))
 
 
 def season_next_run(now: datetime) -> datetime:
-    """Jadwal pembaruan: Senin-Jumat pukul 00.01 WIB; Sabtu dan Minggu libur."""
+    """Jadwal pembaruan: Senin-Sabtu pukul 00.01 WIB (Sabtu memuat data penutupan Jumat); Minggu libur."""
     t = now.astimezone(WIB).replace(hour=0, minute=1, second=0, microsecond=0)
     if t <= now.astimezone(WIB):
         t += timedelta(days=1)
-    while t.weekday() >= 5:  # 5 = Sabtu, 6 = Minggu
+    while t.weekday() == 6:  # 6 = Minggu
         t += timedelta(days=1)
     return t
 
@@ -1965,7 +1965,7 @@ def season_loop() -> None:
 def season_api(month: int, years: int) -> dict:
     data = season_data()
     if not data:
-        return {"error": "Data seasonality sedang disiapkan (pembaruan otomatis Senin-Jumat pukul 00.01 WIB). Coba lagi beberapa menit lagi."}
+        return {"error": "Data seasonality sedang disiapkan (pembaruan otomatis Senin-Sabtu pukul 00.01 WIB). Coba lagi beberapa menit lagi."}
     kd = {k["ticker"] for k in (_kd_memo[1].get("items", []) if _kd_memo else [])}
     return SZ.analyze(data, month, years, tsa_load("signals"), {i["ticker"] for i in items_all()}, kd)
 
