@@ -57,8 +57,8 @@ const n = x => PB_JAWABAN[x] || PB_JAWABAN.sebagian
     </div>
 
     <!-- Lampiran: tanya-jawab lengkap untuk verifikasi. -->
-    <details class="lamp">
-      <summary>Lampiran: tanya-jawab lengkap ({{ (pb.poin || []).length }} butir)</summary>
+    <details class="lamp" open>
+      <summary>Analisa per pertanyaan BEI ({{ (pb.poin || []).length }} butir)</summary>
       <div class="scroll">
         <table class="ledger">
           <thead><tr><th v-if="adaNo">No</th><th>Topik</th><th>Pertanyaan BEI</th><th>Jawaban emiten</th><th>Kelengkapan</th><th>Catatan analis</th></tr></thead>
