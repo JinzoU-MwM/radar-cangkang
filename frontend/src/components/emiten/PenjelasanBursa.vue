@@ -12,7 +12,7 @@ const n = x => NADA[x] || NADA.netral
     <h2 class="lbl">Analisa penjelasan atas permintaan penjelasan bursa (terakhir)</h2>
     <p class="small muted">
       {{ pb.tanggal ? fmtDate(pb.tanggal) : '' }} · {{ pb.judul }}
-      <a v-if="/^https:\/\/emitten-announcement\.stockbit\.com\//.test(pb.url || '')" :href="pb.url" target="_blank" rel="noopener">PDF</a>
+      <a v-if="/^https:\/\/(emitten-announcement\.stockbit\.com|www\.idx\.co\.id\/StaticData)\//.test(pb.url || '')" :href="pb.url" target="_blank" rel="noopener">PDF</a>
     </p>
     <p v-if="pb.ringkas" class="lead">{{ pb.ringkas }}</p>
     <div class="scroll">
