@@ -441,7 +441,7 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
 
     <div v-if="ticker" class="dl">
       <h3 class="lbl">Unduh analisa {{ c.label }}</h3>
-      <p class="small muted">Khusus analisa ini, urutannya sama dengan bagian di atas: angka kunci, pengendali, aset & laba,
+      <p class="small muted">Khusus analisa ini, urutannya sama dengan bagian di atas: angka kunci, struktur rencana korporasi, pengendali, aset & laba,
         penerbitan & dana, simulasi (harga potensi, tabel rasio, valuasi), dampak investor, lalu kelayakan dan kesimpulan. Memakai simulasi saat ini: harga {{ rp(P) }}<template v-if="!nr">, publik menebus {{ U }}%</template>.</p>
       <DeckDownload :sector-id="sector.id" :build="build" label="analisa" />
     </div>

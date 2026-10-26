@@ -28,7 +28,7 @@ const SECTIONS = [
   ['Analisa', [['Tesis analis', '4 poin alasan sikap'], ['Enam dimensi', 'skor & alasan singkat'],
     ['Aset & valuasi', 'bila tidak ada rights issue'], ['Kasus naik vs turun', 'pendorong, risiko, catatan analis']]],
   // Bagian Rights Issue: inti analisa rights issue (hanya bila ada rencana penambahan modal).
-  ['Rights Issue', [['Angka kunci', 'nilai penerbitan, dana tunai, harga, dilusi'], ['Kewajaran aset', 'wajar atau tidak & alasannya'],
+  ['Rights Issue', [['Angka kunci', 'nilai penerbitan, dana tunai, harga, dilusi'], ['Rencana korporasi', 'langkah, pihak, nilai, status'], ['Kewajaran aset', 'wajar atau tidak & alasannya'],
     ['Model bisnis & laba', 'cara menghasilkan laba & proyeksi'], ['Kebutuhan dana', 'nilai penerbitan vs nilai aset'],
     ['Simulasi rasio', 'harga RI, dana, harga dibutuhkan'], ['Simulasi valuasi', 'valuasi target & sudut pandang pengendali'],
     ['Kelayakan investasi', 'laba sebelum/sesudah, layak atau tidak']]],
