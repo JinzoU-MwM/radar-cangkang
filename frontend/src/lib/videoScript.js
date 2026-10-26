@@ -302,14 +302,15 @@ export function buildVideo(d, mode = 'ringkas') {
   // 11d. Analisa penjelasan atas permintaan penjelasan bursa (terakhir)
   const pbx = (d.ri?.doc || d.riDoc)?.penjelasanBursa
   if (pbx && (pbx.poin || []).length) {
-    // Butir yang belum dijawab lengkap (dapat dicek di dokumen) menjadi catatan utama.
+    // Memo riset: judul, poin utama, implikasi, dan butir yang belum dijawab lengkap (dapat dicek di dokumen).
+    const mm = pbx.memo || {}
     const kurang = pbx.poin.filter(x => x.jawaban !== 'lengkap' && x.kurang), lengkap = pbx.poin.filter(x => x.jawaban === 'lengkap').length
-    add('penjelasan-bursa', 'Penjelasan bursa', 'Analisa penjelasan atas permintaan penjelasan bursa', {
-      type: 'list', items: pbx.poin.slice(0, 6).map(x => `${x.jawaban === 'tidak' ? '− ' : x.jawaban === 'lengkap' ? '+ ' : '· '}${x.topik}`),
+    add('penjelasan-bursa', 'Penjelasan bursa', mm.judul || 'Tanggapan atas permintaan penjelasan bursa', {
+      type: 'list', items: (mm.inti || pbx.poin.map(x => x.topik)).slice(0, 4),
     }, [
-      `Penjelasan terakhir kepada bursa terbit pada ${fmtDate(pbx.tanggal)}, menjawab ${pbx.poin.length} butir pertanyaan.`,
-      first(pbx.ringkas, 1),
-      `${lengkap} dari ${pbx.poin.length} butir dijawab lengkap.`,
+      `Tanggapan terakhir kepada bursa terbit pada ${fmtDate(pbx.tanggal)}; ${lengkap} dari ${pbx.poin.length} butir pertanyaan dijawab lengkap.`,
+      mm.judul ? `${mm.judul}.` : first(pbx.ringkas, 1),
+      (mm.implikasi || []).length ? `Implikasinya: ${mm.implikasi.slice(0, full ? 3 : 2).map(x => lower1(x).replace(/\.$/, '')).join('; ')}.` : null,
       kurang.length ? `Yang belum terjawab: ${kurang.slice(0, full ? 4 : 2).map(x => lower1(x.kurang).replace(/\.$/, '')).join('; ')}.` : null,
       pbx.kesimpulan,
     ])

@@ -539,7 +539,25 @@
         }
       ],
       "kesimpulan": "Penjelasan menegaskan struktur yang menguntungkan pengendali: masuk di Rp23,5, nilai BTL dari penasihat penjual, dan sebagian dana publik untuk membayar pengendali. Katalis resmi baru pada 2027.",
-      "dampak": "negatif"
+      "dampak": "negatif",
+      "memo": {
+        "judul": "Struktur transaksi menguntungkan pengendali; katalis resmi 2027",
+        "inti": [
+          "Pengendali (Saiko) masuk di Rp23,5 per saham, jauh di bawah harga pasar Rp63 saat itu, dan tidak berencana melepas saham.",
+          "Pembelian 20% saham BTL (Rp448,3 M) didanai PMHMETD; kas Perseroan hanya Rp6,1 M.",
+          "Nilai BTL USD125 juta (80,4× nilai buku) berasal dari valuasi penasihat pihak penjual; nilai final menunggu KJPP."
+        ],
+        "implikasi": [
+          "Sebagian dana publik yang menebus mengalir ke pihak penjual BTL dari kelompok pengendali.",
+          "Valuasi aset tinggi terhadap nilai buku; risiko dilusi nilai bagi pemegang saham publik.",
+          "Komitmen jangka panjang pengendali menjadi faktor pendukung utama."
+        ],
+        "pantau": [
+          "Nilai final KJPP atas BTL.",
+          "RUPS independen dan pernyataan pendaftaran (Kuartal I 2027).",
+          "Laba dan pendapatan BT yang belum diungkap."
+        ]
+      }
     }
   },
   "SOFA": {
@@ -1165,7 +1183,24 @@
         }
       ],
       "kesimpulan": "Penjelasan menunjukkan transformasi SOFA menjadi investment holding di proyek WTE yang membutuhkan dana sekitar Rp131 miliar, sementara usaha furnitur merugi, arus kas operasi negatif, dan biaya persiapan ditalangi pemegang saham. Yang perlu dipantau: hasil RUPSLB 30 September 2026, harga pelaksanaan dan besaran PMHMETD dalam prospektus, penandatanganan PPA Bogor Raya, serta kemampuan Perseroan memenuhi capital call.",
-      "dampak": "negatif"
+      "dampak": "negatif",
+      "memo": {
+        "judul": "Transformasi ke proyek WTE bergantung penuh pada pendanaan",
+        "inti": [
+          "Usaha bergeser ke investment holding proyek sampah menjadi listrik (WTE); kebutuhan dana konstruksi ±Rp131 M hingga Kuartal II 2028, penyertaan saat ini Rp3,36 M (10% di WNA dan WNG).",
+          "Usaha furnitur memburuk: rugi usaha Rp7 M, arus kas operasi negatif Rp4 M, dan jumlah karyawan dikurangi.",
+          "Biaya persiapan aksi korporasi Rp3,3 M ditalangi pemegang saham."
+        ],
+        "implikasi": [
+          "Keikutsertaan di proyek WTE bergantung pada keberhasilan rights issue atau pinjaman bank.",
+          "Arus kas proyek baru dimulai setelah COD 2028; dalam 1–2 tahun nilai bertumpu pada eksekusi."
+        ],
+        "pantau": [
+          "Harga pelaksanaan dan jumlah dana PMHMETD dalam prospektus.",
+          "Penandatanganan PPA Bogor Raya.",
+          "Kemampuan memenuhi capital call WNA dan WNG."
+        ]
+      }
     }
   },
   "INPS": {
@@ -1821,7 +1856,24 @@
         }
       ],
       "kesimpulan": "Tanggapan memperjelas jalur pemulihan ekuitas melalui setoran tunai GIGP, tetapi nilai, identitas, dan dasar valuasi perusahaan target belum diungkap, sementara nilai ekonominya bergantung pada satu proyek Rp1,25 T yang belum berjalan dan belum memiliki pendanaan pasti. Perlu dipantau keterbukaan akuisisi (nilai, penilaian KJPP, pemilik), keputusan BEI atas permohonan pencabutan suspensi, hasil RUPSLB 3 Nov 2026, dan mekanisme pemenuhan free float.",
-      "dampak": "negatif"
+      "dampak": "negatif",
+      "memo": {
+        "judul": "Ekuitas pulih lewat pengendali; publik terdilusi tanpa hak ikut",
+        "inti": [
+          "Ekuitas negatif Rp42,83 M dipulihkan lewat private placement Rp125 M (Rp100/saham) oleh GIGP; proforma ekuitas Rp82,17 M.",
+          "Porsi GIGP naik ke 88,32% dan masyarakat turun ke 8,25%; free float 11,68%.",
+          "Akuisisi 90% perusahaan kendaraan roda tiga didanai pinjaman jangka pendek; identitas target dan nilainya belum diungkap."
+        ],
+        "implikasi": [
+          "Solvabilitas membaik, tetapi publik terdilusi besar tanpa kesempatan ikut (tanpa HMETD).",
+          "Nilai akuisisi bertumpu pada proyek Rp1,25 T yang belum berjalan; ekuitas target tipis (Rp4,1 M dari aset Rp583 M)."
+        ],
+        "pantau": [
+          "RUPSLB 3 Nov 2026, penyetoran 1 Des 2026, dan pencatatan saham baru 11 Des 2026.",
+          "Keterbukaan identitas, nilai, dan penilaian KJPP perusahaan target.",
+          "Keputusan BEI atas permohonan pencabutan suspensi."
+        ]
+      }
     }
   },
   "ULTJ": {
@@ -6030,7 +6082,25 @@
         }
       ],
       "kesimpulan": "Tiga hal belum terjawab: nilai aset PAA dan LOH yang akan ditukar dengan saham baru, kepastian pengembalian Rp30 M bila akuisisi batal, dan apakah pelanggan tunggal SSLA terkait tambak milik PAA. Dampak jangka pendek negatif; sentimen baru dapat membaik bila RUPSLB (selambatnya Semester I 2027) mengungkap penilai dan nilai transaksi.",
-      "dampak": "negatif"
+      "dampak": "negatif",
+      "memo": {
+        "judul": "Belum menutup risiko utama; katalis mundur ke 2027",
+        "inti": [
+          "Persetujuan rights issue (PMHMETD) Juni 2025 kedaluwarsa; RUPSLB ulang selambatnya Semester I 2027.",
+          "Akuisisi PAA dan LOH dikonfirmasi sebagai transaksi afiliasi melalui inbreng saham milik pengendali (LSO); nilai dan penilai belum diungkap.",
+          "Dana Rp30 M (14,5% ekuitas) sudah dipinjamkan ke PAA: bunga 6%, tenor 1 tahun, dinilai wajar oleh KJPP IDR, tanpa jaminan."
+        ],
+        "implikasi": [
+          "Valuasi belum dapat dihitung: rasio tukar dan nilai PAA/LOH baru muncul saat RUPSLB.",
+          "Kualitas laba perlu diuji: 100% pendapatan semester I dari satu pelanggan (SSLA) dan beban pokok diakui tanpa pembayaran kas ke pemasok.",
+          "Eksposur kredit ke afiliasi: pengembalian Rp30 M bergantung pada kemampuan PAA bila akuisisi batal."
+        ],
+        "pantau": [
+          "Pengumuman RUPSLB: identitas penilai, nilai PAA/LOH, dan rasio tukar.",
+          "Pelunasan atau perpanjangan pinjaman Rp30 M saat jatuh tempo.",
+          "Kejelasan hubungan SSLA dengan aset tambak milik PAA."
+        ]
+      }
     }
   },
   "LAPD": {
@@ -6575,7 +6645,25 @@
         }
       ],
       "kesimpulan": "Tanggapan memperjelas struktur PMHMETD II: JSI menyetor saham BSS milik afiliasinya senilai Rp44,397 M tanpa pendapat kewajaran dan tanpa RUPS independen, sementara porsi tunai Rp55,6 M tidak dijamin pembeli siaga. Perlu dipantau hasil RUPSLB 20 Okt 2026, efektifnya pernyataan pendaftaran, harga pelaksanaan final, dan tingkat partisipasi publik.",
-      "dampak": "negatif"
+      "dampak": "negatif",
+      "memo": {
+        "judul": "Inbreng aset afiliasi tanpa uji kewajaran; dana tunai tanpa pembeli siaga",
+        "inti": [
+          "PMHMETD II maks. 2 miliar saham Seri B (nominal Rp25), harga indikatif Rp50, total Rp100 M: Rp44,4 M inbreng saham BSS oleh pengendali (JSI) dan Rp55,6 M tunai.",
+          "Belum ada pembeli siaga; tidak ada waran.",
+          "Inbreng dikecualikan dari pendapat kewajaran dan RUPS independen karena ekuitas Perseroan negatif."
+        ],
+        "implikasi": [
+          "Pemegang saham yang tidak menebus terdilusi ±33,5%.",
+          "Tidak ada uji kewajaran atas aset afiliasi Rp44,4 M; nilai bagi publik bergantung pada kinerja BSS.",
+          "Arah usaha bergeser ke jasa penunjang pertambangan melalui BSS."
+        ],
+        "pantau": [
+          "Efektifnya pernyataan pendaftaran (perkiraan 23 Des 2026).",
+          "Perdagangan HMETD 12–25 Jan 2027 dan tingkat partisipasi publik.",
+          "Rincian penggunaan dana tunai Rp55,6 M."
+        ]
+      }
     }
   },
   "PACK": {
@@ -8014,7 +8102,25 @@
         }
       ],
       "kesimpulan": "Penjelasan menegaskan bahwa PMHMETD MEJA adalah inbreng 45% TCP tanpa dana tunai bagi Perseroan, dengan kisaran harga Rp450 s.d. Rp550 yang belum didukung laporan keuangan audit maupun valuasi independen. Yang perlu dipantau: terbitnya laporan keuangan audit TCP, hasil valuasi KJPP, harga pelaksanaan final, serta jumlah saham baru yang menentukan besarnya dilusi publik.",
-      "dampak": "negatif"
+      "dampak": "negatif",
+      "memo": {
+        "judul": "Share swap tanpa dana tunai; nilai TCP belum dapat diuji",
+        "inti": [
+          "PMHMETD berupa share swap untuk 45% saham TCP; tidak ada dana tunai yang masuk ke Perseroan.",
+          "Kisaran harga Rp450–Rp550 masih indikatif dan di atas harga pasar; laporan audit TCP dan valuasi KJPP belum tersedia saat tanggapan.",
+          "Saham yang tidak diambil publik diserap pengendali TCP; pengendalian dijaga melalui perjanjian 22 Des 2025."
+        ],
+        "implikasi": [
+          "Nilai bagi publik bergantung pada valuasi KJPP atas TCP; tanpa itu rasio tukar tidak dapat diuji.",
+          "Harga pelaksanaan di atas harga pasar: publik cenderung tidak menebus, sehingga porsi pemilik TCP membesar.",
+          "Jadwal dalam dokumen (Kuartal III 2026) sudah lewat; jadwal baru perlu dikonfirmasi."
+        ],
+        "pantau": [
+          "Laporan keuangan audit TCP dan hasil valuasi KJPP.",
+          "Harga pelaksanaan final dan jumlah saham baru.",
+          "Jadwal RUPSLB yang diperbarui."
+        ]
+      }
     }
   },
   "OLIV": {
@@ -11353,7 +11459,25 @@
         }
       ],
       "kesimpulan": "Rights issue NINE dilatarbelakangi rugi berulang dan keraguan kelangsungan usaha, sedangkan parameter kunci (harga, kreditur, pembeli siaga, komitmen pengendali) belum ditetapkan. Pantau Prospektus, laporan keuangan auditan Juni 2026 (target awal November 2026), serta uji tuntas dan penilaian aset tambang Mongolia milik afiliasi pengendali.",
-      "dampak": "negatif"
+      "dampak": "negatif",
+      "memo": {
+        "judul": "Rights issue untuk bertahan; parameter kunci belum ditetapkan",
+        "inti": [
+          "Rights issue dilatarbelakangi rugi berulang (rugi 2025 Rp9,95 M) dan penekanan kelangsungan usaha dari auditor.",
+          "Harga, rasio, dan pembeli siaga belum ditetapkan; Poh Holding hanya \"akan mempertimbangkan\" melaksanakan HMETD.",
+          "Dana: ±25% pelunasan utang (kreditur belum diungkap) dan ±75% modal kerja; ada opsi akuisisi aset tambang Mongolia milik afiliasi pengendali (indikatif USD150 juta)."
+        ],
+        "implikasi": [
+          "Tanpa komitmen pengendali, keberhasilan penghimpunan dana tidak pasti.",
+          "Skenario terburuk porsi publik 27,66%; Poh Holding dapat menjadi mayoritas (52,23%).",
+          "Opsi aset tambang afiliasi bernilai besar menjadi katalis spekulatif yang belum teruji."
+        ],
+        "pantau": [
+          "Laporan keuangan Juni 2026 (target minggu pertama Nov 2026).",
+          "RUPSLB 18 Nov 2026 dan prospektus (harga, kreditur, pembeli siaga).",
+          "Uji tuntas dan penilaian aset tambang Mongolia."
+        ]
+      }
     }
   },
   "FORU": {
@@ -11842,7 +11966,24 @@
         }
       ],
       "kesimpulan": "Tanggapan mempertegas bahwa bisnis lama FORU memburuk (rugi membesar, kas operasi negatif, defisit Rp51,30 M) dan nilai perusahaan praktis bergantung pada inbreng BP yang tidak disertai pembeli siaga. Pantau realisasi penebusan HMETD publik, kapasitas dan realisasi produksi BP terhadap ambang 2 juta ton per tahun, serta keberlanjutan laba BP setelah kuartal I 2026.",
-      "dampak": "negatif"
+      "dampak": "negatif",
+      "memo": {
+        "judul": "Bisnis lama memburuk; nilai bergantung pada inbreng Borneo Prima",
+        "inti": [
+          "Semester I 2026: pendapatan turun 57,27% ke Rp10,35 M, rugi Rp7,38 M, arus kas operasi negatif Rp4,46 M, defisit Rp51,30 M.",
+          "Tidak ada pembeli siaga; inbreng Borneo Prima (BP) oleh IMR AH tetap berjalan tanpa bergantung pada publik.",
+          "BP pada Kuartal I 2026: pendapatan USD11,29 juta dan laba USD0,97 juta; kontrak jangka panjang dengan IMR Group (grup pengendali)."
+        ],
+        "implikasi": [
+          "Nilai FORU hampir sepenuhnya bergantung pada BP; publik yang tidak menebus terdilusi sangat besar.",
+          "Pendapatan BP terkonsentrasi pada grup pengendali."
+        ],
+        "pantau": [
+          "Laporan hasil PMHMETD I (jumlah saham tercatat final).",
+          "Keberlanjutan laba BP setelah Kuartal I 2026.",
+          "Kapasitas dan realisasi produksi BP terhadap ambang 2 juta ton per tahun."
+        ]
+      }
     }
   },
   "TGUK": {
