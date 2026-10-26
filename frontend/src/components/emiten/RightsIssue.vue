@@ -4,7 +4,7 @@
 // penebusan publik bisa digeser untuk simulasi; nilai awal dari data kurasi.
 import { computed, ref, watch } from 'vue'
 import { fmt, rp, big } from '../../lib/domain.js'
-import { riCalc, riRange, riVerdict, noRights, riFunding, riPriceNeeded, riScenarios, riExercise, asetLaba, labaSebelumSesudah, riLayak } from '../../lib/rightsIssue.js'
+import { riCalc, riRange, riVerdict, noRights, riFunding, riPriceNeeded, riScenarios, riExercise, asetLaba, labaSebelumSesudah, riLayak, riTrading } from '../../lib/rightsIssue.js'
 import { fmtDate } from '../../lib/domain.js'
 import { store, storyOf } from '../../store.js'
 import { buildRiDeck, riDeckFileName } from '../../lib/deck.js'
@@ -47,6 +47,8 @@ const num = v => fmt(v, Number.isInteger(+v.toFixed(2)) ? 0 : 2)
 const lbA = computed(() => props.c.doc ? asetLaba(props.c.doc, { S1: r.value?.S1, P: +P.value }) : null)
 const ls = computed(() => labaSebelumSesudah(props.c, r.value, lbA.value))
 const layak = computed(() => riLayak(props.c, r.value, lbA.value, ls.value))
+// Skenario kedua: trading jangka pendek memanfaatkan aksi korporasi.
+const trade = computed(() => riTrading(props.c, r.value))
 // Alasan searah putusan (utama) dipisah dari faktor sebaliknya agar poin positif tidak tercantum di bawah "Tidak layak, karena".
 const layakWhy = computed(() => {
   const rs = layak.value?.reasons || [], pos = layak.value?.key === 'layak'
@@ -410,7 +412,24 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
             <li v-for="(x, i) in layakWhy.lawan" :key="i" :class="x.s > 0 ? 'p' : 'n'"><span class="ic" aria-hidden="true">{{ x.s > 0 ? '+' : '−' }}</span>{{ x.t }}</li>
           </ul>
         </template>
-        <p class="small muted">Skor {{ layak.score }} (≥ 2 layak dipertimbangkan; −1 s.d. 1 spekulatif; ≤ −2 tidak layak). Kerangka analisis otomatis dari dokumen dan simulasi, bukan anjuran membeli atau menjual efek.</p>
+        <p class="small muted">Skor {{ layak.score }} (≥ 2 layak dipertimbangkan; −1 s.d. 1 spekulatif; ≤ −2 tidak layak). Menilai skenario <b>membeli lalu menahan melewati rights issue atau ikut menebus</b>. Kerangka analisis otomatis dari dokumen dan simulasi, bukan anjuran membeli atau menjual efek.</p>
+      </div>
+      <!-- Skenario kedua: trading jangka pendek memanfaatkan aksi korporasi. -->
+      <div v-if="trade" class="fund-ok" :class="trade.tone">
+        <div class="fh">
+          <span class="small muted">Trading jangka pendek (memanfaatkan aksi korporasi)</span>
+          <b>{{ trade.label }}</b>
+        </div>
+        <ul class="why">
+          <li v-for="(x, i) in trade.reasons" :key="i" :class="x.s > 0 ? 'p' : x.s < 0 ? 'n' : 'z'">
+            <span class="ic" aria-hidden="true">{{ x.s > 0 ? '+' : x.s < 0 ? '−' : '·' }}</span>{{ x.t }}
+          </li>
+        </ul>
+        <template v-if="trade.aturan.length">
+          <p class="small"><b>Aturan main:</b></p>
+          <ol class="small aturan"><li v-for="x in trade.aturan" :key="x">{{ x }}</li></ol>
+        </template>
+        <p class="small muted">Skenario ini berbeda dari kesimpulan di atas: aksi korporasi dapat menggerakkan harga sebelum katalis, tetapi posisi harus ditutup sebelum cum date.</p>
       </div>
       <p v-if="verdict" class="verdict"><b>Kesimpulan:</b> {{ verdict }}</p>
       <p class="small muted">Catatan: <b>skor enam dimensi</b> di atas menilai profil saham backdoor secara umum, <b>sikap analis</b> adalah penilaian manual, dan <b>kesimpulan investasi</b> ini khusus menilai transaksi penambahan modal dan asetnya. Bila berbeda, kesimpulan ini yang menentukan kelayakan ikut serta dalam rights issue.</p>
@@ -489,6 +508,7 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
 .st tr.bad td{opacity:.6}
 .notes{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:3px;max-width:100ch}
 .pin{width:110px;margin-left:8px;font:600 13px var(--f-display)}
+.aturan{margin:2px 0 6px;padding-left:20px}
 .nd{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:6px 0}
 .ndc{display:flex;flex-direction:column;padding:6px 8px;border:1px solid var(--rule-2);background:var(--paper, transparent)}
 .ndc.ref{border-color:var(--ink-2)}
