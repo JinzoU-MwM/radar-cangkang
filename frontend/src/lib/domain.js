@@ -197,4 +197,7 @@ export const SIKAP_CLS = { 'Hindari': 't-strong', 'Spekulatif tinggi': 't-warn',
 // Kelengkapan jawaban emiten atas tiap pertanyaan BEI (ri-dokumen.json → penjelasanBursa.poin[].jawaban):
 // ukuran yang dapat dicek langsung di dokumen, terpisah dari pendapat analis (kolom Analisa).
 export const PB_JAWABAN = { lengkap: ['Lengkap', 'good'], sebagian: ['Sebagian', 'calm'], tidak: ['Tidak dijawab', 'strong'] }
-export const PB_KRITERIA = 'Kelengkapan jawaban: Lengkap bila semua unsur pertanyaan BEI dijawab dengan data spesifik; Sebagian bila ada unsur yang tidak dijawab, jawabannya normatif, atau dirujuk ke dokumen lain; Tidak dijawab bila inti pertanyaan tidak dijawab atau pengungkapannya ditunda. Kolom Analisa adalah pendapat analis.'
+// Nada objektif per butir (poin[].nada) dan dasarnya (poin[].dasar).
+export const PB_NADA = { positif: ['Positif', 'good'], netral: ['Netral', 'calm'], negatif: ['Negatif', 'strong'] }
+export const PB_DASAR = { ditunda: 'Tidak dijawab/ditunda', merugikan: 'Fakta merugikan dari emiten', fakta: 'Fakta/kepatuhan', kepastian: 'Menambah kepastian' }
+export const PB_KRITERIA = 'Dasar nada (objektif, dari isi dokumen): Negatif bila pertanyaan BEI tidak dijawab atau ditunda, atau emiten sendiri menyatakan fakta yang merugikan publik; Positif bila jawaban menambah kepastian yang menguntungkan publik; Netral untuk fakta, prosedur, atau kepatuhan aturan. Kolom Analisa adalah pendapat analis.'
