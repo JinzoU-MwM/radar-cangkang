@@ -4,7 +4,12 @@
 import { computed, ref, watch } from 'vue'
 import { api } from '../api.js'
 import { fmt } from '../lib/domain.js'
+import { useRoute, useRouter } from 'vue-router'
+import BrokerPola from '../components/BrokerPola.vue'
 
+// Tab halaman: 'season' (Seasonality) atau 'broker' (Pola Broker), tersimpan di URL (?tab=broker).
+const route = useRoute(), router = useRouter()
+const tab = computed({ get: () => route.query.tab === 'broker' ? 'broker' : 'season', set: v => router.replace({ query: { ...route.query, tab: v === 'broker' ? 'broker' : undefined } }) })
 const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 // Default bulan depan (Desember -> Januari).
 const bulan = ref((new Date().getMonth() + 1) % 12 + 1)
@@ -17,7 +22,8 @@ async function load() {
     if (r.error) { err.value = r.error; data.value = null } else data.value = r
   } catch (e) { err.value = e.message || String(e) } finally { loading.value = false }
 }
-watch([bulan, tahun], load, { immediate: true })
+watch([bulan, tahun], () => { if (tab.value === 'season') load() }, { immediate: true })
+watch(tab, v => { if (v === 'season' && !data.value) load() })
 const top5 = computed(() => (data.value?.saham || []).slice(0, 5))
 const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 2) + '%'
 const tone = p => p >= 70 ? 'c-good' : p >= 50 ? '' : 'c-strong'
@@ -29,6 +35,14 @@ const rpr = e => e ? (e[0] === e[1] ? rp(e[0]) : `${rp(e[0])}–${rp(e[1])}`) : 
   <div class="sz">
     <header>
       <h1>Seasonality</h1>
+      <div class="tabs" role="tablist" aria-label="Bagian">
+        <button type="button" role="tab" class="tab" :aria-selected="tab === 'season'" @click="tab = 'season'">Seasonality</button>
+        <button type="button" role="tab" class="tab" :aria-selected="tab === 'broker'" @click="tab = 'broker'">Pola Broker</button>
+      </div>
+    </header>
+    <BrokerPola v-if="tab === 'broker'" />
+    <template v-else>
+    <header>
       <p class="muted small">Pola kenaikan berulang di bulan yang sama selama {{ tahun }} tahun: IHSG, sektor, dan saham, dipadukan dengan sinyal broker dan katalis. Probabilitas historis, bukan kepastian; bukan rekomendasi beli/jual.</p>
       <div class="ctl">
         <div class="bln" role="group" aria-label="Bulan">
@@ -144,11 +158,15 @@ const rpr = e => e ? (e[0] === e[1] ? rp(e[0]) : `${rp(e[0])}–${rp(e[1])}`) : 
         </div>
       </section>
     </template>
+    </template>
   </div>
 </template>
 
 <style scoped>
 .sz header{margin-bottom:8px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--rule);margin:4px 0 8px}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:6px 12px;font:inherit;font-weight:600;cursor:pointer;color:var(--muted)}
+.tab[aria-selected=true]{border-bottom-color:var(--now-ink);color:inherit}
 .ctl{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;align-items:center}
 .bln{display:flex;gap:4px;flex-wrap:wrap}
 .big{font-size:18px;margin:4px 0 10px}.big b{font-size:28px}
