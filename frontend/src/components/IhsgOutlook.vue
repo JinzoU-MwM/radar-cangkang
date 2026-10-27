@@ -6,7 +6,16 @@ import { api } from '../api.js'
 import { fmt, fmtDate } from '../lib/domain.js'
 
 const props = defineProps({ bulan: { type: Number, required: true }, namaBulan: { type: String, default: '' } })
-const d = ref(null), err = ref(''), semua = ref(false)
+const d = ref(null), err = ref(''), semua = ref(false), busy = ref(false)
+// Unduh riset IHSG (PDF): sampul, analisa teknikal & flow, seasonality & sentimen, disclaimer.
+async function unduh() {
+  if (!d.value) return
+  busy.value = true
+  try {
+    const [{ jsPDF }, { ihsgPdf, ihsgPdfName }] = await Promise.all([import('jspdf'), import('../lib/ihsgPdf.js')])
+    ;(await ihsgPdf(d.value, jsPDF)).save(ihsgPdfName(d.value.bulan))
+  } catch (e) { err.value = 'PDF gagal dibuat: ' + (e.message || e) } finally { busy.value = false }
+}
 watch(() => props.bulan, async b => {
   err.value = ''
   try { const r = await api.get('/api/ihsg-outlook', { bulan: b }); if (r.error) err.value = r.error; else d.value = r } catch (e) { err.value = e.message || String(e) }
@@ -41,6 +50,22 @@ const lbl = l => l === 'Tinggi' ? 'c-good' : l === 'Rendah' ? 'c-strong' : ''
         <ul class="small komp">
           <li v-for="k in d.berulang.komponen" :key="k.nama"><b>{{ k.nama }}</b>: {{ k.nilai }}% <span class="muted">(bobot {{ Math.round(k.bobot * 100) }}%)</span></li>
         </ul>
+      </div>
+
+      <!-- Analisa Teknikal & Flow (gaya riset) + unduh PDF. -->
+      <div v-if="d.riset" class="riset">
+        <div class="rh">
+          <h3>Analisa Teknikal & Flow IHSG</h3>
+          <button type="button" class="btn" :disabled="busy" @click="unduh">{{ busy ? 'Menyiapkan PDF…' : '⬇ Unduh riset IHSG (PDF)' }}</button>
+        </div>
+        <div class="lvl">
+          <div><span>Area beli</span><b class="c-teal">{{ nf(d.riset.level.beli[0]) }}–{{ nf(d.riset.level.beli[1]) }}</b></div>
+          <div><span>Target</span><b class="c-good">{{ nf(d.riset.level.target[0]) }} / {{ nf(d.riset.level.target[1]) }}</b></div>
+          <div><span>Risiko (tutup harian &lt;)</span><b class="c-strong">{{ nf(d.riset.level.risiko) }}</b></div>
+        </div>
+        <p class="small"><b>Struktur:</b> {{ d.riset.struktur }}</p>
+        <p v-if="d.riset.flow" class="small"><b>Flow:</b> {{ d.riset.flow }}</p>
+        <p class="small"><b>Rencana:</b> {{ d.riset.rencana }}</p>
       </div>
 
       <div class="grid">
@@ -86,6 +111,11 @@ const lbl = l => l === 'Tinggi' ? 'c-good' : l === 'Rendah' ? 'c-strong' : ''
 </template>
 
 <style scoped>
+.riset{border:1px solid var(--rule);border-left:4px solid var(--now-ink);background:var(--sheet);padding:10px 14px;margin-bottom:12px}
+.riset p{margin:5px 0;max-width:120ch}.rh{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.rh h3{margin:0}
+.lvl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0}
+.lvl div{border:1px solid var(--rule);padding:6px 10px;display:flex;flex-direction:column}.lvl span{font-size:11px;color:var(--muted)}.lvl b{font-size:18px}
+.c-teal{color:#0d9488}
 .top{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin:6px 0 10px}
 .big{display:flex;flex-direction:column}.big > b{font-size:34px;line-height:1}.big span{font-size:13px}.big span b{font-size:inherit}
 .komp{margin:0;padding-left:18px}

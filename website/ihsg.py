@@ -143,3 +143,83 @@ def verdict(base: dict | None, cond: dict, sent: dict) -> dict:
     prob = round(sum(p[0] * p[1] for p in parts) / w)
     label = "Tinggi" if prob >= 60 else "Sedang" if prob >= 45 else "Rendah"
     return {"prob": prob, "label": label, "komponen": [{"nama": n, "nilai": v, "bobot": b} for v, b, n in parts]}
+
+
+def pattern(bars: list[dict], w: int = 5) -> dict:
+    """Struktur harga dari titik balik 140 hari terakhir: higher high / lower low dan double bottom/top
+    (dua titik balik berselisih <= 3%, berjarak >= 10 hari bursa; neckline = titik ekstrem di antaranya)."""
+    b = bars[-140:]
+    lo = [(i, x["l"]) for i, x in enumerate(b) if w <= i < len(b) - w and x["l"] == min(y["l"] for y in b[i - w:i + w + 1])]
+    hi = [(i, x["h"]) for i, x in enumerate(b) if w <= i < len(b) - w and x["h"] == max(y["h"] for y in b[i - w:i + w + 1])]
+    out = {"hh": hi[-1][1] > hi[-2][1] if len(hi) >= 2 else None, "ll": lo[-1][1] < lo[-2][1] if len(lo) >= 2 else None, "pola": None}
+    p = b[-1]["c"]
+    if len(lo) >= 2:
+        (i1, a), (i2, c) = lo[-2], lo[-1]
+        if i2 - i1 >= 10 and abs(c / a - 1) <= 0.03:
+            neck = max(x["h"] for x in b[i1:i2 + 1])
+            out["pola"] = {"jenis": "double bottom", "dasar": round(min(a, c), 1), "neckline": round(neck, 1),
+                           "status": "sudah break neckline" if p > neck else "menunggu break neckline"}
+    if not out["pola"] and len(hi) >= 2:
+        (i1, a), (i2, c) = hi[-2], hi[-1]
+        if i2 - i1 >= 10 and abs(c / a - 1) <= 0.03:
+            neck = min(x["l"] for x in b[i1:i2 + 1])
+            out["pola"] = {"jenis": "double top", "puncak": round(max(a, c), 1), "neckline": round(neck, 1),
+                           "status": "sudah break neckline ke bawah" if p < neck else "menunggu konfirmasi"}
+    return out
+
+
+def _n(v: float) -> str:
+    return f"{v:,.0f}".replace(",", ".")
+
+
+def _rp(v: float) -> str:
+    a = abs(v)
+    s = f"Rp{a / 1e12:,.2f} T" if a >= 1e12 else f"Rp{a / 1e9:,.1f} M"
+    return s.replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def narrative(tek: dict, pat: dict, flow: dict | None, berulang: dict, nama_bulan: str) -> dict:
+    """Narasi Analisa Teknikal & Flow IHSG gaya riset (struktur, flow, rencana) + level area beli/target/risiko."""
+    p, sup, res = tek["harga"], tek.get("support") or [], tek.get("resistance") or []
+    s1 = sup[0]["v"] if sup else tek["rendah52"]
+    s2 = sup[1]["v"] if len(sup) > 1 else s1 * 0.97
+    r1 = res[0]["v"] if res else tek["tinggi52"]
+    r2 = res[1]["v"] if len(res) > 1 else r1 * 1.03
+    st = [f"IHSG secara struktur berada dalam fase {tek['tren'].lower()}: harga {_n(p)} {'di atas' if p > tek['ema50'] else 'di bawah'} "
+          f"EMA50 ({_n(tek['ema50'])}) dan {'di atas' if p > tek['ema200'] else 'di bawah'} EMA200 ({_n(tek['ema200'])})."]
+    if pat.get("hh") is not None and pat.get("ll") is not None:
+        st.append("Titik balik terakhir membentuk " + ("higher high" if pat["hh"] else "lower high") + " dan "
+                  + ("lower low" if pat["ll"] else "higher low") + ".")
+    pl = pat.get("pola")
+    if pl and pl["jenis"] == "double bottom":
+        st.append(f"Terbentuk pola double bottom dengan dasar di area {_n(pl['dasar'])} dan neckline di {_n(pl['neckline'])} ({pl['status']}).")
+    elif pl:
+        st.append(f"Terbentuk pola double top dengan puncak di area {_n(pl['puncak'])} dan neckline di {_n(pl['neckline'])} ({pl['status']}).")
+    st.append(f"Support terdekat di {_n(s1)} dan resistance terdekat di {_n(r1)}.")
+    fl = []
+    if flow:
+        fl.append(f"Secara flow bulan {flow['bulanNama']} (s.d. {flow['sampai']}), broker asing tercatat {'net buy' if flow['asing'] > 0 else 'net sell'} "
+                  f"{_rp(flow['asing'])} dan broker domestik {'net buy' if flow['domestik'] > 0 else 'net sell'} {_rp(flow['domestik'])} pada saham-saham teraktif.")
+        if flow.get("brokerAsing"):
+            fl.append("Broker asing terbesar: " + ", ".join(f"{b['kode']} {'net buy' if b['net'] > 0 else 'net sell'} {_rp(b['net'])}" for b in flow["brokerAsing"]) + ".")
+        ak = [x for x in flow.get("sahamAsing") or [] if x.get("avg")]
+        if ak:
+            fl.append("Saham yang paling diakumulasi asing: " + ", ".join(f"{x['s']} ({_rp(x['net'])} di average {_n(x['avg'])})" for x in ak) + ".")
+        if flow.get("sahamJualAsing"):
+            fl.append("Distribusi asing terbesar di " + ", ".join(f"{x['s']} ({_rp(x['net'])})" for x in flow["sahamJualAsing"]) + ".")
+    beli = [round(s1), round(s1 * 1.01)]
+    # Batas risiko: support kedua bila dekat (<= 3% di bawah support pertama), selain itu 1,5% di bawah support pertama.
+    risiko = round(s2) if s2 >= s1 * 0.97 else round(s1 * 0.985)
+    if tek["tren"] == "Downtrend":
+        rk = (f"Selama IHSG belum kembali di atas EMA50 ({_n(tek['ema50'])}), strategi yang disarankan adalah wait and see atau beli bertahap "
+              f"dengan porsi kecil di area support {_n(beli[0])}–{_n(beli[1])}. Target pemulihan ke {_n(r1)} lalu {_n(r2)}; "
+              f"risiko dijaga bila penutupan harian di bawah {_n(risiko)}.")
+    elif tek["tren"] == "Uptrend":
+        rk = (f"Tren naik masih valid selama IHSG bertahan di atas {_n(s1)}. Akumulasi saat koreksi ke {_n(beli[0])}–{_n(beli[1])} "
+              f"dengan target {_n(r1)} lalu {_n(r2)}; risiko dijaga bila penutupan harian di bawah {_n(risiko)}.")
+    else:
+        rk = (f"IHSG bergerak dalam rentang {_n(s1)}–{_n(r1)}: beli dekat support {_n(beli[0])}–{_n(beli[1])}, ambil untung dekat {_n(r1)}; "
+              f"tembus {_n(r1)} membuka ruang ke {_n(r2)}. Risiko dijaga bila penutupan harian di bawah {_n(risiko)}.")
+    rk += f" Probabilitas pola {nama_bulan} berulang: {berulang['prob']}% ({berulang['label'].lower()})."
+    return {"struktur": " ".join(st), "flow": " ".join(fl), "rencana": rk,
+            "level": {"beli": beli, "target": [round(r1), round(r2)], "risiko": risiko}}
