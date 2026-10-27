@@ -1,19 +1,19 @@
 // Riset IHSG (PDF, A4 tegak) dari data /api/ihsg-outlook: sampul, Analisa Teknikal & Flow (grafik, narasi,
-// area beli/target/risiko), proyeksi arah, Seasonality & sentimen, berita terbaru + per topik, dan disclaimer. Digambar dengan jsPDF (mm).
-// Tema terang Radar Backdoor: kertas krem, marun sebagai warna utama, aksen emas, judul serif.
+// area beli/target/risiko), proyeksi arah, Seasonality & sentimen, berita sentimen positif/negatif IHSG, dan disclaimer. Digambar dengan jsPDF (mm).
+// Tema terang Radar Backdoor: kertas krem, hijau-teal tua sebagai warna utama, aksen emas, judul serif (tanpa merah).
 import { pdfText } from './deckPdf.js'
 
-const PAPER = '#fbf7ef', MAROON = '#7a1f2b', GOLD = '#c8962c', INK = '#2b2620', MUTED = '#7a7166', LINE = '#e6dccb'
-const GOOD = '#2e7d4f', BAD = '#b23a3a', TEAL = '#1f6f78', SOFT = '#f3ebdd'
+const PAPER = '#fbf8f1', PRIMER = '#17494d', GOLD = '#c8962c', INK = '#2b2620', MUTED = '#7a7166', LINE = '#e6dccb'
+const GOOD = '#2e8b57', BAD = '#d9822b', TEAL = '#3b7ea1', SOFT = '#eef1ea'
 const BLN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 const n0 = v => v == null ? '-' : Math.round(v).toLocaleString('id-ID')
 const tgl = d => { const x = new Date(d); return isNaN(x) ? String(d || '') : `${x.getDate()} ${BLN[x.getMonth()]} ${x.getFullYear()}` }
 const nadaWarna = a => a === 'positif' ? GOOD : a === 'negatif' ? BAD : MUTED
 
-// Latar krem + pita marun di atas + kaki halaman dengan nomor dalam bulatan emas.
+// Latar krem + pita hijau-teal di atas + kaki halaman dengan nomor dalam bulatan emas.
 function frame(doc, title, page) {
   doc.setFillColor(PAPER); doc.rect(0, 0, 210, 297, 'F')
-  doc.setFillColor(MAROON); doc.rect(0, 0, 210, 11, 'F')
+  doc.setFillColor(PRIMER); doc.rect(0, 0, 210, 11, 'F')
   doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor('#ffffff'); doc.text('RADAR BACKDOOR RESEARCH', 14, 7.4)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.text(pdfText(title), 196, 7.4, { align: 'right' })
   doc.setDrawColor(GOLD); doc.setLineWidth(0.5); doc.line(14, 285, 186, 285)
@@ -21,9 +21,9 @@ function frame(doc, title, page) {
   doc.setFillColor(GOLD); doc.circle(193, 286, 4, 'F'); doc.setFont('helvetica', 'bold'); doc.setTextColor('#ffffff'); doc.text(String(page), 193, 287.3, { align: 'center' })
 }
 
-// Judul bagian: serif marun dengan garis bawah emas.
+// Judul bagian: serif hijau-teal dengan garis bawah emas.
 function heading(doc, text, y, size = 18) {
-  doc.setFont('times', 'bold'); doc.setFontSize(size); doc.setTextColor(MAROON); doc.text(pdfText(text), 14, y)
+  doc.setFont('times', 'bold'); doc.setFontSize(size); doc.setTextColor(PRIMER); doc.text(pdfText(text), 14, y)
   doc.setDrawColor(GOLD); doc.setLineWidth(0.8); doc.line(14, y + 2.2, 14 + Math.min(182, doc.getTextWidth(pdfText(text)) + 4), y + 2.2)
 }
 
@@ -37,7 +37,7 @@ function para(doc, text, x, y, w, size = 10, color = INK) {
 // Paragraf berlabel (Struktur / Flow / Rencana) dengan penanda emas di kiri.
 function block(doc, label, text, y) {
   doc.setFillColor(GOLD); doc.rect(14, y - 3.4, 1.2, 4.4, 'F')
-  doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(MAROON); doc.text(pdfText(label), 18, y)
+  doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(PRIMER); doc.text(pdfText(label), 18, y)
   return para(doc, text, 18, y + 5, 178)
 }
 
@@ -50,19 +50,19 @@ function chart(doc, tek, x, y, w, h) {
   const X = i => x + i / (s.length - 1) * w, Y = v => y + h - (v - lo) / (hi - lo) * h
   doc.setFillColor('#ffffff'); doc.setDrawColor(LINE); doc.setLineWidth(0.3); doc.rect(x, y, w, h, 'FD')
   // Garis kisi horizontal tipis.
-  doc.setDrawColor('#f1e9db'); doc.setLineWidth(0.2)
+  doc.setDrawColor('#ebeee6'); doc.setLineWidth(0.2)
   for (let k = 1; k < 4; k++) doc.line(x, y + h * k / 4, x + w, y + h * k / 4)
   doc.setLineDashPattern([1.2, 1], 0); doc.setFontSize(7)
   for (const l of tek.support || []) { doc.setDrawColor(GOOD); doc.line(x, Y(l.v), x + w, Y(l.v)); doc.setTextColor(GOOD); doc.text(`S ${n0(l.v)}`, x + 1.5, Y(l.v) - 0.8) }
   for (const l of tek.resistance || []) { doc.setDrawColor(BAD); doc.line(x, Y(l.v), x + w, Y(l.v)); doc.setTextColor(BAD); doc.text(`R ${n0(l.v)}`, x + 1.5, Y(l.v) - 0.8) }
   doc.setLineDashPattern([], 0)
   const line = (k, color, lw) => { doc.setDrawColor(color); doc.setLineWidth(lw); for (let i = 1; i < s.length; i++) doc.line(X(i - 1), Y(s[i - 1][k]), X(i), Y(s[i][k])) }
-  line('e200', GOLD, 0.45); line('e50', TEAL, 0.4); line('c', MAROON, 0.55)
-  doc.setFillColor(MAROON); doc.circle(X(s.length - 1), Y(s[s.length - 1].c), 0.9, 'F')
+  line('e200', GOLD, 0.45); line('e50', TEAL, 0.4); line('c', PRIMER, 0.55)
+  doc.setFillColor(PRIMER); doc.circle(X(s.length - 1), Y(s[s.length - 1].c), 0.9, 'F')
   doc.setFontSize(7); doc.setTextColor(MUTED)
   ;[0, Math.floor(s.length / 2), s.length - 1].forEach((i, k) => doc.text(pdfText(tgl(s[i].d)), X(i), y + h + 4, { align: k === 0 ? 'left' : k === 2 ? 'right' : 'center' }))
   // Legenda.
-  const lg = [[MAROON, `IHSG ${n0(tek.harga)}`], [TEAL, `EMA50 ${n0(tek.ema50)}`], [GOLD, `EMA200 ${n0(tek.ema200)}`]]
+  const lg = [[PRIMER, `IHSG ${n0(tek.harga)}`], [TEAL, `EMA50 ${n0(tek.ema50)}`], [GOLD, `EMA200 ${n0(tek.ema200)}`]]
   let lx = x
   for (const [c, t] of lg) { doc.setDrawColor(c); doc.setLineWidth(0.8); doc.line(lx, y - 2.2, lx + 5, y - 2.2); doc.setTextColor(INK); doc.text(pdfText(t), lx + 6.5, y - 1.4); lx += 38 }
 }
@@ -78,22 +78,22 @@ export async function ihsgPdf(d, jsPDF) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
   const bln = BLN[(d.bulan || 1) - 1], terbit = tgl(new Date()), r = d.riset || {}, t = d.tek, lv = r.level || {}
 
-  // 1) Sampul: krem, pita marun vertikal, judul serif, grafik IHSG sebagai ornamen.
+  // 1) Sampul: krem, pita hijau-teal vertikal, judul serif, grafik IHSG sebagai ornamen.
   doc.setFillColor(PAPER); doc.rect(0, 0, 210, 297, 'F')
-  doc.setFillColor(MAROON); doc.rect(0, 0, 16, 297, 'F')
+  doc.setFillColor(PRIMER); doc.rect(0, 0, 16, 297, 'F')
   doc.setFillColor(GOLD); doc.rect(16, 0, 1.6, 297, 'F')
-  doc.setFont('times', 'bold'); doc.setFontSize(12); doc.setTextColor(MAROON); doc.text('RADAR BACKDOOR RESEARCH', 28, 26)
+  doc.setFont('times', 'bold'); doc.setFontSize(12); doc.setTextColor(PRIMER); doc.text('RADAR BACKDOOR RESEARCH', 28, 26)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(MUTED); doc.text(pdfText(`Edisi ${terbit} · data per ${d.updated || '-'} WIB`), 196, 26, { align: 'right' })
   doc.setDrawColor(GOLD); doc.setLineWidth(0.4); doc.line(28, 30, 196, 30)
-  doc.setFont('times', 'bold'); doc.setFontSize(96); doc.setTextColor(MAROON); doc.text('IHSG', 26, 92)
+  doc.setFont('times', 'bold'); doc.setFontSize(96); doc.setTextColor(PRIMER); doc.text('IHSG', 26, 92)
   doc.setFont('times', 'italic'); doc.setFontSize(22); doc.setTextColor(INK); doc.text(pdfText('Analisa Teknikal & Flow'), 28, 108)
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(GOLD); doc.text(pdfText(`SEASONALITY ${bln.toUpperCase()}`), 28, 118)
   // Ornamen: garis harga IHSG 1 tahun.
   const s = t.seri || []
   if (s.length > 2) {
     const lo = Math.min(...s.map(p => p.c)), hi = Math.max(...s.map(p => p.c)), X = i => 28 + i / (s.length - 1) * 168, Y = v => 200 - (v - lo) / (hi - lo || 1) * 55
-    doc.setDrawColor('#e8d9c0'); doc.setLineWidth(0.25); for (let k = 0; k <= 4; k++) doc.line(28, 145 + k * 13.75, 196, 145 + k * 13.75)
-    doc.setDrawColor(MAROON); doc.setLineWidth(0.7); for (let i = 1; i < s.length; i++) doc.line(X(i - 1), Y(s[i - 1].c), X(i), Y(s[i].c))
+    doc.setDrawColor('#dfe5dc'); doc.setLineWidth(0.25); for (let k = 0; k <= 4; k++) doc.line(28, 145 + k * 13.75, 196, 145 + k * 13.75)
+    doc.setDrawColor(PRIMER); doc.setLineWidth(0.7); for (let i = 1; i < s.length; i++) doc.line(X(i - 1), Y(s[i - 1].c), X(i), Y(s[i].c))
     doc.setFillColor(GOLD); doc.circle(X(s.length - 1), Y(s[s.length - 1].c), 1.6, 'F')
   }
   // Ringkasan di sampul.
@@ -105,7 +105,7 @@ export async function ihsgPdf(d, jsPDF) {
     const x = 28 + i * (bw + 4)
     doc.setFillColor('#ffffff'); doc.setDrawColor(LINE); doc.rect(x, 214, bw, 18, 'FD')
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(MUTED); doc.text(pdfText(k), x + 4, 220.5)
-    doc.setFont('times', 'bold'); doc.setFontSize(box.length > 3 ? 11 : 12.5); doc.setTextColor(MAROON)
+    doc.setFont('times', 'bold'); doc.setFontSize(box.length > 3 ? 11 : 12.5); doc.setTextColor(PRIMER)
     doc.text(doc.splitTextToSize(pdfText(v), bw - 6)[0], x + 4, 228)
   })
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(MUTED); doc.text('Disusun oleh', 28, 252); doc.text('Terbit', 100, 252)
@@ -139,7 +139,7 @@ export async function ihsgPdf(d, jsPDF) {
     const cw = (182 - 8) / 3
     pr.horizon.forEach((h, i) => {
       const x = 14 + i * (cw + 4), col = h.prob >= 55 ? GOOD : h.prob <= 45 ? BAD : GOLD
-      doc.setFillColor('#ffffff'); doc.setDrawColor(i === 0 ? MAROON : LINE); doc.setLineWidth(i === 0 ? 0.6 : 0.3); doc.rect(x, 34, cw, 50, 'FD')
+      doc.setFillColor('#ffffff'); doc.setDrawColor(i === 0 ? PRIMER : LINE); doc.setLineWidth(i === 0 ? 0.6 : 0.3); doc.rect(x, 34, cw, 50, 'FD')
       doc.setFillColor(col); doc.rect(x, 34, 1.6, 50, 'F')
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(MUTED); doc.text(pdfText(h.nama.toUpperCase()), x + 5, 40)
       doc.setFont('times', 'bold'); doc.setFontSize(13); doc.setTextColor(col); doc.text(doc.splitTextToSize(pdfText(h.arah), cw - 8)[0], x + 5, 47.5)
@@ -164,7 +164,7 @@ export async function ihsgPdf(d, jsPDF) {
     y += 20
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(MUTED)
     doc.text(pdfText(`ATR14 ${n0(pr.atr)} poin · perubahan 1 hari ${pr.ubah1}% · 5 hari ${pr.ubah5}%`), 14, y); y += 8
-    doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(MAROON); doc.text('Dasar perhitungan', 14, y); y += 5
+    doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(PRIMER); doc.text('Dasar perhitungan', 14, y); y += 5
     for (const h of pr.horizon) {
       y = para(doc, `${h.nama}: ` + h.komponen.map(k => `${k.nama} ${k.nilai}% (bobot ${Math.round(k.bobot * 100)}%)`).join('; ') + '.', 14, y, 182, 8.5, INK) - 1
     }
@@ -189,10 +189,10 @@ export async function ihsgPdf(d, jsPDF) {
     + (c.tahun || []).map(x => `${x.tahun}: ${x.ret > 0 ? '+' : ''}${x.ret}%`).join('; ') + '.', y + 2)
   const sn = d.sentimen || {}
   y += 4
-  doc.setFont('times', 'bold'); doc.setFontSize(13); doc.setTextColor(MAROON)
+  doc.setFont('times', 'bold'); doc.setFontSize(13); doc.setTextColor(PRIMER)
   doc.text(pdfText(`Sentimen pasar: ${sn.arah || '-'}`), 14, y)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(MUTED)
-  doc.text(pdfText(`${sn.nPos || 0} positif / ${sn.nNeg || 0} negatif dari ${sn.total || 0} berita (10 hari)`), 196, y, { align: 'right' })
+  doc.text(pdfText(`${sn.nPos || 0} positif / ${sn.nNeg || 0} negatif dari ${sn.total || 0} berita terkait IHSG`), 196, y, { align: 'right' })
   // Batang proporsi positif/negatif.
   const tot = Math.max(1, (sn.nPos || 0) + (sn.nNeg || 0))
   doc.setFillColor(BAD); doc.rect(14, y + 3, 182, 2.6, 'F'); doc.setFillColor(GOOD); doc.rect(14, y + 3, 182 * (sn.nPos || 0) / tot, 2.6, 'F')
@@ -206,53 +206,48 @@ export async function ihsgPdf(d, jsPDF) {
     y = para(doc, tp.implikasi, 19, y + 4.6, 176, 9, MUTED) - 0.5
   }
 
-  // 5) Berita terbaru (urut waktu, saat diunduh) lalu berita rinci per topik (bisa beberapa halaman).
-  doc.addPage(); frame(doc, 'Berita Pasar', ++page)
-  const ensure = need => { if (y + need > 278) { doc.addPage(); frame(doc, 'Berita Pasar', ++page); y = 22 } }
-  // Satu berita: penanda, judul, waktu · sumber, ringkasan isi (maks. `maxL` baris), tautan ke artikel asli.
-  const berita = (x, judul, x0, maxL, mark) => {
-    const w = 196 - x0
+  // 5) Berita sentimen IHSG: positif lalu negatif (hanya berita yang berdampak ke IHSG), terbaru dulu.
+  doc.addPage(); frame(doc, 'Sentimen IHSG', ++page)
+  const ensure = need => { if (y + need > 278) { doc.addPage(); frame(doc, 'Sentimen IHSG', ++page); y = 22 } }
+  // Satu berita: penanda nada, judul, waktu · sumber, dampak ke IHSG, ringkasan isi, tautan ke artikel asli.
+  const berita = (x, x0, maxL) => {
+    const w = 196 - x0, col = nadaWarna(x.nada)
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8.3)
     const ring = doc.splitTextToSize(pdfText(x.ringkas || 'Ringkasan tidak disediakan sumber ini; buka tautan untuk isi lengkap.'), w).slice(0, maxL)
+    doc.setFont('helvetica', 'bolditalic'); doc.setFontSize(8.3)
+    const dp = x.dampak ? doc.splitTextToSize(pdfText(`Dampak ke IHSG: ${x.dampak}${x.kunci?.length ? ` (kata kunci: ${x.kunci.join(', ')})` : ''}`), w) : []
     doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5)
-    const jd = doc.splitTextToSize(pdfText(judul || ''), w - 42)
-    ensure(10 + jd.length * 4.2 + ring.length * 3.7)
-    mark()
+    const jd = doc.splitTextToSize(pdfText(x.judul || ''), w - 42)
+    ensure(10 + jd.length * 4.2 + (dp.length + ring.length) * 3.7)
+    doc.setFillColor(col); doc.circle(x0 - 2.6, y - 1.2, 1.1, 'F')
     doc.setTextColor(INK); doc.text(jd, x0, y)
     const jam = (x.t || '').length > 10 ? ' ' + x.t.slice(11, 16) : ''
     doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(MUTED)
     doc.text(pdfText(`${tgl(x.d)}${jam}`), 196, y, { align: 'right' })
-    doc.setFont('helvetica', 'bold'); doc.setTextColor(MAROON); doc.text(pdfText(x.sumber || 'Stockbit'), 196, y + 3.6, { align: 'right' })
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(PRIMER); doc.text(pdfText(x.sumber || 'Stockbit'), 196, y + 3.6, { align: 'right' })
     y += Math.max(jd.length * 4.2, 7.4)
-    if (ring.length) { doc.setFont('helvetica', 'normal'); doc.setFontSize(8.3); doc.setTextColor('#5a5248'); doc.text(ring, x0, y); y += ring.length * 3.7 }
+    if (dp.length) { doc.setFont('helvetica', 'bolditalic'); doc.setFontSize(8.3); doc.setTextColor(col); doc.text(dp, x0, y); y += dp.length * 3.7 }
+    if (ring.length) { doc.setFont('helvetica', 'normal'); doc.setFontSize(8.3); doc.setTextColor('#4f5650'); doc.text(ring, x0, y); y += ring.length * 3.7 }
     const asal = /stockbit\.com/.test(x.url || '') ? 'Stockbit' : (x.sumber || 'sumber')
     doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(TEAL); doc.textWithLink(pdfText(`Baca berita lengkap di ${asal} >`), x0, y + 0.5, { url: x.url })
     doc.setDrawColor(LINE); doc.setLineWidth(0.2); doc.line(x0, y + 2.6, 196, y + 2.6); y += 8
   }
-  heading(doc, 'Berita Terbaru', 26)
+  heading(doc, 'Berita Sentimen IHSG', 26)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(MUTED)
   doc.text(pdfText(`diambil ${d.updated || '-'} WIB`), 196, 26, { align: 'right' })
   y = 36
-  if (d.sumberBerita?.length) y = para(doc, `Sumber: ${d.sumberBerita.join(', ')}.`, 14, y, 182, 8, MUTED) + 1
-  for (const x of (d.berita || []).slice(0, 20)) {
-    berita(x, x.title, 18, 7, () => { doc.setFillColor(GOLD); doc.rect(14, y - 3.2, 1.2, 4, 'F') })
-  }
-  doc.addPage(); frame(doc, 'Berita Pasar', ++page)
-  heading(doc, 'Berita Pasar & Dampaknya', 26)
-  y = 38
-  for (const tp of sn.topik || []) {
-    const col = nadaWarna(tp.arah)
-    ensure(24)
-    doc.setFillColor(SOFT); doc.rect(14, y - 4.6, 182, 7.2, 'F'); doc.setFillColor(MAROON); doc.rect(14, y - 4.6, 1.6, 7.2, 'F')
-    doc.setFont('times', 'bold'); doc.setFontSize(12); doc.setTextColor(MAROON); doc.text(pdfText(tp.nama), 18, y)
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(col); doc.text(pdfText(`${tp.arah.toUpperCase()} · ${tp.nPos}+ / ${tp.nNeg}-`), 194, y, { align: 'right' })
-    y += 6.5
-    doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(INK)
-    const imp = doc.splitTextToSize(pdfText('Implikasi: ' + tp.implikasi), 178); doc.text(imp, 18, y); y += imp.length * 4.2 + 2.5
-    for (const x of tp.berita || []) {
-      berita(x, x.judul, 22, 5, () => { doc.setFillColor(nadaWarna(x.nada)); doc.circle(19.5, y - 1.2, 1, 'F') })
-    }
-    y += 2
+  y = para(doc, `Dari ${sn.totalSemua || 0} berita pasar (${(d.sumberBerita || []).join(', ')}), ${sn.total || 0} berkaitan langsung dengan IHSG: `
+    + `${sn.nPos || 0} bernada positif dan ${sn.nNeg || 0} bernada negatif. Nada ditentukan dari kata kunci judul (ringkasan bila judul netral); `
+    + 'konteks mata uang, imbal hasil, dan suku bunga diperhitungkan (mis. dolar menguat = negatif bagi IHSG).', 14, y, 182, 8.3, MUTED) + 1
+  for (const [arr, label, col, n] of [[sn.positif, 'Sentimen Positif IHSG', GOOD, sn.nPos], [sn.negatif, 'Sentimen Negatif IHSG', BAD, sn.nNeg]]) {
+    ensure(30)
+    doc.setFillColor(SOFT); doc.rect(14, y - 4.6, 182, 7.4, 'F'); doc.setFillColor(col); doc.rect(14, y - 4.6, 1.8, 7.4, 'F')
+    doc.setFont('times', 'bold'); doc.setFontSize(13); doc.setTextColor(col); doc.text(pdfText(label), 18.5, y)
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.text(pdfText(`${n || 0} berita · ditampilkan ${Math.min(12, (arr || []).length)} terbaru`), 194, y, { align: 'right' })
+    y += 8
+    if (!(arr || []).length) { y = para(doc, 'Belum ada berita bernada ini dalam data terkini.', 18, y, 178, 9, MUTED) + 2; continue }
+    for (const x of arr.slice(0, 12)) berita(x, 20, 6)
+    y += 3
   }
 
   // 6) Disclaimer.

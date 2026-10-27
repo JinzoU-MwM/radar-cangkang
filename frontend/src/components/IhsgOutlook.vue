@@ -163,18 +163,24 @@ const lbl = l => l === 'Tinggi' ? 'c-good' : l === 'Rendah' ? 'c-strong' : ''
         </div>
       </div>
 
-      <!-- Berita saham & IHSG terbaru dari media nasional + Stockbit; ringkasan isi dapat dibuka per berita. -->
-      <div v-if="d.berita?.length" class="card bt">
-        <h3>Berita saham & IHSG terbaru <span class="small muted">({{ d.sumberBerita?.length || 0 }} sumber: {{ (d.sumberBerita || []).join(', ') }})</span></h3>
-        <ul class="small btl">
-          <li v-for="x in d.berita.slice(0, semuaBerita ? 40 : 10)" :key="x.url">
-            <details>
-              <summary><b class="src">{{ x.sumber || 'Stockbit' }}</b> {{ x.title }} <span class="muted">{{ fmtDate(x.d) }}{{ (x.t || '').length > 10 ? ' ' + x.t.slice(11, 16) : '' }}</span></summary>
-              <p>{{ x.ringkas || 'Ringkasan tidak tersedia.' }} <a :href="x.url" target="_blank" rel="noopener">Baca lengkap ›</a></p>
-            </details>
-          </li>
-        </ul>
-        <button v-if="d.berita.length > 10" type="button" class="lnk small" @click="semuaBerita = !semuaBerita">{{ semuaBerita ? 'Ringkas' : `Lihat ${Math.min(40, d.berita.length)} berita` }}</button>
+      <!-- Berita sentimen IHSG: hanya berita berdampak ke IHSG, dipisah positif / negatif; ringkasan & dampak dapat dibuka. -->
+      <div v-if="d.sentimen.positif.length || d.sentimen.negatif.length" class="card bt">
+        <h3>Berita sentimen IHSG <span class="small muted">({{ d.sentimen.total }} berita terkait IHSG dari {{ d.sentimen.totalSemua }} berita pasar · {{ d.sumberBerita?.length || 0 }} sumber: {{ (d.sumberBerita || []).join(', ') }})</span></h3>
+        <div class="dua">
+          <div v-for="[arr, label, cls, n] in [[d.sentimen.positif, 'Positif', 'c-good', d.sentimen.nPos], [d.sentimen.negatif, 'Negatif', 'c-strong', d.sentimen.nNeg]]" :key="label">
+            <h4 :class="cls">{{ label }} · {{ n }} berita</h4>
+            <ul class="small btl">
+              <li v-for="x in arr.slice(0, semuaBerita ? 15 : 6)" :key="x.url">
+                <details>
+                  <summary><b class="src">{{ x.sumber || 'Stockbit' }}</b> {{ x.judul }} <span class="muted">{{ fmtDate(x.d) }}{{ (x.t || '').length > 10 ? ' ' + x.t.slice(11, 16) : '' }}</span></summary>
+                  <p><b :class="cls">Dampak ke IHSG:</b> {{ x.dampak }} <span v-if="x.kunci?.length" class="muted">(kata kunci: {{ x.kunci.join(', ') }})</span></p>
+                  <p>{{ x.ringkas || 'Ringkasan tidak tersedia.' }} <a :href="x.url" target="_blank" rel="noopener">Baca lengkap ›</a></p>
+                </details>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <button v-if="d.sentimen.positif.length > 6 || d.sentimen.negatif.length > 6" type="button" class="lnk small" @click="semuaBerita = !semuaBerita">{{ semuaBerita ? 'Ringkas' : 'Lihat lebih banyak' }}</button>
       </div>
     </template>
   </section>
@@ -212,6 +218,6 @@ const lbl = l => l === 'Tinggi' ? 'c-good' : l === 'Rendah' ? 'c-strong' : ''
 .sbar{height:8px;background:var(--strong);border-radius:4px;overflow:hidden;margin:6px 0}.sbar .p{display:block;height:100%;background:var(--good)}
 .lnk{background:none;border:0;padding:0;color:var(--now-ink);text-decoration:underline;cursor:pointer;margin-top:4px}.news li{margin:2px 0}
 .yr{margin:2px 0;padding-left:16px;columns:2}
-.bt{margin-top:12px}.btl{list-style:none;margin:0;padding:0}.btl li{border-top:1px solid var(--rule);padding:4px 0}
+.bt{margin-top:12px}.dua{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.btl{list-style:none;margin:0;padding:0}.btl li{border-top:1px solid var(--rule);padding:4px 0}
 .btl summary{cursor:pointer}.btl p{margin:4px 0 2px 14px;max-width:120ch}.src{color:var(--now-ink);margin-right:4px}
 </style>
