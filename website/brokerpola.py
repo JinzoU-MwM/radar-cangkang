@@ -200,8 +200,15 @@ def view(data: dict, month: int | None, broker: str | None, jenis: str = "") -> 
             a["nAkum"], a["nDist"] = len(a["akum"]), len(a["dist"])
             a["akum"] = sorted(a["akum"], key=lambda z: -z["val"])[:3]
             a["dist"] = sorted(a["dist"], key=lambda z: z["val"])[:3]
-        out["saham"] = {"akumulasi": sorted([a for a in rows if a["net"] > 0], key=lambda a: -a["net"])[:40],
-                        "distribusi": sorted([a for a in rows if a["net"] < 0], key=lambda a: a["net"])[:40]}
+            # Ukuran bandar: net 3 broker pembeli teratas + net 3 broker penjual teratas (gaya Bandar Detector);
+            # net seluruh broker pada dasarnya nol karena setiap beli punya lawan jual.
+            a["bandar"] = sum(z["val"] for z in a["akum"]) + sum(z["val"] for z in a["dist"])
+            a["bandarLot"] = sum(z["lot"] for z in a["akum"]) + sum(z["lot"] for z in a["dist"])
+            # Harga rata-rata gabungan broker pembeli / penjual utama (tertimbang nilai).
+            wa = lambda zs: round(sum(abs(z["val"]) for z in zs) / sum(abs(z["val"]) / z["avg"] for z in zs), 1)                 if zs and all(z.get("avg") for z in zs) else None
+            a["avgAkum"], a["avgDist"] = wa(a["akum"]), wa(a["dist"])
+        out["saham"] = {"akumulasi": sorted([a for a in rows if a["bandar"] > 0], key=lambda a: -a["bandar"])[:40],
+                        "distribusi": sorted([a for a in rows if a["bandar"] < 0], key=lambda a: a["bandar"])[:40]}
     return out
 
 
