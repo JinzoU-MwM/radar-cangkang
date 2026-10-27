@@ -266,3 +266,93 @@ def narrative(tek: dict, pat: dict, flow: dict | None, berulang: dict, nama_bula
     rk += f" Probabilitas pola {nama_bulan} berulang: {berulang['prob']}% ({berulang['label'].lower()})."
     return {"struktur": " ".join(st), "flow": " ".join(fl), "rencana": rk,
             "level": {"beli": beli, "target": [round(r1), round(r2)], "risiko": risiko}}
+
+
+def _atr(bars: list[dict], n: int = 14) -> float:
+    tr = [max(b["h"] - b["l"], abs(b["h"] - a["c"]), abs(b["l"] - a["c"])) for a, b in zip(bars[:-1], bars[1:])]
+    return sum(tr[-n:]) / min(n, len(tr)) if tr else 0.0
+
+
+def projection_base(bars: list[dict]) -> dict | None:
+    """Bahan proyeksi dari harga harian: pivot klasik untuk sesi berikutnya, ATR14, dan statistik empiris 1 tahun
+    (peluang naik esok / 5 hari / 21 hari pada kondisi yang sama dengan hari ini)."""
+    if len(bars) < 60:
+        return None
+    c = [b["c"] for b in bars]
+    e20, e50 = ema(c, 20), ema(c, 50)
+    h, l, cl = bars[-1]["h"], bars[-1]["l"], c[-1]
+    pv = (h + l + cl) / 3
+    # Kondisi hari ini: posisi terhadap EMA20 + arah perubahan harian -> peluang naik pada sesi berikutnya.
+    def st1(i): return (c[i] > e20[i], c[i] > c[i - 1])
+    def fwd(k, cond):
+        xs = [c[i + k] / c[i] - 1 for i in range(50, len(c) - k) if cond(i)]
+        if not xs:
+            return {"n": 0, "naik": None, "median": None}
+        s = sorted(xs)
+        return {"n": len(xs), "naik": round(sum(x > 0 for x in xs) / len(xs) * 100), "median": round(s[len(s) // 2] * 100, 2)}
+    now1, now50 = st1(len(c) - 1), c[-1] > e50[-1]
+    return {
+        "tanggal": bars[-1]["d"], "harga": cl, "atr": round(_atr(bars), 1),
+        "ubah1": round((cl / c[-2] - 1) * 100, 2), "ubah5": round((cl / c[-6] - 1) * 100, 2),
+        "pivot": {"p": round(pv), "r1": round(2 * pv - l), "s1": round(2 * pv - h), "r2": round(pv + h - l), "s2": round(pv - (h - l))},
+        "esok": fwd(1, lambda i: st1(i) == now1), "minggu": fwd(5, lambda i: (c[i] > e50[i]) == now50),
+        "bulan": fwd(21, lambda i: (c[i] > e50[i]) == now50),
+        "kondisi": f"{'di atas' if now1[0] else 'di bawah'} EMA20 dan {'naik' if now1[1] else 'turun'} hari ini",
+        "kondisi50": f"{'di atas' if now50 else 'di bawah'} EMA50",
+    }
+
+
+def _arah(p: int) -> str:
+    return "Cenderung naik" if p >= 55 else "Cenderung turun" if p <= 45 else "Mendatar (sideways)"
+
+
+def projection(base: dict | None, tek: dict, sent: dict, flow: dict | None, berulang: dict) -> dict | None:
+    """Proyeksi arah IHSG (esok, 1 minggu, 1 bulan) sebagai rata-rata tertimbang komponen terukur. Ini perkiraan
+    probabilistik, bukan kepastian: setiap komponen dan bobotnya ikut dikembalikan agar bisa diperiksa."""
+    if not base:
+        return None
+    p, atr = base["harga"], base["atr"] or base["harga"] * 0.01
+    tr = {"Uptrend": 60, "Downtrend": 40}.get(tek.get("tren"), 50)
+    se = {"positif": 62, "netral": 50, "negatif": 38}[sent.get("arah", "netral")]
+    fa = None if not flow else 58 if flow["asing"] > 0 else 42
+    sup = [x["v"] for x in tek.get("support") or []]
+    res = [x["v"] for x in tek.get("resistance") or []]
+
+    def gabung(parts):
+        parts = [x for x in parts if x[0] is not None]
+        w = sum(x[1] for x in parts)
+        return round(sum(x[0] * x[1] for x in parts) / w), [{"nama": n, "nilai": v, "bobot": b} for v, b, n in parts]
+
+    def rentang(k):
+        d = atr * k ** 0.5
+        bawah, atas = p - d, p + d
+        return {"bawah": round(bawah), "atas": round(atas),
+                "level": [round(v) for v in sup + res if bawah <= v <= atas]}
+
+    out = []
+    for kunci, nama, k, parts in (
+        ("esok", "Esok hari", 1, [(base["esok"]["naik"] if base["esok"]["n"] >= 15 else None, 0.45, f"empiris 1 hari ({base['kondisi']})"),
+                                  (tr, 0.2, "tren"), (se, 0.2, "sentimen berita"), (fa, 0.15, "flow asing bulan berjalan")]),
+        ("minggu", "1 minggu", 5, [(base["minggu"]["naik"] if base["minggu"]["n"] >= 15 else None, 0.4, f"empiris 5 hari ({base['kondisi50']})"),
+                                   (tr, 0.25, "tren"), (se, 0.2, "sentimen berita"), (fa, 0.15, "flow asing bulan berjalan")]),
+        ("bulan", "1 bulan", 21, [(base["bulan"]["naik"] if base["bulan"]["n"] >= 15 else None, 0.35, f"empiris 21 hari ({base['kondisi50']})"),
+                                  (berulang.get("prob"), 0.35, "pola musiman berulang"), (tr, 0.2, "tren"), (fa, 0.1, "flow asing bulan berjalan")]),
+    ):
+        prob, komp = gabung(parts)
+        st = base[kunci]
+        out.append({"kunci": kunci, "nama": nama, "prob": prob, "arah": _arah(prob), **rentang(k),
+                    "median": st["median"], "n": st["n"], "komponen": komp})
+    pv = base["pivot"]
+    e = out[0]
+    if e["prob"] >= 55:
+        sk = (f"Bias naik untuk sesi berikutnya. Selama IHSG bertahan di atas pivot {_n(pv['p'])}, ruang menuju {_n(pv['r1'])} lalu {_n(pv['r2'])}; "
+              f"gagal bertahan di atas {_n(pv['s1'])} membatalkan skenario ini.")
+    elif e["prob"] <= 45:
+        sk = (f"Bias turun untuk sesi berikutnya. Selama IHSG di bawah pivot {_n(pv['p'])}, rawan menguji {_n(pv['s1'])} lalu {_n(pv['s2'])}; "
+              f"penutupan di atas {_n(pv['r1'])} membatalkan skenario ini.")
+    else:
+        sk = (f"Belum ada bias kuat untuk sesi berikutnya. Kisaran wajar {_n(pv['s1'])}–{_n(pv['r1'])} dengan pivot {_n(pv['p'])}; "
+              f"tembus {_n(pv['r1'])} membuka ruang ke {_n(pv['r2'])}, jebol {_n(pv['s1'])} membuka ruang ke {_n(pv['s2'])}.")
+    return {"dasar": base["tanggal"], "harga": p, "atr": atr, "ubah1": base["ubah1"], "ubah5": base["ubah5"],
+            "pivot": pv, "horizon": out, "skenarioEsok": sk,
+            "catatan": "Perkiraan probabilistik dari data historis 1 tahun, tren, sentimen berita, dan flow broker; bukan kepastian arah."}
