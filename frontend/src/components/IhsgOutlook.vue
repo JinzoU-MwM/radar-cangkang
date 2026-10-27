@@ -90,6 +90,13 @@ const lbl = l => l === 'Tinggi' ? 'c-good' : l === 'Rendah' ? 'c-strong' : ''
           <h4 class="c-good">Positif</h4>
           <ul class="small news"><li v-for="x in d.sentimen.positif.slice(0, semua ? 99 : 3)" :key="x.url"><a :href="x.url" target="_blank" rel="noopener">{{ x.judul }}</a> <span class="muted">{{ fmtDate(x.d) }}</span></li></ul>
           <div class="sbar" :title="`${d.sentimen.nPos} positif / ${d.sentimen.nNeg} negatif`"><i class="p" :style="{ width: (d.sentimen.nPos / Math.max(1, d.sentimen.nPos + d.sentimen.nNeg) * 100) + '%' }" /></div>
+          <!-- Topik berita: jumlah, arah, dan implikasinya (rincian berita ada di PDF). -->
+          <ul v-if="d.sentimen.topik?.length" class="tpk small">
+            <li v-for="t in d.sentimen.topik" :key="t.nama" :title="t.implikasi">
+              <b>{{ t.nama }}</b> <span :class="t.arah === 'positif' ? 'c-good' : t.arah === 'negatif' ? 'c-strong' : 'muted'">{{ t.nPos }}+ / {{ t.nNeg }}−</span>
+              <span class="muted">· {{ t.implikasi }}</span>
+            </li>
+          </ul>
           <h4 class="c-strong">Negatif</h4>
           <ul class="small news"><li v-for="x in d.sentimen.negatif.slice(0, semua ? 99 : 3)" :key="x.url"><a :href="x.url" target="_blank" rel="noopener">{{ x.judul }}</a> <span class="muted">{{ fmtDate(x.d) }}</span></li></ul>
           <button v-if="d.sentimen.positif.length > 3 || d.sentimen.negatif.length > 3" type="button" class="lnk small" @click="semua = !semua">{{ semua ? 'Ringkas' : 'Lihat semua berita' }}</button>
@@ -131,6 +138,7 @@ const lbl = l => l === 'Tinggi' ? 'c-good' : l === 'Rendah' ? 'c-strong' : ''
 .lv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:6px 0}.lv dt{color:var(--muted)}.lv dd{margin:0;font-weight:600}
 .rek{margin:6px 0 0}
 .news{margin:0;padding-left:16px}
+.tpk{margin:4px 0 6px;padding-left:16px}.tpk li{margin:2px 0}
 .sbar{height:8px;background:var(--strong);border-radius:4px;overflow:hidden;margin:6px 0}.sbar .p{display:block;height:100%;background:var(--good)}
 .lnk{background:none;border:0;padding:0;color:var(--now-ink);text-decoration:underline;cursor:pointer;margin-top:4px}.news li{margin:2px 0}
 .yr{margin:2px 0;padding-left:16px;columns:2}
