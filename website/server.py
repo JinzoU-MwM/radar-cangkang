@@ -1369,7 +1369,10 @@ def get_reports(cfg_reports: dict, ticker: str, fresh: bool = False, max_pages: 
 
 KANDIDAT_SIG = [
     ("akuisisi", r"pengendali|pengambilalihan|akuisisi|negosiasi|pengalihan saham|penjualan saham|jual beli saham|"
-                 r"ppjb|term sheet|nota kesepahaman|\bmou\b|investor strategis|tender|\bmto\b|backdoor|caplok"),
+                 r"ppjb|term sheet|nota kesepahaman|\bmou\b|investor strategis|tender|\bmto\b|backdoor|caplok|"
+                 # Sinyal dini: kreditur/utang berpindah ke pihak baru (mis. ANDI: cessie 21 Okt -> pengendali baru 26 Okt).
+                 r"cessie|pengalihan (hak )?(tagih|piutang)|perubahan kreditur|kreditur baru|konversi (utang|piutang|pinjaman)|"
+                 r"restrukturisasi (utang|pinjaman|kredit)|\bpkpu\b|calon (investor|pengendali)|pemegang saham (utama )?baru"),
     ("kbli", r"kegiatan usaha|\bkbli\b|perubahan nama|nama perseroan"),
     ("rights", r"hmetd|hak memesan|rights issue|penambahan modal|private placement|inbreng"),
     ("direksi", r"perubahan (susunan )?(anggota )?(direksi|dewan komisaris|komisaris|pengurus)|"
@@ -2254,7 +2257,8 @@ def _kandidat(cfg: dict, fresh: bool = False) -> dict:
 
     # 4) Periksa keterbukaan informasi tiap calon; data harga dari halaman Stockbit.
     out = []
-    for t in sorted(found, key=lambda x: -len(found[x]["signals"]))[:KANDIDAT_MAX]:
+    # Sinyal pengendalian (termasuk sinyal dini kreditur) diperiksa lebih dulu agar tidak terpotong KANDIDAT_MAX.
+    for t in sorted(found, key=lambda x: (-("akuisisi" in found[x]["signals"]), -len(found[x]["signals"])))[:KANDIDAT_MAX]:
         k = found[t]
         try:
             if cfg.get("reports"):
