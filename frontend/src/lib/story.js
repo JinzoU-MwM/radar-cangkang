@@ -146,7 +146,9 @@ export function deriveStory(d, { verified = {}, updates = [] } = {}) {
     inject: man.inject || (v ? (v.injectType ? (injAuto || [v.injectType, v.injectTarget].filter(Boolean).join(" · ")) : "") : injAuto),
     injectEdited: !!man.inject, injectSrc: man.inject ? null : (v ? vSrc : (injRep || null)),
     nominal: man.nominal || (nominal ? nominal.txt : ""), nominalEdited: !!man.nominal,
-    target: man.target || targetAuto || (d.prog?.next ? "Belum ada jadwal · berikutnya: " + d.prog.next.label : "Transaksi tuntas"), targetEdited: !!man.target,
+    // "Transaksi tuntas" hanya bila progres memang 100%; emiten tahap awal tanpa tonggak berikutnya belum punya jadwal.
+    target: man.target || targetAuto || (d.prog?.next ? "Belum ada jadwal · berikutnya: " + d.prog.next.label
+      : (d.prog?.pct ?? 0) >= 100 ? "Transaksi tuntas" : "Belum ada jadwal transaksi"), targetEdited: !!man.target,
     loaded: !!d.storyAuto,
   };
 }

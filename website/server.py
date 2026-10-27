@@ -1410,7 +1410,8 @@ def new_controller(ticker: str, days: int = 45, fresh: bool = False) -> dict | N
     cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
     for r in (r for r in (insider_row(m) for m in insider_moves(ticker, 1, fresh)) if r):
         if r["date"] >= cutoff and r["prev"] < 5 and r["cur"] >= 20:
-            return {"date": r["date"], "text": f"{r['name'].title()} masuk: {r['prev']:g}% → {r['cur']:g}% ({r['source']})"}
+            return {"date": r["date"], "name": r["name"].title(), "pct": r["cur"],
+                    "text": f"{r['name'].title()} masuk: {r['prev']:g}% → {r['cur']:g}% ({r['source']})"}
     return None
 
 
@@ -1606,6 +1607,62 @@ def auto_monitor(kd: dict) -> list[str]:
     return added
 
 
+STORY_V = 2  # sama dengan STORY_V di frontend/src/store.js (kunci story otomatis)
+STORY_TTL_MS = 7 * 86400 * 1000
+
+
+def lengkapi_items(tickers: list[str] | None = None, delay: float = 0.6) -> list[str]:
+    """Lengkapi otomatis item Monitor yang masih kosong (situs publik baca-saja tidak bisa memuatnya dari browser):
+    harga/kapitalisasi, pengendali (pemegang baru >= 20% di KSEI bila ada, selain itu profil emiten), dan story
+    otomatis (pengendali lama, pengambilalihan, bisnis lama). Isian yang sudah ada tidak ditimpa; story dimuat ulang
+    bila basi (> 7 hari) atau patokannya berubah."""
+    done = []
+    for it in items_all():
+        t = it["ticker"]
+        if tickers and t not in tickers or not TICKER_RE.match(t):
+            continue
+        new = dict(it)
+        try:
+            if new.get("price") in (None, ""):
+                q = page_quote(t)
+                if q.get("price") is not None:
+                    new["price"] = q["price"]
+                if q.get("pctChange") is not None:
+                    new["chgPct"] = q["pctChange"]
+                if not new.get("name") and q.get("name"):
+                    new["name"] = q["name"]
+            if not (new.get("ctrlName") or new.get("acquirer")):
+                nc = new_controller(t, days=180)
+                o = get_ownership(t)
+                if o.get("marketCap") and new.get("mcap") in (None, ""):
+                    new["mcap"] = round(o["marketCap"] / 1e8) / 10  # rupiah -> Rp miliar
+                if o.get("freeFloat") is not None and new.get("float") in (None, ""):
+                    new["float"] = o["freeFloat"]
+                if nc:  # pengendali baru tercatat KSEI lebih baru dari profil emiten
+                    new.update(ctrlName=nc["name"], ctrlPct=nc["pct"], ctrlGuess=False)
+                elif o.get("controllerName"):
+                    new.update(ctrlName=o["controllerName"], ctrlPct=o.get("controllerPct"), ctrlGuess=bool(o.get("controllerGuess")))
+            ctrl = ("" if new.get("ctrlGuess") else new.get("ctrlName") or "") or new.get("acquirer") or ""
+            near = (new.get("tender") or {}).get("start") or ""
+            key = f"{ctrl}|{near}|v{STORY_V}"
+            sa = new.get("storyAuto") or {}
+            if not sa or sa.get("key") != key or time.time() * 1000 - (sa.get("at") or 0) > STORY_TTL_MS:
+                st = get_story(t, re.sub(r"\s*\(.*\)$", "", ctrl), near)
+                new["storyAuto"] = {**st, "at": int(time.time() * 1000), "key": key}
+        except Exception as e:
+            print(f"[lengkapi] {t} gagal: {str(e)[:120]}", file=sys.stderr)
+            if "401" in str(e):
+                break
+        if new != it:
+            new["updatedAt"] = datetime.now(timezone.utc).isoformat()
+            item_put(new)
+            done.append(t)
+        time.sleep(delay)
+    if done:
+        print(f"[lengkapi] item dilengkapi otomatis: {', '.join(done)}", file=sys.stderr)
+    return done
+
+
 def kandidat_loop() -> None:
     """Hitung kandidat di latar belakang (setelah start, lalu tiap 6 jam) supaya halaman
     Kandidat — termasuk versi publik yang hanya membaca hasil jadi — tidak menunggu pemindaian."""
@@ -1615,6 +1672,7 @@ def kandidat_loop() -> None:
         if cfg and get_token():
             try:
                 auto_monitor(get_kandidat(cfg))
+                lengkapi_items()
             except Exception as e:
                 print(f"[kandidat] gagal: {e}", file=sys.stderr)
         time.sleep(3 * 3600 + 60)
@@ -1811,7 +1869,7 @@ def pov_posts_public(user: str, fresh: bool = False) -> list[dict]:
         try:
             topics = json.loads(p.get("topics") or "[]") if isinstance(p.get("topics"), str) else p.get("topics") or []
         except ValueError:
-            topics = re.findall(r"\$([A-Z]{4})", str(p.get("content_original") or ""))
+            topics = re.findall(r"\$([A-Z]{4})\b", str(p.get("content_original") or ""))
         out.append({"stream_id": p.get("postid"), "created_at": p.get("created"), "content_original": p.get("content_original"),
                     "content": p.get("content"), "topics": topics, "total_likes": p.get("likes"), "_pub": True})
     return out
