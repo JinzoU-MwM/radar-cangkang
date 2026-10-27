@@ -6,6 +6,7 @@ import { api, loadJson } from '../api.js'
 import { store } from '../store.js'
 import { fmt, fmtDate } from '../lib/domain.js'
 import SikapTag from '../components/SikapTag.vue'
+import PovDetail from '../components/PovDetail.vue'
 
 const data = ref(null), err = ref(''), kd = ref(null)
 // Analisa KakdrWay disembunyikan sampai tombolnya diklik.
@@ -36,6 +37,8 @@ function pola(u) {
   return out
 }
 const users = computed(() => data.value?.users || [])
+// Akun yang detailnya sedang dibuka (klik kartu).
+const buka = ref(null)
 </script>
 
 <template>
@@ -70,10 +73,12 @@ const users = computed(() => data.value?.users || [])
     <section v-if="users.length" class="rule-top">
       <h2>Pola pikir per akun</h2>
       <div class="cards">
-        <article v-for="u in users" :key="u.username" class="card">
+        <article v-for="u in users" :key="u.username" class="card klik" tabindex="0" role="button" :aria-label="'Detail akun ' + u.username" @click="buka = u" @keydown.enter.self="buka = u">
           <div class="ch">
-            <a :href="u.url" target="_blank" rel="noopener"><b>@{{ u.username }}</b></a>
+            <a :href="u.url" target="_blank" rel="noopener" @click.stop><b>@{{ u.username }}</b></a>
             <span v-if="u.priority" class="tag t-now">prioritas</span><span v-if="u.trending" class="tag t-warn">trending</span>
+            <span v-if="u.hit?.rate != null" class="tag" :class="u.hit.rate >= 60 ? 't-good' : u.hit.rate >= 40 ? 't-calm' : 't-strong'">ketepatan {{ u.hit.rate }}%</span>
+            <span class="small muted more">Klik untuk detail ›</span>
           </div>
           <p class="small muted">{{ u.posts }} posting ide ({{ u.from ? fmtDate(u.from) : '–' }} – {{ u.to ? fmtDate(u.to) : '–' }}) · {{ fmt(u.perDay, 1) }}/hari · rata-rata {{ fmt(u.avgLikes, 0) }} suka<template v-if="u.followers"> · {{ fmt(u.followers, 0) }} pengikut</template><template v-if="u.terbatas"> · data terbatas (posting terbaru saja)</template></p>
           <ul class="small pola"><li v-for="x in pola(u)" :key="x">{{ x }}</li></ul>
@@ -83,16 +88,18 @@ const users = computed(() => data.value?.users || [])
           <h4>Saham incaran</h4>
           <div class="tk">
             <span v-for="e in u.tickers.slice(0, 8)" :key="e.t" class="tag" :class="e.nada === 'bullish' ? 't-good' : e.nada === 'bearish' ? 't-strong' : 't-calm'" :title="e.sample">
-              <RouterLink v-if="e.radar" :to="'/emiten/' + e.t">{{ e.t }}</RouterLink><template v-else>{{ e.t }}</template> ×{{ e.n }}
+              <RouterLink v-if="e.radar" :to="'/emiten/' + e.t" @click.stop>{{ e.t }}</RouterLink><template v-else>{{ e.t }}</template> ×{{ e.n }}
             </span>
           </div>
-          <details v-if="u.latest.length" class="small">
+          <details v-if="u.latest.length" class="small" @click.stop>
             <summary>Posting terbaru</summary>
             <ul><li v-for="p in u.latest" :key="p.url"><a :href="p.url" target="_blank" rel="noopener">{{ fmtDate(p.d) }}</a> · {{ p.text }}</li></ul>
           </details>
         </article>
       </div>
     </section>
+
+    <PovDetail v-if="buka" :u="buka" @close="buka = null" />
 
     <section class="rule-top">
       <h2>Rekomendasi analisa terbaik</h2>
@@ -137,6 +144,8 @@ const users = computed(() => data.value?.users || [])
 header h1{margin:0}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
 .card{border:1px solid var(--rule);background:var(--sheet);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.card.klik{cursor:pointer;transition:box-shadow .2s,border-color .2s}.card.klik:hover,.card.klik:focus-visible{border-color:var(--now-ink);box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.more{margin-left:auto}
 .ch{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .pola{margin:0;padding-left:18px}
 .sty{display:flex;flex-direction:column;gap:3px}

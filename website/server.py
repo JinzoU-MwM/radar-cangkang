@@ -1806,8 +1806,11 @@ def pov_user(user: str, radar: set, fresh: bool = False) -> dict:
         bull, bear = bool(re.search(POV_BULL, low)), bool(re.search(POV_BEAR, low))
         day = str(p.get("created_at") or "")[:10]
         for t in [x for x in (p.get("topics") or []) if TICKER_RE.match(str(x)) and x not in POV_NOT_STOCK]:
-            e = tick.setdefault(t, {"t": t, "n": 0, "bull": 0, "bear": 0, "last": day, "sample": "", "url": ""})
+            e = tick.setdefault(t, {"t": t, "n": 0, "bull": 0, "bear": 0, "last": day, "first": day, "calls": [], "sample": "", "url": ""})
             e["n"] += 1
+            e["first"] = min(e["first"], day)
+            if len(e["calls"]) < 20:
+                e["calls"].append({"d": day, "s": "bull" if bull and not bear else "bear" if bear and not bull else "netral"})
             e["bull"] += bull and not bear
             e["bear"] += bear and not bull
             e["last"] = max(e["last"], day)
@@ -1825,6 +1828,11 @@ def pov_user(user: str, radar: set, fresh: bool = False) -> dict:
     for e in tickers:
         e["radar"] = e["t"] in radar
         e["nada"] = "bullish" if e["bull"] > e["bear"] else "bearish" if e["bear"] > e["bull"] else "netral"
+    for e in tickers[:12]:
+        try:
+            e["track"] = pov_track(e, chart_prices(e["t"]))
+        except Exception:
+            e["track"] = None
     st = sorted(({"k": k, "n": v, "pct": round(v / n * 100) if n else 0} for k, v in style.items()), key=lambda x: -x["n"])
     hz = max(hor.items(), key=lambda x: x[1])
     stats = prof.get("statistics") or {}
@@ -1834,9 +1842,47 @@ def pov_user(user: str, radar: set, fresh: bool = False) -> dict:
         "perDay": round(n / days, 1) if days else 0, "avgLikes": round(likes / n, 1) if n else 0, "avgChars": round(chars / n) if n else 0,
         "styles": st, "horizon": hz[0] if hz[1] >= 3 else "", "tickers": tickers[:12], "latest": latest,
         "radarHits": [e["t"] for e in tickers if e["radar"]],
+        "hit": pov_hit_rate(tickers[:12]),
         # True = memakai cadangan publik (hanya posting terbaru), bukan riwayat 60 hari.
         "terbatas": any(p.get("_pub") for p in posts),
     }
+
+
+def pov_track(e: dict, prices: list[dict], target: float = 0.10, window: int = 20) -> dict | None:
+    """Uji panggilan akun: dari sebutan berarah pertama (bullish/bearish; bila tidak ada, sebutan pertama dianggap
+    bullish), apakah dalam `window` hari bursa harga lebih dulu bergerak +-`target` searah (hit) atau berlawanan (gagal)."""
+    if not prices:
+        return None
+    calls = sorted(e.get("calls") or [], key=lambda c: c["d"])
+    c0 = next((c for c in calls if c["s"] != "netral"), calls[0] if calls else {"d": e.get("first"), "s": "netral"})
+    arah = "bear" if c0["s"] == "bear" else "bull"
+    i0 = next((i for i, p in enumerate(prices) if p["d"] >= c0["d"]), None)
+    if i0 is None:
+        return None
+    p0, now = prices[i0]["v"], prices[-1]["v"]
+    seg = prices[i0 + 1:i0 + 1 + window]
+    status, hari = "belum", None
+    for k, p in enumerate(seg, 1):
+        r = p["v"] / p0 - 1
+        if (r >= target and arah == "bull") or (r <= -target and arah == "bear"):
+            status, hari = "hit", k
+            break
+        if (r <= -target and arah == "bull") or (r >= target and arah == "bear"):
+            status, hari = "gagal", k
+            break
+    if status == "belum" and len(seg) >= window:
+        status = "netral"  # jendela habis tanpa gerakan 10%
+    pk = max([p["v"] for p in seg] or [p0])
+    tr = min([p["v"] for p in seg] or [p0])
+    return {"d0": prices[i0]["d"], "arah": arah, "p0": p0, "now": now, "ret": round((now / p0 - 1) * 100, 1),
+            "peak": round((pk / p0 - 1) * 100, 1), "trough": round((tr / p0 - 1) * 100, 1), "status": status, "hari": hari}
+
+
+def pov_hit_rate(tickers: list[dict]) -> dict:
+    st = [((e.get("track") or {}).get("status")) for e in tickers]
+    h, g = st.count("hit"), st.count("gagal")
+    return {"hit": h, "gagal": g, "netral": st.count("netral"), "belum": st.count("belum"),
+            "rate": round(h / (h + g) * 100) if h + g else None}
 
 
 _pov_memo: tuple | None = None
