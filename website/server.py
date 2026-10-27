@@ -34,6 +34,7 @@ from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+import brokerpola as BP
 import seasonality as SZ
 
 ROOT = Path(__file__).resolve().parent
@@ -1939,27 +1940,60 @@ def season_build() -> None:
     print(f"[seasonality] selesai: {len(data['stock'])} saham")
 
 
+BROKER_PATH = ROOT / ".broker-pola.json"
+_broker_memo: tuple[float, dict] = (0.0, {})
+
+
+def broker_data() -> dict:
+    global _broker_memo
+    try:
+        m = BROKER_PATH.stat().st_mtime
+    except OSError:
+        return {}
+    if _broker_memo[0] != m:
+        _broker_memo = (m, BP.load(BROKER_PATH))
+    return _broker_memo[1]
+
+
+def broker_build() -> None:
+    data = BP.build(lambda p: sb_fetch(p), BP.load(BROKER_PATH), log=lambda m: print(m, file=sys.stderr),
+                    insider=lambda t: [r for r in (insider_row(m) for m in insider_moves(t, 2)) if r])
+    if len(data.get("broker", {})) < 20:
+        raise RuntimeError(f"data broker tidak lengkap ({len(data.get('broker', {}))} broker)")
+    tmp = BROKER_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(BROKER_PATH)
+    print(f"[broker-pola] selesai: {len(data['broker'])} broker")
+
+
+def daily_builds() -> None:
+    """Pembaruan terjadwal: Seasonality lalu Pola Broker; masing-masing dicoba ulang tiap 30 menit (maks. 3 jam)."""
+    for fn in (season_build, broker_build):
+        for _ in range(6):
+            try:
+                fn()
+                break
+            except Exception as e:
+                print(f"[{fn.__name__}] gagal: {e}; dicoba lagi 30 menit", file=sys.stderr)
+                time.sleep(1800)
+
+
 def season_loop() -> None:
     time.sleep(120)  # beri waktu loop kandidat/tsa mengisi universe lebih dulu
     # Belum ada data sama sekali: bangun sekarang agar halaman tidak kosong, lalu ikuti jadwal.
-    while not SEASON_PATH.exists():
-        try:
-            if get_token():
-                season_build()
-                break
-        except Exception as e:
-            print(f"[seasonality] gagal: {e}; dicoba lagi 30 menit", file=sys.stderr)
-        time.sleep(1800)
+    for path, fn in ((SEASON_PATH, season_build), (BROKER_PATH, broker_build)):
+        while not path.exists():
+            try:
+                if get_token():
+                    fn()
+                    break
+            except Exception as e:
+                print(f"[{fn.__name__}] gagal: {e}; dicoba lagi 30 menit", file=sys.stderr)
+            time.sleep(1800)
     while True:
         nxt = season_next_run(datetime.now(timezone.utc))
         time.sleep(max(1.0, (nxt - datetime.now(timezone.utc)).total_seconds()))
-        for _ in range(6):  # gagal: coba lagi tiap 30 menit, maksimal 3 jam
-            try:
-                season_build()
-                break
-            except Exception as e:
-                print(f"[seasonality] gagal: {e}; dicoba lagi 30 menit", file=sys.stderr)
-                time.sleep(1800)
+        daily_builds()
 
 
 def season_api(month: int, years: int) -> dict:
@@ -2346,6 +2380,18 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:
                 month, years = datetime.now().month % 12 + 1, 10
             self.reply_json(season_api(month, years))
+        elif path == "api/broker-pola":
+            d = broker_data()
+            if not d:
+                self.reply_json({"error": "Data pola broker sedang disiapkan (pembaruan otomatis Senin-Sabtu pukul 00.01 WIB). Coba lagi beberapa menit lagi."})
+            else:
+                try:
+                    month = int(self.qs("bulan") or 0) or None
+                except ValueError:
+                    month = None
+                bro = (self.qs("broker") or "").upper()
+                jn = self.qs("jenis") if self.qs("jenis") in ("asing", "domestik") else ""
+                self.reply_json(BP.view(d, month, bro if re.match(r"^[A-Z0-9]{2}$", bro) else None, jn))
         elif path == "api/seasonality-detail":
             sym = (self.qs("kode") or "").upper()
             d = SZ.detail(season_data(), sym, 5 if self.qs("tahun") == "5" else 10) if re.match(r"^[A-Z0-9]{3,10}$", sym) else None
