@@ -130,6 +130,59 @@ def build(fetch, universe: list[str], today: date | None = None, pause: float = 
     return data
 
 
+def _tick(p: float) -> int:
+    """Fraksi harga BEI."""
+    return 1 if p < 200 else 2 if p < 500 else 5 if p < 2000 else 10 if p < 5000 else 25
+
+
+def _rnd(p: float, up: bool = False) -> int:
+    t = _tick(p)
+    return int(math.ceil(p / t) * t) if up else int(math.floor(p / t) * t)
+
+
+BULAN_ID = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+
+
+def trading_plan(st: dict, sig: dict | None, month: int, today: date) -> dict | None:
+    """Rencana transaksi musiman dari data historis bulan itu + harga terkini (tradersaham):
+    - area beli: harga terkini s.d. penopang terdekat (EMA20 bila di bawah harga, maks. 5% di bawah harga);
+    - batas rugi: median penurunan pada tahun-tahun turun di bulan itu (dibatasi 4-10%);
+    - ambil untung: TP1 = median kenaikan pada tahun-tahun naik, TP2 = kenaikan kuartil atas (persentil 75);
+    - jangka waktu: masuk akhir bulan sebelumnya s.d. awal bulan, keluar paling lambat akhir bulan."""
+    price = float((sig or {}).get("closePrice") or 0)
+    if price <= 0:
+        return None
+    ema20 = float((sig or {}).get("priceEma20") or 0)
+    ups = sorted(v for _, v in st["vals"] if v > 0)
+    downs = sorted(v for _, v in st["vals"] if v <= 0)
+    if not ups:
+        return None
+    lo = ema20 if 0 < ema20 < price else price * 0.97
+    lo = max(lo, price * 0.95)
+    e_lo, e_hi = _rnd(lo, up=True), _rnd(price)
+    mid = (e_lo + e_hi) / 2
+    sl_pct = min(-4.0, max(-10.0, statistics.median(downs) if downs else -6.0))
+    tp1_pct = statistics.median(ups)
+    q = sorted(ups)
+    tp2_pct = q[min(len(q) - 1, int(round(0.75 * (len(q) - 1))))] if len(q) >= 3 else max(q)
+    tp2_pct = max(tp2_pct, tp1_pct * 1.3)
+    sl = _rnd(mid * (1 + sl_pct / 100))
+    tp1, tp2 = _rnd(mid * (1 + tp1_pct / 100), up=True), _rnd(mid * (1 + tp2_pct / 100), up=True)
+    risk, rew = mid - sl, tp1 - mid
+    prev = BULAN_ID[(month - 2) % 12]
+    jalan = month == today.month
+    return {
+        "harga": price, "entry": [e_lo, e_hi], "sl": sl, "slPct": round(sl_pct, 1),
+        "tp1": tp1, "tp1Pct": round(tp1_pct, 1), "tp2": tp2, "tp2Pct": round(tp2_pct, 1),
+        "rr": round(rew / risk, 2) if risk > 0 else None,
+        "masuk": f"sisa {BULAN_ID[month - 1]} (bulan berjalan)" if jalan else f"akhir {prev} s.d. 3 hari bursa pertama {BULAN_ID[month - 1]}",
+        "keluar": f"paling lambat hari bursa terakhir {BULAN_ID[month - 1]}",
+        "timeframe": "swing ±1 bulan",
+        # Uji historis sederhana (penutupan bulan): seberapa sering target tercapai dan batas rugi tertembus.
+        "kenaTp1": sum(1 for _, v in st["vals"] if v >= tp1_pct), "kenaSl": sum(1 for _, v in st["vals"] if v <= sl_pct), "n": len(st["vals"]),
+    }
+
+
 def _broker_pts(sig: dict | None) -> tuple[float, str]:
     reg = str((sig or {}).get("regimeSignal") or "").upper()
     if not sig:
@@ -197,6 +250,7 @@ def analyze(data: dict, month: int, years: int, signals: dict, radar: set, kandi
             "broker": br_label, "akumulasi": (sig or {}).get("netAccumulationScore"), "asing20": (sig or {}).get("foreignNetVal20d"),
             "radar": "radar" if sym in radar else "kandidat" if sym in kandidat else "",
             "alasan": alasan[:3], "bersamaan": bersamaan, "katalis": nxt[:3],
+            "plan": trading_plan(st, sig, month, today),
             "skor": skor, "komponen": {"pola": round(pts_pola, 1), "sektor": round(pts_sek, 1), "ihsg": round(pts_ihsg, 1),
                                        "broker": round(pts_br, 1), "katalis": round(pts_kat, 1)},
         })
