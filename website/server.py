@@ -2571,7 +2571,11 @@ class Handler(BaseHTTPRequestHandler):
                     month = None
                 bro = (self.qs("broker") or "").upper()
                 jn = self.qs("jenis") if self.qs("jenis") in ("asing", "domestik") else ""
-                self.reply_json(BP.view(d, month, bro if re.match(r"^[A-Z0-9]{2}$", bro) else None, jn))
+                sym = (self.qs("saham") or "").upper()
+                if re.match(r"^[A-Z]{4}$", sym):
+                    self.reply_json({"saham": sym, "jenis": jn, "tahun": d.get("tahun"), "seri": BP.series(d, sym, jn)})
+                else:
+                    self.reply_json(BP.view(d, month, bro if re.match(r"^[A-Z0-9]{2}$", bro) else None, jn))
         elif path == "api/seasonality-detail":
             sym = (self.qs("kode") or "").upper()
             d = SZ.detail(season_data(), sym, 5 if self.qs("tahun") == "5" else 10) if re.match(r"^[A-Z0-9]{3,10}$", sym) else None
