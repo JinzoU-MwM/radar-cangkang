@@ -66,30 +66,27 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
     <template v-else-if="data">
       <!-- Per saham: agregat semua broker (sesuai filter) pada bulan terpilih. -->
       <template v-if="mode === 'saham' && data.saham">
-        <div class="two">
-          <section v-for="side in [['akumulasi', 'Paling diakumulasi', 'c-good'], ['distribusi', 'Paling didistribusi', 'c-strong']]" :key="side[0]">
+        <!-- Akumulasi (kiri) dan distribusi (kanan); peringkat = net 3 broker pembeli teratas + 3 penjual teratas. -->
+        <div class="lr">
+          <section v-for="side in [['akumulasi', 'Akumulasi', 'c-good', 'akum', 'avgAkum'], ['distribusi', 'Distribusi', 'c-strong', 'dist', 'avgDist']]" :key="side[0]">
             <h3 :class="side[2]">{{ side[1] }} · {{ BLN[bulan - 1] }} {{ data.tahun }}</h3>
-            <div class="scroll">
-              <table class="ledger">
-                <thead><tr><th>Saham</th><th class="num">Net nominal</th><th class="num">Net lot</th><th class="num">Asing</th><th class="num">Domestik</th><th>Broker utama (avg)</th><th>Potensi repo</th></tr></thead>
-                <tbody>
-                  <tr v-for="x in data.saham[side[0]].slice(0, 25)" :key="x.s">
-                    <td><RouterLink :to="{ path: '/emiten/' + x.s, query: { tab: 'analisa' } }"><b>{{ x.s }}</b></RouterLink></td>
-                    <td class="num" :class="side[2]">{{ rp(x.net) }}</td>
-                    <td class="num">{{ lot(x.lot) }}</td>
-                    <td class="num small">{{ rp(x.asing) }}</td>
-                    <td class="num small">{{ rp(x.domestik) }}</td>
-                    <td class="small">
-                      <span v-for="z in (side[0] === 'akumulasi' ? x.akum : x.dist)" :key="z.b" class="bk"><b>{{ z.b }}</b> {{ rp(z.val) }} @{{ avg(z.avg) }}</span>
-                      <span class="muted">· {{ side[0] === 'akumulasi' ? x.nAkum : x.nDist }} broker</span>
-                    </td>
-                    <td class="small"><RepoTag :r="x.repo" /></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <table class="ledger cmp">
+              <thead><tr><th>Saham</th><th class="num">Net bandar</th><th class="num">Lot</th><th class="num">Avg broker</th><th>Broker utama</th><th class="num">Asing / Dom.</th></tr></thead>
+              <tbody>
+                <tr v-for="x in data.saham[side[0]].slice(0, 25)" :key="x.s">
+                  <td><RouterLink :to="{ path: '/emiten/' + x.s, query: { tab: 'analisa' } }"><b>{{ x.s }}</b></RouterLink>
+                    <span v-if="x.repo" class="tag repo" :class="x.repo.kuat ? 't-strong' : 't-warn'" :title="x.repo.alasan.join(' · ')">repo?</span></td>
+                  <td class="num" :class="side[2]">{{ rp(x.bandar) }}</td>
+                  <td class="num">{{ lot(x.bandarLot) }}</td>
+                  <td class="num"><b>{{ avg(x[side[4]]) }}</b></td>
+                  <td class="small"><span v-for="z in x[side[3]]" :key="z.b" class="bk" :title="`${z.b}: ${rp(z.val)}, ${lot(z.lot)} lot @${avg(z.avg)}`">{{ z.b }}<sup>{{ avg(z.avg).replace('Rp', '') }}</sup></span></td>
+                  <td class="num small"><span :class="x.asing >= 0 ? 'c-good' : 'c-strong'">{{ rp(x.asing) }}</span><br><span :class="x.domestik >= 0 ? 'c-good' : 'c-strong'">{{ rp(x.domestik) }}</span></td>
+                </tr>
+              </tbody>
+            </table>
           </section>
         </div>
+        <p class="muted small">Net bandar = net beli 3 broker pembeli teratas + net jual 3 broker penjual teratas (gaya Bandar Detector). Avg broker = harga rata-rata gabungan broker utama (tertimbang nilai); angka kecil di samping kode broker = avg masing-masing. Label repo? = potensi repo (arahkan kursor untuk alasannya).</p>
       </template>
 
       <!-- Per broker: bulan demi bulan, akumulasi dan distribusi terbesar. -->
@@ -125,6 +122,12 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
 .ctl{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;margin:6px 0}
 .bln{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
 .two{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.lr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.lr section{min-width:0}
+.cmp{font-size:13px;width:100%}.cmp td,.cmp th{padding:5px 6px}
+.bk sup{color:var(--muted);margin-left:1px;font-size:10px}
+.repo{margin-left:4px;font-size:10px;padding:0 4px}
+@media (max-width:1100px){.lr{grid-template-columns:1fr}}
 .two section{min-width:0}.scroll{overflow-x:auto}
 .mo .two{grid-template-columns:repeat(2,minmax(0,1fr))}
 .bk{display:inline-block;margin-right:8px;white-space:nowrap}

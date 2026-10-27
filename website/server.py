@@ -1377,6 +1377,38 @@ KANDIDAT_SIG = [
 ]
 
 
+def market_reports(days: int = 14, pages: int = 40, fresh: bool = False) -> list[dict]:
+    """Keterbukaan seluruh BEI dari akun StockbitReports (terbaru dulu) dalam `days` hari:
+    [{ticker, date, title, url}]. Dipakai Kandidat agar laporan pergantian pengendali emiten mana pun tertangkap."""
+    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    out, cursor = [], 0
+    for _ in range(pages):
+        j = stockbit_post_api("https://exodus.stockbit.com/stream/v3/user/StockbitReports",
+                              {"category": "STREAM_CATEGORY_MAIN_IDEAS", "last_stream_id": cursor, "limit": 100}, fresh)
+        d = j.get("data") or {}
+        page = d.get("stream") or []
+        for p in page:
+            day = str(p.get("created_at") or "")[:10]
+            title = re.sub(r"\s*\[[A-Z0-9]{4}\]\s*$", "", str(p.get("title") or p.get("content") or "").split(chr(10))[0]).strip()
+            for t in p.get("topics") or []:
+                if TICKER_RE.match(str(t)) and day >= cutoff:
+                    out.append({"ticker": t, "date": day, "title": title[:200], "url": f"https://stockbit.com/post/{p.get('stream_id')}"})
+        if not page or (d.get("pagination") or {}).get("is_last_page") or str(page[-1].get("created_at") or "")[:10] < cutoff:
+            break
+        cursor = (d.get("pagination") or {}).get("next_cursor") or page[-1].get("stream_id")
+        time.sleep(0.3)
+    return out
+
+
+def new_controller(ticker: str, days: int = 45, fresh: bool = False) -> dict | None:
+    """Pemegang baru >= 20% (dari < 5%) di keterbukaan KSEI/IDX emiten ini dalam `days` hari terakhir."""
+    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    for r in (r for r in (insider_row(m) for m in insider_moves(ticker, 1, fresh)) if r):
+        if r["date"] >= cutoff and r["prev"] < 5 and r["cur"] >= 20:
+            return {"date": r["date"], "text": f"{r['name'].title()} masuk: {r['prev']:g}% → {r['cur']:g}% ({r['source']})"}
+    return None
+
+
 def big_holder_moves(fresh: bool = False, pages: int = 60) -> list[dict]:
     """Perpindahan blok besar: pemegang baru naik ke ≥ 20%, atau pemegang ≥ 20% turun ≥ 10 poin.
     Entri yang dibalik pada tanggal yang sama (koreksi data) dan persentase > 100 diabaikan."""
@@ -1423,7 +1455,7 @@ def get_kandidat(cfg: dict, fresh: bool = False) -> dict:
     global _kd_memo
     with _kd_lock:
         public = is_public_request()
-        if _kd_memo and (public or (not fresh and time.time() - _kd_memo[0] < 6 * 3600)):
+        if _kd_memo and (public or (not fresh and time.time() - _kd_memo[0] < 3 * 3600)):
             return _kd_memo[1]
         res = _kandidat(cfg, fresh)
         if not public:  # versi publik hanya membaca cache; hasilnya tidak lengkap, jangan disimpan
@@ -1544,6 +1576,31 @@ def deploy_status() -> dict | None:
         return None
 
 
+PENGENDALI_RX = re.compile(r"pengendali|pengambilalihan|akuisisi", re.I)
+
+
+def auto_monitor(kd: dict) -> list[str]:
+    """Masukkan ke Monitor (tahap radar) emiten dengan pergantian pengendali terkonfirmasi: pemegang baru >= 20%
+    di KSEI/IDX dan keterbukaan BEI tentang pengendali/pengambilalihan. Data yang sudah ada tidak ditimpa."""
+    ada = {i["ticker"] for i in items_all()}
+    added = []
+    for k in kd.get("items") or []:
+        t = k["ticker"]
+        ev = (k.get("signals") or {}).get("akuisisi", {}).get("ev") or []
+        lap = [e for e in ev if "stockbit.com/post/" in (e.get("src") or "") and PENGENDALI_RX.search(e.get("text") or "")]
+        if t in ada or not k.get("pengendaliBaru") or not lap:
+            continue
+        nc = k["pengendaliBaru"]
+        item_put({"id": t, "ticker": t, "name": k.get("name") or "", "stage": "radar", "flags": k.get("flags") or {"akuisisi": True},
+                  "ms": {}, "signals": k.get("signals") or {}, "auto": True,
+                  "notes": f"Otomatis: pergantian pengendali terkonfirmasi. {nc['text']} pada {nc['date']}; keterbukaan: {lap[0]['text']} ({lap[0]['d']}).",
+                  "updatedAt": datetime.now(timezone.utc).isoformat()})
+        added.append(t)
+    if added:
+        print(f"[kandidat] otomatis masuk Monitor: {', '.join(added)}")
+    return added
+
+
 def kandidat_loop() -> None:
     """Hitung kandidat di latar belakang (setelah start, lalu tiap 6 jam) supaya halaman
     Kandidat — termasuk versi publik yang hanya membaca hasil jadi — tidak menunggu pemindaian."""
@@ -1552,10 +1609,10 @@ def kandidat_loop() -> None:
         cfg = load_config()
         if cfg and get_token():
             try:
-                get_kandidat(cfg)
+                auto_monitor(get_kandidat(cfg))
             except Exception as e:
                 print(f"[kandidat] gagal: {e}", file=sys.stderr)
-        time.sleep(6 * 3600 + 60)
+        time.sleep(3 * 3600 + 60)
 
 
 # Pembaruan berita di server: situs publik bersifat baca-saja sehingga tidak bisa memicu sinkron dari browser.
@@ -2118,6 +2175,15 @@ def _kandidat(cfg: dict, fresh: bool = False) -> dict:
         except Exception as e:
             errors.append({"source": "Berita", "error": str(e)})
 
+    # 3b) Keterbukaan seluruh BEI (StockbitReports): pengambilalihan, rights issue, perubahan usaha.
+    try:
+        for r in market_reports(fresh=fresh):
+            for sid in kandidat_sigs(r["title"]):
+                if sid in ("akuisisi", "rights", "kbli"):
+                    add(r["ticker"], sid, r["date"], r["title"], r["url"])
+    except Exception as e:
+        errors.append({"source": "Keterbukaan BEI", "error": str(e)})
+
     # 4) Periksa keterbukaan informasi tiap calon; data harga dari halaman Stockbit.
     out = []
     for t in sorted(found, key=lambda x: -len(found[x]["signals"]))[:KANDIDAT_MAX]:
@@ -2127,6 +2193,12 @@ def _kandidat(cfg: dict, fresh: bool = False) -> dict:
                 for r in get_reports(cfg["reports"], t, fresh, max_pages=1):
                     for sid in kandidat_sigs(r["title"]):
                         add(t, sid, r["date"], r["title"], r["url"])
+            # Feed pasar KSEI bisa tertinggal: periksa langsung pemegang baru >= 20% di emiten ini.
+            if "akuisisi" in k["signals"]:
+                nc = new_controller(t, fresh=fresh)
+                if nc:
+                    add(t, "akuisisi", nc["date"], nc["text"], "https://stockbit.com/symbol/" + t)
+                    k["pengendaliBaru"] = nc
             co = page_props(t, fresh).get("company") or {}
             k["name"] = co.get("name") or ""
             k["price"] = float(co["lastprice"]) if co.get("lastprice") not in (None, "") else None
