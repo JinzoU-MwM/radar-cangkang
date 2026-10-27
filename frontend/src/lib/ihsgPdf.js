@@ -209,24 +209,33 @@ export async function ihsgPdf(d, jsPDF) {
   // 5) Berita terbaru (urut waktu, saat diunduh) lalu berita rinci per topik (bisa beberapa halaman).
   doc.addPage(); frame(doc, 'Berita Pasar', ++page)
   const ensure = need => { if (y + need > 278) { doc.addPage(); frame(doc, 'Berita Pasar', ++page); y = 22 } }
+  // Satu berita: penanda, judul, waktu · sumber, ringkasan isi (maks. `maxL` baris), tautan ke artikel asli.
+  const berita = (x, judul, x0, maxL, mark) => {
+    const w = 196 - x0
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.3)
+    const ring = doc.splitTextToSize(pdfText(x.ringkas || 'Ringkasan tidak disediakan sumber ini; buka tautan untuk isi lengkap.'), w).slice(0, maxL)
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5)
+    const jd = doc.splitTextToSize(pdfText(judul || ''), w - 42)
+    ensure(10 + jd.length * 4.2 + ring.length * 3.7)
+    mark()
+    doc.setTextColor(INK); doc.text(jd, x0, y)
+    const jam = (x.t || '').length > 10 ? ' ' + x.t.slice(11, 16) : ''
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(MUTED)
+    doc.text(pdfText(`${tgl(x.d)}${jam}`), 196, y, { align: 'right' })
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(MAROON); doc.text(pdfText(x.sumber || 'Stockbit'), 196, y + 3.6, { align: 'right' })
+    y += Math.max(jd.length * 4.2, 7.4)
+    if (ring.length) { doc.setFont('helvetica', 'normal'); doc.setFontSize(8.3); doc.setTextColor('#5a5248'); doc.text(ring, x0, y); y += ring.length * 3.7 }
+    const asal = /stockbit\.com/.test(x.url || '') ? 'Stockbit' : (x.sumber || 'sumber')
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(TEAL); doc.textWithLink(pdfText(`Baca berita lengkap di ${asal} >`), x0, y + 0.5, { url: x.url })
+    doc.setDrawColor(LINE); doc.setLineWidth(0.2); doc.line(x0, y + 2.6, 196, y + 2.6); y += 8
+  }
   heading(doc, 'Berita Terbaru', 26)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(MUTED)
   doc.text(pdfText(`diambil ${d.updated || '-'} WIB`), 196, 26, { align: 'right' })
-  y = 38
-  for (const x of (d.berita || []).slice(0, 12)) {
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.3)
-    const ring = doc.splitTextToSize(pdfText(x.ringkas || ''), 174)
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5)
-    const jd = doc.splitTextToSize(pdfText(x.title || ''), 140)
-    ensure(12 + jd.length * 4.2 + Math.min(ring.length, 5) * 3.7)
-    doc.setFillColor(GOLD); doc.rect(14, y - 3.2, 1.2, 4, 'F')
-    doc.setTextColor(INK); doc.text(jd, 18, y)
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(MUTED)
-    doc.text(pdfText(`${tgl(x.d)}${x.sumber ? ' · ' + x.sumber : ''}`), 196, y, { align: 'right' })
-    y += jd.length * 4.2
-    if (ring.length) { doc.setFontSize(8.3); doc.setTextColor('#5a5248'); doc.text(ring.slice(0, 5), 18, y); y += Math.min(ring.length, 5) * 3.7 }
-    doc.setFontSize(7.5); doc.setTextColor(TEAL); doc.textWithLink(pdfText('Baca berita lengkap di Stockbit >'), 18, y + 0.5, { url: x.url })
-    doc.setDrawColor(LINE); doc.setLineWidth(0.2); doc.line(18, y + 2.6, 196, y + 2.6); y += 8
+  y = 36
+  if (d.sumberBerita?.length) y = para(doc, `Sumber: ${d.sumberBerita.join(', ')}.`, 14, y, 182, 8, MUTED) + 1
+  for (const x of (d.berita || []).slice(0, 20)) {
+    berita(x, x.title, 18, 7, () => { doc.setFillColor(GOLD); doc.rect(14, y - 3.2, 1.2, 4, 'F') })
   }
   doc.addPage(); frame(doc, 'Berita Pasar', ++page)
   heading(doc, 'Berita Pasar & Dampaknya', 26)
@@ -241,17 +250,7 @@ export async function ihsgPdf(d, jsPDF) {
     doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(INK)
     const imp = doc.splitTextToSize(pdfText('Implikasi: ' + tp.implikasi), 178); doc.text(imp, 18, y); y += imp.length * 4.2 + 2.5
     for (const x of tp.berita || []) {
-      const ring = doc.splitTextToSize(pdfText(x.ringkas || ''), 170)
-      ensure(11 + Math.min(ring.length, 3) * 4)
-      doc.setFillColor(nadaWarna(x.nada)); doc.circle(19.5, y - 1.2, 1, 'F')
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(INK)
-      const jd = doc.splitTextToSize(pdfText(x.judul), 135); doc.text(jd, 22, y)
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(MUTED)
-      doc.text(pdfText(`${tgl(x.d)}${x.sumber ? ' · ' + x.sumber : ''}`), 196, y, { align: 'right' })
-      y += jd.length * 4
-      if (ring.length) { doc.setFontSize(8); doc.setTextColor('#5a5248'); doc.text(ring.slice(0, 3), 22, y); y += Math.min(ring.length, 3) * 3.6 }
-      doc.setFontSize(7.5); doc.setTextColor(TEAL); doc.textWithLink(pdfText('Baca di Stockbit >'), 22, y + 0.5, { url: x.url })
-      doc.setDrawColor(LINE); doc.setLineWidth(0.2); doc.line(22, y + 2.6, 196, y + 2.6); y += 7
+      berita(x, x.judul, 22, 5, () => { doc.setFillColor(nadaWarna(x.nada)); doc.circle(19.5, y - 1.2, 1, 'F') })
     }
     y += 2
   }
