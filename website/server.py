@@ -2092,11 +2092,16 @@ def ihsg_refresh() -> None:
     if tek:
         tek["pola"] = IH.pattern(bars)
     posts, cursor = [], 0
-    for _ in range(4):
+    for _ in range(6):
         j = sb_fetch(f"/stream/v3/symbol/IHSG?category=STREAM_CATEGORY_NEWS&last_stream_id={cursor}&limit=20", True)
         page = (j.get("data") or {}).get("stream") or []
-        posts += [{"d": str(p.get("created_at") or "")[:10], "title": str(p.get("title") or p.get("content") or "").split(chr(10))[0],
-                   "url": f"https://stockbit.com/post/{p.get('stream_id')}"} for p in page]
+        for p in page:
+            isi = re.sub(r"\s+", " ", str(p.get("content_original") or p.get("content") or "")).strip()
+            # "Jakarta, CNBC Indonesia - ..." -> sumber berita dari pembuka paragraf.
+            m = re.match(r"^[A-Z][A-Za-z .]+,\s*([A-Z][\w .]{2,40}?)\s*[-–—]\s*", isi) or re.match(r"^([A-Z][\w]+(?:\.com|\.co\.id|\.id))\s*[-–—]\s*", isi)
+            posts.append({"d": str(p.get("created_at") or "")[:10], "title": str(p.get("title") or isi).split(chr(10))[0],
+                          "ringkas": (isi[m.end():] if m else isi)[:320].rstrip(". ") + "…" if isi else "",
+                          "sumber": m.group(1).strip() if m else "", "url": f"https://stockbit.com/post/{p.get('stream_id')}"})
         if not page:
             break
         cursor = page[-1].get("stream_id")

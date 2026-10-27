@@ -100,16 +100,53 @@ export async function ihsgPdf(d, jsPDF) {
   y = para(doc, `Pada kondisi tren yang sama (akhir bulan sebelumnya IHSG di ${c.kondisi || '-'} rata-rata 10 bulan, seperti sekarang): naik ${c.up ?? '-'} dari ${c.n ?? '-'} tahun${c.prob != null ? ` (${c.prob}%)` : ''}. `
     + (c.tahun || []).map(x => `${x.tahun}: ${x.ret > 0 ? '+' : ''}${x.ret}%`).join('; ') + '.', 14, y, 182)
   const sn = d.sentimen || {}
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(NAVY); doc.text(pdfText(`Sentimen pasar: ${sn.arah || '-'} (${sn.nPos || 0} positif / ${sn.nNeg || 0} negatif)`), 14, y + 6)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(NAVY)
+  doc.text(pdfText(`Sentimen pasar: ${sn.arah || '-'} (${sn.nPos || 0} positif / ${sn.nNeg || 0} negatif dari ${sn.total || 0} berita, 10 hari)`), 14, y + 6)
   y += 12
-  for (const [arr, label, col] of [[sn.positif, 'Positif', GREEN], [sn.negatif, 'Negatif', RED]]) {
-    doc.setFontSize(10); doc.setTextColor(col); doc.setFont('helvetica', 'bold'); doc.text(label, 14, y); y += 5
-    for (const x of (arr || []).slice(0, 5)) y = para(doc, `• ${x.judul} (${tgl(x.d)})`, 16, y, 178, 9) - 1.5
-    y += 3
+  // Tabel ringkas per topik: jumlah berita, positif/negatif, arah, dan implikasi.
+  for (const tp of sn.topik || []) {
+    const col = tp.arah === 'positif' ? GREEN : tp.arah === 'negatif' ? RED : MUTED
+    doc.setFillColor(col); doc.rect(14, y - 3.2, 1.6, 4.2, 'F')
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(INK)
+    doc.text(pdfText(`${tp.nama}`), 18, y)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(col)
+    doc.text(pdfText(`${tp.n} berita · ${tp.nPos} positif / ${tp.nNeg} negatif · ${tp.arah}`), 196, y, { align: 'right' })
+    y = para(doc, tp.implikasi, 18, y + 5, 176, 9) - 0.5
   }
 
-  // 4) Disclaimer.
-  doc.addPage(); header(doc, 'Disclaimer', 4)
+  // 4) Berita rinci per topik (bisa beberapa halaman).
+  let page = 4
+  doc.addPage(); header(doc, 'Berita Pasar', page)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(NAVY); doc.text(pdfText('Berita Pasar & Dampaknya'), 105, 32, { align: 'center' })
+  y = 42
+  const ensure = need => { if (y + need > 278) { doc.addPage(); header(doc, 'Berita Pasar', ++page); y = 28 } }
+  for (const tp of sn.topik || []) {
+    const col = tp.arah === 'positif' ? GREEN : tp.arah === 'negatif' ? RED : MUTED
+    ensure(22)
+    doc.setFillColor('#eef2f5'); doc.rect(14, y - 4.5, 182, 7, 'F')
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(NAVY); doc.text(pdfText(tp.nama), 16, y)
+    doc.setFontSize(9); doc.setTextColor(col); doc.text(pdfText(`${tp.arah.toUpperCase()} · ${tp.nPos}+ / ${tp.nNeg}-`), 194, y, { align: 'right' })
+    y += 6
+    doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(INK)
+    const imp = doc.splitTextToSize(pdfText('Implikasi: ' + tp.implikasi), 180); doc.text(imp, 16, y); y += imp.length * 4.2 + 2
+    for (const x of tp.berita || []) {
+      const ring = doc.splitTextToSize(pdfText(x.ringkas || ''), 172)
+      ensure(10 + Math.min(ring.length, 3) * 4)
+      const nc = x.nada === 'positif' ? GREEN : x.nada === 'negatif' ? RED : MUTED
+      doc.setFillColor(nc); doc.circle(17.5, y - 1.2, 1, 'F')
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(INK)
+      const jd = doc.splitTextToSize(pdfText(x.judul), 150); doc.text(jd, 20, y)
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(MUTED)
+      doc.text(pdfText(`${tgl(x.d)}${x.sumber ? ' · ' + x.sumber : ''}`), 196, y, { align: 'right' })
+      y += jd.length * 4
+      if (ring.length) { doc.setTextColor('#4b5563'); doc.text(ring.slice(0, 3), 20, y); y += Math.min(ring.length, 3) * 3.6 }
+      doc.setTextColor(TEAL); doc.textWithLink(pdfText('Baca di Stockbit'), 20, y + 0.5, { url: x.url }); y += 6
+    }
+    y += 2
+  }
+
+  // 5) Disclaimer.
+  doc.addPage(); header(doc, 'Disclaimer', ++page)
   doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(NAVY); doc.text('Disclaimer', 14, 40)
   para(doc, 'Riset ini disusun otomatis oleh Radar Backdoor dari data yang diyakini dapat diandalkan (harga, ringkasan broker, dan berita pasar Stockbit), '
     + 'namun tidak ada jaminan atas ketepatan, kelengkapan, atau kebenarannya. Pandangan dapat berubah tanpa pemberitahuan. Dokumen ini untuk edukasi '

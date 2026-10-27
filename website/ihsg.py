@@ -80,19 +80,62 @@ NEG = r"melemah|turun|merosot|anjlok|ambles|longsor|merah|net sell|outflow|asing
       r"defisit|downgrade|resesi|perang|konflik|krisis|tekanan|pesimis|negatif|ancaman|standalone|frontier|gagal bayar|inflasi naik|phk"
 
 
+# Topik berita pasar (judul + ringkasan) beserta kalimat implikasi bila dominan positif / negatif.
+TOPIK = [
+    ("Arus dana asing", r"asing|net sell|net buy|foreign|outflow|inflow",
+     "Arus dana asing masuk mendukung saham berkapitalisasi besar dan IHSG.", "Keluarnya dana asing menekan saham berkapitalisasi besar (perbankan) dan IHSG."),
+    ("Suku bunga & The Fed", r"suku bunga|the fed|bi rate|fomc|bunga acuan|imbal hasil|yield",
+     "Arah bunga melunak memberi ruang kenaikan valuasi saham.", "Bunga tinggi lebih lama menahan minat pada saham dan rupiah."),
+    ("Rupiah & makro", r"rupiah|dolar|inflasi|pdb|neraca|defisit|surplus|cadangan devisa|apbn|ekonomi",
+     "Data makro dan rupiah yang membaik menopang IHSG.", "Pelemahan rupiah dan data makro yang lemah menambah tekanan jual."),
+    ("MSCI & indeks", r"msci|ftse|rebalancing|standalone|frontier|lq45|indeks global|bobot",
+     "Kabar positif terkait indeks global dapat menarik dana pasif.", "Risiko perubahan status di indeks global dapat memicu arus keluar dana pasif."),
+    ("Komoditas", r"batu bara|minyak|nikel|emas|cpo|sawit|lng|komoditas|timah|tembaga",
+     "Harga komoditas yang naik mendukung saham energi dan tambang.", "Harga komoditas yang turun membebani saham energi dan tambang."),
+    ("Geopolitik & global", r"perang|konflik|tarif|china|tiongkok|amerika|global|wall street|eropa|geopolitik",
+     "Sentimen global yang membaik mengurangi tekanan pada pasar berkembang.", "Ketegangan global meningkatkan penghindaran risiko di pasar berkembang."),
+    ("Emiten & aksi korporasi", r"dividen|laba|rights issue|buyback|ipo|akuisisi|kinerja|emiten|saham pilihan|rekomendasi",
+     "Kinerja dan aksi korporasi emiten memberi peluang selektif.", "Kinerja emiten yang melemah menambah alasan berhati-hati."),
+]
+
+
 def sentiment(posts: list[dict], limit: int = 6) -> dict:
-    pos, neg = [], []
+    """Nada berita dari judul (ringkasan dipakai bila judul netral), dikelompokkan per topik dengan implikasinya."""
+    pos, neg, semua = [], [], []
     for p in posts:
         t = re.sub(r"\s+", " ", str(p.get("title") or "")).strip()
-        lo = t.lower()
+        rk = str(p.get("ringkas") or "")
+        lo, lr = t.lower(), rk.lower()
         a, b = len(re.findall(POS, lo)), len(re.findall(NEG, lo))
         if a == b:
+            a, b = len(re.findall(POS, lr)), len(re.findall(NEG, lr))
+        nada = "positif" if a > b else "negatif" if b > a else "netral"
+        it = {"d": p.get("d"), "judul": t[:160], "ringkas": rk, "sumber": p.get("sumber") or "", "url": p.get("url"), "nada": nada}
+        semua.append(it)
+        if nada == "positif":
+            pos.append(it)
+        elif nada == "negatif":
+            neg.append(it)
+    topik = []
+    # Topik dari judul; ringkasan isi hanya dipakai bila judul tidak cocok dengan topik mana pun.
+    for x in semua:
+        x["topik"] = ([nm for nm, rx, _, _ in TOPIK if re.search(rx, x["judul"].lower())]
+                      or [nm for nm, rx, _, _ in TOPIK if re.search(rx, x["ringkas"][:200].lower())][:1])
+    for nama, rx, imp_pos, imp_neg in TOPIK:
+        xs = [x for x in semua if nama in x["topik"]]
+        if not xs:
             continue
-        (pos if a > b else neg).append({"d": p.get("d"), "judul": t[:160], "url": p.get("url")})
+        np_, nn = sum(x["nada"] == "positif" for x in xs), sum(x["nada"] == "negatif" for x in xs)
+        topik.append({"nama": nama, "n": len(xs), "nPos": np_, "nNeg": nn,
+                      "arah": "positif" if np_ > nn else "negatif" if nn > np_ else "netral",
+                      "implikasi": imp_pos if np_ > nn else imp_neg if nn > np_ else "Kabar beragam; dampaknya belum searah.",
+                      # Berita bernada (positif/negatif) lebih dulu, lalu terbaru.
+                      "berita": sorted(sorted(xs, key=lambda x: x["d"] or "", reverse=True), key=lambda x: x["nada"] == "netral")[:5]})
+    topik.sort(key=lambda z: -z["n"])
     n = len(pos) + len(neg)
     skor = round((len(pos) - len(neg)) / n * 100) if n else 0
     return {"positif": pos[:limit], "negatif": neg[:limit], "nPos": len(pos), "nNeg": len(neg), "skor": skor,
-            "arah": "positif" if skor >= 20 else "negatif" if skor <= -20 else "netral"}
+            "arah": "positif" if skor >= 20 else "negatif" if skor <= -20 else "netral", "topik": topik, "total": len(semua)}
 
 
 def monthly_levels(series: dict) -> list[tuple[int, int, float]]:
