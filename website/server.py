@@ -35,6 +35,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import brokerpola as BP
+import beritapasar as BN
 import ihsg as IH
 import seasonality as SZ
 
@@ -2102,16 +2103,30 @@ def ihsg_refresh() -> None:
             isi = re.sub(r"\s+", " ", str(p.get("content_original") or p.get("content") or "")).strip()
             # "Jakarta, CNBC Indonesia - ..." -> sumber berita dari pembuka paragraf.
             m = re.match(r"^[A-Z][A-Za-z .]+,\s*([A-Z][\w .]{2,40}?)\s*[-–—]\s*", isi) or re.match(r"^([A-Z][\w]+(?:\.com|\.co\.id|\.id))\s*[-–—]\s*", isi)
-            posts.append({"d": str(p.get("created_at") or "")[:10], "title": str(p.get("title") or isi).split(chr(10))[0],
-                          "ringkas": (isi[m.end():] if m else isi)[:600].rstrip(". ") + "…" if isi else "",
+            posts.append({"d": str(p.get("created_at") or "")[:10], "t": str(p.get("created_at") or "")[:16].replace("T", " "),
+                          "title": str(p.get("title") or isi).split(chr(10))[0],
+                          "ringkas": (isi[m.end():] if m else isi)[:900].rstrip(". ") + "…" if isi else "",
                           "sumber": m.group(1).strip() if m else "", "url": f"https://stockbit.com/post/{p.get('stream_id')}"})
         if not page:
             break
         cursor = page[-1].get("stream_id")
         time.sleep(0.3)
+    # Media nasional (CNBC, Bloomberg Technoz, IDX Channel, CNN, Kontan, detik, Bisnis, EmitenNews, Katadata, dll.).
+    try:
+        media = BN.collect(days=3, log=lambda s: print(s, file=sys.stderr))
+    except Exception as e:
+        print(f"[ihsg] berita media gagal: {e}", file=sys.stderr)
+        media = []
     cutoff = (datetime.now() - timedelta(days=10)).strftime("%Y-%m-%d")
-    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "tek": tek, "proj": IH.projection_base(bars),
-            "berita": [p for p in posts if p["d"] >= cutoff]}
+    berita, seen = [], set()
+    # Judul sama di Stockbit & media: utamakan tautan media aslinya (media diproses lebih dulu).
+    for p in media + posts:
+        k = BN._kunci(p["title"])
+        if p["d"] >= cutoff and k not in seen:
+            seen.add(k)
+            berita.append(p)
+    berita.sort(key=lambda x: x.get("t") or x["d"], reverse=True)
+    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "tek": tek, "proj": IH.projection_base(bars), "berita": berita[:400]}
     tmp = IHSG_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     tmp.replace(IHSG_PATH)
@@ -2182,7 +2197,8 @@ def ihsg_api(month: int) -> dict:
     proyeksi = IH.projection(d.get("proj"), tek, sent, flow, ber)
     return {"updated": d.get("updated"), "bulan": month, "tek": tek, "sentimen": sent, "kondisi": cond,
             "musiman": base and {k: base[k] for k in ("n", "up", "prob", "median")}, "berulang": ber, "flow": flow, "riset": riset,
-            "proyeksi": proyeksi, "berita": d.get("berita") or []}
+            "proyeksi": proyeksi, "berita": (d.get("berita") or [])[:40],
+            "sumberBerita": sorted({p.get("sumber") or "Stockbit" for p in d.get("berita") or []})}
 
 
 def IH_load() -> dict:

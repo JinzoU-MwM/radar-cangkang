@@ -37,6 +37,7 @@ watch(() => props.bulan, async () => {
 const pr = computed(() => d.value?.proyeksi)
 const arahCls = p => p >= 55 ? 'c-good' : p <= 45 ? 'c-strong' : ''
 const arahIkon = p => p >= 55 ? '▲' : p <= 45 ? '▼' : '◆'
+const semuaBerita = ref(false)
 const sgn = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 2) + '%'
 
 const W = 760, H = 220, P = 6
@@ -161,6 +162,20 @@ const lbl = l => l === 'Tinggi' ? 'c-good' : l === 'Rendah' ? 'c-strong' : ''
           <p class="small muted">Probabilitas berulang = pola musiman (50%) + kondisi tren sama (30%, bila ≥ 3 tahun) + sentimen (20%: positif 65, netral 50, negatif 35). Data per {{ d.updated }}; diperbarui tiap 30 menit saat jam bursa (2 jam di luar jam bursa) atau saat tombol Perbarui / Unduh ditekan. Bukan kepastian.</p>
         </div>
       </div>
+
+      <!-- Berita saham & IHSG terbaru dari media nasional + Stockbit; ringkasan isi dapat dibuka per berita. -->
+      <div v-if="d.berita?.length" class="card bt">
+        <h3>Berita saham & IHSG terbaru <span class="small muted">({{ d.sumberBerita?.length || 0 }} sumber: {{ (d.sumberBerita || []).join(', ') }})</span></h3>
+        <ul class="small btl">
+          <li v-for="x in d.berita.slice(0, semuaBerita ? 40 : 10)" :key="x.url">
+            <details>
+              <summary><b class="src">{{ x.sumber || 'Stockbit' }}</b> {{ x.title }} <span class="muted">{{ fmtDate(x.d) }}{{ (x.t || '').length > 10 ? ' ' + x.t.slice(11, 16) : '' }}</span></summary>
+              <p>{{ x.ringkas || 'Ringkasan tidak tersedia.' }} <a :href="x.url" target="_blank" rel="noopener">Baca lengkap ›</a></p>
+            </details>
+          </li>
+        </ul>
+        <button v-if="d.berita.length > 10" type="button" class="lnk small" @click="semuaBerita = !semuaBerita">{{ semuaBerita ? 'Ringkas' : `Lihat ${Math.min(40, d.berita.length)} berita` }}</button>
+      </div>
     </template>
   </section>
 </template>
@@ -197,4 +212,6 @@ const lbl = l => l === 'Tinggi' ? 'c-good' : l === 'Rendah' ? 'c-strong' : ''
 .sbar{height:8px;background:var(--strong);border-radius:4px;overflow:hidden;margin:6px 0}.sbar .p{display:block;height:100%;background:var(--good)}
 .lnk{background:none;border:0;padding:0;color:var(--now-ink);text-decoration:underline;cursor:pointer;margin-top:4px}.news li{margin:2px 0}
 .yr{margin:2px 0;padding-left:16px;columns:2}
+.bt{margin-top:12px}.btl{list-style:none;margin:0;padding:0}.btl li{border-top:1px solid var(--rule);padding:4px 0}
+.btl summary{cursor:pointer}.btl p{margin:4px 0 2px 14px;max-width:120ch}.src{color:var(--now-ink);margin-right:4px}
 </style>

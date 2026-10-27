@@ -110,7 +110,7 @@ def sentiment(posts: list[dict], limit: int = 6) -> dict:
         if a == b:
             a, b = len(re.findall(POS, lr)), len(re.findall(NEG, lr))
         nada = "positif" if a > b else "negatif" if b > a else "netral"
-        it = {"d": p.get("d"), "judul": t[:160], "ringkas": rk, "sumber": p.get("sumber") or "", "url": p.get("url"), "nada": nada}
+        it = {"d": p.get("d"), "t": p.get("t") or p.get("d") or "", "judul": t[:160], "ringkas": rk, "sumber": p.get("sumber") or "", "url": p.get("url"), "nada": nada}
         semua.append(it)
         if nada == "positif":
             pos.append(it)
@@ -130,7 +130,7 @@ def sentiment(posts: list[dict], limit: int = 6) -> dict:
                       "arah": "positif" if np_ > nn else "negatif" if nn > np_ else "netral",
                       "implikasi": imp_pos if np_ > nn else imp_neg if nn > np_ else "Kabar beragam; dampaknya belum searah.",
                       # Berita bernada (positif/negatif) lebih dulu, lalu terbaru.
-                      "berita": sorted(sorted(xs, key=lambda x: x["d"] or "", reverse=True), key=lambda x: x["nada"] == "netral")[:5]})
+                      "berita": sorted(sorted(xs, key=lambda x: x["t"], reverse=True), key=lambda x: x["nada"] == "netral")[:6]})
     topik.sort(key=lambda z: -z["n"])
     n = len(pos) + len(neg)
     skor = round((len(pos) - len(neg)) / n * 100) if n else 0
