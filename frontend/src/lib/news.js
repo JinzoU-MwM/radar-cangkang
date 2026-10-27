@@ -33,6 +33,7 @@ export const NEWS_RULES = [
   [/transaksi material|perubahan kegiatan usaha|KBLI/i, 3, "Transaksi material/perubahan usaha: inti story backdoor — baca nilai transaksi, pihak lawan, dan apakah butuh RUPS independen."],
   [/tanpa (hak memesan|HMETD)|PMTHMETD|penempatan terbatas|private placement/i, 3, "Saham baru tanpa hak publik: cek harga pelaksanaan vs pasar dan siapa pembelinya — di bawah pasar ke afiliasi = transfer nilai dari publik."],
   [/HMETD|rights issue|PMHMETD/i, 3, "Rights issue: publik yang tidak menebus terdilusi; harga pelaksanaan jauh di bawah pasar menekan harga teoretis ex-rights."],
+  [/cessie|pengalihan (hak )?(tagih|piutang)|perubahan kreditur|kreditur baru/i, 3, "Pengalihan piutang (cessie): pihak baru membeli utang emiten — sering langkah awal pengambilalihan; kreditur baru bisa menukar piutang menjadi saham atau menjadi pengendali. Cek siapa pembelinya dan kaitannya dengan calon pengendali."],
   [/konversi utang|obligasi wajib konversi|\bOWK\b/i, 2, "Konversi menjadi saham: bandingkan harga konversi dengan harga pasar dan jumlah saham baru terhadap saham beredar."],
   [/transaksi afiliasi|benturan kepentingan/i, 2, "Transaksi afiliasi: uji kewajaran harga — nilai bisa berpindah ke pengendali tanpa persetujuan publik."],
   [/suspensi|penghentian sementara|disuspen/i, 2, "Suspensi: posisi tidak bisa dijual sampai dibuka — risiko likuiditas penuh; cek alasan dan jadwal pembukaan."],
@@ -51,7 +52,7 @@ export const NEWS_RULES = [
 ];
 export const NEWS_LEVEL = [["Noise", "bad"], ["Rutin", "calm"], ["Sinyal sedang", "warn"], ["Sinyal tinggi", "good"]];
 // Arah dampak tiap aturan NEWS_RULES (urutan sama): 1 positif bagi publik, -1 negatif/risiko, 0 perlu dicermati.
-const NEWS_TONE = [1, 0, 1, 1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 0, 0, 0, 1, 0, 0, 0, -1]
+const NEWS_TONE = [1, 0, 1, 1, -1, -1, 0, -1, -1, -1, -1, -1, 1, 1, 0, 0, 0, 1, 0, 0, 0, -1]
 const KINERJA = NEWS_RULES.findIndex(r => /kinerja/.test(r[0].source))
 function toneOf(rule, text) {
   // Kinerja: arah dari isi berita (laba/naik vs rugi/turun).

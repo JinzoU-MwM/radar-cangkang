@@ -48,10 +48,11 @@ export function buildAnalysis({ ticker: t, item: d, profile: p, reports: reps = 
   const priceDate = lastBar?.d || "";
   const mcap = st.marketCap ?? (num(d?.mcap) != null ? num(d.mcap) * 1e9 : null);
   const flt = st.freeFloat ?? num(d?.float);
-  const ctrlH = (p.shareholders || []).filter(h => h.pengendali);
-  const ctrlPct = ctrlH.length ? ctrlH.reduce((s, h) => s + (parseFloat(h.pct) || 0), 0) : num(d?.ctrlPct);
-  const ctrlName = ctrlH.map(h => h.name).join(", ") || d?.ctrlName || "";
   const sv = verified[t], pv = pengendali[t];
+  const ctrlH = (p.shareholders || []).filter(h => h.pengendali);
+  // Pengendali terverifikasi (pengendali-verified.json) mengalahkan badge profil Stockbit yang bisa tertinggal.
+  const ctrlPct = pv?.ctrlPct != null ? num(pv.ctrlPct) : ctrlH.length ? ctrlH.reduce((s, h) => s + (parseFloat(h.pct) || 0), 0) : num(d?.ctrlPct);
+  const ctrlName = pv?.ctrlName || ctrlH.map(h => h.name).join(", ") || d?.ctrlName || "";
   const deal = bm?.deals?.find(r => r.ticker === t);
   const tender = d?.tender?.price ? d.tender : null;
   const ms = d?.ms || {};

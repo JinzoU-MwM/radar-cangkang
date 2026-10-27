@@ -28,7 +28,7 @@ const injText = computed(() => {
 const nominal = computed(() => v.value?.nominal || story.value?.nominal || '')
 const it = computed(() => itemOf(props.ticker))
 const ctrl = computed(() => it.value?.ctrlName || it.value?.acquirer || '')
-const ctrlPct = computed(() => num(it.value?.ctrlPct))
+const ctrlPct = computed(() => num(pg.value?.ctrlPct ?? it.value?.ctrlPct))
 const oldPct = computed(() => story.value?.oldPct ? Math.min(100, story.value.oldPct) : null)
 const prog = computed(() => it.value ? progressOf(it.value, { aset: store.aset, verified: store.verified }) : null)
 const stageName = computed(() => it.value ? (STAGES.find(x => x.id === stageOf(it.value)) || STAGES[0]).name : '')
