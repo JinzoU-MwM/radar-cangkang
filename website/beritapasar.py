@@ -40,14 +40,15 @@ RELEVAN = re.compile(
     r"ihsg|saham|bursa|\bbei\b|emiten|indeks|investor asing|\basing\b|net (buy|sell)|lq45|idx|msci|ftse|dividen|"
     r"rights issue|\bipo\b|buyback|obligasi|\bsbn\b|yield|rupiah|suku bunga|bi rate|the fed|fomc|\bojk\b|"
     r"wall street|komoditas|batu bara|nikel|\bcpo\b|\bemas\b|\bminyak\b", re.I)
+IHSG_JUDUL = re.compile(r"ihsg|indeks|bursa|\basing\b|rupiah|dolar|suku bunga|the fed|bi rate|msci|wall street|yield|inflasi", re.I)
 # Pembuka artikel yang bukan isi: "Reporter: .. | Editor: ..", "KONTAN.CO.ID - JAKARTA.", "Jakarta, CNBC Indonesia -".
 PEMBUKA = re.compile(r"^(?:.{0,160}?(?:KONTAN\.CO\.ID\s*-\s*[A-Z ]+\.|Bisnis\.com,\s*[A-Z ]+\s*[-–—]|IDXChannel\s*[-–—]|"
-                     r"Liputan6\.com,\s*\w+\s*[-–—]|[A-Z][\w.]+(?: [\w.]+){0,3},\s*[A-Z][\w.]+(?: [\w.]+){0,3}\s*[-–—])\s*)")
+                     r"Liputan6\.com,\s*\w+\s*[-–—]|[A-Z]{3,},\s*[a-z][\w.]+\.(?:id|com)\s*[-–—]|[A-Z][\w.]+(?: [\w.]+){0,3},\s*[A-Z][\w.]+(?: [\w.]+){0,3}\s*[-–—])\s*)")
 
 
 def bersih(teks: str) -> str:
     return PEMBUKA.sub("", teks or "", count=1).strip()
-SAMPAH = re.compile(r"^(baca juga|advertisement|scroll to|simak|lihat juga|copyright|©|tonton|ikuti|follow|"
+SAMPAH = re.compile(r"^(baca juga|untuk masuk dan daftar|advertisement|scroll to|simak|lihat juga|copyright|©|tonton|ikuti|follow|"
                     r"disclaimer|artikel ini|sumber:|editor:|penulis:)", re.I)
 _artikel: dict[str, str] = {}
 
@@ -124,7 +125,7 @@ def _kunci(title: str) -> str:
     return re.sub(r"[^a-z0-9]", "", title.lower())[:60]
 
 
-def collect(days: int = 3, detail: int = 30, log=print) -> list[dict]:
+def collect(days: int = 3, detail: int = 80, log=print) -> list[dict]:
     """Berita saham/IHSG terbaru dari semua feed (terbaru dulu, tanpa duplikat judul). `detail` berita teratas
     yang ringkasannya pendek dilengkapi paragraf pembuka artikel."""
     cutoff = (datetime.now(WIB) - timedelta(days=days)).strftime("%Y-%m-%d")
@@ -147,7 +148,9 @@ def collect(days: int = 3, detail: int = 30, log=print) -> list[dict]:
         if k not in seen:
             seen.add(k)
             out.append(x)
-    perlu = [x for x in out[:detail * 2] if len(x["ringkas"]) < 300 and not x["url"].startswith("https://news.google.com/")][:detail]
+    # Isi artikel diambil untuk berita yang judulnya menyangkut IHSG/pasar lebih dulu, lalu sisanya (terbaru dulu).
+    kandidat = [x for x in out if len(x["ringkas"]) < 300 and not x["url"].startswith("https://news.google.com/")]
+    perlu = sorted(kandidat, key=lambda x: not IHSG_JUDUL.search(x["title"]))[:detail]
     with ThreadPoolExecutor(6) as ex:
         for x, teks in zip(perlu, ex.map(article_text, (x["url"] for x in perlu))):
             if len(teks) > len(x["ringkas"]):

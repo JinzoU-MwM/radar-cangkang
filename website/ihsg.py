@@ -74,9 +74,9 @@ def technical(bars: list[dict]) -> dict | None:
 
 
 # Kata kunci sentimen pasar (judul berita). Netral bila tidak ada atau seimbang.
-POS = r"menguat|naik|rebound|reli|rally|hijau|net buy|inflow|asing (borong|beli)|suku bunga (turun|dipangkas)|rate cut|stimulus|" \
+POS = r"menguat|naik|rebound|reli|rally|hijau|melesat|melonjak|net buy|inflow|asing (borong|beli)|suku bunga (turun|dipangkas)|rate cut|stimulus|" \
       r"surplus|investment grade|upgrade|cetak rekor|all time high|ath|optimis|positif|membaik|pemangkasan bunga|dovish"
-NEG = r"melemah|turun|merosot|anjlok|ambles|longsor|merah|net sell|outflow|asing (lepas|jual|kabur)|suku bunga naik|hawkish|" \
+NEG = r"melemah|turun|merosot|anjlok|ambles|longsor|zona merah|memerah|(dibuka|ditutup|berakhir) merah|net sell|outflow|asing (lepas|jual|kabur)|suku bunga naik|hawkish|" \
       r"defisit|downgrade|resesi|perang|konflik|krisis|tekanan|pesimis|negatif|ancaman|standalone|frontier|gagal bayar|inflasi naik|phk"
 
 
@@ -92,35 +92,81 @@ TOPIK = [
      "Kabar positif terkait indeks global dapat menarik dana pasif.", "Risiko perubahan status di indeks global dapat memicu arus keluar dana pasif."),
     ("Komoditas", r"batu bara|minyak|nikel|emas|cpo|sawit|lng|komoditas|timah|tembaga",
      "Harga komoditas yang naik mendukung saham energi dan tambang.", "Harga komoditas yang turun membebani saham energi dan tambang."),
-    ("Geopolitik & global", r"perang|konflik|tarif|china|tiongkok|amerika|global|wall street|eropa|geopolitik",
+    ("Geopolitik & global", r"perang|konflik|tarif|china|tiongkok|amerika|global|wall street|eropa|geopolitik|bursa asia|"
+                            r"bursa saham asia|regional|nikkei|kospi|hang seng|saham as\b|nasdaq|dow jones",
      "Sentimen global yang membaik mengurangi tekanan pada pasar berkembang.", "Ketegangan global meningkatkan penghindaran risiko di pasar berkembang."),
     ("Emiten & aksi korporasi", r"dividen|laba|rights issue|buyback|ipo|akuisisi|kinerja|emiten|saham pilihan|rekomendasi",
      "Kinerja dan aksi korporasi emiten memberi peluang selektif.", "Kinerja emiten yang melemah menambah alasan berhati-hati."),
 ]
 
 
-def sentiment(posts: list[dict], limit: int = 6) -> dict:
-    """Nada berita dari judul (ringkasan dipakai bila judul netral), dikelompokkan per topik dengan implikasinya."""
+# Berita dianggap berdampak ke IHSG bila membahas indeks/pasar secara luas, arus asing, makro, kebijakan, atau global
+# (judul + 300 karakter awal ringkasan). Kinerja satu emiten tanpa kaitan pasar tidak dihitung.
+IHSG_REL = re.compile(
+    r"ihsg|indeks harga saham gabungan|indeks komposit|\bbursa\b|\bbei\b|pasar saham|pasar modal|investor asing|dana asing|"
+    r"\basing\b|net (buy|sell)|inflow|outflow|rupiah|suku bunga|bi rate|bunga acuan|the fed|\bfed\b|fomc|inflasi|\bpdb\b|"
+    r"neraca (perdagangan|pembayaran)|cadangan devisa|\bapbn\b|defisit|msci|ftse|rebalancing|wall street|bursa (asia|global|regional)|"
+    r"\bojk\b|danantara|kebijakan|stimulus|tarif|perang|geopolitik|resesi|lq45|big caps?|saham (perbankan|bank besar)|yield|\bsbn\b", re.I)
+
+
+# Nada bergantung konteks: arah IHSG di judul paling menentukan; kata "menguat/naik" pada dolar, yield, inflasi, atau bunga justru menekan IHSG.
+NEG_CTX = r"ihsg[^.,]{0,25}\b(melemah|turun|anjlok|ambles|amblas|merosot|terkoreksi|terpeleset|tergelincir|memerah|dibuka merah|ditutup merah)|" \
+          r"(dolar|us\$|usd|greenback)[^.,]{0,30}\b(menguat|naik|perkasa|melonjak)|rupiah[^.,]{0,30}\b(melemah|tertekan|tertahan|turun|anjlok|ambles|loyo)|" \
+          r"(yield|imbal hasil)[^.,]{0,40}\b(naik|melonjak|tertinggi)|inflasi[^.,]{0,20}\b(naik|melonjak|tinggi)|" \
+          r"suku bunga[^.,]{0,30}\b(naik|dinaikkan|tetap tinggi|bertahan tinggi)"
+POS_CTX = r"ihsg[^.,]{0,25}\b(menguat|naik|rebound|menghijau|melesat|melonjak|berbalik naik|ditutup hijau|dibuka hijau)|" \
+          r"rupiah[^.,]{0,30}\b(menguat|perkasa|naik|rebound)|(dolar|us\$|usd)[^.,]{0,30}\b(melemah|turun|loyo)|" \
+          r"(yield|imbal hasil)[^.,]{0,40}\b(turun|melandai)|inflasi[^.,]{0,20}\b(turun|melandai|terkendali)|suku bunga[^.,]{0,30}\b(turun|dipangkas)"
+
+
+def _nada(teks: str) -> tuple[str, list[str]]:
+    """(nada, kata kunci) — konteks mata uang/yield/bunga lebih dulu, lalu kata kunci umum."""
+    for rx_p, rx_n in ((POS_CTX, NEG_CTX), (POS, NEG)):
+        a, b = len(re.findall(rx_p, teks)), len(re.findall(rx_n, teks))
+        if a != b:
+            nada = "positif" if a > b else "negatif"
+            return nada, [m.group(0) for m in re.finditer(rx_p if a > b else rx_n, teks)][:3]
+    return "netral", []
+
+
+def sentiment(posts: list[dict], limit: int = 15) -> dict:
+    """Sentimen IHSG: hanya berita yang berdampak ke IHSG (IHSG_REL), nada dari judul (ringkasan dipakai bila judul
+    netral). Tiap berita bernada membawa kata kunci penentu nada, topik, dan dampaknya ke IHSG."""
     pos, neg, semua = [], [], []
     for p in posts:
         t = re.sub(r"\s+", " ", str(p.get("title") or "")).strip()
         rk = str(p.get("ringkas") or "")
         lo, lr = t.lower(), rk.lower()
-        a, b = len(re.findall(POS, lo)), len(re.findall(NEG, lo))
-        if a == b:
-            a, b = len(re.findall(POS, lr)), len(re.findall(NEG, lr))
-        nada = "positif" if a > b else "negatif" if b > a else "netral"
-        it = {"d": p.get("d"), "t": p.get("t") or p.get("d") or "", "judul": t[:160], "ringkas": rk, "sumber": p.get("sumber") or "", "url": p.get("url"), "nada": nada}
+        if not IHSG_REL.search(lo + " " + lr[:300]):
+            continue
+        nada, kunci = _nada(lo)
+        if nada == "netral":
+            nada, kunci = _nada(lr)
+        it = {"d": p.get("d"), "t": p.get("t") or p.get("d") or "", "judul": t[:160], "ringkas": rk, "sumber": p.get("sumber") or "",
+              "url": p.get("url"), "nada": nada, "kunci": list(dict.fromkeys(kunci))}
         semua.append(it)
-        if nada == "positif":
-            pos.append(it)
-        elif nada == "negatif":
-            neg.append(it)
     topik = []
     # Topik dari judul; ringkasan isi hanya dipakai bila judul tidak cocok dengan topik mana pun.
     for x in semua:
         x["topik"] = ([nm for nm, rx, _, _ in TOPIK if re.search(rx, x["judul"].lower())]
                       or [nm for nm, rx, _, _ in TOPIK if re.search(rx, x["ringkas"][:200].lower())][:1])
+        imp = {nm: (ip, ineg) for nm, _, ip, ineg in TOPIK}
+        if x["nada"] != "netral":
+            naik = x["nada"] == "positif"
+            # Berita langsung tentang arah IHSG: dampaknya momentum; selain itu implikasi topiknya.
+            langsung = bool(x["kunci"]) and x["kunci"][0].startswith("ihsg")
+            bagian = ["Momentum jangka pendek IHSG " + ("menguat; peluang lanjut naik selama bertahan di atas pivot." if naik
+                      else "melemah; waspadai uji support berikutnya.")] if langsung else []
+            # Topik "Emiten" hanya kinerja satu perusahaan: tidak dijadikan dampak ke IHSG.
+            if x["topik"] and x["topik"][0] != "Emiten & aksi korporasi":
+                ip, ineg = imp[x["topik"][0]]
+                bagian.append(ip if naik else ineg)
+            if not bagian:
+                # Tanpa arah IHSG langsung dan tanpa topik pasar (mis. kinerja/transaksi satu emiten): tidak dihitung sentimen IHSG.
+                x["nada"], x["kunci"] = "netral", []
+                continue
+            x["dampak"] = " ".join(bagian)
+            (pos if x["nada"] == "positif" else neg).append(x)
     for nama, rx, imp_pos, imp_neg in TOPIK:
         xs = [x for x in semua if nama in x["topik"]]
         if not xs:
@@ -132,10 +178,13 @@ def sentiment(posts: list[dict], limit: int = 6) -> dict:
                       # Berita bernada (positif/negatif) lebih dulu, lalu terbaru.
                       "berita": sorted(sorted(xs, key=lambda x: x["t"], reverse=True), key=lambda x: x["nada"] == "netral")[:6]})
     topik.sort(key=lambda z: -z["n"])
+    pos.sort(key=lambda x: x["t"], reverse=True)
+    neg.sort(key=lambda x: x["t"], reverse=True)
     n = len(pos) + len(neg)
     skor = round((len(pos) - len(neg)) / n * 100) if n else 0
     return {"positif": pos[:limit], "negatif": neg[:limit], "nPos": len(pos), "nNeg": len(neg), "skor": skor,
-            "arah": "positif" if skor >= 20 else "negatif" if skor <= -20 else "netral", "topik": topik, "total": len(semua)}
+            "arah": "positif" if skor >= 20 else "negatif" if skor <= -20 else "netral", "topik": topik, "total": len(semua),
+            "totalSemua": len(posts)}
 
 
 def monthly_levels(series: dict) -> list[tuple[int, int, float]]:
