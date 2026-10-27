@@ -35,6 +35,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import brokerpola as BP
+import ihsg as IH
 import seasonality as SZ
 
 ROOT = Path(__file__).resolve().parent
@@ -2081,6 +2082,61 @@ def daily_builds() -> None:
                 time.sleep(1800)
 
 
+IHSG_PATH = ROOT / ".ihsg.json"
+
+
+def ihsg_refresh() -> None:
+    """Harga harian IHSG 1 tahun + judul berita pasar terbaru (stream IHSG) untuk kartu kondisi IHSG di Seasonality."""
+    tek = IH.technical(get_ohlc("IHSG", "1y", True))
+    posts, cursor = [], 0
+    for _ in range(4):
+        j = sb_fetch(f"/stream/v3/symbol/IHSG?category=STREAM_CATEGORY_NEWS&last_stream_id={cursor}&limit=20", True)
+        page = (j.get("data") or {}).get("stream") or []
+        posts += [{"d": str(p.get("created_at") or "")[:10], "title": str(p.get("title") or p.get("content") or "").split(chr(10))[0],
+                   "url": f"https://stockbit.com/post/{p.get('stream_id')}"} for p in page]
+        if not page:
+            break
+        cursor = page[-1].get("stream_id")
+        time.sleep(0.3)
+    cutoff = (datetime.now() - timedelta(days=10)).strftime("%Y-%m-%d")
+    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "tek": tek, "berita": [p for p in posts if p["d"] >= cutoff]}
+    tmp = IHSG_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(IHSG_PATH)
+
+
+def ihsg_loop() -> None:
+    time.sleep(60)
+    while True:
+        try:
+            if get_token():
+                ihsg_refresh()
+        except Exception as e:
+            print(f"[ihsg] gagal: {e}", file=sys.stderr)
+        time.sleep(2 * 3600)
+
+
+def ihsg_api(month: int) -> dict:
+    d = IH_load()
+    if not d.get("tek"):
+        return {"error": "Data kondisi IHSG sedang disiapkan. Coba lagi beberapa menit lagi."}
+    tek = d["tek"]
+    series = (season_data().get("index") or {}).get("IHSG") or {}
+    base = SZ.month_stats(series, month, 10, datetime.now().date()) if series else None
+    state = "atas" if tek["harga"] > tek["ema200"] else "bawah"
+    cond = IH.conditional(series, month, state) if series else {"kondisi": state, "n": 0, "prob": None, "tahun": []}
+    sent = IH.sentiment(d.get("berita") or [])
+    return {"updated": d.get("updated"), "bulan": month, "tek": tek, "sentimen": sent, "kondisi": cond,
+            "musiman": base and {k: base[k] for k in ("n", "up", "prob", "median")}, "berulang": IH.verdict(base, cond, sent)}
+
+
+def IH_load() -> dict:
+    try:
+        return json.loads(IHSG_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
 def season_loop() -> None:
     time.sleep(120)  # beri waktu loop kandidat/tsa mengisi universe lebih dulu
     # Belum ada data sama sekali: bangun sekarang agar halaman tidak kosong, lalu ikuti jadwal.
@@ -2498,6 +2554,12 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:
                 month, years = datetime.now().month % 12 + 1, 10
             self.reply_json(season_api(month, years))
+        elif path == "api/ihsg-outlook":
+            try:
+                month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month % 12 + 1))
+            except ValueError:
+                month = datetime.now().month % 12 + 1
+            self.reply_json(ihsg_api(month))
         elif path == "api/broker-pola":
             d = broker_data()
             if not d:
@@ -2810,6 +2872,7 @@ def main() -> int:
     threading.Thread(target=news_loop, daemon=True).start()
     threading.Thread(target=pov_loop, daemon=True).start()
     threading.Thread(target=season_loop, daemon=True).start()
+    threading.Thread(target=ihsg_loop, daemon=True).start()
     threading.Thread(target=snapshot_loop, daemon=True).start()
     threading.Thread(target=tsa_loop, daemon=True).start()
     print(f"Radar Backdoor berjalan di http://localhost:{args.port}")

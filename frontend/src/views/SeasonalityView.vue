@@ -6,6 +6,7 @@ import { api } from '../api.js'
 import { fmt } from '../lib/domain.js'
 import { useRoute, useRouter } from 'vue-router'
 import BrokerPola from '../components/BrokerPola.vue'
+import IhsgOutlook from '../components/IhsgOutlook.vue'
 
 // Tab halaman: 'season' (Seasonality) atau 'broker' (Pola Broker), tersimpan di URL (?tab=broker).
 const route = useRoute(), router = useRouter()
@@ -69,6 +70,9 @@ const rpr = e => e ? (e[0] === e[1] ? rp(e[0]) : `${rp(e[0])}–${rp(e[1])}`) : 
           </button>
         </div>
       </section>
+
+      <!-- Kondisi IHSG sekarang: tren, support/resistance, sentimen, dan probabilitas pola bulan ini berulang. -->
+      <IhsgOutlook :bulan="bulan" :nama-bulan="BLN[bulan - 1]" />
 
       <section class="rule-top">
         <h2>Prioritas {{ BLN[bulan - 1] }}</h2>
