@@ -24,6 +24,38 @@ async function load() {
 }
 watch([bulan, jenis, mode, broker], load, { immediate: true })
 
+// Grafik: batang dua arah (akumulasi kanan, distribusi kiri) untuk bulan terpilih; klik saham -> grafik bulanan.
+const pilih = ref('')
+const seri = ref(null)
+const bars = computed(() => {
+  const s = data.value?.saham
+  if (!s) return null
+  const ak = s.akumulasi.slice(0, 10), di = s.distribusi.slice(0, 10)
+  const max = Math.max(1, ...ak.map(x => x.bandar), ...di.map(x => -x.bandar))
+  return { ak, di, w: v => Math.max(2, Math.abs(v) / max * 100) + '%' }
+})
+watch(() => data.value?.saham, s => { if (s && !s.akumulasi.some(x => x.s === pilih.value) && !s.distribusi.some(x => x.s === pilih.value)) pilih.value = s.akumulasi[0]?.s || '' })
+watch([pilih, jenis], async ([t]) => {
+  seri.value = null
+  if (!t) return
+  try { seri.value = await api.get('/api/broker-pola', { saham: t, jenis: jenis.value }) } catch { /* abaikan */ }
+})
+const SW = 720, SH = 200, SP = 24
+const sChart = computed(() => {
+  const r = seri.value?.seri
+  if (!r?.length) return null
+  const maxB = Math.max(1, ...r.map(x => Math.abs(x.bandar)))
+  const avgs = r.map(x => x.bandar >= 0 ? x.avgAkum : x.avgDist).filter(Boolean)
+  const lo = Math.min(...avgs) * 0.98, hi = Math.max(...avgs) * 1.02
+  const bw = (SW - 2 * SP) / r.length, mid = SH / 2
+  const pts = r.map((x, i) => {
+    const a = x.bandar >= 0 ? x.avgAkum : x.avgDist
+    return { ...x, a, cx: SP + i * bw + bw / 2, h: Math.abs(x.bandar) / maxB * (mid - 14), ay: a ? SH - 10 - (a - lo) / (hi - lo || 1) * (SH - 30) : null }
+  })
+  const line = pts.filter(p => p.ay != null).map((p, i) => `${i ? 'L' : 'M'}${p.cx.toFixed(1)},${p.ay.toFixed(1)}`).join('')
+  return { pts, bw, mid, line }
+})
+
 const rp = v => v == null ? '–' : (v < 0 ? '−' : '') + 'Rp' + big(Math.abs(v)).replace(/^Rp/, '')
 const lot = v => v == null ? '–' : (v < 0 ? '−' : '') + fmt(Math.abs(v), 0)
 const avg = v => v == null ? '–' : 'Rp' + fmt(v, v < 200 ? 1 : 0)
@@ -66,6 +98,41 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
     <template v-else-if="data">
       <!-- Per saham: agregat semua broker (sesuai filter) pada bulan terpilih. -->
       <template v-if="mode === 'saham' && data.saham">
+        <!-- Grafik batang dua arah: 10 saham paling diakumulasi (kanan, hijau) dan didistribusi (kiri, merah). -->
+        <div v-if="bars" class="gr">
+          <div class="dv">
+            <div class="col">
+              <h4 class="c-strong">Distribusi</h4>
+              <button v-for="x in bars.di" :key="x.s" type="button" class="bb l" :class="{ on: pilih === x.s }" :title="`${x.s}: ${rp(x.bandar)} · avg ${avg(x.avgDist)} · ${x.dist.map(z => z.b).join(', ')}`" @click="pilih = x.s">
+                <span class="v small">{{ rp(x.bandar) }}</span><i :style="{ width: bars.w(x.bandar) }" /><b>{{ x.s }}</b>
+              </button>
+            </div>
+            <div class="col">
+              <h4 class="c-good">Akumulasi</h4>
+              <button v-for="x in bars.ak" :key="x.s" type="button" class="bb r" :class="{ on: pilih === x.s }" :title="`${x.s}: ${rp(x.bandar)} · avg ${avg(x.avgAkum)} · ${x.akum.map(z => z.b).join(', ')}`" @click="pilih = x.s">
+                <b>{{ x.s }}</b><i :style="{ width: bars.w(x.bandar) }" /><span class="v small">{{ rp(x.bandar) }}</span>
+              </button>
+            </div>
+          </div>
+          <!-- Grafik bulanan saham terpilih: net bandar per bulan (batang) + avg broker (garis). -->
+          <div v-if="pilih" class="mc">
+            <h4>{{ pilih }} · net bandar per bulan {{ data.tahun }} <span class="muted small">(klik batang saham di kiri untuk ganti)</span></h4>
+            <p v-if="!sChart" class="small muted">Memuat…</p>
+            <svg v-else :viewBox="`0 0 ${SW} ${SH}`" class="msvg" role="img" :aria-label="'Net bandar bulanan ' + pilih">
+              <line :x1="SP" :x2="SW - SP" :y1="sChart.mid" :y2="sChart.mid" class="ax" />
+              <g v-for="p in sChart.pts" :key="p.bulan">
+                <rect :x="p.cx - sChart.bw * 0.32" :width="sChart.bw * 0.64" :y="p.bandar >= 0 ? sChart.mid - p.h : sChart.mid" :height="Math.max(1, p.h)" :class="p.bandar >= 0 ? 'up' : 'dn'">
+                  <title>{{ BLN[p.bulan - 1] }}: {{ rp(p.bandar) }} · avg {{ avg(p.a) }} · {{ (p.bandar >= 0 ? p.akum : p.dist).join(', ') }} · asing {{ rp(p.asing) }}, domestik {{ rp(p.domestik) }}</title>
+                </rect>
+                <text :x="p.cx" :y="SH - 2" text-anchor="middle" class="lb">{{ BLN[p.bulan - 1] }}</text>
+              </g>
+              <path :d="sChart.line" class="avl" />
+              <circle v-for="p in sChart.pts.filter(q => q.ay != null)" :key="'c' + p.bulan" :cx="p.cx" :cy="p.ay" r="3" class="avd"><title>avg broker {{ avg(p.a) }}</title></circle>
+            </svg>
+            <p class="small muted leg"><span class="k up" /> akumulasi <span class="k dn" /> distribusi <span class="k av" /> avg broker · arahkan kursor ke batang untuk rincian broker, avg, Asing/Domestik</p>
+          </div>
+        </div>
+
         <!-- Akumulasi (kiri) dan distribusi (kanan); peringkat = net 3 broker pembeli teratas + 3 penjual teratas. -->
         <div class="lr">
           <section v-for="side in [['akumulasi', 'Akumulasi', 'c-good', 'akum', 'avgAkum'], ['distribusi', 'Distribusi', 'c-strong', 'dist', 'avgDist']]" :key="side[0]">
@@ -122,6 +189,19 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
 .ctl{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;margin:6px 0}
 .bln{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
 .two{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.gr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin:8px 0 14px;align-items:start}
+.dv{display:grid;grid-template-columns:1fr 1fr;gap:0;border-right:1px dashed var(--rule)}
+.dv .col{display:flex;flex-direction:column;gap:3px}.dv h4{margin:0 0 2px;font-size:12px;text-transform:uppercase}
+.dv .col:first-child h4{text-align:right;padding-right:6px}.dv .col:last-child h4{padding-left:6px}
+.bb{display:flex;align-items:center;gap:4px;background:none;border:1px solid transparent;padding:1px 4px;font:inherit;color:inherit;cursor:pointer;height:22px}
+.bb.l{flex-direction:row;justify-content:flex-end}.bb:hover,.bb.on{background:var(--sheet);border-color:var(--rule)}
+.bb i{display:block;height:12px;border-radius:2px;transition:width .5s ease}.bb.r i{background:var(--good)}.bb.l i{background:var(--strong)}
+.bb b{font-size:12px;min-width:38px}.bb.l b{text-align:left}.bb .v{color:var(--muted);white-space:nowrap}
+.mc h4{margin:0 0 4px;font-size:13px}
+.msvg{width:100%;height:auto;display:block}.msvg .ax{stroke:var(--rule)}.msvg .up{fill:var(--good)}.msvg .dn{fill:var(--strong)}
+.msvg .lb{font-size:10px;fill:var(--muted)}.msvg .avl{fill:none;stroke:#0d9488;stroke-width:1.6}.msvg .avd{fill:#0d9488}
+.leg .k{display:inline-block;width:12px;height:8px;margin:0 3px 0 8px;vertical-align:middle}.leg .k.up{background:var(--good)}.leg .k.dn{background:var(--strong)}.leg .k.av{height:2px;background:#0d9488}
+@media (max-width:1100px){.gr{grid-template-columns:1fr}}
 .lr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
 .lr section{min-width:0}
 .cmp{font-size:13px;width:100%}.cmp td,.cmp th{padding:5px 6px}

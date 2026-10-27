@@ -6,7 +6,7 @@ import { api } from '../api.js'
 import { fmt, fmtDate } from '../lib/domain.js'
 
 const props = defineProps({ bulan: { type: Number, required: true }, namaBulan: { type: String, default: '' } })
-const d = ref(null), err = ref('')
+const d = ref(null), err = ref(''), semua = ref(false)
 watch(() => props.bulan, async b => {
   err.value = ''
   try { const r = await api.get('/api/ihsg-outlook', { bulan: b }); if (r.error) err.value = r.error; else d.value = r } catch (e) { err.value = e.message || String(e) }
@@ -63,9 +63,11 @@ const lbl = l => l === 'Tinggi' ? 'c-good' : l === 'Rendah' ? 'c-strong' : ''
         <div class="card">
           <h3>Sentimen ke depan <span class="small" :class="d.sentimen.arah === 'positif' ? 'c-good' : d.sentimen.arah === 'negatif' ? 'c-strong' : ''">({{ d.sentimen.arah }}: {{ d.sentimen.nPos }} positif / {{ d.sentimen.nNeg }} negatif)</span></h3>
           <h4 class="c-good">Positif</h4>
-          <ul class="small news"><li v-for="x in d.sentimen.positif" :key="x.url"><a :href="x.url" target="_blank" rel="noopener">{{ x.judul }}</a> <span class="muted">{{ fmtDate(x.d) }}</span></li></ul>
+          <ul class="small news"><li v-for="x in d.sentimen.positif.slice(0, semua ? 99 : 3)" :key="x.url"><a :href="x.url" target="_blank" rel="noopener">{{ x.judul }}</a> <span class="muted">{{ fmtDate(x.d) }}</span></li></ul>
+          <div class="sbar" :title="`${d.sentimen.nPos} positif / ${d.sentimen.nNeg} negatif`"><i class="p" :style="{ width: (d.sentimen.nPos / Math.max(1, d.sentimen.nPos + d.sentimen.nNeg) * 100) + '%' }" /></div>
           <h4 class="c-strong">Negatif</h4>
-          <ul class="small news"><li v-for="x in d.sentimen.negatif" :key="x.url"><a :href="x.url" target="_blank" rel="noopener">{{ x.judul }}</a> <span class="muted">{{ fmtDate(x.d) }}</span></li></ul>
+          <ul class="small news"><li v-for="x in d.sentimen.negatif.slice(0, semua ? 99 : 3)" :key="x.url"><a :href="x.url" target="_blank" rel="noopener">{{ x.judul }}</a> <span class="muted">{{ fmtDate(x.d) }}</span></li></ul>
+          <button v-if="d.sentimen.positif.length > 3 || d.sentimen.negatif.length > 3" type="button" class="lnk small" @click="semua = !semua">{{ semua ? 'Ringkas' : 'Lihat semua berita' }}</button>
         </div>
 
         <div class="card">
@@ -98,6 +100,8 @@ const lbl = l => l === 'Tinggi' ? 'c-good' : l === 'Rendah' ? 'c-strong' : ''
 .leg .k.cl{border-color:var(--ink,#1f2937)}.leg .k.e50{border-color:#0d9488}.leg .k.e200{border-color:#c2410c;border-top-style:dashed}
 .lv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:6px 0}.lv dt{color:var(--muted)}.lv dd{margin:0;font-weight:600}
 .rek{margin:6px 0 0}
-.news{margin:0;padding-left:16px}.news li{margin:2px 0}
+.news{margin:0;padding-left:16px}
+.sbar{height:8px;background:var(--strong);border-radius:4px;overflow:hidden;margin:6px 0}.sbar .p{display:block;height:100%;background:var(--good)}
+.lnk{background:none;border:0;padding:0;color:var(--now-ink);text-decoration:underline;cursor:pointer;margin-top:4px}.news li{margin:2px 0}
 .yr{margin:2px 0;padding-left:16px;columns:2}
 </style>

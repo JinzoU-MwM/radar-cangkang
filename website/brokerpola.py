@@ -212,6 +212,19 @@ def view(data: dict, month: int | None, broker: str | None, jenis: str = "") -> 
     return out
 
 
+def series(data: dict, sym: str, jenis: str = "") -> list[dict]:
+    """Net bandar satu saham per bulan (tahun berjalan): net 3 pembeli + 3 penjual teratas, avg broker pembeli/penjual,
+    net Asing/Domestik, dan broker utama tiap bulan; untuk grafik bulanan di Pola Broker."""
+    out = []
+    for m in sorted({int(k) for b in (data.get("broker") or {}).values() for k in b.get("bulan", {})}):
+        a = next((x for side in ("akumulasi", "distribusi") for x in (view(data, m, None, jenis).get("saham") or {}).get(side, [])
+                  if x["s"] == sym), None)
+        out.append({"bulan": m, "bandar": a["bandar"] if a else 0, "avgAkum": a and a.get("avgAkum"), "avgDist": a and a.get("avgDist"),
+                    "asing": a["asing"] if a else 0, "domestik": a["domestik"] if a else 0,
+                    "akum": [z["b"] for z in a["akum"]] if a else [], "dist": [z["b"] for z in a["dist"]] if a else []})
+    return out
+
+
 def load(path) -> dict:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
