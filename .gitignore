@@ -45,3 +45,5 @@ website/tsa-*.json
 **/.seasonality.tmp
 **/.broker-pola.json
 **/.broker-pola.tmp
+**/.ihsg.json
+**/.ihsg.tmp
