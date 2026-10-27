@@ -1939,5 +1939,41 @@
       "Tidak ada keterbukaan informasi baru, pemberitaan media, maupun transaksi pemegang saham ≥5% sejak 15 Okt 2026 (perubahan komite audit dan komite nominasi diumumkan 13 Okt 2026); harga turun dari Rp128 ke Rp106 (−17,2%).",
       "Harga masih di dalam rentang Rp35–277 yang bergantung pada laporan KJPP, sehingga sikap Spekulatif tinggi dipertahankan."
     ]
+  },
+  "ANDI": {
+    "sikap": "Spekulatif tinggi",
+    "ringkas": "Pengendali baru PT Puncak Jaya Sejahtera membeli 33% di Rp30 dan lebih dulu membeli utang bank ANDI; pasar sudah di Rp35 (+94% dalam lima hari), di atas harga kendali, untuk perkebunan sawit kecil yang merugi.",
+    "tesis": "PJS masuk dari dua arah: membeli piutang kredit Bank Permata lewat cessie (21 Oktober 2026), lalu membeli 33% saham dari Central Energi Pratama dan Anugerah Perkasa Semesta di Rp30 (Rp92,565 M; efektif 26 Oktober 2026). Kombinasi kreditur + pengendali lazim mendahului restrukturisasi, misalnya konversi utang menjadi saham, lalu pengembangan atau injeksi usaha baru; namun belum ada rencana yang diungkap. Fundamental lemah: pendapatan TTM Rp156 M, rugi bersih Rp36 M, ekuitas Rp105 M, DER 1,34, current ratio 0,46, Altman Z negatif, dan saham berada di papan Pemantauan Khusus. Harga Rp35 setara kapitalisasi sekitar Rp327 M (PBV 3,1×), sudah di atas harga kendali; kenaikan dan lonjakan volume 23 Oktober terjadi sebelum pengumuman 26 Oktober.",
+    "dilusi": {
+      "berlaku": true,
+      "catatan": "Belum ada penerbitan saham. Risiko dilusi datang dari kemungkinan konversi piutang PJS menjadi saham baru (PMTHMETD) karena PJS kini kreditur sekaligus pengendali; besarnya bergantung pada nilai piutang dan harga konversi yang belum diungkap."
+    },
+    "kalkulator": {
+      "nilaiDibayarSaham": 92565000000,
+      "kasSegar": null,
+      "hargaPelaksanaan": 30,
+      "dasar": "Pengambilalihan 3,0855 miliar saham (33%) × Rp30 = Rp92,565 M, efektif 26 Oktober 2026; total saham beredar sekitar 9,35 miliar."
+    },
+    "nilaiWajar": {
+      "bawah": 11,
+      "atas": 30,
+      "metode": "Bawah: nilai buku per saham Rp11,21; atas: harga kendali PJS Rp30 (patokan minimal harga tender wajib)."
+    },
+    "pengendaliBergerak": "Central Energi Pratama 49,73% → sekitar 24,21% dan Anugerah Perkasa Semesta 7,49% → 0% (menjual 33% ke PJS di Rp30, 26 Oktober 2026). Catatan KSEI \"Central Energi Pratama 0% → 49,73%\" pada 23 Oktober 2026 adalah laporan registrasi koreksi, bukan pembelian baru. Direktur Utama Francis Indarto memegang sekitar 1,77%.",
+    "likuiditas": "Volume melonjak dari rata-rata sekitar 224 ribu lot/hari menjadi 4,1 juta lot (23 Okt), 8,2 juta lot (26 Okt), dan 17 juta lot (27 Okt). Free float sekitar 41% (laporan koreksi 23 Oktober sempat menyebut 31,16%). Saham di papan Pemantauan Khusus (full call auction), sehingga likuiditas bisa hilang cepat saat sentimen berbalik.",
+    "variabelKunci": [
+      "Harga dan jadwal penawaran tender wajib PJS (patokan minimal Rp30, di bawah harga pasar Rp35)",
+      "Nilai piutang yang dibeli PJS dari Bank Permata dan apakah akan dikonversi menjadi saham (harga konversi vs pasar)",
+      "Identitas pemilik/UBO PJS dan rencana usaha atau injeksi aset ke ANDI"
+    ],
+    "tesisSalahBila": [
+      "PJS mengumumkan injeksi aset bernilai besar dengan penilaian independen yang wajar dan harga pelaksanaan di atas pasar",
+      "Tender wajib ditetapkan jauh di atas Rp35 atau utang direstrukturisasi tanpa dilusi publik"
+    ],
+    "hargaAcuan": 35,
+    "asOf": "2026-10-27",
+    "pembaruan": [
+      "Entri baru 27 Oktober 2026: pengendali baru PT Puncak Jaya Sejahtera (33%, Rp30/saham) menggantikan data otomatis yang keliru menganggap Central Energi Pratama sebagai pengendali baru."
+    ]
   }
 }

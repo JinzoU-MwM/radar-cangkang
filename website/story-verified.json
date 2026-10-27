@@ -771,5 +771,27 @@
                                         "Laporan Hasil Public Expose - Tahunan — Stockbit Reports, 2026-10-12",
                                         "Lowongan Kerja PT Bara Alam Utama (Bara Coal) — Disnakerja (profil perusahaan), diakses 2026-10-15"
                                     ]
-             }
+             },
+    "ANDI": {
+        "injectType": "",
+        "injectTarget": "",
+        "nominal": "",
+        "sourceDate": "2026-10-26",
+        "sourceTitle": "Perubahan pemegang saham pengendali Perseroan",
+        "baru": "Belum diungkap; usaha saat ini tetap perkebunan & pengolahan kelapa sawit (CPO, palm kernel) di Banyuasin, Sumatera Selatan",
+        "target": "Pengumuman penawaran tender wajib oleh PT Puncak Jaya Sejahtera (jadwal belum diumumkan)",
+        "note": "Pengambilalihan 33% oleh PT Puncak Jaya Sejahtera efektif 26 Oktober 2026 di Rp30/saham; didahului cessie piutang Bank Permata ke PJS pada 21 Oktober 2026. Belum ada rencana injeksi aset atau perubahan usaha.",
+        "oldName": "PT Central Energi Pratama, PT Anugerah Perkasa Semesta",
+        "oldPct": 57.22,
+        "takeoverDate": "2026-10-26",
+        "sumberTambahan": [
+            "Perubahan pemegang saham pengendali Perseroan — Stockbit Reports, 2026-10-26",
+            "Pemberitahuan mengenai perubahan Kreditur Perseroan (cessie Bank Permata → PT Puncak Jaya Sejahtera) — Stockbit Reports, 2026-10-21",
+            "Laporan Bulanan Registrasi Pemegang Efek (KOREKSI) — Stockbit Reports, 2026-10-23",
+            "Investor Baru Ini Resmi Jadi Pengendali Saham Andira Agro (ANDI), Rogoh Rp 92,56 Miliar — Investortrust, 2026-10-27 · https://investortrust.id/market/120554/investor-baru-ini-resmi-jadi-pengendali-saham-andira-agro-andi-rogoh-rp-92-56-miliar",
+            "Puncak Jaya Sejahtera Ambil Kendali Andira Agro (ANDI) — Bloomberg Technoz, 2026-10-27 · https://www.bloombergtechnoz.com/detail-news/125854/puncak-jaya-sejahtera-ambil-kendali-andira-agro-andi",
+            "Puncak Jaya Sejahtera Resmi Jadi Pengendali Baru Andira Agro (ANDI) — BCA Sekuritas, 2026-10-27 · https://bcasekuritas.co.id/en/latest-news/news/puncak-jaya-sejahtera-resmi-jadi-pengendali-baru-andira-agro-andi",
+            "ANDI Umumkan Perubahan Kreditur dari Bank Permata ke Puncak Jaya Sejahtera — BCA Sekuritas, 2026-10-21 · https://bcasekuritas.co.id/latest-news/news/andi-umumkan-perubahan-kreditur-dari-bank-permata-ke-puncak-jaya-sejahtera"
+        ]
+    }
 }

@@ -651,7 +651,8 @@ def news_type(title: str) -> str:
     t = title.lower()
     if re.search(r"tender|\bmto\b", t):
         return "tender"
-    if re.search(r"pengalihan saham|pengambilalihan|pengendali|akuisisi|akusisi|acquisition|caplok|negosiasi|backdoor", t):
+    if re.search(r"pengalihan saham|pengambilalihan|pengendali|akuisisi|akusisi|acquisition|caplok|negosiasi|backdoor|"
+                 r"cessie|pengalihan (hak )?(tagih|piutang)|perubahan kreditur", t):
         return "pengendali"
     if re.search(r"hmetd|hak memesan|rights issue|penambahan modal|private placement|inbreng", t):
         return "rights"
@@ -977,7 +978,9 @@ def get_story(ticker: str, controller: str, near: str, fresh: bool = False) -> d
         rows.append({"date": d, "name": str(m.get("name", "")).strip(), "prev": prev,
                      "cur": cur, "action": m.get("action_type") or ""})
     nc = norm_name(controller or "")
-    buys = sorted((r for r in rows if "SELL" not in r["action"] and r["cur"] > r["prev"]),
+    kor = koreksi_registrasi(ticker)
+    buys = sorted((r for r in rows if "SELL" not in r["action"] and r["cur"] > r["prev"]
+                   and r["date"].strftime("%Y-%m-%d") not in kor),
                   key=lambda r: r["cur"] - r["prev"], reverse=True)
     if re.match(r"^\d{4}-\d{2}-\d{2}$", near or ""):
         nd = datetime.strptime(near, "%Y-%m-%d")
@@ -1405,11 +1408,37 @@ def market_reports(days: int = 14, pages: int = 40, fresh: bool = False) -> list
     return out
 
 
+def koreksi_registrasi(ticker: str) -> set[str]:
+    """Tanggal (± 1 hari) laporan "Registrasi Pemegang Efek (KOREKSI)" emiten ini. Pada tanggal itu KSEI bisa mencatat
+    pemegang lama seolah baru masuk dari 0% (mis. ANDI 23 Okt 2026: Central Energi Pratama 0% → 49,73%)."""
+    # Laporan registrasi bulanan disaring dari tabel berita (skipTitle), jadi dibaca langsung dari stream Stockbit.
+    out = set()
+    cfg = (load_config() or {}).get("reports") or {}
+    if not cfg.get("url"):
+        return out
+    try:
+        url = re.sub(r"last_stream_id=\d+", "last_stream_id=0", cfg["url"]).replace("{ticker}", ticker)
+        page = (stockbit_api(url).get("data") or {}).get("stream") or []
+    except Exception:
+        return out
+    for x in page:
+        title = str(x.get("title") or "")
+        if re.search(r"registrasi", title, re.I) and re.search(r"koreksi", title, re.I):
+            try:
+                d0 = datetime.strptime(str(x.get("created_at") or "")[:10], "%Y-%m-%d")
+            except ValueError:
+                continue
+            out |= {(d0 + timedelta(days=k)).strftime("%Y-%m-%d") for k in range(-1, 2)}
+    return out
+
+
 def new_controller(ticker: str, days: int = 45, fresh: bool = False) -> dict | None:
-    """Pemegang baru >= 20% (dari < 5%) di keterbukaan KSEI/IDX emiten ini dalam `days` hari terakhir."""
+    """Pemegang baru >= 20% (dari < 5%) di keterbukaan KSEI/IDX emiten ini dalam `days` hari terakhir.
+    Lonjakan pada tanggal laporan registrasi koreksi diabaikan (pemegang lama yang tercatat ulang)."""
     cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    kor = koreksi_registrasi(ticker)
     for r in (r for r in (insider_row(m) for m in insider_moves(ticker, 1, fresh)) if r):
-        if r["date"] >= cutoff and r["prev"] < 5 and r["cur"] >= 20:
+        if r["date"] >= cutoff and r["prev"] < 5 and r["cur"] >= 20 and r["date"] not in kor:
             return {"date": r["date"], "name": r["name"].title(), "pct": r["cur"],
                     "text": f"{r['name'].title()} masuk: {r['prev']:g}% → {r['cur']:g}% ({r['source']})"}
     return None
@@ -1608,6 +1637,13 @@ def auto_monitor(kd: dict) -> list[str]:
 
 
 STORY_V = 2  # sama dengan STORY_V di frontend/src/store.js (kunci story otomatis)
+
+
+def verified_pengendali() -> dict:
+    try:
+        return json.loads((ROOT / "pengendali-verified.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
 STORY_TTL_MS = 7 * 86400 * 1000
 
 
@@ -1622,6 +1658,13 @@ def lengkapi_items(tickers: list[str] | None = None, delay: float = 0.6) -> list
         if tickers and t not in tickers or not TICKER_RE.match(t):
             continue
         new = dict(it)
+        pv = verified_pengendali().get(t) or {}
+        if pv.get("ctrlName"):
+            # Pengendali terverifikasi (pengendali-verified.json) mengalahkan data otomatis KSEI/profil.
+            new.update(ctrlName=pv["ctrlName"], ctrlPct=pv.get("ctrlPct"), ctrlGuess=False)
+        if isinstance(pv.get("ms"), dict):
+            # Tonggak terverifikasi hanya ditambahkan (tidak pernah mematikan tonggak yang sudah tercatat).
+            new["ms"] = {**(new.get("ms") or {}), **{k: True for k, v in pv["ms"].items() if v}}
         try:
             if new.get("price") in (None, ""):
                 q = page_quote(t)

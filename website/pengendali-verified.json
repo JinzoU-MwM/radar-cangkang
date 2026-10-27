@@ -398,5 +398,19 @@
                  "catatan":  "Pola backdoor listing berisiko tinggi: pengendali masuk di Rp20, lalu rights issue/inbreng di Rp450–550 memberi aset tambang yang valuasinya belum independen kepada pihak tertentu dengan dilusi besar bagi publik, dan RUPSLB sempat dua kali gagal kuorum. Pengendali adalah konsultan aksi korporasi yang juga menggarap EPAC; pantau laporan KJPP, identitas pemilik TCP, dan uang muka yang sudah dibayar ke TCP.",
                  "sumberTanggal":  "2026-08-26",
                  "sumberJudul":  "Tindak Lanjut Hasil RUPSLB dan Rencana Aksi Korporasi (Stockbit Reports); harga akuisisi, MTO dan profil Triple B dari media (Kontan, Warta Ekonomi, Fortune IDN)"
-             }
+             },
+    "ANDI": {
+        "ctrlName": "PT Puncak Jaya Sejahtera",
+        "ctrlPct": 33.0,
+        "ms": {
+            "spa": true,
+            "akuisisi": true
+        },
+        "siapa": "PT Puncak Jaya Sejahtera (PJS; disingkat \"PSJ\" pada ringkasan AI Stockbit) menjadi pengendali baru sejak 26 Oktober 2026 setelah membeli 3,0855 miliar saham (33%) di Rp30/saham (Rp92,565 M) dari dua pengendali lama: PT Central Energi Pratama 2,385 miliar saham (25,52%) dan PT Anugerah Perkasa Semesta 699,97 juta saham (7,48%). Lima hari sebelumnya (21 Oktober 2026) PJS juga membeli piutang kredit Bank Permata atas ANDI lewat cessie, sehingga PJS kini sekaligus kreditur dan pengendali. Pemilik/UBO PJS belum diungkap.",
+        "catatan": "Harga kendali Rp30 setara sekitar 2,7× nilai buku per saham Rp11,21, sementara pasar sudah di Rp35 (naik sekitar 94% dalam lima hari; volume 23 Oktober 2026 sekitar 18× rata-rata, sebelum pengumuman). Karena PJS memegang piutang bank sekaligus 33% saham, skenario berikutnya yang paling mungkin adalah restrukturisasi utang, termasuk konversi piutang menjadi saham (PMTHMETD) yang mendilusi publik, serta penawaran tender wajib sebagai pengendali baru. Pantau pengumuman tender wajib dan rencana usaha PJS.",
+        "sumberTanggal": "2026-10-26",
+        "sumberJudul": "Perubahan pemegang saham pengendali Perseroan (dilengkapi Investortrust, Bloomberg Technoz, BCA Sekuritas)",
+        "grup": "PT Puncak Jaya Sejahtera: pemilik, pengurus, dan bidang usaha belum diungkap di keterbukaan maupun media. Pengendali lama: PT Central Energi Pratama (49,73% sebelum transaksi; Francis Indarto, Direktur Utama ANDI, tercatat sebagai direktur CEP sejak 2012) dan PT Anugerah Perkasa Semesta (7,49%). Laporan registrasi pemegang efek Mei 2026 menyebut Anne Patricia Sutanto sebagai pemilik manfaat; nama yang sama tercatat sebagai Komisaris ANDI dan, bersama Ludijanto Setijo (Presiden Komisaris ANDI), sebagai pemilik PT Trisetijo Manunggal Utama, pengendali PT Pan Brothers Tbk (Kontan, 2022).",
+        "rencana": "Belum diungkap. Manajemen menyatakan perubahan pengendali tidak berdampak negatif pada operasional, hukum, keuangan, dan kelangsungan usaha, dan bukan transaksi material. Sebagai pengendali baru, PJS wajib melakukan penawaran tender wajib atas saham publik (harga belum diumumkan; patokan minimal harga kendali Rp30). Posisi PJS sebagai kreditur (cessie dari Bank Permata, 21 Oktober 2026) membuka jalan restrukturisasi atau konversi utang menjadi saham."
+    }
 }
