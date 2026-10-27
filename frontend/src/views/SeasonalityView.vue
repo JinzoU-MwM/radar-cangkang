@@ -21,6 +21,8 @@ watch([bulan, tahun], load, { immediate: true })
 const top5 = computed(() => (data.value?.saham || []).slice(0, 5))
 const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 2) + '%'
 const tone = p => p >= 70 ? 'c-good' : p >= 50 ? '' : 'c-strong'
+const rp = v => v == null ? '–' : 'Rp' + Math.round(v).toLocaleString('id-ID')
+const rpr = e => e ? (e[0] === e[1] ? rp(e[0]) : `${rp(e[0])}–${rp(e[1])}`) : '–'
 </script>
 
 <template>
@@ -64,8 +66,40 @@ const tone = p => p >= 70 ? 'c-good' : p >= 50 ? '' : 'c-strong'
             <span>Naik <b>{{ x.up }}/{{ x.n }}</b> tahun · median {{ pct(x.median) }}</span>
             <span class="small">Broker: {{ x.broker }}<template v-if="x.radar"> · {{ x.radar }}</template></span>
             <span v-if="x.alasan[0]" class="small muted">{{ x.alasan[0] }}</span>
+            <dl v-if="x.plan" class="tp">
+              <dt>Beli</dt><dd>{{ rpr(x.plan.entry) }}</dd>
+              <dt>Batas rugi</dt><dd class="c-strong">{{ rp(x.plan.sl) }} ({{ x.plan.slPct }}%)</dd>
+              <dt>Ambil untung</dt><dd class="c-good">{{ rp(x.plan.tp1) }} / {{ rp(x.plan.tp2) }}</dd>
+              <dt>Waktu</dt><dd>{{ x.plan.timeframe }}</dd>
+            </dl>
           </RouterLink>
         </div>
+      </section>
+
+      <!-- Trading plan prioritas: rinci dan dapat diuji ulang dengan data historis bulan yang sama. -->
+      <section v-if="top5.some(x => x.plan)" class="rule-top">
+        <h2>Trading plan {{ BLN[bulan - 1] }}</h2>
+        <p class="muted small">Area beli = harga terkini s.d. EMA20 (maks. 5% di bawah harga). Batas rugi = median penurunan di tahun-tahun turun (4–10%). TP1 = median kenaikan di tahun-tahun naik; TP2 = kenaikan kuartil atas. Uji historis memakai penutupan bulan.</p>
+        <div class="scroll">
+          <table class="ledger">
+            <thead><tr><th>Saham</th><th class="num">Harga</th><th>Area beli</th><th class="num">Batas rugi</th><th class="num">TP1</th><th class="num">TP2</th><th class="num">R/R</th><th>Masuk</th><th>Keluar</th><th class="num">Uji historis</th></tr></thead>
+            <tbody>
+              <tr v-for="x in top5.filter(y => y.plan)" :key="x.t">
+                <td><RouterLink :to="{ path: '/emiten/' + x.t, query: { tab: 'analisa' } }"><b>{{ x.t }}</b></RouterLink></td>
+                <td class="num">{{ rp(x.plan.harga) }}</td>
+                <td>{{ rpr(x.plan.entry) }}</td>
+                <td class="num c-strong">{{ rp(x.plan.sl) }} <span class="small">({{ x.plan.slPct }}%)</span></td>
+                <td class="num c-good">{{ rp(x.plan.tp1) }} <span class="small">(+{{ x.plan.tp1Pct }}%)</span></td>
+                <td class="num c-good">{{ rp(x.plan.tp2) }} <span class="small">(+{{ x.plan.tp2Pct }}%)</span></td>
+                <td class="num" :class="{ 'c-strong': x.plan.rr != null && x.plan.rr < 1 }" :title="x.plan.rr != null && x.plan.rr < 1 ? 'R/R di bawah 1: tunggu harga mendekati batas bawah area beli' : ''">{{ x.plan.rr ?? '–' }}</td>
+                <td class="small">{{ x.plan.masuk }}</td>
+                <td class="small">{{ x.plan.keluar }}</td>
+                <td class="num small">TP1 {{ x.plan.kenaTp1 }}/{{ x.plan.n }} · SL {{ x.plan.kenaSl }}/{{ x.plan.n }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted small">R/R merah = di bawah 1: tunggu harga mendekati batas bawah area beli. Jangka waktu swing ±1 bulan. Posisi kecil, disiplin batas rugi; keluar lebih awal bila TP tercapai atau pola bulan ini gagal di pekan pertama.</p>
       </section>
 
       <section class="rule-top">
@@ -84,7 +118,7 @@ const tone = p => p >= 70 ? 'c-good' : p >= 50 ? '' : 'c-strong'
         <h2>Saham berpola naik di {{ BLN[bulan - 1] }} <span class="muted small">({{ data.total }} saham dihitung · data {{ data.updated }})</span></h2>
         <div class="scroll">
           <table class="ledger">
-            <thead><tr><th>Saham</th><th>Sektor</th><th class="num">Naik</th><th class="num">Peluang</th><th class="num">Median</th><th class="num">Terburuk</th><th class="num">&gt; IHSG</th><th>Broker</th><th>Katalis &amp; alasan historis</th><th class="num">Skor</th></tr></thead>
+            <thead><tr><th>Saham</th><th>Sektor</th><th class="num">Naik</th><th class="num">Peluang</th><th class="num">Median</th><th class="num">Terburuk</th><th class="num">&gt; IHSG</th><th>Broker</th><th>Katalis &amp; alasan historis</th><th>Trading plan</th><th class="num">Skor</th></tr></thead>
             <tbody>
               <tr v-for="x in data.saham" :key="x.t">
                 <td><RouterLink :to="{ path: '/emiten/' + x.t, query: { tab: 'analisa' } }"><b>{{ x.t }}</b></RouterLink><span v-if="x.radar" class="tag t-calm">{{ x.radar }}</span></td>
@@ -98,6 +132,10 @@ const tone = p => p >= 70 ? 'c-good' : p >= 50 ? '' : 'c-strong'
                 <td class="small">
                   <div v-for="k in x.katalis" :key="k.tanggal + k.jenis">Akan datang: {{ k.jenis }} {{ k.tanggal }}</div>
                   <div v-for="a in x.alasan" :key="a" class="muted">{{ a }}</div>
+                </td>
+                <td class="small nowrap">
+                  <template v-if="x.plan">Beli {{ rpr(x.plan.entry) }}<br><span class="c-strong">SL {{ rp(x.plan.sl) }}</span> · <span class="c-good">TP {{ rp(x.plan.tp1) }}/{{ rp(x.plan.tp2) }}</span></template>
+                  <span v-else class="muted">harga belum tersedia</span>
                 </td>
                 <td class="num"><b>{{ x.skor }}</b></td>
               </tr>
@@ -126,5 +164,7 @@ const tone = p => p >= 70 ? 'c-good' : p >= 50 ? '' : 'c-strong'
 .sr{display:grid;grid-template-columns:190px 1fr 50px 110px;gap:10px;align-items:center}
 .track{height:12px;background:var(--rule);border-radius:6px;overflow:hidden}.track i{display:block;height:100%;background:var(--strong)}.track i.c-good{background:var(--good)}.track i:not(.c-good):not(.c-strong){background:var(--warn,#c79a1a)}
 .tag{margin-left:6px}
+.tp{display:grid;grid-template-columns:auto 1fr;gap:1px 8px;margin:6px 0 0;font-size:12px}.tp dt{color:var(--muted)}.tp dd{margin:0;font-weight:600}
+.nowrap{white-space:nowrap}
 @media (max-width:700px){.months{grid-template-columns:repeat(6,1fr)}.sr{grid-template-columns:1fr 1fr 44px}.sr .small{display:none}}
 </style>
