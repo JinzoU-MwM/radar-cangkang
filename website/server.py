@@ -2087,7 +2087,10 @@ IHSG_PATH = ROOT / ".ihsg.json"
 
 def ihsg_refresh() -> None:
     """Harga harian IHSG 1 tahun + judul berita pasar terbaru (stream IHSG) untuk kartu kondisi IHSG di Seasonality."""
-    tek = IH.technical(get_ohlc("IHSG", "1y", True))
+    bars = get_ohlc("IHSG", "1y", True)
+    tek = IH.technical(bars)
+    if tek:
+        tek["pola"] = IH.pattern(bars)
     posts, cursor = [], 0
     for _ in range(4):
         j = sb_fetch(f"/stream/v3/symbol/IHSG?category=STREAM_CATEGORY_NEWS&last_stream_id={cursor}&limit=20", True)
@@ -2126,8 +2129,12 @@ def ihsg_api(month: int) -> dict:
     state = "atas" if tek["harga"] > tek["ema200"] else "bawah"
     cond = IH.conditional(series, month, state) if series else {"kondisi": state, "n": 0, "prob": None, "tahun": []}
     sent = IH.sentiment(d.get("berita") or [])
+    ber = IH.verdict(base, cond, sent)
+    flow = BP.market_flow(broker_data()) if broker_data() else None
+    BL = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+    riset = IH.narrative(tek, tek.get("pola") or {}, flow, ber, BL[month - 1])
     return {"updated": d.get("updated"), "bulan": month, "tek": tek, "sentimen": sent, "kondisi": cond,
-            "musiman": base and {k: base[k] for k in ("n", "up", "prob", "median")}, "berulang": IH.verdict(base, cond, sent)}
+            "musiman": base and {k: base[k] for k in ("n", "up", "prob", "median")}, "berulang": ber, "flow": flow, "riset": riset}
 
 
 def IH_load() -> dict:

@@ -225,6 +225,33 @@ def series(data: dict, sym: str, jenis: str = "") -> list[dict]:
     return out
 
 
+def market_flow(data: dict) -> dict | None:
+    """Flow pasar bulan terakhir: total net broker Asing vs Domestik (dari 25 saham teratas tiap broker), broker asing
+    terbesar, dan saham paling diakumulasi/didistribusi asing."""
+    bro = data.get("broker") or {}
+    ms = sorted({int(m) for b in bro.values() for m in b.get("bulan", {})})
+    if not ms:
+        return None
+    m = ms[-1]
+    tot, per, sampai = {"asing": 0, "domestik": 0}, [], None
+    for c, b in bro.items():
+        x = b.get("bulan", {}).get(str(m))
+        if not x:
+            continue
+        sampai = x.get("sampai") or sampai
+        net = sum(r["val"] for r in x.get("beli") or []) + sum(r["val"] for r in x.get("jual") or [])
+        k = "domestik" if domestik(b.get("jenis", "")) else "asing"
+        tot[k] += net
+        if k == "asing":
+            per.append({"kode": c, "nama": b.get("nama", ""), "net": net})
+    v = view(data, m, None, "asing").get("saham") or {}
+    BL = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+    return {"bulan": m, "bulanNama": BL[m - 1], "sampai": sampai, "asing": tot["asing"], "domestik": tot["domestik"],
+            "brokerAsing": sorted(per, key=lambda z: -abs(z["net"]))[:3],
+            "sahamAsing": [{"s": a["s"], "net": a["bandar"], "avg": a.get("avgAkum")} for a in v.get("akumulasi", [])[:3]],
+            "sahamJualAsing": [{"s": a["s"], "net": a["bandar"]} for a in v.get("distribusi", [])[:3]]}
+
+
 def load(path) -> dict:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
