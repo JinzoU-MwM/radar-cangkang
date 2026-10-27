@@ -7,19 +7,37 @@ import { fmt, fmtDate } from '../lib/domain.js'
 
 const props = defineProps({ bulan: { type: Number, required: true }, namaBulan: { type: String, default: '' } })
 const d = ref(null), err = ref(''), semua = ref(false), busy = ref(false)
-// Unduh riset IHSG (PDF): sampul, analisa teknikal & flow, seasonality & sentimen, disclaimer.
+const segarBusy = ref(false)
+// segar=1: server mengambil ulang harga IHSG & berita terbaru bila data > 5 menit.
+async function muat(segar = false) {
+  const r = await api.get('/api/ihsg-outlook', segar ? { bulan: props.bulan, segar: 1 } : { bulan: props.bulan })
+  if (r.error) throw new Error(r.error)
+  d.value = r
+  return r
+}
+async function perbarui() {
+  segarBusy.value = true; err.value = ''
+  try { await muat(true) } catch (e) { err.value = e.message || String(e) } finally { segarBusy.value = false }
+}
+// Unduh riset IHSG (PDF): data diperbarui dulu agar harga, proyeksi, dan berita terbaru.
 async function unduh() {
   if (!d.value) return
   busy.value = true
   try {
     const [{ jsPDF }, { ihsgPdf, ihsgPdfName }] = await Promise.all([import('jspdf'), import('../lib/ihsgPdf.js')])
-    ;(await ihsgPdf(d.value, jsPDF)).save(ihsgPdfName(d.value.bulan))
+    let data = d.value
+    try { data = await muat(true) } catch { /* gagal segarkan: pakai data yang tampil */ }
+    ;(await ihsgPdf(data, jsPDF)).save(ihsgPdfName(data.bulan))
   } catch (e) { err.value = 'PDF gagal dibuat: ' + (e.message || e) } finally { busy.value = false }
 }
-watch(() => props.bulan, async b => {
+watch(() => props.bulan, async () => {
   err.value = ''
-  try { const r = await api.get('/api/ihsg-outlook', { bulan: b }); if (r.error) err.value = r.error; else d.value = r } catch (e) { err.value = e.message || String(e) }
+  try { await muat() } catch (e) { err.value = e.message || String(e) }
 }, { immediate: true })
+const pr = computed(() => d.value?.proyeksi)
+const arahCls = p => p >= 55 ? 'c-good' : p <= 45 ? 'c-strong' : ''
+const arahIkon = p => p >= 55 ? '▲' : p <= 45 ? '▼' : '◆'
+const sgn = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 2) + '%'
 
 const W = 760, H = 220, P = 6
 const chart = computed(() => {
@@ -52,6 +70,35 @@ const lbl = l => l === 'Tinggi' ? 'c-good' : l === 'Rendah' ? 'c-strong' : ''
         </ul>
       </div>
 
+      <p class="small muted stamp">Data per <b>{{ d.updated }}</b> WIB · IHSG {{ nf(d.tek.harga) }} ({{ fmtDate(d.tek.tanggal) }}) ·
+        <button type="button" class="lnk" :disabled="segarBusy" @click="perbarui">{{ segarBusy ? 'Memperbarui…' : '↻ Perbarui sekarang' }}</button></p>
+
+      <!-- Proyeksi arah IHSG: esok hari, 1 minggu, 1 bulan (probabilistik). -->
+      <div v-if="pr" class="proy">
+        <h3>Proyeksi arah IHSG</h3>
+        <div class="hz">
+          <div v-for="h in pr.horizon" :key="h.kunci" class="hzc" :class="{ utama: h.kunci === 'esok' }">
+            <span class="small muted">{{ h.nama }}</span>
+            <b :class="arahCls(h.prob)">{{ arahIkon(h.prob) }} {{ h.arah }}</b>
+            <span class="small">Peluang naik <b :class="arahCls(h.prob)">{{ h.prob }}%</b></span>
+            <span class="small muted">Kisaran {{ nf(h.bawah) }}–{{ nf(h.atas) }}</span>
+            <i class="pb"><i :style="{ width: h.prob + '%' }" /></i>
+            <details class="small"><summary>Dasar perhitungan</summary>
+              <ul><li v-for="k in h.komponen" :key="k.nama">{{ k.nama }}: {{ k.nilai }}% <span class="muted">(bobot {{ Math.round(k.bobot * 100) }}%)</span></li></ul>
+              <span class="muted">Historis 1 tahun: median {{ sgn(h.median) }} dari {{ h.n }} kejadian serupa.</span>
+            </details>
+          </div>
+        </div>
+        <p class="small"><b>Skenario esok:</b> {{ pr.skenarioEsok }}</p>
+        <div class="pv small">
+          <span>S2 <b class="c-strong">{{ nf(pr.pivot.s2) }}</b></span><span>S1 <b class="c-strong">{{ nf(pr.pivot.s1) }}</b></span>
+          <span>Pivot <b>{{ nf(pr.pivot.p) }}</b></span>
+          <span>R1 <b class="c-good">{{ nf(pr.pivot.r1) }}</b></span><span>R2 <b class="c-good">{{ nf(pr.pivot.r2) }}</b></span>
+          <span class="muted">· ATR14 {{ nf(pr.atr) }} · 1 hari {{ sgn(pr.ubah1) }} · 5 hari {{ sgn(pr.ubah5) }}</span>
+        </div>
+        <p class="small muted">{{ pr.catatan }}</p>
+      </div>
+
       <!-- Analisa Teknikal & Flow (gaya riset) + unduh PDF. -->
       <div v-if="d.riset" class="riset">
         <div class="rh">
@@ -80,6 +127,7 @@ const lbl = l => l === 'Tinggi' ? 'c-good' : l === 'Rendah' ? 'c-strong' : ''
           <dl class="lv small">
             <dt>Resistance</dt><dd>{{ d.tek.resistance.map(x => nf(x.v)).join(' · ') || '–' }} <span class="muted">(+{{ fmt(d.tek.jarakResistance, 1) }}%)</span></dd>
             <dt>Support</dt><dd>{{ d.tek.support.map(x => nf(x.v)).join(' · ') || '–' }} <span class="muted">(−{{ fmt(d.tek.jarakSupport, 1) }}%)</span></dd>
+            <dt v-if="pr">Support harian</dt><dd v-if="pr">{{ nf(pr.pivot.s1) }} · {{ nf(pr.pivot.s2) }} <span class="muted">(pivot sesi berikutnya)</span></dd>
             <dt>52 minggu</dt><dd>{{ nf(d.tek.rendah52) }} – {{ nf(d.tek.tinggi52) }}</dd>
           </dl>
           <p class="small rek"><b>Rekomendasi teknikal:</b> {{ d.tek.rekomendasi }}</p>
@@ -110,7 +158,7 @@ const lbl = l => l === 'Tinggi' ? 'c-good' : l === 'Rendah' ? 'c-strong' : ''
             <span class="muted">Semua bulan dengan kondisi ini: {{ d.kondisi.semuaBulanProb }}% naik dari {{ d.kondisi.semuaBulanN }} bulan.</span></p>
           <ul class="small yr"><li v-for="y in d.kondisi.tahun" :key="y.tahun">{{ y.tahun }}: <span :class="y.ret > 0 ? 'c-good' : 'c-strong'">{{ y.ret > 0 ? '+' : '' }}{{ fmt(y.ret, 2) }}%</span></li></ul>
           <p class="small"><b>Sentimen:</b> {{ d.sentimen.arah }} (skor {{ d.sentimen.skor }}).</p>
-          <p class="small muted">Probabilitas berulang = pola musiman (50%) + kondisi tren sama (30%, bila ≥ 3 tahun) + sentimen (20%: positif 65, netral 50, negatif 35). Data per {{ d.updated }}; diperbarui tiap 2 jam. Bukan kepastian.</p>
+          <p class="small muted">Probabilitas berulang = pola musiman (50%) + kondisi tren sama (30%, bila ≥ 3 tahun) + sentimen (20%: positif 65, netral 50, negatif 35). Data per {{ d.updated }}; diperbarui tiap 30 menit saat jam bursa (2 jam di luar jam bursa) atau saat tombol Perbarui / Unduh ditekan. Bukan kepastian.</p>
         </div>
       </div>
     </template>
@@ -123,6 +171,13 @@ const lbl = l => l === 'Tinggi' ? 'c-good' : l === 'Rendah' ? 'c-strong' : ''
 .lvl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0}
 .lvl div{border:1px solid var(--rule);padding:6px 10px;display:flex;flex-direction:column}.lvl span{font-size:11px;color:var(--muted)}.lvl b{font-size:18px}
 .c-teal{color:#0d9488}
+.stamp{margin:0 0 8px}.stamp .lnk{margin:0}
+.proy{border:1px solid var(--rule);background:var(--sheet);padding:10px 14px;margin-bottom:12px}.proy h3{margin:0 0 8px}.proy p{margin:6px 0;max-width:120ch}
+.hz{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.hzc{border:1px solid var(--rule);padding:8px 10px;display:flex;flex-direction:column;gap:2px}.hzc.utama{border-width:2px;border-color:var(--now-ink)}
+.hzc > b{font-size:17px}.hzc details{margin-top:4px}.hzc ul{margin:4px 0;padding-left:16px}
+.pb{display:block;height:6px;background:var(--strong);border-radius:3px;overflow:hidden;margin-top:4px}.pb i{display:block;height:100%;background:var(--good)}
+.pv{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0}
 .top{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin:6px 0 10px}
 .big{display:flex;flex-direction:column}.big > b{font-size:34px;line-height:1}.big span{font-size:13px}.big span b{font-size:inherit}
 .komp{margin:0;padding-left:18px}

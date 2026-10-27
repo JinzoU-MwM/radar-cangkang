@@ -2100,17 +2100,53 @@ def ihsg_refresh() -> None:
             # "Jakarta, CNBC Indonesia - ..." -> sumber berita dari pembuka paragraf.
             m = re.match(r"^[A-Z][A-Za-z .]+,\s*([A-Z][\w .]{2,40}?)\s*[-–—]\s*", isi) or re.match(r"^([A-Z][\w]+(?:\.com|\.co\.id|\.id))\s*[-–—]\s*", isi)
             posts.append({"d": str(p.get("created_at") or "")[:10], "title": str(p.get("title") or isi).split(chr(10))[0],
-                          "ringkas": (isi[m.end():] if m else isi)[:320].rstrip(". ") + "…" if isi else "",
+                          "ringkas": (isi[m.end():] if m else isi)[:600].rstrip(". ") + "…" if isi else "",
                           "sumber": m.group(1).strip() if m else "", "url": f"https://stockbit.com/post/{p.get('stream_id')}"})
         if not page:
             break
         cursor = page[-1].get("stream_id")
         time.sleep(0.3)
     cutoff = (datetime.now() - timedelta(days=10)).strftime("%Y-%m-%d")
-    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "tek": tek, "berita": [p for p in posts if p["d"] >= cutoff]}
+    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "tek": tek, "proj": IH.projection_base(bars),
+            "berita": [p for p in posts if p["d"] >= cutoff]}
     tmp = IHSG_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     tmp.replace(IHSG_PATH)
+
+
+IHSG_LOCK = threading.Lock()
+IHSG_SEGAR_MIN = 5 * 60  # tombol unduh/perbarui: data dianggap segar bila < 5 menit
+
+
+def ihsg_jam_bursa(now: datetime | None = None) -> bool:
+    """Senin–Jumat 08.45–16.30 WIB."""
+    w = (now or datetime.now(timezone.utc)).astimezone(timezone(timedelta(hours=7)))
+    return w.weekday() < 5 and (8, 45) <= (w.hour, w.minute) <= (16, 30)
+
+
+def ihsg_segarkan(public: bool = False) -> None:
+    """Perbarui .ihsg.json bila lebih tua dari 5 menit; satu proses sekaligus. Pengunjung publik diizinkan
+    memicu pengambilan khusus data IHSG (harga + berita, ±7 panggilan, tetap dibatasi PUBLIC_BUDGET)."""
+    try:
+        if time.time() - IHSG_PATH.stat().st_mtime < IHSG_SEGAR_MIN:
+            return
+    except OSError:
+        pass
+    with IHSG_LOCK:
+        try:
+            if time.time() - IHSG_PATH.stat().st_mtime < IHSG_SEGAR_MIN:
+                return  # sudah diperbarui permintaan lain saat menunggu kunci
+        except OSError:
+            pass
+        old = getattr(_req, "public_fetch", False)
+        _req.public_fetch = old or public
+        try:
+            if get_token():
+                ihsg_refresh()
+        except Exception as e:
+            print(f"[ihsg] segarkan gagal: {e}", file=sys.stderr)
+        finally:
+            _req.public_fetch = old
 
 
 def ihsg_loop() -> None:
@@ -2118,10 +2154,12 @@ def ihsg_loop() -> None:
     while True:
         try:
             if get_token():
-                ihsg_refresh()
+                with IHSG_LOCK:
+                    ihsg_refresh()
         except Exception as e:
             print(f"[ihsg] gagal: {e}", file=sys.stderr)
-        time.sleep(2 * 3600)
+        # Jam bursa tiap 30 menit agar harga & berita mendekati realtime; di luar jam bursa tiap 2 jam.
+        time.sleep(1800 if ihsg_jam_bursa() else 2 * 3600)
 
 
 def ihsg_api(month: int) -> dict:
@@ -2138,8 +2176,10 @@ def ihsg_api(month: int) -> dict:
     flow = BP.market_flow(broker_data()) if broker_data() else None
     BL = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
     riset = IH.narrative(tek, tek.get("pola") or {}, flow, ber, BL[month - 1])
+    proyeksi = IH.projection(d.get("proj"), tek, sent, flow, ber)
     return {"updated": d.get("updated"), "bulan": month, "tek": tek, "sentimen": sent, "kondisi": cond,
-            "musiman": base and {k: base[k] for k in ("n", "up", "prob", "median")}, "berulang": ber, "flow": flow, "riset": riset}
+            "musiman": base and {k: base[k] for k in ("n", "up", "prob", "median")}, "berulang": ber, "flow": flow, "riset": riset,
+            "proyeksi": proyeksi, "berita": d.get("berita") or []}
 
 
 def IH_load() -> dict:
@@ -2571,6 +2611,8 @@ class Handler(BaseHTTPRequestHandler):
                 month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month % 12 + 1))
             except ValueError:
                 month = datetime.now().month % 12 + 1
+            if self.qs("segar") == "1":
+                ihsg_segarkan(public=_req.public)
             self.reply_json(ihsg_api(month))
         elif path == "api/broker-pola":
             d = broker_data()

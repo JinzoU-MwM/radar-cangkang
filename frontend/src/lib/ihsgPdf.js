@@ -1,5 +1,5 @@
 // Riset IHSG (PDF, A4 tegak) dari data /api/ihsg-outlook: sampul, Analisa Teknikal & Flow (grafik, narasi,
-// area beli/target/risiko), Seasonality & sentimen, berita pasar per topik, dan disclaimer. Digambar dengan jsPDF (mm).
+// area beli/target/risiko), proyeksi arah, Seasonality & sentimen, berita terbaru + per topik, dan disclaimer. Digambar dengan jsPDF (mm).
 // Tema terang Radar Backdoor: kertas krem, marun sebagai warna utama, aksen emas, judul serif.
 import { pdfText } from './deckPdf.js'
 
@@ -83,7 +83,7 @@ export async function ihsgPdf(d, jsPDF) {
   doc.setFillColor(MAROON); doc.rect(0, 0, 16, 297, 'F')
   doc.setFillColor(GOLD); doc.rect(16, 0, 1.6, 297, 'F')
   doc.setFont('times', 'bold'); doc.setFontSize(12); doc.setTextColor(MAROON); doc.text('RADAR BACKDOOR RESEARCH', 28, 26)
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(MUTED); doc.text(pdfText(`Edisi ${terbit}`), 196, 26, { align: 'right' })
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(MUTED); doc.text(pdfText(`Edisi ${terbit} · data per ${d.updated || '-'} WIB`), 196, 26, { align: 'right' })
   doc.setDrawColor(GOLD); doc.setLineWidth(0.4); doc.line(28, 30, 196, 30)
   doc.setFont('times', 'bold'); doc.setFontSize(96); doc.setTextColor(MAROON); doc.text('IHSG', 26, 92)
   doc.setFont('times', 'italic'); doc.setFontSize(22); doc.setTextColor(INK); doc.text(pdfText('Analisa Teknikal & Flow'), 28, 108)
@@ -97,12 +97,16 @@ export async function ihsgPdf(d, jsPDF) {
     doc.setFillColor(GOLD); doc.circle(X(s.length - 1), Y(s[s.length - 1].c), 1.6, 'F')
   }
   // Ringkasan di sampul.
+  const pe = d.proyeksi?.horizon?.[0]
   const box = [['Tren', t.tren], ['IHSG', n0(t.harga)], ['Probabilitas berulang', `${d.berulang?.prob ?? '-'}% (${d.berulang?.label || '-'})`]]
+  if (pe) box.push(['Proyeksi esok', `${pe.prob >= 55 ? 'Naik' : pe.prob <= 45 ? 'Turun' : 'Mendatar'} (${pe.prob}% naik)`])
+  const bw = (168 - 4 * (box.length - 1)) / box.length
   box.forEach(([k, v], i) => {
-    const x = 28 + i * 57
-    doc.setFillColor('#ffffff'); doc.setDrawColor(LINE); doc.rect(x, 214, 53, 18, 'FD')
+    const x = 28 + i * (bw + 4)
+    doc.setFillColor('#ffffff'); doc.setDrawColor(LINE); doc.rect(x, 214, bw, 18, 'FD')
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(MUTED); doc.text(pdfText(k), x + 4, 220.5)
-    doc.setFont('times', 'bold'); doc.setFontSize(12.5); doc.setTextColor(MAROON); doc.text(pdfText(v), x + 4, 228)
+    doc.setFont('times', 'bold'); doc.setFontSize(box.length > 3 ? 11 : 12.5); doc.setTextColor(MAROON)
+    doc.text(doc.splitTextToSize(pdfText(v), bw - 6)[0], x + 4, 228)
   })
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(MUTED); doc.text('Disusun oleh', 28, 252); doc.text('Terbit', 100, 252)
   doc.setFont('times', 'bold'); doc.setFontSize(12); doc.setTextColor(INK); doc.text('Radar Backdoor', 28, 258); doc.text(pdfText(terbit), 100, 258)
@@ -124,8 +128,52 @@ export async function ihsgPdf(d, jsPDF) {
   kpi(doc, 14 + kw + 4, yk, kw, 'Target', lv.target ? `${n0(lv.target[0])} / ${n0(lv.target[1])}` : '-', GOOD)
   kpi(doc, 14 + 2 * (kw + 4), yk, kw, 'Risiko (penutupan harian <)', n0(lv.risiko), BAD)
 
-  // 3) Seasonality & sentimen.
-  doc.addPage(); frame(doc, 'Seasonality & Sentimen', 3)
+  // 3) Proyeksi arah IHSG (esok, 1 minggu, 1 bulan).
+  let page = 2
+  const pr = d.proyeksi
+  if (pr) {
+    doc.addPage(); frame(doc, 'Proyeksi Arah IHSG', ++page)
+    heading(doc, 'Proyeksi Arah IHSG', 26)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(MUTED)
+    doc.text(pdfText(`IHSG ${n0(pr.harga)} · data per ${d.updated || '-'} WIB`), 196, 26, { align: 'right' })
+    const cw = (182 - 8) / 3
+    pr.horizon.forEach((h, i) => {
+      const x = 14 + i * (cw + 4), col = h.prob >= 55 ? GOOD : h.prob <= 45 ? BAD : GOLD
+      doc.setFillColor('#ffffff'); doc.setDrawColor(i === 0 ? MAROON : LINE); doc.setLineWidth(i === 0 ? 0.6 : 0.3); doc.rect(x, 34, cw, 50, 'FD')
+      doc.setFillColor(col); doc.rect(x, 34, 1.6, 50, 'F')
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(MUTED); doc.text(pdfText(h.nama.toUpperCase()), x + 5, 40)
+      doc.setFont('times', 'bold'); doc.setFontSize(13); doc.setTextColor(col); doc.text(doc.splitTextToSize(pdfText(h.arah), cw - 8)[0], x + 5, 47.5)
+      doc.setFontSize(26); doc.text(`${h.prob}%`, x + 5, 60)
+      const pw0 = doc.getTextWidth(`${h.prob}%`)
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(MUTED); doc.text('peluang naik', x + 7 + pw0, 60)
+      doc.setFillColor(BAD); doc.rect(x + 5, 63, cw - 10, 2, 'F'); doc.setFillColor(GOOD); doc.rect(x + 5, 63, (cw - 10) * h.prob / 100, 2, 'F')
+      doc.setFontSize(8.5); doc.setTextColor(INK); doc.text(pdfText(`Kisaran ${n0(h.bawah)} - ${n0(h.atas)}`), x + 5, 71)
+      doc.setFontSize(7.5); doc.setTextColor(MUTED); doc.text(pdfText(`Historis: median ${h.median > 0 ? '+' : ''}${h.median ?? '-'}% (${h.n} kejadian)`), x + 5, 76.5)
+      if (h.level?.length) doc.text(pdfText(`Level di kisaran: ${h.level.map(n0).join(', ')}`), x + 5, 81.5)
+    })
+    y = 96
+    y = block(doc, 'Skenario sesi berikutnya', pr.skenarioEsok, y)
+    // Tabel pivot sesi berikutnya.
+    const pv = pr.pivot, cols = [['S2', pv.s2, BAD], ['S1', pv.s1, BAD], ['Pivot', pv.p, INK], ['R1', pv.r1, GOOD], ['R2', pv.r2, GOOD]]
+    const pw = 182 / cols.length
+    cols.forEach(([k, v, col], i) => {
+      doc.setFillColor(i % 2 ? '#ffffff' : SOFT); doc.rect(14 + i * pw, y, pw, 14, 'F')
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(MUTED); doc.text(k, 14 + i * pw + pw / 2, y + 5, { align: 'center' })
+      doc.setFont('times', 'bold'); doc.setFontSize(13); doc.setTextColor(col); doc.text(n0(v), 14 + i * pw + pw / 2, y + 11.5, { align: 'center' })
+    })
+    y += 20
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(MUTED)
+    doc.text(pdfText(`ATR14 ${n0(pr.atr)} poin · perubahan 1 hari ${pr.ubah1}% · 5 hari ${pr.ubah5}%`), 14, y); y += 8
+    doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(MAROON); doc.text('Dasar perhitungan', 14, y); y += 5
+    for (const h of pr.horizon) {
+      y = para(doc, `${h.nama}: ` + h.komponen.map(k => `${k.nama} ${k.nilai}% (bobot ${Math.round(k.bobot * 100)}%)`).join('; ') + '.', 14, y, 182, 8.5, INK) - 1
+    }
+    para(doc, 'Kisaran = harga terakhir ± ATR14 × akar jumlah hari. Peluang empiris = persentase kejadian naik pada kondisi teknikal yang sama '
+      + 'selama 1 tahun terakhir. ' + pr.catatan, 14, y + 2, 182, 8, MUTED)
+  }
+
+  // 4) Seasonality & sentimen.
+  doc.addPage(); frame(doc, 'Seasonality & Sentimen', ++page)
   heading(doc, `Seasonality ${bln} & Sentimen`, 26)
   const b = d.berulang || {}
   const bc = b.label === 'Tinggi' ? GOOD : b.label === 'Rendah' ? BAD : GOLD
@@ -158,12 +206,31 @@ export async function ihsgPdf(d, jsPDF) {
     y = para(doc, tp.implikasi, 19, y + 4.6, 176, 9, MUTED) - 0.5
   }
 
-  // 4) Berita rinci per topik (bisa beberapa halaman).
-  let page = 4
-  doc.addPage(); frame(doc, 'Berita Pasar', page)
+  // 5) Berita terbaru (urut waktu, saat diunduh) lalu berita rinci per topik (bisa beberapa halaman).
+  doc.addPage(); frame(doc, 'Berita Pasar', ++page)
+  const ensure = need => { if (y + need > 278) { doc.addPage(); frame(doc, 'Berita Pasar', ++page); y = 22 } }
+  heading(doc, 'Berita Terbaru', 26)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(MUTED)
+  doc.text(pdfText(`diambil ${d.updated || '-'} WIB`), 196, 26, { align: 'right' })
+  y = 38
+  for (const x of (d.berita || []).slice(0, 12)) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.3)
+    const ring = doc.splitTextToSize(pdfText(x.ringkas || ''), 174)
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5)
+    const jd = doc.splitTextToSize(pdfText(x.title || ''), 140)
+    ensure(12 + jd.length * 4.2 + Math.min(ring.length, 5) * 3.7)
+    doc.setFillColor(GOLD); doc.rect(14, y - 3.2, 1.2, 4, 'F')
+    doc.setTextColor(INK); doc.text(jd, 18, y)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(MUTED)
+    doc.text(pdfText(`${tgl(x.d)}${x.sumber ? ' · ' + x.sumber : ''}`), 196, y, { align: 'right' })
+    y += jd.length * 4.2
+    if (ring.length) { doc.setFontSize(8.3); doc.setTextColor('#5a5248'); doc.text(ring.slice(0, 5), 18, y); y += Math.min(ring.length, 5) * 3.7 }
+    doc.setFontSize(7.5); doc.setTextColor(TEAL); doc.textWithLink(pdfText('Baca berita lengkap di Stockbit >'), 18, y + 0.5, { url: x.url })
+    doc.setDrawColor(LINE); doc.setLineWidth(0.2); doc.line(18, y + 2.6, 196, y + 2.6); y += 8
+  }
+  doc.addPage(); frame(doc, 'Berita Pasar', ++page)
   heading(doc, 'Berita Pasar & Dampaknya', 26)
   y = 38
-  const ensure = need => { if (y + need > 278) { doc.addPage(); frame(doc, 'Berita Pasar', ++page); y = 22 } }
   for (const tp of sn.topik || []) {
     const col = nadaWarna(tp.arah)
     ensure(24)
@@ -189,7 +256,7 @@ export async function ihsgPdf(d, jsPDF) {
     y += 2
   }
 
-  // 5) Disclaimer.
+  // 6) Disclaimer.
   doc.addPage(); frame(doc, 'Disclaimer', ++page)
   heading(doc, 'Disclaimer', 28)
   para(doc, 'Riset ini disusun otomatis oleh Radar Backdoor dari data yang diyakini dapat diandalkan (harga, ringkasan broker, dan berita pasar Stockbit), '
