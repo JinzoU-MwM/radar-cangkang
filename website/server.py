@@ -1845,6 +1845,9 @@ def news_loop() -> None:
             try:
                 r = sync_updates(cfg)
                 print(f"[berita] {r['added']} laporan, {r['addedNews']} berita baru{' (mengejar ketertinggalan)' if r.get('catchUp') else ''}", file=sys.stderr)
+                # Ada laporan baru: lengkapi ulang story/pengendali/harga saat itu juga (tidak menunggu siklus 3 jam).
+                if r.get("added") and get_token():
+                    lengkapi_items()
             except Exception as e:
                 print(f"[berita] gagal: {e}", file=sys.stderr)
         waited = 0

@@ -5,6 +5,7 @@ import { store, itemOf } from '../../store.js'
 import { big, fmt, fmtDate, num, pctTxt, progressOf, rp, x2 } from '../../lib/domain.js'
 import { MECH_LABEL, dilusi, flowOf, injSteps, kjppStatus, mechOf, peerMultiples, reservesOf, simDefaults, simKjpp, toM, txValue } from '../../lib/emitenExtra.js'
 import { KURS } from '../../lib/analysis.js'
+import { faktaAset, laporanMaterial } from '../../lib/pembaruan.js'
 
 // Tab Aset: seluruh analisa aset yang akan/sudah diinjeksi. Sumber: riset aset (aset-riset.json: jurnal, media, situs
 // perusahaan, regulator, aset lain milik pengendali), aset-verified.json (transaksi, KJPP, mekanisme), dan
@@ -115,44 +116,16 @@ onMounted(async () => {
   for (const key of ['per', 'ps', 'pbv']) if (m[key] != null && si[key] == null) si[key] = Math.round(m[key] * 100) / 100
   peerNote.value = m.n ? `median ${m.n} pembanding Stockbit` : 'data pembanding kosong'
 })
-// Fakta aset dari laporan terakhir (Stockbit Reports, semua emiten): poin kunci dokumen yang memuat angka aset
-// (luas, kolam, kapasitas, cadangan, produksi, porsi akuisisi, nilai, izin, KJPP) dimasukkan ke tabel Operasional
-// dengan tanggal laporannya, sehingga data aset selalu mengikuti keterbukaan terbaru tanpa menunggu riset diperbarui.
-const RUTIN_RX = /registrasi pemegang|bukti iklan|pemanggilan rapat|pemberitahuan rencana rapat|penggunaan dana hasil|laporan bulanan/i
-const BUKAN_ASET = /remunerasi|dividen|komisaris|direktur|direksi|kuorum|rups|iklan|pemanggilan|volatilitas|tidak mengetahui informasi|harga saham|dana cadangan|sumber daya manusia|komite|rugi (bersih|konsolidasi)|laba bersih|obligasi|\bowk\b|plafon pinjaman/i
-// Urutan menentukan kategori: akuisisi didahulukan agar "akuisisi saham PMA tambak" tidak tercatat sebagai kolam.
-const FAKTA = [
-  ['Akuisisi / kepemilikan', /akuisisi|pengambilalihan|mengakuisisi|\b\d[\d.,]*\s*%\s*saham|inbreng|cspa|ppjb/i],
-  ['Luas lahan / konsesi', /\b(\d[\d.,]*)\s*(ha|hektare|hektar|m2|m²|km2)\b|\bluas\b/i],
-  ['Kolam / unit produksi', /\bkolam\b/i],
-  ['Cadangan / sumber daya', /cadangan|sumber daya|jorc|kcmi/i],
-  ['Kapasitas / produksi', /kapasitas|produksi|\b\d[\d.,]*\s*(ton|mw|mmscfd|liter|unit|kwh|tbps|homepass)\b/i],
-  ['Izin / konsesi', /\biup\b|iujp|konsesi|izin usaha|perizinan/i],
-  ['Penilaian KJPP', /kjpp|penilai|valuasi independen|appraisal/i],
-  ['Nilai transaksi / pendanaan', /(nilai|senilai|sebesar|transaksi|pinjaman|rights issue|hmetd|penambahan modal)[^.]*\b(rp|usd|us\$|sgd)\s?\d/i],
-]
+// Fakta aset dari laporan terakhir (semua emiten): poin kunci laporan Stockbit yang disinkronkan server tiap 2 jam
+// (store.updates); bila belum ada di store, diambil langsung dari Stockbit. Lihat lib/pembaruan.js.
 const fakta = ref([])
-watch(() => props.ticker, async t => {
-  fakta.value = []
-  try {
-    const r = await api.get('/api/reports', { ticker: t })
-    const out = [], seen = new Set()
-    for (const x of r.items || []) {
-      if (RUTIN_RX.test(x.title || '')) continue
-      for (const pt of String(x.points || '').split(' · ').map(z => z.trim()).filter(Boolean)) {
-        if (BUKAN_ASET.test(pt)) continue
-        const f = FAKTA.find(([, rx]) => rx.test(pt))
-        if (!f) continue
-        const key = pt.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 60)
-        if (seen.has(key)) continue
-        seen.add(key)
-        out.push({ l: f[0], t: pt.replace(/\.$/, ''), d: String(x.date).slice(0, 10), url: x.url, judul: x.title,
-          baru: !!rs.value?.asOf && String(x.date).slice(0, 10) > rs.value.asOf })
-      }
-      if (out.length >= 10) break
-    }
-    fakta.value = out
-  } catch { fakta.value = [] }
+watch(() => [props.ticker, store.updates.length], async ([t]) => {
+  const asOf = rs.value?.asOf || ''
+  let reps = laporanMaterial(store.updates, t)
+  if (!reps.length) {
+    try { reps = (await api.get('/api/reports', { ticker: t })).items || [] } catch { reps = [] }
+  }
+  fakta.value = faktaAset(reps, { asOf })
 }, { immediate: true })
 
 const sources = computed(() => [...(rs.value?.sumber || []).map(x => ({ t: x.t, url: x.url, ket: JENIS[x.jenis] || x.jenis })),
