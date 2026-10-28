@@ -7,7 +7,8 @@ import { api } from '../api.js'
 import { fmt, fmtDate } from '../lib/domain.js'
 
 const d = ref(null), err = ref('')
-api.get('/api/ihsg-astro').then(r => { if (r.error) err.value = r.error; else d.value = r }, e => { err.value = e.message || String(e) })
+const URL_DATA = '/api/ihsg-astro'
+api.get(URL_DATA).then(r => { if (r.error) err.value = r.error; else d.value = r }, e => { err.value = e.message || String(e) })
 
 const n0 = v => v == null ? '–' : Math.round(v).toLocaleString('id-ID')
 const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 2) + '%'
@@ -22,6 +23,19 @@ const tangga = computed(() => {
   return rows.sort((a, b) => b.v - a.v)
 })
 const jarak = v => (v / d.value.harga - 1) * 100
+
+// Unduh riset (PDF, format sama dengan "Unduh riset IHSG"): harga IHSG disegarkan dulu agar data terbaru.
+const busy = ref(false), errPdf = ref('')
+async function unduh() {
+  busy.value = true; errPdf.value = ''
+  try {
+    const [{ jsPDF }, mod] = await Promise.all([import('jspdf'), import('../lib/ihsgModelPdf.js')])
+    try { await api.get('/api/ihsg-outlook', { segar: 1 }) } catch { /* gagal segarkan: pakai data tersimpan */ }
+    let data = d.value
+    try { const r = await api.get(URL_DATA); if (!r.error) { data = r; d.value = r } } catch { /* pakai data yang tampil */ }
+    ;(await mod.astroPdf(data, jsPDF)).save(mod.astroPdfName())
+  } catch (e) { errPdf.value = 'PDF gagal dibuat: ' + (e.message || e) } finally { busy.value = false }
+}
 
 // Grafik: harga 120 hari + garis level Fibonacci ayunan terakhir, penanda fase bulan & tanggal Fibonacci ke depan,
 // dan jalur proyeksi. Sumbu X = hari bursa (Senin–Jumat); tanggal ke depan dipetakan dengan menghitung hari kerja.
@@ -61,6 +75,10 @@ const chart = computed(() => {
 
 <template>
   <section class="as">
+    <div class="unduh">
+      <button type="button" class="btn" :disabled="busy || !d" @click="unduh">{{ busy ? 'Menyiapkan PDF…' : '⬇ Unduh riset Astronacci (PDF)' }}</button>
+      <span v-if="errPdf" class="small muted">{{ errPdf }}</span>
+    </div>
     <p class="small muted intro">Perhitungan <b>Astronacci</b>: menggabungkan <b>siklus bulan</b> (Financial Astrology) dengan <b>Fibonacci</b> harga dan waktu untuk IHSG.
       Fase bulan dihitung astronomis (waktu WIB); level dan tanggal Fibonacci dihitung otomatis dari titik balik harga harian 1 tahun.</p>
     <p v-if="err" class="muted">{{ err }}</p>
@@ -190,6 +208,7 @@ const chart = computed(() => {
 
 <style scoped>
 .intro{margin:0 0 12px;max-width:95ch}
+.unduh{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin:0 0 10px}
 .top{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:14px}
 .card{border:1px solid var(--rule);background:var(--sheet);padding:10px 14px}
 .big{font:700 28px/1.1 var(--f-display);margin:4px 0}
