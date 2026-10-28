@@ -75,6 +75,63 @@ def moon_phases(start: date, end: date) -> list[dict]:
         k += 1
 
 
+def moon_declination(day: date) -> float:
+    """Deklinasi bulan (derajat) pukul 12.00 WIB, suku utama Meeus bab 47 (galat ~0,3°, cukup untuk titik ekstrem harian)."""
+    jd = 2451545.0 + (datetime(day.year, day.month, day.day, 5, tzinfo=timezone.utc) - datetime(2000, 1, 1, 12, tzinfo=timezone.utc)).total_seconds() / 86400
+    T = (jd - 2451545.0) / 36525
+    r = math.radians
+    Lp = 218.3164477 + 481267.88123421 * T
+    D = r(297.8501921 + 445267.1114034 * T)
+    M = r(357.5291092 + 35999.0502909 * T)
+    Mp = r(134.9633964 + 477198.8675055 * T)
+    F = r(93.2720950 + 483202.0175233 * T)
+    lam = r(Lp + 6.289 * math.sin(Mp) + 1.274 * math.sin(2 * D - Mp) + 0.658 * math.sin(2 * D) + 0.214 * math.sin(2 * Mp)
+            - 0.186 * math.sin(M) - 0.114 * math.sin(2 * F))
+    bet = r(5.128 * math.sin(F) + 0.281 * math.sin(Mp + F) + 0.278 * math.sin(Mp - F) + 0.173 * math.sin(2 * D - F))
+    eps = r(23.439291 - 0.0130042 * T)
+    return math.degrees(math.asin(math.sin(bet) * math.cos(eps) + math.cos(bet) * math.sin(eps) * math.sin(lam)))
+
+
+def declination_events(start: date, end: date) -> list[dict]:
+    """Deklinasi maksimum utara/selatan dan saat bulan melintasi ekuator langit (deklinasi 0°)."""
+    days = [start + timedelta(days=i) for i in range(-1, (end - start).days + 2)]
+    dec = [moon_declination(x) for x in days]
+    out = []
+    for i in range(1, len(days) - 1):
+        if not (start <= days[i] <= end):
+            continue
+        if dec[i] > dec[i - 1] and dec[i] >= dec[i + 1]:
+            out.append({"tgl": days[i].isoformat(), "jenis": "Deklinasi maksimum utara", "v": round(dec[i], 1)})
+        elif dec[i] < dec[i - 1] and dec[i] <= dec[i + 1]:
+            out.append({"tgl": days[i].isoformat(), "jenis": "Deklinasi maksimum selatan", "v": round(dec[i], 1)})
+        if dec[i - 1] * dec[i] < 0:
+            out.append({"tgl": days[i].isoformat(), "jenis": "Melintasi ekuator", "v": round(dec[i], 1)})
+    return out
+
+
+def time_clusters(start: date, end: date, fib_dates: list[dict] | None = None, tol: int = 2) -> list[dict]:
+    """Time cluster: tanggal yang berdekatan (±tol hari kalender) dengan >= 2 jenis siklus berbeda:
+    fase bulan utama (bulan baru/purnama), titik deklinasi bulan, dan hitungan waktu Fibonacci."""
+    ev = [{"tgl": f["tgl"], "jenis": f["fase"], "grup": "fase"} for f in moon_phases(start, end) if f["utama"]]
+    ev += [{"tgl": e["tgl"], "jenis": e["jenis"], "grup": "deklinasi"} for e in declination_events(start, end)]
+    ev += [{"tgl": w["tgl"], "jenis": f"Fibonacci {w['hitungan']} hari ({w['dari']})", "grup": "fibonacci"} for w in (fib_dates or [])]
+    ev.sort(key=lambda e: e["tgl"])
+    out, used = [], set()
+    for i, e in enumerate(ev):
+        if i in used:
+            continue
+        t0 = date.fromisoformat(e["tgl"])
+        grp = [j for j, x in enumerate(ev) if abs((date.fromisoformat(x["tgl"]) - t0).days) <= tol]
+        kinds = {ev[j]["grup"] for j in grp}
+        if len(kinds) >= 2:
+            used.update(grp)
+            ds = sorted(date.fromisoformat(ev[j]["tgl"]) for j in grp)
+            pusat = ds[len(ds) // 2]
+            out.append({"tgl": pusat.isoformat(), "dari": ds[0].isoformat(), "sampai": ds[-1].isoformat(),
+                        "siklus": [ev[j]["jenis"] for j in grp], "kekuatan": len(grp)})
+    return out
+
+
 def _trading_days_after(d: date, n: int) -> date:
     """Tanggal n hari bursa (Senin–Jumat) setelah d; libur bursa diabaikan (perkiraan)."""
     x = d
@@ -107,6 +164,85 @@ def fib_levels(hi: float, lo: float, naik: bool) -> list[dict]:
     return out
 
 
+def projection(p0: float, last: date, fase: list[dict], uji: list[dict], support: list[int], resist: list[int], ayunan: dict) -> dict:
+    """Jalur proyeksi: dari harga kini melewati bulan baru/purnama berikutnya; tiap fase menggeser harga sebesar median
+    return 5 hari setelah fase itu (uji historis), dibatasi level Fibonacci terdekat. Bias & skenario dari arah jalur."""
+    med = {u["fase"]: u["median5"] for u in uji}
+    utama = [f for f in fase if f["utama"] and date.fromisoformat(f["tgl"]) > last][:4]
+    lo_b = support[-1] if support else p0 * 0.85
+    hi_b = resist[-1] if resist else p0 * 1.15
+    jalur, harga = [{"tgl": last.isoformat(), "v": round(p0)}], p0
+    for f in utama:
+        t = date.fromisoformat(f["tgl"])
+        jalur.append({"tgl": t.isoformat(), "v": round(harga), "fase": f["fase"]})
+        harga = min(hi_b, max(lo_b, harga * (1 + (med.get(f["fase"]) or 0) / 100)))
+        jalur.append({"tgl": _trading_days_after(t, 5).isoformat(), "v": round(harga)})
+    ubah = (harga / p0 - 1) * 100
+    bias = "naik" if ubah > 0.5 else "turun" if ubah < -0.5 else "mendatar"
+    s1, r1 = (support[0] if support else None), (resist[0] if resist else None)
+    s2, r2 = (support[1] if len(support) > 1 else None), (resist[1] if len(resist) > 1 else None)
+    tgl = utama[-1]["tgl"] if utama else None
+    n = lambda v: f"{v:,}".replace(",", ".")
+    if bias == "naik":
+        sk = [{"nama": "Skenario utama", "t": f"Menguat menuju resistance Fibonacci {n(r1)}" + (f", lalu {n(r2)}" if r2 else "") + (f", selama bertahan di atas {n(s1)}." if s1 else ".") if r1 else "Menguat bertahap."},
+              {"nama": "Batal bila", "t": f"Ditutup di bawah {n(s1)}" + (f"; ruang turun ke {n(s2)}." if s2 else ".") if s1 else "Harga jebol dasar ayunan."}]
+    elif bias == "turun":
+        sk = [{"nama": "Skenario utama", "t": f"Melemah menguji support Fibonacci {n(s1)}" + (f", lalu {n(s2)}" if s2 else "") + (f", selama tertahan di bawah {n(r1)}." if r1 else ".") if s1 else "Melemah bertahap."},
+              {"nama": "Batal bila", "t": f"Ditutup di atas {n(r1)}" + (f"; ruang naik ke {n(r2)}." if r2 else ".") if r1 else "Harga tembus puncak ayunan."}]
+    else:
+        sk = [{"nama": "Skenario utama", "t": f"Bergerak mendatar di kisaran {n(s1)}–{n(r1)}." if r1 and s1 else "Mendatar."},
+              {"nama": "Pemicu arah", "t": "Tembus atas kisaran membuka ruang naik; jebol bawah membuka ruang turun."}]
+    return {"bias": bias, "ubah": round(ubah, 2), "target": round(harga), "sampai": tgl, "jalur": jalur, "skenario": sk,
+            "ayunan": f"{ayunan['arah']} {n(ayunan['rendah'])}–{n(ayunan['tinggi'])}",
+            "cara": "Tiap bulan baru/purnama berikutnya menggeser harga sebesar median return 5 hari setelah fase yang sama dalam 1 tahun terakhir, "
+                    "dibatasi level Fibonacci terluar. Bias = arah jalur sampai fase keempat."}
+
+
+def rekomendasi(a: dict, ts: dict | None = None, sent: dict | None = None) -> dict:
+    """Rekomendasi tindakan IHSG dari Astronacci (time cluster + level Fibonacci), dikonfirmasi Time Series & sentimen."""
+    p0, sup, res = a["harga"], a["support"], a["resistance"]
+    s1, s2 = (sup + [None, None])[:2]
+    r1, r2 = (res + [None, None])[:2]
+    n = lambda v: "–" if v is None else f"{v:,}".replace(",", ".")
+    kl = a.get("klaster") or []
+    k0 = kl[0] if kl else None
+    bias_a = a["proyeksi"]["bias"]
+    ts_ubah = None
+    if ts and ts.get("proyeksi"):
+        ts_ubah = next((x["ubah"] for x in ts["proyeksi"] if x["h"] == 21), None)
+    bias_t = None if ts_ubah is None else "naik" if ts_ubah > 0.5 else "turun" if ts_ubah < -0.5 else "mendatar"
+    arah_s = (sent or {}).get("arah")
+    suara = [x for x in (bias_a, bias_t, {"positif": "naik", "negatif": "turun"}.get(arah_s, "mendatar")) if x]
+    naik, turun = suara.count("naik"), suara.count("turun")
+    jarak_s1 = (p0 / s1 - 1) * 100 if s1 else None
+    if k0 and k0["label"] == "Time support" and naik >= turun:
+        tindakan = "Akumulasi bertahap"
+        detail = (f"Masuk bertahap di sekitar time support {k0['tgl'][8:]}/{k0['tgl'][5:7]} pada area {n(s1)}–{n(round(p0))}; "
+                  f"batas risiko bila ditutup di bawah {n(s2 or s1)}; target {n(r1)} lalu {n(r2)} menuju time cluster berikutnya.")
+    elif k0 and k0["label"] == "Time resistance" and turun >= naik:
+        tindakan = "Kurangi posisi / ambil untung"
+        detail = (f"Kurangi posisi menjelang time resistance {k0['tgl'][8:]}/{k0['tgl'][5:7]}, terutama bila harga mendekati {n(r1)}; "
+                  f"masuk kembali di support {n(s1)} bila bertahan.")
+    elif naik > turun:
+        tindakan = "Beli saat koreksi"
+        detail = f"Bias naik, tetapi tunggu harga mendekati support {n(s1)} untuk rasio untung-rugi lebih baik; target {n(r1)}, batas risiko di bawah {n(s2 or s1)}."
+    elif turun > naik:
+        tindakan = "Tunggu / defensif"
+        detail = f"Bias turun: hindari menambah posisi sampai harga bertahan di atas {n(r1)} atau menyentuh support {n(s1)} pada time support berikutnya."
+    else:
+        tindakan = "Netral, perdagangan rentang"
+        detail = f"Sinyal belum searah: beli dekat {n(s1)}, jual dekat {n(r1)}; keluar bila salah satu batas jebol."
+    konfirmasi = [
+        {"nama": "Astronacci (fase bulan + Fibonacci)", "arah": bias_a},
+        {"nama": "Time Series (gabungan model, 1 bulan)", "arah": bias_t or "–", "nilai": ts_ubah},
+        {"nama": "Sentimen berita IHSG", "arah": arah_s or "–"},
+    ]
+    keyakinan = "tinggi" if max(naik, turun) == 3 else "sedang" if max(naik, turun) == 2 else "rendah"
+    return {"tindakan": tindakan, "detail": detail, "konfirmasi": konfirmasi, "keyakinan": keyakinan,
+            "jarakSupport": None if jarak_s1 is None else round(jarak_s1, 1),
+            "catatan": "Rekomendasi otomatis untuk IHSG secara umum (bukan saham tertentu). Gunakan batas risiko; siklus waktu bersifat perkiraan ±2 hari."}
+
+
 def build(bars: list[dict], today: date | None = None) -> dict | None:
     bars = [b for b in bars if b.get("c")]
     if len(bars) < 120:
@@ -132,7 +268,8 @@ def build(bars: list[dict], today: date | None = None) -> dict | None:
          "tinggi": round(hi2), "rendah": round(lo2), "arah": "naik" if naik_kini else "turun", "level": fib_levels(hi2, lo2, naik_kini)},
     ]
     # Level terdekat di atas/bawah harga kini (gabungan dua ayunan).
-    semua = sorted({x["v"] for a in ayunan for x in a["level"]})
+    # Level = retracement/ekstensi + titik puncak/lembah ayunan itu sendiri (0% dan 100%).
+    semua = sorted({x["v"] for a in ayunan for x in a["level"]} | {a[k] for a in ayunan for k in ("tinggi", "rendah")})
     support = [v for v in semua if v < p0][-2:][::-1]
     resist = [v for v in semua if v > p0][:2]
 
@@ -194,7 +331,30 @@ def build(bars: list[dict], today: date | None = None) -> dict | None:
         "(selisih < 10 poin persentase). Siklus bulan dipakai sebagai penanda waktu tambahan; keputusan tetap bertumpu pada level Fibonacci dan konfirmasi harga."
     )
     nxt = [f for f in fase if date.fromisoformat(f["tgl"]) >= today][:6]
-    return {"tanggal": bars[-1]["d"], "harga": p0, "ayunan": ayunan, "support": support, "resistance": resist,
+
+    # Time cluster ke depan; label berselang-seling mulai dari arah 10 hari terakhir: harga yang sedang turun menuju
+    # klaster = calon time support (dasar), yang sedang naik = calon time resistance (puncak).
+    klaster = [k for k in time_clusters(today, akhir, waktu) if k["tgl"] >= today.isoformat()][:6]
+    turun10 = c[-1] < c[-11]
+    for i, k in enumerate(klaster):
+        sup = turun10 if i % 2 == 0 else not turun10
+        k["label"] = "Time support" if sup else "Time resistance"
+    # Uji historis: klaster bulan (fase + deklinasi) 1 tahun lalu vs titik balik ±2 hari bursa.
+    kh = time_clusters(d[0], d[-1])
+    hit = 0
+    nk = 0
+    for k in kh:
+        i = near_idx(date.fromisoformat(k["tgl"]))
+        if i is None or i < 5 or i + 5 >= len(c):
+            continue
+        nk += 1
+        hit += any(j in piv for j in range(i - 2, i + 3))
+    uji_klaster = {"n": nk, "balik": round(hit / nk * 100) if nk else None, "acak": round(acak)}
+    dekl = declination_events(today, today + timedelta(days=45))
+    proy = projection(p0, d[-1], fase, uji, support, resist, ayunan[1])
+    return {"tanggal": bars[-1]["d"], "harga": p0, "ayunan": ayunan, "support": support, "resistance": resist, "proyeksi": proy,
+            "klaster": klaster, "ujiKlaster": uji_klaster, "deklinasi": dekl,
+            "riwayat": [{"d": b["d"][:10], "c": b["c"], "h": b["h"], "l": b["l"]} for b in bars[-120:]],
             "fase": nxt, "waktu": waktu[:14], "jendela": jendela[:8], "uji": uji, "acak": round(acak),
             "kesimpulan": kesimpulan,
             "catatan": "Fase bulan dihitung astronomis (Meeus, WIB). Hitungan hari bursa mengabaikan libur nasional, sehingga tanggal bisa bergeser 1–2 hari. "
