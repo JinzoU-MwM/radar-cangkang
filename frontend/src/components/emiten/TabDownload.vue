@@ -21,6 +21,9 @@ const guess = computed(() => {
 // Isi presentasi ringkas (maks. ±26 slide, poin penting saja), berurutan seperti karya ilmiah: profil & data,
 // analisa, lalu rekomendasi dan kesimpulan di akhir (lihat buildDeck di lib/deck.js).
 const SECTIONS = [
+  // Ringkasan eksekutif di awal: headline transaksi (diagram struktur) dan rekomendasi investasi singkat.
+  ['Ringkasan', [['Ringkasan transaksi', 'headline rencana korporasi, diagram pengendali → emiten ← aset, angka kunci'],
+    ['Ringkasan rekomendasi', 'tindakan, area beli, target, batas risiko, alasan & risiko']]],
   ['Profil', [['Profil perusahaan', 'angka kunci, pemegang saham, potensi target harga'], ['Pengurus', 'direksi & komisaris']]],
   ['Story & Pengendali', [['Pengendali', 'struktur & aktor'], ['Pengendali & key person', 'UBO, harga masuk, riwayat hukum'],
     ['Transformasi bisnis', 'bisnis lama → aset injeksi → bisnis baru'], ['Progres', 'tonggak transaksi']]],

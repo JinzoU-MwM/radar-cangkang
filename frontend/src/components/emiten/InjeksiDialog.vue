@@ -48,7 +48,8 @@ const flow = computed(() => (a.value || sv.value?.injectType) ? flowOf({
 const steps = computed(() => injSteps(mech.value, { sv: sv.value, ms: progressOf(item.value || { ticker: props.ticker }, { aset: store.aset, verified: store.verified }).ms }))
 const flowLabel = computed(() => flow.value ? [...flow.value.boxes.map(b => `${b.t1} (${b.t2})`), ...flow.value.arrows.map(x => x.lines.join(' '))].join('; ') : '')
 
-// Simulasi nilai KJPP: isian Rp miliar; kelipatan pembanding dari Stockbit.
+// Simulasi nilai KJPP otomatis (tanpa isian manual): data aset (aset-verified), kelipatan median pembanding Stockbit,
+// dan acuan USD/ton cadangan untuk tambang. Satuan Rp miliar.
 const si = reactive({ tx: null, porsi: 100, laba: null, pend: null, eq: null, res: null, usdTon: null, per: null, ps: null, pbv: null })
 const sd = computed(() => simDefaults(a.value, sv.value))
 Object.assign(si, Object.fromEntries(Object.entries(sd.value).filter(([key]) => key in si)))
@@ -65,17 +66,23 @@ const SIM_IN = computed(() => [
   ['laba', 'Laba bersih aset 100% (Rp miliar/tahun)', perHint.value],
   ['pend', 'Pendapatan aset 100% (Rp miliar/tahun)', perHint.value],
   ['eq', 'Ekuitas aset 100% (Rp miliar)', 'nilai buku'],
-  ...(mining.value ? [['res', 'Cadangan aset 100% (juta ton)', res.value ? [res.value.kind, String(ast.value.tambang?.kalori || '').slice(0, 40)].filter(Boolean).join(' · ') : 'isi bila diketahui'],
-    ['usdTon', 'Nilai per ton cadangan (USD/ton)', 'asumsi Anda; kosongkan bila tidak yakin']] : []),
+  ...(mining.value ? [['res', 'Cadangan aset 100% (juta ton)', res.value ? [res.value.kind, String(ast.value.tambang?.kalori || '').slice(0, 40)].filter(Boolean).join(' · ') : 'belum diungkap'],
+    ['usdTon', 'Nilai per ton cadangan (USD/ton)', sd.value.usdTonNote || 'tidak ada acuan untuk komoditas ini']] : []),
   ['per', 'PER pembanding (×)', peerNote.value],
   ['ps', 'P/S pembanding (×)', peerNote.value],
   ['pbv', 'PBV pembanding (×)', peerNote.value],
 ])
-const perHint = computed(() => fin.value.periode ? `${fin.value.periode}${sd.value.af !== 1 ? ` · disetahunkan ×${fmt(sd.value.af, 2)}` : ''}` : 'isi bila diketahui')
+const perHint = computed(() => fin.value.periode ? `${fin.value.periode}${sd.value.af !== 1 ? ` · disetahunkan ×${fmt(sd.value.af, 2)}` : ''}` : 'belum diungkap')
+// Tampilan nilai yang dipakai (hanya baca).
+const showVal = (key, v) => v == null || v === '' ? 'belum ada' : key === 'porsi' ? fmt(v, 1) + '%' : ['per', 'ps', 'pbv'].includes(key) ? fmt(v, 2) + '×'
+  : key === 'res' ? fmt(v, 1) + ' juta ton' : key === 'usdTon' ? 'USD' + fmt(v, 2) : 'Rp' + fmt(v, 1) + ' M'
 
-// Dampak ke saham emiten: saham baru, porsi publik, nilai buku per saham.
-const dl = reactive({ V: toM(kc.value.nilaiDibayarSaham ?? val.value) ?? 0, C: toM(kc.value.kasSegar) ?? 0,
-  P: kc.value.hargaPelaksanaan || item.value?.tender?.price || num(item.value?.price) || 0, T: 0 })
+// Dampak ke saham emiten (otomatis): nilai dibayar dengan saham = nilai transaksi (atau nilai tengah simulasi bila
+// transaksi belum diumumkan), kas dari kalkulator analis, harga pelaksanaan = harga analis/PTW/harga pasar, publik tidak menebus.
+const dl = computed(() => ({ V: toM(kc.value.nilaiDibayarSaham ?? val.value ?? sim.value.mid) ?? 0, C: toM(kc.value.kasSegar) ?? 0,
+  P: kc.value.hargaPelaksanaan || item.value?.tender?.price || num(item.value?.price) || 0, T: 0 }))
+const dlSrc = computed(() => ({ V: kc.value.nilaiDibayarSaham != null ? 'kalkulator analis' : val.value ? 'nilai transaksi diumumkan' : sim.value.mid != null ? 'nilai tengah simulasi' : 'belum ada',
+  C: kc.value.kasSegar != null ? 'kalkulator analis' : 'tidak ada setoran tunai', P: kc.value.hargaPelaksanaan ? 'kalkulator analis' : item.value?.tender?.price ? 'harga PTW' : 'harga pasar terakhir', T: 'skenario terburuk bagi publik' }))
 const base = computed(() => {
   // Stockbit dulu, lalu data radar, lalu angka di pandangan analis.
   const st = prof.value?.stats || {}, pd = pa.value?.dilusi || {}, price = num(item.value?.price) ?? pa.value?.hargaAcuan ?? null
@@ -83,19 +90,18 @@ const base = computed(() => {
   return { S0, E0: prof.value?.metrics?.equity ?? 0, f: (st.freeFloat ?? num(item.value?.float) ?? pd.porsiPublikSekarang ?? 0) / 100, price }
 })
 const out = computed(() => {
-  const b = base.value, V = (+dl.V || 0) * 1e9, C = (+dl.C || 0) * 1e9
-  const d = dilusi({ S0: b.S0, E0: b.E0, f: b.f, V, C, P: +dl.P, tk: (+dl.T || 0) / 100, h: 1 })
+  const b = base.value, V = (+dl.value.V || 0) * 1e9, C = (+dl.value.C || 0) * 1e9
+  const d = dilusi({ S0: b.S0, E0: b.E0, f: b.f, V, C, P: +dl.value.P, tk: (+dl.value.T || 0) / 100, h: 1 })
   if (!d) return null
   // Nilai buku per saham bila aset bernilai sebesar nilai tengah simulasi (bukan nilai transaksi).
   const vpsSim = sim.value.mid != null ? ((b.E0 || 0) + sim.value.mid + C) / d.S1 : null
   return { ...d, vpsSim }
 })
-const DL_IN = [['V', 'Nilai dibayar dengan saham baru (Rp miliar)', 'inbreng / konversi utang'], ['C', 'Kas segar masuk (Rp miliar)', 'setoran tunai HMETD'],
-  ['P', 'Harga pelaksanaan (Rp)', 'harga saham baru'], ['T', 'Publik menebus (%)', '0 = publik tidak ikut']]
-const useMid = () => { if (sim.value.mid != null) dl.V = toM(sim.value.mid) }
+const DL_IN = [['V', 'Nilai dibayar dengan saham baru'], ['C', 'Kas segar masuk'], ['P', 'Harga pelaksanaan'], ['T', 'Publik menebus']]
+const dlShow = (key, v) => key === 'P' ? rp(v) : key === 'T' ? fmt(v) + '%' : 'Rp' + fmt(v, 1) + ' M'
 
 onMounted(async () => {
-  peerNote.value = peers.value.length ? 'memuat pembanding…' : 'isi manual'
+  peerNote.value = peers.value.length ? 'memuat pembanding…' : 'pembanding belum ditentukan'
   const [own, ...ps] = await Promise.all([props.ticker, ...peers.value].map(t => api.get('/api/profile', { ticker: t }).catch(() => null)))
   prof.value = own
   if (!peers.value.length) return
@@ -104,7 +110,6 @@ onMounted(async () => {
   for (const key of ['per', 'ps', 'pbv']) if (m[key] != null && si[key] == null) si[key] = Math.round(m[key] * 100) / 100
   peerNote.value = m.n ? `median ${m.n} pembanding Stockbit` : 'data pembanding kosong'
 })
-const fid = key => `sim-${props.ticker}-${key}`
 const sources = computed(() => [...(a.value?.sumber || []).map(t => ({ t })), ...(r.value?.sumber || [])])
 </script>
 
@@ -188,18 +193,19 @@ const sources = computed(() => [...(a.value?.sumber || []).map(t => ({ t })), ..
         Angka di sini tidak resmi dan tidak menambah progress.
       </p>
       <p v-if="ast.nama" class="small">Aset: <b>{{ ast.nama }}</b><template v-if="ast.porsi"> · porsi {{ ast.porsi }}</template><template v-if="ast.sektor"> · sektor {{ ast.sektor }}</template></p>
-      <div class="inputs">
-        <label v-for="[key, label, hint] in SIM_IN" :key="key" class="in" :for="fid(key)">
-          <span class="small">{{ label }}</span>
-          <input :id="fid(key)" v-model.number="si[key]" class="field" type="number" step="any">
-          <em class="small muted">{{ hint }}</em>
-        </label>
-      </div>
+      <!-- Data yang dipakai: otomatis dari dokumen aset dan Stockbit (tidak ada isian manual). -->
+      <dl class="inputs">
+        <div v-for="[key, label, hint] in SIM_IN" :key="key" class="in">
+          <dt class="small">{{ label }}</dt>
+          <dd class="v1" :class="{ muted: si[key] == null }">{{ showVal(key, si[key]) }}</dd>
+          <dd class="small muted">{{ hint }}</dd>
+        </div>
+      </dl>
       <p class="small muted">{{ peerUsed.length ? 'Pembanding (Stockbit): ' + peerUsed.join(', ') : 'Pembanding: ' + (a?.pembanding?.join(', ') || 'belum ditentukan') }}</p>
       <p v-if="sim.implied" class="small">Nilai transaksi tersirat <b>Rp{{ fmt(Math.round(sim.implied)) }}/ton</b> (sekitar USD{{ fmt(sim.implied / KURS.USD, 2) }}/ton) atas {{ fmt(si.res * sim.por, 1) }} juta ton porsi yang masuk.</p>
       <p v-if="sim.mid == null" class="note">
-        <template v-if="si.laba > 0 || si.pend > 0 || si.eq > 0">Belum bisa disimulasikan: kelipatan pembanding (PER, P/S, atau PBV) belum ada. Isi salah satunya di atas.</template>
-        <template v-else>Belum bisa disimulasikan: data keuangan aset target (laba, pendapatan, atau ekuitas) belum diungkap<template v-if="mining">, dan nilai per ton cadangan belum diisi</template>. Isi angkanya di atas sebagai skenario.</template>
+        <template v-if="si.laba > 0 || si.pend > 0 || si.eq > 0">Belum bisa disimulasikan: kelipatan pembanding (PER, P/S, atau PBV) dari Stockbit belum tersedia.</template>
+        <template v-else>Belum bisa disimulasikan: data keuangan aset target (laba, pendapatan, atau ekuitas) belum diungkap<template v-if="mining"> dan cadangan tambang belum diungkap</template>. Simulasi terhitung otomatis begitu datanya terbit (keterbukaan informasi / laporan KJPP).</template>
       </p>
       <template v-else>
         <table class="ledger">
@@ -216,16 +222,15 @@ const sources = computed(() => [...(a.value?.sumber || []).map(t => ({ t })), ..
       <h4 class="lbl sub">Dampak ke saham {{ ticker }}</h4>
       <p v-if="executed" class="small muted">Penerbitan saham baru sudah tereksekusi, jadi jumlah saham dan porsi publik saat ini sudah memuat dilusinya.</p>
       <template v-else>
-        <div class="inputs">
-          <label v-for="[key, label, hint] in DL_IN" :key="key" class="in" :for="fid('d' + key)">
-            <span class="small">{{ label }}</span>
-            <input :id="fid('d' + key)" v-model.number="dl[key]" class="field" type="number" step="any" min="0">
-            <em class="small muted">{{ hint }}</em>
-          </label>
-        </div>
-        <button v-if="sim.mid != null" type="button" class="btn" @click="useMid">Pakai nilai tengah simulasi ({{ big(sim.mid) }})</button>
+        <dl class="inputs">
+          <div v-for="[key, label] in DL_IN" :key="key" class="in">
+            <dt class="small">{{ label }}</dt>
+            <dd class="v1">{{ dlShow(key, dl[key]) }}</dd>
+            <dd class="small muted">{{ dlSrc[key] }}</dd>
+          </div>
+        </dl>
         <p v-if="!base.S0" class="small muted">Jumlah saham {{ ticker }} belum ada, jadi dilusi belum bisa dihitung.</p>
-        <p v-else-if="!out" class="small muted">Isi harga pelaksanaan.</p>
+        <p v-else-if="!out" class="small muted">Harga pelaksanaan belum tersedia.</p>
         <dl v-else class="out" aria-live="polite">
           <div><dt>Saham baru</dt><dd><b>{{ fmt(out.N / 1e6) }} jt</b><span>{{ x2(out.N / out.S0) }} saham sekarang</span></dd></div>
           <div><dt>Porsi publik</dt><dd><b>{{ fmt(out.pubAfter * 100, 2) }}%</b><span>dari {{ fmt(out.f * 100, 2) }}%</span></dd></div>
@@ -348,9 +353,8 @@ const sources = computed(() => [...(a.value?.sumber || []).map(t => ({ t })), ..
 .inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:3px 14px;margin:10px 0}
 /* Subgrid: label, isian, dan petunjuk sejajar antar kolom walau label terlipat. */
 .in{display:grid;grid-template-rows:subgrid;grid-row:span 3;align-items:end;margin-bottom:8px}
-.in em{align-self:start}
-.in input{width:100%;font:700 16px var(--f-display)}
-.in em{font-style:normal}
+.in dd{margin:0;align-self:start}
+.in .v1{font:700 16px var(--f-display);align-self:end}
 .note{padding:8px 12px;background:var(--warn-bg);color:var(--warn)}
 .verdict{padding:8px 12px;font-weight:600}
 .v-good{background:var(--good-bg);color:var(--good)}

@@ -81,8 +81,9 @@ describe('buildDeck: rekomendasi & PDF', () => {
     d2.rec = recommend(d2)
     const pres = buildDeck(PptxGenJS, d2, Object.values(THEMES).flat()[0])
     const titles = pres.slides.map(s => s._slideObjects.map(o => o.text?.[0]?.text || '').join(' '))
-    // Struktur karya ilmiah: ringkasan dan rekomendasi di akhir, sebelum kesimpulan.
-    const iRek = titles.findIndex(t => /REKOMENDASI/.test(t)), iSkor = titles.findIndex(t => /SKOR ANALISIS/.test(t))
+    // Ringkasan rekomendasi di awal (setelah sampul); rekomendasi lengkap tetap di akhir, sebelum kesimpulan.
+    expect(titles.findIndex(t => /RINGKASAN REKOMENDASI/.test(t))).toBe(1)
+    const iRek = titles.findIndex(t => /\d+\. REKOMENDASI/.test(t)), iSkor = titles.findIndex(t => /SKOR ANALISIS/.test(t))
     expect(iRek).toBeGreaterThan(iSkor)
     expect(iRek).toBeGreaterThan(titles.length - 6)
     expect((await deckToPdf(pres, jsPDF)).getNumberOfPages()).toBe(pres.slides.length)
