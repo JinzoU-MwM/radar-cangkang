@@ -3,10 +3,10 @@ import { computed, ref, watch } from 'vue'
 import { chText, meaningful } from '../../lib/diff.js'
 import { store, loadDiff, itemOf } from '../../store.js'
 import { tlEvents, fmtDate } from '../../lib/domain.js'
-import { isBackdoorNews, backdoorTickers } from '../../lib/news.js'
+import { isBackdoorNews, backdoorTickers, MARKET_WRAP } from '../../lib/news.js'
 
-// Tiga panel kerja: yang berubah sejak kemarin/7 hari (snapshot harian server), keterbukaan backdoor
-// 3 hari terakhir, dan tanggal jatuh tempo 14 hari ke depan.
+// Empat panel kerja: yang berubah sejak kemarin/7 hari (snapshot harian server), keterbukaan backdoor
+// 3 hari terakhir, tanggal jatuh tempo 14 hari ke depan, dan update terbaru saham di Monitor (dengan pencarian).
 // note = ringkasan laporan baru sejak ditandai dilihat (dari MonitorView); seen = tombol tandai.
 defineProps({ note: String, canMark: Boolean })
 const emit = defineEmits(['seen'])
@@ -28,6 +28,25 @@ const changed = computed(() => (diff.value?.items || [])
   .filter(x => x.ch.length)
   .sort((a, b) => b.ch.length - a.ch.length || a.t.localeCompare(b.t)))
 const baseTxt = computed(() => diff.value?.base ? fmtDate(diff.value.base) : '')
+
+// Update terbaru saham di Monitor: tanpa pencarian = update terakhir tiap saham (terbaru dulu);
+// dengan pencarian (kode/nama) = beberapa update terakhir saham yang cocok, beserta ringkasannya.
+const q = ref('')
+const kodeMonitor = computed(() => new Set(store.items.map(d => d.ticker)))
+const cocok = computed(() => {
+  const k = q.value.trim().toUpperCase()
+  if (!k) return null
+  return new Set(store.items.filter(d => d.ticker.startsWith(k) || (d.name || '').toUpperCase().includes(k)).map(d => d.ticker))
+})
+const terbaru = computed(() => {
+  // Rangkuman pasar (IHSG, saham pilihan) hanya menyebut kode sambil lalu: bukan update emiten itu.
+  const ups = store.updates.filter(u => u.ticker && u.date && kodeMonitor.value.has(u.ticker) && !MARKET_WRAP.test(u.title || ''))
+    .sort((a, b) => b.date.localeCompare(a.date))
+  if (cocok.value) return ups.filter(u => cocok.value.has(u.ticker)).slice(0, 8)
+  const seen = new Set()
+  return ups.filter(u => !seen.has(u.ticker) && seen.add(u.ticker)).slice(0, 8)
+})
+const ringkas = u => String(u.summary || '').replace(/\s*\(Ringkasan AI Stockbit\)\s*$/, '').slice(0, 220)
 
 const due = computed(() => store.items.flatMap(d => tlEvents(d).filter(e => e.date >= today && e.date <= day(14)).map(e => ({ ...e, t: d.ticker })))
   .sort((a, b) => a.date.localeCompare(b.date)))
@@ -76,17 +95,39 @@ const due = computed(() => store.items.flatMap(d => tlEvents(d).filter(e => e.da
       </ol>
       <p v-else class="muted small">Tidak ada tanggal tender atau tahapan yang jatuh dalam 14 hari ke depan.</p>
     </section>
+    <section class="upd">
+      <h2>Update terbaru</h2>
+      <input v-model="q" type="search" class="field cari" placeholder="Cari kode/nama saham di Monitor…" aria-label="Cari update saham" list="kode-monitor" />
+      <datalist id="kode-monitor"><option v-for="d in store.items" :key="d.ticker" :value="d.ticker">{{ d.name }}</option></datalist>
+      <ol v-if="terbaru.length" class="ul">
+        <li v-for="u in terbaru" :key="u.id || u.url || u.title">
+          <span class="d" :class="{ hot: u.date.slice(0, 10) === today }">{{ fmtDate(u.date.slice(0, 10)) }}</span>
+          <RouterLink class="tk" :to="'/emiten/' + u.ticker">{{ u.ticker }}</RouterLink>
+          <span class="tx2">
+            <a v-if="u.url" :href="u.url" target="_blank" rel="noopener">{{ u.title }}</a><template v-else>{{ u.title }}</template>
+            <small v-if="cocok && ringkas(u)" class="rk">{{ ringkas(u) }}</small>
+            <small class="muted">{{ u.source || 'Stockbit' }}</small>
+          </span>
+        </li>
+      </ol>
+      <p v-else class="muted small">{{ q ? `Tidak ada update untuk "${q}" di saham Monitor.` : 'Belum ada update.' }}</p>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.agenda{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:18px}
+.agenda{display:grid;grid-template-columns:1.1fr 1fr 1fr 1.1fr;gap:18px}
 .hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
 .rng{display:flex;gap:4px}
 .pill.sm{min-height:26px;font-size:12.5px;padding:2px 8px}
 .cl{max-height:236px;overflow:auto}
 .cl li{grid-template-columns:56px 1fr}
-@media (max-width:1199px){.agenda{grid-template-columns:1fr 1fr}.chg{grid-column:1 / -1}}
+@media (max-width:1199px){.agenda{grid-template-columns:1fr 1fr}}
+.cari{width:100%;margin:0 0 6px;min-height:30px;font-size:13px}
+.ul{max-height:300px;overflow:auto}
+.tx2{min-width:0;font-size:13px;display:flex;flex-direction:column;gap:2px}
+.tx2 a{color:var(--ink);overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2}
+.rk{color:var(--ink-2);line-height:1.35}
 section{background:var(--sheet);border:1px solid var(--rule);border-top:2px solid var(--ink);padding:12px 14px;min-width:0}
 h2{font-size:16px;text-transform:uppercase;margin-bottom:6px}
 .note{margin:0 0 6px;color:var(--ink-2)}

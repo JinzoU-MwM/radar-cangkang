@@ -20,7 +20,9 @@ export const isBackdoorNews = (u, items = [], set = backdoorTickers(items)) => {
   const text = `${u.title} ${u.summary || ''}`
   if (!u.ticker) return BACKDOOR_TOPIC.test(text)
   if (!set.has(u.ticker)) return false
-  if (/^sb-(report|news)-/.test(u.id)) return true         // Stockbit Reports & StockbitNews sudah ditandai Stockbit untuk emiten itu
+  if (/^sb-report-/.test(u.id)) return true                // Stockbit Reports sudah ditandai Stockbit untuk emiten itu
+  // StockbitNews juga ditandai Stockbit, tetapi rangkuman pasar (IHSG, saham pilihan) hanya menyebut kode sambil lalu.
+  if (/^sb-news-/.test(u.id)) return !MARKET_WRAP.test(u.title) || BACKDOOR_TOPIC.test(text)
   if (!tickerInContext(u.ticker, text, items)) return false  // berita media: kode harus benar-benar merujuk ke emiten
   return !MARKET_WRAP.test(u.title) || BACKDOOR_TOPIC.test(text)
 }
