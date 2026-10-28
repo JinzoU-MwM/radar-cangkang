@@ -6,6 +6,7 @@ import { store, storyOf, getBenchmark } from '../../store.js'
 import { api } from '../../api.js'
 import { collectDeck } from '../../lib/deckData.js'
 import { buildDeck, deckFileName } from '../../lib/deck.js'
+import { buildInfoDeck, infoFileName } from '../../lib/deckInfo.js'
 import { sectorOf, pickTheme } from '../../lib/deckThemes.js'
 import DeckDownload from './DeckDownload.vue'
 
@@ -43,13 +44,13 @@ const SECTIONS = [
 // Nomor slide berurutan lintas bagian (sampul tidak dihitung).
 const NUMBERED = SECTIONS.reduce((acc, [sec, items]) => { const start = acc.n; acc.list.push([sec, items.map((x, k) => [start + k + 1, ...x])]); acc.n += items.length; return acc }, { n: 0, list: [] }).list
 
-// variant 'info' = versi infografis (lihat buildDeck opt.info).
+// variant 'info' = versi infografis: poster A4 portrait 2 halaman (lib/deckInfo.js), bukan slide 16:9.
 async function build({ PptxGenJS, choose, lastId, onStep, variant }) {
   const d = await collectDeck(props.ticker, { store, api, storyOf, getBenchmark, onStep })
   const theme = pickTheme(d.sector.id, { lastId, choose })
   onStep('Menyusun slide')
-  const info = variant === 'info'
-  return { pres: buildDeck(PptxGenJS, d, theme, { info }), file: deckFileName(props.ticker, d.date, theme, info), theme, sector: d.sector.label }
+  if (variant === 'info') return { pres: buildInfoDeck(PptxGenJS, d, theme), file: infoFileName(props.ticker, d.date, theme), theme, sector: d.sector.label }
+  return { pres: buildDeck(PptxGenJS, d, theme), file: deckFileName(props.ticker, d.date, theme), theme, sector: d.sector.label }
 }
 </script>
 
@@ -73,7 +74,7 @@ async function build({ PptxGenJS, choose, lastId, onStep, variant }) {
             <li v-for="[n, a, b] in items" :key="a"><span class="n">{{ n }}</span><b>{{ a }}</b><small>{{ b }}</small></li>
           </ol>
         </div>
-        <p class="muted note">Versi infografis: ringkasan, angka kunci, diagram, dan grafik saja (slide teks panjang dilewati). Slide tanpa data dilewati otomatis. Data diambil saat tombol ditekan, sama dengan yang tampil di tab lain.</p>
+        <p class="muted note">Versi infografis: poster vertikal A4 dua halaman (angka kunci berikon, diagram transaksi, rekomendasi, aset dalam angka, garis waktu, katalis vs risiko, peta harga), hampir tanpa paragraf. Slide tanpa data dilewati otomatis. Data diambil saat tombol ditekan, sama dengan yang tampil di tab lain.</p>
       </div>
     </div>
   </section>
