@@ -37,7 +37,9 @@ from pathlib import Path
 import brokerpola as BP
 import beritapasar as BN
 import ihsg as IH
+import astro as AS
 import recovery as RC
+import runtun as TS
 import seasonality as SZ
 
 ROOT = Path(__file__).resolve().parent
@@ -2331,7 +2333,8 @@ def ihsg_refresh() -> None:
             seen.add(k)
             berita.append(p)
     berita.sort(key=lambda x: x.get("t") or x["d"], reverse=True)
-    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "tek": tek, "proj": IH.projection_base(bars), "berita": berita[:400]}
+    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "tek": tek, "proj": IH.projection_base(bars), "berita": berita[:400],
+            "bars": [{k: b[k] for k in ("d", "o", "h", "l", "c")} for b in bars]}
     tmp = IHSG_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     tmp.replace(IHSG_PATH)
@@ -2404,6 +2407,50 @@ def ihsg_api(month: int) -> dict:
             "musiman": base and {k: base[k] for k in ("n", "up", "prob", "median")}, "berulang": ber, "flow": flow, "riset": riset,
             "proyeksi": proyeksi, "berita": (d.get("berita") or [])[:40],
             "sumberBerita": sorted({p.get("sumber") or "Stockbit" for p in d.get("berita") or []})}
+
+
+_ts_memo: dict = {}
+
+
+def ihsg_bars() -> list[dict]:
+    """Candle harian IHSG 1 tahun dari .ihsg.json (diperbarui ihsg_loop); bila belum ada, ambil langsung."""
+    b = IH_load().get("bars")
+    return b if b else get_ohlc("IHSG", "1y")
+
+
+def runtun_api() -> dict:
+    """Time Series: model runtun waktu klasik + faktor sentimen. Dihitung ulang hanya bila data IHSG berubah."""
+    d = IH_load()
+    key = ("ts", d.get("updated"), datetime.now().strftime("%Y-%m-%d"))
+    if _ts_memo.get("ts", (None,))[0] == key:
+        return _ts_memo["ts"][1]
+    bars = ihsg_bars()
+    month = datetime.now().month
+    series = (season_data().get("index") or {}).get("IHSG") or {}
+    ms = SZ.month_stats(series, month, 10, datetime.now().date()) if series else None
+    base = TS.build(bars, (ms or {}).get("median") or 0.0)
+    if not base:
+        return {"error": "Data harga IHSG belum cukup untuk model runtun waktu. Coba lagi beberapa menit lagi."}
+    sent = IH.sentiment(d.get("berita") or [])
+    flow = BP.market_flow(broker_data()) if broker_data() else None
+    out = {"updated": d.get("updated"), **base, **TS.combine(base, sent, flow),
+           "sentimen": {k: sent.get(k) for k in ("skor", "arah", "nPos", "nNeg")}}
+    _ts_memo["ts"] = (key, out)
+    return out
+
+
+def astro_api() -> dict:
+    """Astronacci: fase bulan + Fibonacci harga & waktu IHSG."""
+    d = IH_load()
+    key = ("as", d.get("updated"), datetime.now().strftime("%Y-%m-%d"))
+    if _ts_memo.get("as", (None,))[0] == key:
+        return _ts_memo["as"][1]
+    out = AS.build(ihsg_bars())
+    if not out:
+        return {"error": "Data harga IHSG belum cukup untuk perhitungan Astronacci. Coba lagi beberapa menit lagi."}
+    out["updated"] = d.get("updated")
+    _ts_memo["as"] = (key, out)
+    return out
 
 
 def IH_load() -> dict:
@@ -2831,6 +2878,10 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:
                 month, years = datetime.now().month % 12 + 1, 10
             self.reply_json(season_api(month, years))
+        elif path == "api/ihsg-runtun":
+            self.reply_json(runtun_api())
+        elif path == "api/ihsg-astro":
+            self.reply_json(astro_api())
         elif path == "api/ihsg-outlook":
             try:
                 month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month % 12 + 1))
