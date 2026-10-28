@@ -1144,6 +1144,175 @@
       }
     ]
   },
+  "FITT": {
+    "asOf": "2026-10-28",
+    "ringkasan": "FITT (kini bernama PT Fortune Resources Investment Tbk) membeli 50% saham PT Venturi Tambang Perkasa (VTP) dari PT Sheng Yue Hengli senilai Rp46,5 miliar (efektif 29 Juni 2026), didanai divestasi bisnis hotel (BMP dan FAW, ±Rp67,9 miliar). VTP adalah kontraktor jasa pertambangan pemegang IUJP yang berdiri 2 Januari 2023 dan beroperasi di Luwuk, Kabupaten Banggai, Sulawesi Tengah; menurut situs perusahaan, seluruh produksi 2023-2025 dilakukan di wilayah IUP nikel PT Penta Dharma Karsa berdasarkan kontrak jangka panjang (2025: >700.000 ton bijih; media: 742.321 ton). VTP bukan pemilik tambang/cadangan; nilainya bergantung pada volume kontrak dengan satu pemilik IUP. Pendapatan 2025 Rp128,7 miliar, laba operasional ±Rp36 miliar, total aset Rp169 miliar.",
+    "entitas": [
+      {
+        "nama": "PT Venturi Tambang Perkasa (VTP)",
+        "peran": "aset target (50%, menjadi entitas anak)",
+        "lokasi": "Luwuk, Kab. Banggai, Sulawesi Tengah",
+        "berdiri": "2 Januari 2023",
+        "kegiatan": "Jasa pertambangan nikel (IUJP): pengupasan overburden, penambangan bijih, loading & hauling, penyerahan di jetty/stockpile, pemuatan ke kapal/tongkang"
+      },
+      {
+        "nama": "PT Penta Dharma Karsa",
+        "peran": "klien utama / pemilik IUP tempat VTP beroperasi",
+        "lokasi": "Kab. Banggai, Sulawesi Tengah (rincian tidak diungkap)",
+        "berdiri": "Tidak diungkap",
+        "kegiatan": "Pemegang IUP nikel laterit. Catatan: sumber akademik dan media menyebut 'PT Prima Dharma Karsa' dengan IUP nikel Blok Timur di Desa Siuna, Kec. Pagimana, Banggai; kesamaan entitas belum dikonfirmasi"
+      },
+      {
+        "nama": "PT Sheng Yue Hengli",
+        "peran": "penjual 50% VTP / pemegang saham VTP lainnya",
+        "lokasi": "Indonesia",
+        "berdiri": "Tidak diungkap",
+        "kegiatan": "Tidak diungkap"
+      },
+      {
+        "nama": "PT Jinlong Resources Investment",
+        "peran": "induk/pengendali FITT (48,07% sejak 12 Des 2025)",
+        "lokasi": "World Capital, Kuningan, Jakarta",
+        "berdiri": "Tidak diungkap",
+        "kegiatan": "Perusahaan holding; Direktur Gao Jinliang, Komisaris Wang Yunfei"
+      }
+    ],
+    "operasional": [
+      {
+        "l": "Izin",
+        "t": "IUJP (Izin Usaha Jasa Pertambangan) atas nama VTP; tidak memiliki IUP sendiri",
+        "s": 0
+      },
+      {
+        "l": "Volume 2025",
+        "t": "742.321 ton nikel (media); situs perusahaan: >700.000 ton bijih di wilayah IUP PT Penta Dharma Karsa",
+        "s": 1
+      },
+      {
+        "l": "Target volume",
+        "t": "750.000 ton pada 2031, naik bertahap ±50.000 ton/tahun (proyeksi manajemen)",
+        "s": 0
+      },
+      {
+        "l": "Model kontrak",
+        "t": "B2B berbasis tonase aktual (WMT), kontrak jangka menengah-panjang",
+        "s": 0
+      },
+      {
+        "l": "Armada",
+        "t": "Excavator, bulldozer, drilling rig, alat muat, dump truck (jumlah unit tidak diungkap di situs)",
+        "s": 0
+      },
+      {
+        "l": "K3",
+        "t": "Penerapan K3 dan Good Mining Practice di site Luwuk (berita perusahaan Maret 2026)",
+        "s": 0
+      }
+    ],
+    "tambang": null,
+    "pasar": "Jasa penambangan bijih nikel laterit untuk pemegang IUP di Sulawesi Tengah. Pendapatan VTP berbanding lurus dengan volume produksi klien (WMT) sehingga dipengaruhi kuota RKAB klien dan harga nikel. Pendapatan 2025 Rp128,7 miliar ÷ 742.321 ton ≈ Rp173.400 per ton (dihitung sendiri). Di Kab. Banggai, Energy China pernah menandatangani kerja sama dengan PT Prima Dharma Karsa untuk proyek nikel Luwuk di Pagimana (±1.000 ha, target 2 juta ton bijih/tahun) — indikasi potensi volume klien bila entitasnya sama.",
+    "keuangan": [
+      {
+        "l": "Nilai transaksi",
+        "t": "Rp46,5 miliar untuk 50% VTP (dihitung sendiri: implied 100% ≈ Rp93 miliar)",
+        "s": 1
+      },
+      {
+        "l": "Pendapatan 2025",
+        "t": "Rp128,7 miliar",
+        "s": 1
+      },
+      {
+        "l": "Laba operasional 2025",
+        "t": "±Rp36 miliar (margin ±28%, dihitung sendiri)",
+        "s": 1
+      },
+      {
+        "l": "Total aset VTP",
+        "t": "Rp169 miliar",
+        "s": 1
+      },
+      {
+        "l": "Sumber dana",
+        "t": "Divestasi BMP Rp21,9 miliar + FAW Rp46,9 miliar = ±Rp67,9 miliar; sisa untuk restrukturisasi utang",
+        "s": 1
+      },
+      {
+        "l": "Valuasi implisit",
+        "t": "Dihitung sendiri: Rp93 miliar ÷ Rp36 miliar laba operasional ≈ 2,6x EV/EBIT (sebelum utang/pajak)",
+        "s": 1
+      },
+      {
+        "l": "Akuisisi FITT oleh Jinlong",
+        "t": "627 juta saham (48,07%) senilai Rp65,83 miliar, Desember 2025",
+        "s": 3
+      }
+    ],
+    "pengendaliAset": [
+      {
+        "nama": "PT Jinlong Resources Investment",
+        "jenis": "Holding",
+        "lokasi": "Jakarta",
+        "detail": "Aset tambang lain milik Jinlong tidak ditemukan di sumber publik",
+        "hubungan": "Pengendali FITT (48,07%); rencana menjadikan FITT holding investasi pertambangan dalam 3-5 tahun",
+        "s": 3
+      }
+    ],
+    "jurnal": [],
+    "positif": [
+      "Bisnis sudah beroperasi dan menghasilkan arus kas (pendapatan Rp128,7 miliar, laba operasional ±Rp36 miliar pada 2025).",
+      "Harga akuisisi rendah relatif terhadap laba (implied ±2,6x EV/EBIT).",
+      "Kontrak berbasis volume jangka menengah-panjang dengan pemilik IUP; tidak menanggung risiko cadangan secara langsung.",
+      "Rencana bertahap menaikkan kepemilikan VTP >50% dan diversifikasi ke ekosistem tambang."
+    ],
+    "risiko": [
+      "Konsentrasi klien tunggal (PT Penta Dharma Karsa); kehilangan kontrak atau pemangkasan RKAB klien langsung menekan pendapatan.",
+      "VTP baru berdiri 2023; rekam jejak pendek dan armada terbatas.",
+      "Proyeksi pertumbuhan volume lambat (target 750.000 ton pada 2031, hampir sama dengan 2025).",
+      "Hanya 50% kepemilikan; mitra Sheng Yue Hengli dan perjanjian pemegang saham tidak diungkap.",
+      "Identitas pemilik manfaat pengendali (Jinlong) dan keterkaitannya dengan klien/penjual belum jelas — potensi transaksi pihak berelasi.",
+      "Tidak ada penilaian KJPP yang dipublikasikan; studi kelayakan (IRR 40,05%, NPV Rp234,4 miliar) bersifat proyeksi."
+    ],
+    "belumDitemukan": [
+      "Lokasi rinci (desa/kecamatan) site VTP dan profil IUP PT Penta Dharma Karsa (luas, cadangan, RKAB)",
+      "Nilai dan masa kontrak VTP dengan klien",
+      "Jumlah unit armada dan utang VTP",
+      "Laba bersih dan EBITDA VTP",
+      "Pemilik manfaat akhir PT Jinlong Resources Investment dan PT Sheng Yue Hengli"
+    ],
+    "sumber": [
+      {
+        "t": "Situs resmi PT Fortune Resources Investment Tbk (FITT) — profil VTP, layanan, sejarah",
+        "url": "https://www.fitt-fortune.com/tentang-kami/sejarah",
+        "jenis": "situs perusahaan"
+      },
+      {
+        "t": "Akuisisi Perusahaan Tambang, Hotel Fitra (FITT) Bidik Pembalikan Kinerja Keuangan — Investortrust, 27 Jun 2026",
+        "url": "https://investortrust.id/market/107693/akuisisi-perusahaan-tambang-hotel-fitra-fitt-bidik-pembalikan-kinerja-keuangan",
+        "jenis": "media"
+      },
+      {
+        "t": "Emiten Hotel Ini Caplok Perusahaan Tambang Nikel untuk Dongkrak Kinerja — detikFinance, 27 Jun 2026",
+        "url": "https://finance.detik.com/market-research/d-8549730/emiten-hotel-ini-caplok-perusahaan-tambang-nikel-untuk-dongkrak-kinerja",
+        "jenis": "media"
+      },
+      {
+        "t": "Jinlong Resources Resmi Akuisisi 48,07% Saham Hotel Fitra (FITT) — Bisnis.com, 15 Des 2025",
+        "url": "https://market.bisnis.com/read/20251215/192/1936967/jinlong-resources-resmi-akuisisi-4807-saham-hotel-fitra-fitt",
+        "jenis": "media"
+      },
+      {
+        "t": "Energy China to develop Indonesia's Luwuk nickel mine — Kallanish (berbayar; hanya ringkasan terbaca)",
+        "url": "https://kallanish.com/en/news/steel/market-reports/article-details/energy-china-to-develop-indonesias-luwuk-nickel-mine-0322",
+        "jenis": "media"
+      },
+      {
+        "t": "Hotel Fitra (FITT) Setop Usaha Perhotelan, Masuk Bisnis Tambang — Katadata, 2026",
+        "url": "https://katadata.co.id/finansial/bursa/69de37695d193/hotel-fitra-fitt-setop-usaha-perhotelan-masuk-bisnis-tambang",
+        "jenis": "media"
+      }
+    ]
+  },
   "FORU": {
     "asOf": "2026-10-28",
     "ringkasan": "FORU telah menerima inbreng 49% saham Seri A (bersuara) PT Borneo Prima (BP) dari IMR Asia Holding Pte Ltd senilai Rp20,82 triliun melalui PMHMETD I (pelaksanaan 25 September - 6 Oktober 2026). BP adalah tambang hard coking coal (batu bara metalurgi) open pit yang beroperasi penuh di Kabupaten Murung Raya, Kalimantan Tengah (sekitar Desa Tumbang Olong), dengan IUP-OP 15.000 ha, cadangan JORC 87,7 juta ton (terbukti 42,4 + terkira 45,3 juta ton) dan sumber daya 202 juta ton. Kualitas premium (abu 4-8%, fosfor 0,005%, CSN 7-9, vitrinit 95%) dan rantai logistik sendiri (jalan angkut 138 km ke terminal Muara Tuhup di Sungai Barito, lalu tongkang 590 km ke Taboneo). Risiko utama adalah data produksi yang tidak konsisten antar-sumber, porsi 49% saja, serta catatan sosial-lingkungan dari LSM Swiss Public Eye.",
@@ -1580,7 +1749,7 @@
       }
     ],
     "tambang": null,
-    "pasar": "Pendapatan aset JIC bersifat sewa tetap dari satu penyewa afiliasi (JIC), sehingga risiko pasar langsung rendah tetapi risiko konsentrasi pihak berelasi tinggi. Di tingkat grup, Tjokro Group bermain di komponen otomotif roda dua/empat, kendaraan niaga, dan alat berat dengan standar prinsipal global, serta mulai menggarap aftermarket. Pesaing di industri komponen/pengecoran antara lain SMSM (Selamat Sempurna), DRMA (Dharma Polimetal), AUTO (Astra Otoparts), dan pengecoran asing di EJIP seperti foundry Yanmar.",
+    "pasar": "Pendapatan aset JIC bersifat sewa tetap dari satu penyewa afiliasi (JIC), sehingga risiko pasar langsung rendah tetapi risiko konsentrasi pihak berelasi tinggi. Di tingkat grup, Tjokro Group bermain di komponen otomotif roda dua/empat, kendaraan niaga, dan alat berat dengan standar prinsipal global, serta mulai menggarap aftermarket. Pesaing di industri komponen/pengecoran antara lain SMSM (Selamat Sempurna), DRMA (Dharma Polimetal), AUTO (Astra Otoparts), dan pengecoran asing di EJIP seperti foundry Yanmar. (Catatan: nama pesaing di paragraf ini dari pengetahuan umum, tanpa sumber yang dikutip.)",
     "keuangan": [
       {
         "l": "Nilai transaksi",
@@ -1589,7 +1758,7 @@
       },
       {
         "l": "Pendanaan",
-        "t": "Private placement 66,67 juta saham @Rp427 (±Rp28,46 miliar, diserap PIMSF, tercatat 6 Juli 2026) dan pinjaman bank ±Rp50 miliar",
+        "t": "Private placement 66,67 juta saham @Rp427 (±Rp28,46 miliar, diserap PIMSF, tercatat 6 Juli 2026); sisa didanai pinjaman bank ±Rp50 miliar (menurut keterbukaan yang dirangkum data internal)",
         "s": 4
       },
       {
@@ -1640,7 +1809,7 @@
       },
       {
         "nama": "PT Morita Tjokro Gearindo (MTG)",
-        "jenis": "Manufaktur roda gigi (gear)",
+        "jenis": "Manufaktur komponen (indikasi nama: roda gigi/gear)",
         "lokasi": "Tidak dirinci",
         "detail": "Pihak Kesepakatan Induk 20 Januari 2026",
         "hubungan": "Afiliasi Tjokro Group",
@@ -2215,6 +2384,240 @@
       }
     ]
   },
+  "KRYA": {
+    "asOf": "2026-10-28",
+    "ringkasan": "KRYA (PT Bangun Karya Perkasa Jaya Tbk) memiliki 50,99% PT Green City Traffic (GCT), pemilik merek motor listrik ECGO, melalui setoran modal Rp10,42 miliar dan menjadi pengendali sejak 30 September 2025. ECGO berdiri 2018, mengklaim penjualan >10.000 unit dalam tujuh tahun dan TKDN hingga 56%; data 2023 menunjukkan perakitan di Tangerang berkapasitas hanya ±100–150 unit/bulan dengan ±40 dealer. Penggerak utama adalah kontrak 10.000 unit (Rp240 miliar, Rp24 juta/unit) dengan platform ride-hailing EVMoto mulai Maret 2026 dan klaim pasokan 50.000 unit; target 55.000 unit pada 2026 jauh di atas kapasitas historis sehingga bergantung pada ekspansi produksi yang pendanaannya (rights issue Rp200–300 miliar) masih indikatif. Struktur pengendali KRYA tidak stabil: anggota konsorsium (Green City, LABA) aktif menjual saham sepanjang 2026.",
+    "entitas": [
+      {
+        "nama": "PT Green City Traffic (GCT) — merek ECGO",
+        "peran": "aset target / anak usaha (50,99%)",
+        "lokasi": "Perakitan di Tangerang, Banten (data 2023); alamat pabrik terkini tidak ditemukan",
+        "berdiri": "2018",
+        "kegiatan": "Desain, perakitan, dan distribusi sepeda motor listrik; ekosistem sewa dan tukar baterai; rencana roda tiga dan kendaraan niaga listrik"
+      },
+      {
+        "nama": "Green City SG Pte Ltd",
+        "peran": "pemegang saham GCT (48,51%) dan pemegang saham pengendali KRYA (22,73% per Jul 2026)",
+        "lokasi": "Singapura",
+        "berdiri": "",
+        "kegiatan": "Holding"
+      },
+      {
+        "nama": "Rich Step International Ltd",
+        "peran": "pemimpin konsorsium pengendali KRYA (2025)",
+        "lokasi": "Luar negeri (yurisdiksi tidak disebut)",
+        "berdiri": "",
+        "kegiatan": "Investasi dan perdagangan; Managing Director William Teng (juga CEO ECGO dan Presiden Direktur KRYA)"
+      }
+    ],
+    "operasional": [
+      {
+        "l": "Penjualan kumulatif",
+        "t": ">10.000 unit di Indonesia selama tujuh tahun",
+        "s": 1
+      },
+      {
+        "l": "Kapasitas perakitan (2023)",
+        "t": "±100–150 unit/bulan di Tangerang; ±40 dealer",
+        "s": 2
+      },
+      {
+        "l": "TKDN",
+        "t": "Hingga 56% (2025); ECGO 5 bersertifikat TKDN >40% (2023)",
+        "s": 1
+      },
+      {
+        "l": "Harga",
+        "t": "ECGO 5 Rp9,9 juta setelah subsidi (Des 2023)",
+        "s": 3
+      },
+      {
+        "l": "Harga awal 2023",
+        "t": "ECGO 3 Rp19,7 juta (Rp12,7 juta setelah subsidi); ECGO 5 Rp16,1 juta (Rp9,1 juta setelah subsidi)",
+        "s": 2
+      },
+      {
+        "l": "Kontrak EVMoto",
+        "t": "10.000 unit × Rp24 juta = Rp240 miliar; pengiriman mulai Maret 2026",
+        "s": 6
+      },
+      {
+        "l": "Potensi pasokan EVMoto",
+        "t": "50.000 unit mulai 2026 (pernyataan direksi); EVMoto menargetkan 10 kota dan 100.000 pengemudi pada 2026",
+        "s": 5
+      },
+      {
+        "l": "Spesifikasi",
+        "t": "Dua baterai, jarak tempuh hingga 140 km per pengisian",
+        "s": 5
+      },
+      {
+        "l": "Target penjualan",
+        "t": "55.000 unit (2026); ≥1 juta unit dalam lima tahun",
+        "s": 13
+      },
+      {
+        "l": "Pasokan baterai LABA",
+        "t": "9.000 pack terkirim s.d. awal Okt 2024; target 31.000 (akhir 2024) dan 600.000 (2025); SPBKLU target 300 (2024) → 1.000",
+        "s": 4
+      }
+    ],
+    "tambang": null,
+    "pasar": "Pasar sepeda motor listrik Indonesia didorong subsidi Rp7 juta/unit untuk produk TKDN ≥40% (2023–2024); Kemenperin menargetkan TKDN 60% pada 2028. Pesaing: Gesits (WIKA/IBC), United E-Motor, Alva, Polytron, Selis, Viar, Yadea, serta merek Jepang (Honda). Penetrasi kendaraan listrik roda dua dilaporkan baru ±0,84% hingga April 2024 (studi UGM, belum terverifikasi). Pangsa pasar ECGO tidak ditemukan.",
+    "keuangan": [
+      {
+        "l": "Nilai akuisisi",
+        "t": "Rp10,42 miliar (10.418.000 saham baru @Rp1.000) = 9,8% ekuitas KRYA 31 Des 2024",
+        "s": 0
+      },
+      {
+        "l": "Nilai kontrak EVMoto",
+        "t": "Rp240 miliar (10.000 unit)",
+        "s": 6
+      },
+      {
+        "l": "Konsolidasi KRYA 2025",
+        "t": "Aset Rp119,37 miliar; liabilitas Rp98,98 miliar (bukan data GCT terpisah)",
+        "s": 12
+      },
+      {
+        "l": "Rencana pendanaan",
+        "t": "Rights issue indikatif Rp200–300 miliar untuk kapasitas produksi ECGO",
+        "s": 13
+      },
+      {
+        "l": "Pendapatan/laba GCT",
+        "t": "Tidak dipublikasikan terpisah",
+        "s": 12
+      }
+    ],
+    "pengendaliAset": [
+      {
+        "nama": "PT Green Power Group Tbk (LABA)",
+        "jenis": "Baterai, BMS, stasiun tukar baterai (SPBKLU), suku cadang",
+        "lokasi": "Indonesia",
+        "detail": "Anggota konsorsium; beli 17% KRYA @Rp33 (Sep 2025); framework agreement dengan ECGO (Okt 2024); per 31 Mar 2026 tinggal 8,94% setelah 15 kali transaksi jual",
+        "hubungan": "Pemasok baterai utama ECGO; pihak berelasi",
+        "s": 4
+      },
+      {
+        "nama": "PT EV Moto Teknologi Indonesia",
+        "jenis": "Kendaraan listrik/penyewaan",
+        "lokasi": "Indonesia",
+        "detail": "Anggota konsorsium pembeli KRYA; bersama LABA & GCT meluncurkan program sewa motor listrik. Nama mirip pelanggan EVMoto (PT EvMoto Teknologi Indonesia, ride-hailing) — keterkaitan perlu dikonfirmasi",
+        "hubungan": "Kemungkinan pihak berelasi sekaligus pelanggan",
+        "s": 8
+      },
+      {
+        "nama": "Green City SG Pte Ltd / Green City Pte Ltd",
+        "jenis": "Holding",
+        "lokasi": "Singapura",
+        "detail": "Memegang 48,51% GCT; di KRYA 22,73% (Jul 2026, disebut pengendali) — namun Kontan mencatat Green City Pte Ltd turun ke 9,75% per 31 Mar 2026; sumber bertentangan/mungkin entitas berbeda",
+        "hubungan": "Pemegang saham bersama GCT",
+        "s": 10
+      },
+      {
+        "nama": "PT Huashang Investment Group; PT Cahaya Intan Niaga",
+        "jenis": "Investor",
+        "lokasi": "Indonesia",
+        "detail": "Anggota konsorsium; aset tidak diungkap",
+        "hubungan": "Pengendali bersama (konsorsium)",
+        "s": 8
+      }
+    ],
+    "jurnal": [],
+    "positif": [
+      "Kontrak komersial konkret 10.000 unit (Rp240 miliar) dengan platform ride-hailing, potensi hingga 50.000 unit.",
+      "Ekosistem terintegrasi dengan pemasok baterai/SPBKLU (LABA) dan TKDN hingga 56% (memenuhi syarat insentif).",
+      "Biaya akuisisi kecil (Rp10,42 miliar) relatif terhadap potensi kontrak."
+    ],
+    "risiko": [
+      "Kapasitas historis ±100–150 unit/bulan jauh di bawah target 55.000 unit/tahun; ekspansi pabrik dan pendanaannya belum pasti.",
+      "Kemungkinan transaksi pihak berelasi (EV Moto anggota konsorsium vs EVMoto pelanggan; LABA pemasok sekaligus pemegang saham).",
+      "Pengendali dan anggota konsorsium aktif menjual saham; saham KRYA turun ±64% YTD hingga 1 Apr 2026; data pemegang saham bertentangan.",
+      "Neraca KRYA tipis (ekuitas ±Rp20 miliar dari aset Rp119,37 M dan liabilitas Rp98,98 M) sehingga pertumbuhan butuh modal baru.",
+      "Ketergantungan pada kebijakan insentif motor listrik yang berubah-ubah."
+    ],
+    "belumDitemukan": [
+      "Laporan keuangan GCT terpisah (pendapatan, laba, utang)",
+      "Lokasi dan kapasitas pabrik terkini setelah akuisisi",
+      "Realisasi pengiriman unit ke EVMoto sejak Maret 2026",
+      "Pemilik manfaat akhir Rich Step International dan Green City SG",
+      "Jurnal ilmiah yang membahas ECGO secara spesifik"
+    ],
+    "sumber": [
+      {
+        "t": "Garap Sektor EV, Bangun Karya (KRYA) Caplok Saham Sepeda Motor Listrik ECGO — IDX Channel, 9 Agu 2025 (via aset-verified.json)",
+        "url": "https://www.idxchannel.com/",
+        "jenis": "media"
+      },
+      {
+        "t": "Ekspansi Bisnis Kendaraan Listrik, Bangun Karya (KRYA) Akuisisi 51% Saham Motor Listrik ECGO — Investortrust, Agu 2025",
+        "url": "https://investortrust.id/market/75217/ekspansi-bisnis-kendaraan-listrik-bangun-karya-krya-akuisisi-51-saham-motor-listrik-ecgo",
+        "jenis": "media"
+      },
+      {
+        "t": "Perkuat Bisnis Motor Listrik, Begini Strategi ECGO EV Moto — Kontan, 3 Feb 2023",
+        "url": "https://industri.kontan.co.id/news/perkuat-bisnis-motor-listrik-begini-strategi-ecgo-ev-moto",
+        "jenis": "media"
+      },
+      {
+        "t": "Dapat Subsidi, Motor Listrik ECGO 5 Dijual Rp 9,9 Juta — detikOto, Des 2023",
+        "url": "https://oto.detik.com/motor-listrik/d-7102026/dapat-subsidi-motor-listrik-ecgo-5-dijual-rp-9-9-juta",
+        "jenis": "media"
+      },
+      {
+        "t": "Green Power Group (LABA) Targetkan Pasok 31.000 Paket Baterai untuk ECGO — Kontan, Okt 2024",
+        "url": "https://industri.kontan.co.id/news/green-power-group-laba-targetkan-pasok-31000-paket-baterai-untuk-ecgo",
+        "jenis": "media"
+      },
+      {
+        "t": "Ride Hailing China EVMoto Gandeng Bangun Karya (KRYA) untuk Pasok Motor Listrik — Kontan, 25 Des 2025",
+        "url": "https://investasi.kontan.co.id/news/ride-hailing-china-evmoto-gandeng-bangun-karya-krya-untuk-pasok-motor-listrik",
+        "jenis": "media"
+      },
+      {
+        "t": "Bangun Karya Perkasa Jaya (KRYA) Kantongi Kontrak Motor Listrik Rp 240 Miliar — Kontan, 19 Des 2025",
+        "url": "https://industri.kontan.co.id/news/bangun-karya-perkasa-jaya-krya-kantongi-kontrak-motor-listrik-rp-240-miliar",
+        "jenis": "media"
+      },
+      {
+        "t": "Perombakan Pengendali Tuntas, Saham Bangun Karya (KRYA) bisa Menuju Rp 350 — Investortrust, 11 Sep 2025",
+        "url": "https://investortrust.id/market/78609/perombakan-pengendali-tuntas-saham-bangun-karya-krya-bisa-menuju-rp-350",
+        "jenis": "media"
+      },
+      {
+        "t": "Bangun Karya (KRYA) Jalani Due Diligence Jelang Akuisisi Rich Step dan LABA — Bisnis.com, 7 Jul 2025",
+        "url": "https://market.bisnis.com/read/20250707/192/1890993/bangun-karya-krya-jalani-due-diligence-jelang-akuisisi-rich-step-dan-laba",
+        "jenis": "media"
+      },
+      {
+        "t": "Sepanjang Tahun Ambles 64%, Saham KRYA Dihantui Aksi Jual Pemegang Saham Besar — Kontan, 1 Apr 2026",
+        "url": "https://investasi.kontan.co.id/news/sepanjang-tahun-ambles-64-saham-krya-dihantui-aksi-jual-pemegang-saham-besar",
+        "jenis": "media"
+      },
+      {
+        "t": "Green City Tambah Kepemilikan Saham KRYA — BCA Sekuritas, 10 Jul 2026",
+        "url": "https://bcasekuritas.co.id/latest-news/news/green-city-tambah-kepemilikan-saham-krya",
+        "jenis": "media"
+      },
+      {
+        "t": "Potensi Bisnis Baru KRYA Setelah Diakuisisi Konsorsium LABA dkk — Mikirduit, 2025",
+        "url": "https://www.mikirduit.com/potensi-bisnis-baru-krya-setelah-diakuisisi-konsorsium-laba-dkk/",
+        "jenis": "media"
+      },
+      {
+        "t": "Penjelasan atas Perubahan Aset dan Liabilitas Perseroan Lebih dari 20% (KRYA) — Stockbit Reports, 15 Jun 2026",
+        "url": "https://stockbit.com/",
+        "jenis": "dokumen"
+      },
+      {
+        "t": "KRYA Akuisisi ECGO, Pacu Penjualan 1 Juta Motor Listrik — Bisnis.com, 10 Agu 2025",
+        "url": "https://market.bisnis.com/read/20250810/192/1900962/krya-akuisisi-ecgo-pacu-penjualan-1-juta-motor-listrik",
+        "jenis": "media"
+      }
+    ]
+  },
   "LAPD": {
     "asOf": "2026-10-28",
     "ringkasan": "Aset yang dimasukkan ke LAPD adalah PT Bersaudara Sinergi Sejahtera (BSS), kontraktor tambang batu bara full service di Kalimantan yang 87,5% sahamnya dimiliki pengendali baru, PT JSI Sinergi Mas. Skema awalnya berupa jual beli bersyarat senilai Rp59,43 miliar (Februari 2026), lalu diubah menjadi inbreng 59.995 saham BSS (99,99%) senilai Rp44,39 miliar sebagai setoran JSI dalam PMHMETD II (maks. 2 miliar saham, harga indikatif Rp50, maks. Rp100 miliar). Sisa dana tunai dialokasikan untuk modal kerja, pelaksanaan kontrak, serta pemeliharaan dan penambahan alat. Bersamaan dengan itu, anak usaha distribusi FMCG PT Rusindo Eka Raya direncanakan didivestasi sehingga LAPD bertransformasi menjadi holding jasa penunjang tambang. Keuangan BSS (pendapatan, laba, aset) belum diungkap di sumber publik yang ditemukan, dan hasil RUPSLB 20 Oktober 2026 belum terkonfirmasi.",
@@ -2767,6 +3170,237 @@
       }
     ]
   },
+  "MGLV": {
+    "asOf": "2026-10-28",
+    "ringkasan": "MGLV (kini PT NexAI Digital Infrastruktur Tbk) mengambil alih 100% PT Nextier Askara Center (NAC) dan PT Nextier GenAi Center (NGC) dari pengendalinya, PT Nextier Datamate Center (NDC; pemilik manfaat Glenn T. Sugita bersama Suriyanto, dikaitkan dengan Northstar). NAC sudah mengoperasikan data center 6 MW di Jababeka, Cikarang (dengan gardu induk 100 MVA) dan menambah 36 MW menjadi 42 MW, sedangkan NGC membangun 60 MW di KIT Batang, sehingga target total 102 MW pada kuartal II-2027 (BRI Danareksa). Pendanaan bertumpu pada kredit BNI ±Rp10,75 triliun, rights issue Rp2,54 triliun, dan pinjaman pemegang saham NDC Rp4 triliun; proyeksi manajemen menunjukkan rugi 2026 dan arus kas bebas negatif hingga 2027. Zankore (usaha patungan AI Indosat–Ooredoo) disebut sebagai anchor tenant, tetapi rincian kontraknya belum diungkap.",
+    "entitas": [
+      {
+        "nama": "PT Nextier Askara Center (NAC)",
+        "peran": "aset target / anak usaha (99,9%)",
+        "lokasi": "Kawasan Industri Jababeka, Cikarang, Bekasi",
+        "berdiri": "",
+        "kegiatan": "Operator JababekaDC (disebut juga MettaDC); beroperasi 6 MW, ekspansi +36 MW menjadi 42 MW"
+      },
+      {
+        "nama": "PT Nextier GenAi Center (NGC)",
+        "peran": "aset target / anak usaha (99,9%)",
+        "lokasi": "Kawasan Industri Terpadu Batang, Jawa Tengah",
+        "berdiri": "",
+        "kegiatan": "Pengembangan BatangDC, data center AI 60 MW"
+      },
+      {
+        "nama": "PT Nextier Datamate Center (NDC)",
+        "peran": "induk/pengendali MGLV (78,74% sejak 9–10 Feb 2026)",
+        "lokasi": "Indonesia",
+        "berdiri": "",
+        "kegiatan": "Pemilik awal NAC/NGC; pemberi pinjaman pemegang saham Rp4 triliun"
+      }
+    ],
+    "operasional": [
+      {
+        "l": "Kapasitas beroperasi",
+        "t": "6 MW di Jababeka (NAC)",
+        "s": 0
+      },
+      {
+        "l": "Ekspansi JababekaDC",
+        "t": "+36 MW → total 42 MW; Mikirduit menyebut MettaDC 36 MW — angka berbeda antar-sumber",
+        "s": 0
+      },
+      {
+        "l": "BatangDC",
+        "t": "60 MW (KIT Batang)",
+        "s": 0
+      },
+      {
+        "l": "Target total",
+        "t": "102 MW pada Q2-2027; skenario 400 MW (2029) dan 900 MW (2031) menurut BRI Danareksa",
+        "s": 1
+      },
+      {
+        "l": "Infrastruktur listrik",
+        "t": "Gardu induk sendiri 100 MVA di Jababeka",
+        "s": 1
+      },
+      {
+        "l": "Target biaya pembangunan",
+        "t": "< USD10 juta per MW",
+        "s": 1
+      },
+      {
+        "l": "Tenant",
+        "t": "Zankore (Indosat) disebut anchor tenant (BRI Danareksa); Mikirduit menyebut perjanjian sewa dengan ISAT dan PT Megaspeed Internasional Indonesia, detail kontrak belum jelas",
+        "s": 1
+      },
+      {
+        "l": "Kebutuhan Zankore",
+        "t": "Tahap I ±200 MW (GB300 NVL72) target 1H 2027, jangka panjang 1 GW; ditempatkan di Batang (MGLV), Jatiluhur (BDx), dan kampus DCII — porsi MW di Batang tidak disebut",
+        "s": 7
+      }
+    ],
+    "tambang": null,
+    "pasar": "Kapasitas pusat data beroperasi di Indonesia diperkirakan ±450 MW (JLL) dengan okupansi 70–80% di Jabodetabek; sumber lain menyebut 250–300 MW IT load, dan Katadata memproyeksikan kapasitas bisa mencapai 1,7 GW pada akhir 2026. Proyeksi kebutuhan 2030: 2,3 GW (PLN) hingga 2,7 GW (AMANA). Pesaing: DCII (DCI Indonesia), EDGE (Indointernet), BDx, Telkom/NeutraDC, Princeton Digital, serta SMX01 (DSSA). Mikirduit mencatat risiko oversupply 2026–2028 (permintaan 3.059 MW vs pasokan 2.566 MW pada 2034).",
+    "keuangan": [
+      {
+        "l": "Kredit BNI",
+        "t": "NAC maks. Rp4,125 triliun (6 tahun); NGC maks. Rp6,629 triliun (7 tahun); total ±Rp10,75 triliun termasuk bunga masa konstruksi; bunga Compounded IndONIA 90 hari +1,9%",
+        "s": 0
+      },
+      {
+        "l": "Rights issue",
+        "t": "Maks. 285,73 juta saham @Rp8.880 (rasio 100:15), target Rp2,54 triliun, dilusi maks. 13,04%",
+        "s": 0
+      },
+      {
+        "l": "Pinjaman pemegang saham",
+        "t": "NDC ke MGLV Rp4 triliun bunga 7%; diteruskan ke NAC Rp1,5 triliun & NGC Rp2,5 triliun (6 Okt 2026)",
+        "s": 5
+      },
+      {
+        "l": "Proyeksi manajemen",
+        "t": "Capex Rp7,07 T (2026), Rp6,2 T (2027); rugi Rp134 miliar (2026), laba Rp88,9 miliar (2027), Rp218 miliar (2029); FCF −Rp6,9 T (2026), +Rp1,68 T (2028); leverage puncak 6,2x (2027)",
+        "s": 2
+      },
+      {
+        "l": "Kelayakan proyek",
+        "t": "IRR 13,64%; payback 8 tahun 8 bulan",
+        "s": 12
+      },
+      {
+        "l": "Valuasi pihak ketiga (DCF)",
+        "t": "Ekuitas ±Rp4,9 triliun (102 MW), ±Rp42,8 triliun (400 MW), ±Rp106 triliun (900 MW); kapitalisasi pasar ±Rp27–28,6 triliun",
+        "s": 1
+      },
+      {
+        "l": "Nilai transaksi NAC/NGC",
+        "t": "Total Rp670,6 miliar menurut ringkasan media; piutang NDC atas NAC & NGC Rp668,61 miliar",
+        "s": 0
+      }
+    ],
+    "pengendaliAset": [
+      {
+        "nama": "PT Nextier Datamate Center (NDC)",
+        "jenis": "Holding data center",
+        "lokasi": "Indonesia",
+        "detail": "UBO Glenn T. Sugita bersama Suriyanto; menjual saham MGLV di harga rata-rata ±Rp7.000 (3 Jul–19 Agu 2026)",
+        "hubungan": "Pengendali langsung (78,74%); penjual NAC/NGC",
+        "s": 3
+      },
+      {
+        "nama": "FiberCo / PT Infra Fiber Teknologi (RAIA Grid)",
+        "jenis": "Jaringan fiber open access",
+        "lokasi": "Indonesia",
+        "detail": ">86.000 km fiber; nilai gabungan ±Rp14,6 triliun; Indosat ±45%, sisanya Arsari dan Northstar",
+        "hubungan": "Afiliasi Northstar (Glenn Sugita dikaitkan dengan Northstar); potensi konektivitas ke data center MGLV dan tenant Indosat",
+        "s": 10
+      },
+      {
+        "nama": "PT Persib Bandung Bermartabat",
+        "jenis": "Klub sepak bola",
+        "lokasi": "Bandung",
+        "detail": "Glenn Sugita disebut sebagai pengendali; NexAI menjadi salah satu dari 16 sponsor Persib musim 2026/2027",
+        "hubungan": "Afiliasi pengendali; transaksi sponsor",
+        "s": 11
+      },
+      {
+        "nama": "PT Trinugraha Thohir Harmoni & Trinugraha Thohir (keluarga Thohir)",
+        "jenis": "Kendaraan investasi",
+        "lokasi": "Indonesia",
+        "detail": "4,86% dan 2,25% saham MGLV; Garibaldi Thohir membeli 30 juta saham pribadi 9 Sep 2026",
+        "hubungan": "Pemegang saham non-pengendali",
+        "s": 0
+      }
+    ],
+    "jurnal": [],
+    "positif": [
+      "Aset sudah beroperasi (6 MW) dan memiliki gardu induk 100 MVA sendiri — mengatasi hambatan utama pasokan listrik data center.",
+      "Pendanaan bank BNI ±Rp10,75 triliun sudah diteken, ditambah rights issue dan pinjaman pemegang saham.",
+      "Ada calon anchor tenant berskala besar (Zankore/Indosat) di pasar AI yang tumbuh cepat.",
+      "IRR proyek 13,64% di atas biaya pinjaman (IndONIA +1,9%)."
+    ],
+    "risiko": [
+      "Leverage sangat tinggi (puncak 6,2x) dan FCF negatif besar 2026–2027; rugi bersih diproyeksikan 2026.",
+      "Kontrak tenant (Zankore, Megaspeed) belum diungkap rinci; alokasi MW Zankore ke Batang tidak disebut.",
+      "Valuasi pasar (±Rp27–28 triliun) jauh di atas nilai DCF 102 MW (±Rp4,9 triliun) — harga sudah mengasumsikan ekspansi 400 MW.",
+      "Risiko oversupply data center 2026–2028 dan perlambatan siklus AI.",
+      "Transaksi afiliasi dengan pengendali; pengendali menjual saham saat harga naik; free float efektif kecil.",
+      "Nama dan kapasitas fasilitas Jababeka berbeda antar-sumber (JababekaDC 42 MW vs MettaDC 36 MW)."
+    ],
+    "belumDitemukan": [
+      "Laporan keuangan historis NAC/NGC (pendapatan, EBITDA)",
+      "Nilai pasar saham NAC/NGC oleh KJPP dan pendapat kewajaran",
+      "Rincian kontrak sewa (MW, tenor, tarif) dengan Zankore/Indosat dan Megaspeed",
+      "Izin lingkungan/PBG BatangDC dan jadwal energisasi PLN",
+      "Jurnal ilmiah tentang NAC/NGC; jurnal peer-reviewed tentang kebutuhan listrik data center Indonesia tidak ditemukan dalam pencarian"
+    ],
+    "sumber": [
+      {
+        "t": "Boy Thohir Masuk NextAI MGLV di Tengah Geliat Data Center, Bagaimana Prospeknya? — Katadata, 29 Sep 2026",
+        "url": "https://katadata.co.id/finansial/bursa/6abb2ac9098b9/boy-thohir-masuk-nextai-mglv-di-tengah-geliat-data-center-bagaimana-prospeknya",
+        "jenis": "media"
+      },
+      {
+        "t": "MGLV Muncul Jadi Pemain Data Center AI, Ini Prospeknya — IDX Channel (RCTI+), 22 Sep 2026",
+        "url": "https://www.rctiplus.com/news/detail/ekonomi/5477834/mglv-muncul-jadi-pemain-data-center-ai--ini-prospeknya",
+        "jenis": "media"
+      },
+      {
+        "t": "Geliat Geng Northstar di Saham MGLV, Bakal Dejavu ARTO? — Mikirduit, 21 Agu 2026",
+        "url": "https://www.mikirduit.com/geliat-geng-northstar-di-saham-mglv-bakal-dejavu-arto/",
+        "jenis": "media"
+      },
+      {
+        "t": "Glenn T Sugita Masuk, MGLV Ubah Nama Jadi NexAI Digital Infrastruktur — EmitenNews, 2026",
+        "url": "https://emitennews.com/news/glenn-t-sugita-masuk-mglv-ubah-nama-jadi-nexai-digital-infrastruktur/10",
+        "jenis": "media"
+      },
+      {
+        "t": "Utang Rp10,75T dari BNI, Emiten Boy Thohir (MGLV) Ekspansi Data Center — EmitenNews, 2026",
+        "url": "https://emitennews.com/news/utang-rp1075t-dari-bni-emiten-boy-thohir-mglv-ekspansi-data-center",
+        "jenis": "media"
+      },
+      {
+        "t": "MGLV Beri Pinjaman Rp4 Triliun ke Dua Anak Usaha Data Center — IDX Channel (RCTI+), Okt 2026",
+        "url": "https://www.rctiplus.com/news/detail/ekonomi/5490692/mglv-beri-pinjaman-rp4-triliun-ke-dua-anak-usaha-data-center",
+        "jenis": "media"
+      },
+      {
+        "t": "Zankore by Indosat Bangun Infrastruktur AI 1 GW, Operasional Tahap I Dimulai 2027 — Bisnis.com, 12 Sep 2026",
+        "url": "https://teknologi.bisnis.com/read/20260912/101/2003628/zankore-by-indosat-bangun-infrastruktur-ai-1-gw-operasional-tahap-i-dimulai-2027",
+        "jenis": "media"
+      },
+      {
+        "t": "BRI Danareksa Naikkan Target Harga Saham Indosat (ringkasan riset: penempatan Zankore di Batang/MGLV, Jatiluhur/BDx, DCII)",
+        "url": "https://achmadnurhidayat.id/bri-danareksa-naikkan-target-indosat",
+        "jenis": "media"
+      },
+      {
+        "t": "Kapasitas Pusat Data Indonesia Bisa Tembus 1,7 GW Akhir 2026 — Katadata, 2026",
+        "url": "https://katadata.co.id/digital/teknologi/6a86cb59b7ad6/kapasitas-pusat-data-indonesia-bisa-tembus-1-7-gw-akhir-2026",
+        "jenis": "media"
+      },
+      {
+        "t": "Kebutuhan Lahan dan Listrik untuk Pusat Data di Indonesia Terus Meningkat (JLL) — Jawa Pos/ANTARA",
+        "url": "https://www.jawapos.com/properti/2608180387/kebutuhan-lahan-dan-listrik-untuk-pusat-data-di-indonesia-terus-meningkat",
+        "jenis": "media"
+      },
+      {
+        "t": "Gurita Bisnis Hashim di Sektor Teknologi (FiberCo: Indosat, Arsari, Northstar) — Katadata, 27 Agu 2026",
+        "url": "https://katadata.co.id/digital/teknologi/6a8fecf1d4fda/gurita-bisnis-hashim-di-sektor-teknologi-fiber-5g-gpu-ai-hingga-kripto",
+        "jenis": "media"
+      },
+      {
+        "t": "NexAI (MGLV) Muncul di Daftar Sponsor Persib Bareng Bank BJB (BJBR) — EmitenNews, 2026",
+        "url": "https://emitennews.com/news/nexai-mglv-muncul-di-daftar-sponsor-persib-bareng-bank-bjb-bjbr",
+        "jenis": "media"
+      },
+      {
+        "t": "Rencana Transaksi Perubahan Kegiatan Usaha (MGLV; IRR 13,64%, payback 8 tahun 8 bulan) — Stockbit Reports, 28 Jul 2026",
+        "url": "https://stockbit.com/",
+        "jenis": "dokumen"
+      }
+    ]
+  },
   "MKNT": {
     "asOf": "2026-10-28",
     "ringkasan": "MKNT (kini bernama PT Remitra Global International Tbk sejak 1 Oktober 2026) menuntaskan akuisisi 99,99% PT Citra Baru Steel (CBS) dari Headwell Investment Limited (Hong Kong) senilai Rp668,0 miliar dan 99,99% PT Radja Udang Malingping (RUM) dari PT Mazon Bumi Mining senilai Rp156,49 miliar pada 29 Mei 2026, dibiayai pinjaman tanpa bunga Rp822,92 miliar yang kemudian dikonversi menjadi saham. CBS adalah produsen besi beton (baja tulangan) sejak 2008 berkapasitas terpasang 300.000 ton per tahun, beralamat di Jl. Modern X Kav. Q7-8, Desa Nambo Ilir, Kec. Kibin, Kabupaten Serang, Banten (kawasan Modern Cikande), bersertifikat SNI 2052:2017, ISO 9001, ISO 14001, dan SMK3. RUM bergerak di budidaya tambak udang di wilayah Malingping, Lebak, Banten, tetapi luas tambak, produksi, dan keuangannya tidak dipublikasikan. Setelah konversi utang, PT Headwell Bintang Energi Hijau menjadi pengendali (64,85%–66,85%, sumber berbeda); emiten sebelumnya berekuitas negatif dan tanpa pendapatan.",
@@ -2838,7 +3472,7 @@
       }
     ],
     "tambang": null,
-    "pasar": "CBS memasok besi beton untuk proyek konstruksi dan infrastruktur, pasar yang sangat dipengaruhi belanja infrastruktur pemerintah dan persaingan harga dengan baja impor (terutama Tiongkok). Pesaing domestik besi beton antara lain Krakatau Steel dan anak usahanya, Gunung Raja Paksi (GGRP), Master Steel, Jakarta Cakratunggal Steel Mills, dan Ispat Indo. RUM bermain di budidaya udang (umumnya vaname) di pesisir selatan Banten; harga udang ekspor sangat dipengaruhi pasar AS dan Jepang serta risiko penyakit. Pangsa pasar CBS dan RUM tidak ditemukan.",
+    "pasar": "CBS memasok besi beton untuk proyek konstruksi dan infrastruktur, pasar yang sangat dipengaruhi belanja infrastruktur pemerintah dan persaingan harga dengan baja impor (terutama Tiongkok). Pesaing domestik besi beton antara lain Krakatau Steel dan anak usahanya, Gunung Raja Paksi (GGRP), Master Steel, Jakarta Cakratunggal Steel Mills, dan Ispat Indo. RUM bermain di budidaya udang (umumnya vaname) di pesisir selatan Banten; harga udang ekspor sangat dipengaruhi pasar AS dan Jepang serta risiko penyakit. Pangsa pasar CBS dan RUM tidak ditemukan. (Catatan: nama pesaing di paragraf ini dari pengetahuan umum, tanpa sumber yang dikutip.)",
     "keuangan": [
       {
         "l": "Nilai akuisisi CBS",
@@ -2960,6 +3594,428 @@
         "t": "Saham Rp1 Ini Bakal Private Placement Rp822,9 Miliar dan Ganti Pengendali — KabarBursa, 17 Juli 2026",
         "url": "https://www.kabarbursa.com/market-hari-ini/saham-rp1-ini-bakal-privat-placement-rp8229-miliar-dan-ganti-pengendali",
         "jenis": "media"
+      }
+    ]
+  },
+  "MORA": {
+    "asOf": "2026-10-28",
+    "ringkasan": "MyRepublic Indonesia (PT Eka Mas Republik/EMR, grup Sinar Mas) telah melebur ke MORA efektif 22 April 2026, membentuk PT Ekamas Mora Republik Tbk dengan PT Innovate Mas Utama (grup Sinar Mas/DSSA) sebagai pengendali ±48,4%. Per 30 April 2026 entitas gabungan memiliki >12,7 juta homepass, >166 ribu km fiber backbone & akses, >2,6 juta pelanggan ritel, dan >17 ribu pelanggan enterprise; angka ini lebih tinggi dari rilis 27 April 2026 (9,7 juta homepass, 1,8 juta pelanggan) sehingga dicatat keduanya. Kinerja semester I 2026 menunjukkan pendapatan Rp2,78 triliun (+52,42%) dan laba periode berjalan Rp341,93 miliar (+95,16%), dengan total aset melonjak ke Rp43,13 triliun dan liabilitas Rp24,43 triliun pascakonsolidasi. Target 2026: tambah 5 juta homepass dan ±1,5 juta pelanggan, didukung kredit investasi BCA Rp4 triliun.",
+    "entitas": [
+      {
+        "nama": "PT Eka Mas Republik (MyRepublic Indonesia)",
+        "peran": "aset target (melebur 100%, bubar tanpa likuidasi)",
+        "lokasi": "Indonesia (nasional)",
+        "berdiri": "",
+        "kegiatan": "Operator internet FTTH ritel"
+      },
+      {
+        "nama": "PT Ekamas Mora Republik Tbk (MORA, dahulu PT Mora Telematika Indonesia/Moratelindo)",
+        "peran": "entitas hasil merger (emiten)",
+        "lokasi": "Jakarta; jaringan nasional",
+        "berdiri": "",
+        "kegiatan": "Backbone fiber darat & laut, wholesale/enterprise, FTTH ritel (Oxygen.id + MyRepublic), data center, FWA"
+      },
+      {
+        "nama": "PT Palapa Ring Barat & PT Palapa Timur Telematika",
+        "peran": "anak usaha (proyek KPBU Palapa Ring)",
+        "lokasi": "Indonesia barat & timur",
+        "berdiri": "",
+        "kegiatan": "Penyelenggara Palapa Ring Barat dan Timur; total jaringan dibangun 10.710 km (Selular 2021)"
+      },
+      {
+        "nama": "PT Innovate Mas Utama",
+        "peran": "induk/pengendali (±48,4%)",
+        "lokasi": "Indonesia",
+        "berdiri": "",
+        "kegiatan": "Kendaraan investasi grup Sinar Mas/DSSA"
+      }
+    ],
+    "operasional": [
+      {
+        "l": "Homepass gabungan",
+        "t": ">12,7 juta (30 Apr 2026); rilis 27 Apr 2026 menyebut >9,7 juta",
+        "s": 1
+      },
+      {
+        "l": "Panjang fiber backbone & akses",
+        "t": ">166 ribu km (30 Apr 2026)",
+        "s": 1
+      },
+      {
+        "l": "Pelanggan ritel",
+        "t": ">2,6 juta (30 Apr 2026); rilis 27 Apr 2026 menyebut >1,8 juta (MyRepublic ±1,5 juta + Oxygen hampir 300 ribu)",
+        "s": 1
+      },
+      {
+        "l": "Pelanggan enterprise",
+        "t": ">17 ribu",
+        "s": 0
+      },
+      {
+        "l": "Site FWA",
+        "t": ">200 site di 90 kota/kabupaten; target >1.000 site",
+        "s": 1
+      },
+      {
+        "l": "Aset EMR pra-merger (Sep 2025)",
+        "t": "Fiber 58.455 km, homepass 8,79 juta, pelanggan ritel 1,52 juta",
+        "s": 7
+      },
+      {
+        "l": "Kabel laut Rising 8",
+        "t": "Jakarta–Batam–Singapura, 1.128,5 km",
+        "s": 1
+      },
+      {
+        "l": "Data center Moratelindo",
+        "t": "6 data center; kapasitas jaringan >32.000 G (data 2021)",
+        "s": 6
+      },
+      {
+        "l": "Target 2026",
+        "t": "+5 juta homepass, ±1,5 juta pelanggan baru, FTTH ke 186 kota/kabupaten",
+        "s": 1
+      }
+    ],
+    "tambang": null,
+    "pasar": "Pascamerger MORA menjadi salah satu operator FTTH ritel terbesar di Indonesia, bersaing dengan IndiHome (Telkom), First Media/LINK, Biznet, XL Home/XLSmart, ICON+ (PLN) serta pemain baru WIFI/Surge dan INET. Segmen wholesale bersaing dengan Telkom, MTEL, KETR, dan FiberCo. Pangsa pasar resmi tidak ditemukan.",
+    "keuangan": [
+      {
+        "l": "Pendapatan 1H 2026",
+        "t": "Rp2,78 triliun (1H 2025: Rp1,83 triliun; +52,42%)",
+        "s": 2
+      },
+      {
+        "l": "Laba usaha 1H 2026",
+        "t": "Rp735,45 miliar (+48,68%)",
+        "s": 2
+      },
+      {
+        "l": "Laba periode berjalan 1H 2026",
+        "t": "Rp341,93 miliar (+95,16%); diatribusikan ke induk Rp312,36 miliar",
+        "s": 2
+      },
+      {
+        "l": "Neraca 30 Jun 2026",
+        "t": "Aset Rp43,13 triliun; liabilitas Rp24,43 triliun; ekuitas Rp18,70 triliun (31 Des 2025: aset Rp14,76 T, liabilitas Rp6,85 T)",
+        "s": 2
+      },
+      {
+        "l": "Kinerja 2025 (MORA pra-merger)",
+        "t": "EBITDA ±Rp2,0 triliun (+9,8%); laba bersih ±Rp516 miliar (+96,5%); pendapatan ritel ±Rp1,3 triliun; wholesale ±Rp876 miliar",
+        "s": 1
+      },
+      {
+        "l": "Kredit investasi BCA",
+        "t": "Rp4 triliun, tenor maks. 7 tahun (grace period pokok maks. 1 tahun), untuk capex homepass & CPE; jaminan fidusia ≥125% pokok",
+        "s": 3
+      },
+      {
+        "l": "Nilai merger",
+        "t": "Ekuitas EMR Rp10,42 triliun (KJPP SRR, cut-off 30 Sep 2025); MORA Rp10,21 triliun (Rp432/saham)",
+        "s": 7
+      }
+    ],
+    "pengendaliAset": [
+      {
+        "nama": "PT Dian Swastatika Sentosa Tbk (DSSA) — SM+ edge data center",
+        "jenis": "Edge data center",
+        "lokasi": "Indonesia",
+        "detail": "25 edge data center (Katadata, Jul 2026); sumber lain menyebut 24 edge DC berkapasitas total 10 MW",
+        "hubungan": "Satu grup pengendali (Sinar Mas); potensi sinergi kolokasi/backbone",
+        "s": 4
+      },
+      {
+        "nama": "SMX01 (DSSA)",
+        "jenis": "Hyperscale data center Tier IV",
+        "lokasi": "Jakarta",
+        "detail": ">18 MW tahap awal; topping off Mei 2026; target operasi Q4 2026; menurut ringkasan sumber lain dapat dikembangkan hingga 60 MW, investasi US$300 juta bersama LG",
+        "hubungan": "Satu grup; calon pengguna konektivitas MORA",
+        "s": 4
+      },
+      {
+        "nama": "PT Bali Media Telekomunikasi (BMT) — saham XLSmart (EXCL)",
+        "jenis": "Operator seluler (kepemilikan tidak langsung)",
+        "lokasi": "Indonesia",
+        "detail": "BMT memiliki 24,57% EXCL; akuisisi BMT ±Rp4 triliun",
+        "hubungan": "Satu grup; potensi kerja sama FWA/fiber backhaul",
+        "s": 4
+      },
+      {
+        "nama": "Portofolio energi DSSA",
+        "jenis": "Batu bara & panas bumi",
+        "lokasi": "Indonesia",
+        "detail": "Panas bumi bersama EDC, 6 lapangan potensi 440 MW; batu bara masih penyumbang utama pendapatan",
+        "hubungan": "Tidak langsung",
+        "s": 5
+      }
+    ],
+    "jurnal": [
+      {
+        "judul": "Pengaruh Kualitas Pelayanan dan Harga terhadap Kepuasan Pelanggan MyRepublic di Tangerang",
+        "penulis": "Rizki Maulana Assagaf",
+        "tahun": "2023",
+        "terbitan": "Skripsi, Universitas Pembangunan Jaya (repositori eprints UPJ) — bukan jurnal bereputasi",
+        "url": "https://eprints.upj.ac.id/id/eprint/4256/",
+        "temuan": "Survei 100 responden: kualitas pelayanan (t=8,404) dan harga (t=6,201) berpengaruh signifikan terhadap kepuasan, namun koefisien determinasi hanya 12,5%; survei pendahuluan 35 pelanggan di Pondok Kacang menunjukkan 75,3% tidak setuju performa internet sesuai harapan."
+      }
+    ],
+    "positif": [
+      "Skala jaringan besar dan terintegrasi (backbone + FTTH + kabel laut + FWA) setelah merger.",
+      "Kinerja 1H 2026 tumbuh tinggi: pendapatan +52,42%, laba +95,16%.",
+      "Didukung grup Sinar Mas (DSSA) dengan aset data center dan kepemilikan di XLSmart.",
+      "Pendanaan capex sudah tersedia (kredit BCA Rp4 triliun)."
+    ],
+    "risiko": [
+      "Liabilitas naik tajam menjadi Rp24,43 triliun pascakonsolidasi; leverage dan beban bunga meningkat.",
+      "Angka homepass/pelanggan pascamerger berbeda antar-rilis (9,7 vs 12,7 juta homepass; 1,8 vs 2,6 juta pelanggan).",
+      "Kualitas layanan ritel MyRepublic mendapat penilaian rendah dalam survei akademik lokal (skala kecil).",
+      "Persaingan FTTH ketat, termasuk program internet murah (mis. Internet Rakyat Rp100 ribu/bulan dari grup WIFI).",
+      "Dilusi 50,5% bagi pemegang saham lama MORA akibat merger."
+    ],
+    "belumDitemukan": [
+      "Data homepass/pelanggan per 30 Juni 2026 dan ARPU",
+      "EBITDA 1H 2026 dan rincian utang berbunga",
+      "Kapasitas data center MORA dalam MW",
+      "Rincian izin penyelenggaraan jaringan (Komdigi) entitas gabungan",
+      "Jurnal peer-reviewed yang membahas Moratelindo/MyRepublic secara khusus"
+    ],
+    "sumber": [
+      {
+        "t": "Usai Merger, MoraRepublic Layani 1,8 Juta Pelanggan dengan 9,7 Juta Homepass — Bisnis.com, 27 Apr 2026",
+        "url": "https://teknologi.bisnis.com/read/20260427/101/1969537/usai-merger-morarepublic-layani-18-juta-pelanggan-dengan-97-juta-homepass",
+        "jenis": "media"
+      },
+      {
+        "t": "Ekamas Mora (MORA) Targetkan Tambah 5 Juta Homepass dan 1,5 Juta Pelanggan Baru pada 2026 — Investortrust, 15 Jun 2026",
+        "url": "https://investortrust.id/market/106441/ekamas-mora-mora-targetkan-tambah-5-juta-homepass-dan-1-5-juta-pelanggan-baru-pada-2026",
+        "jenis": "media"
+      },
+      {
+        "t": "MORA Catat Pendapatan Rp2,78 Triliun di Semester I 2026 — IQPlus via BCA Sekuritas, 3 Agu 2026",
+        "url": "https://bcasekuritas.co.id/latest-news/news/mora-catat-pendapatan-rp278-triliun-di-semester-i-2026",
+        "jenis": "media"
+      },
+      {
+        "t": "Kantongi Pinjaman Jumbo Rp4 Triliun dari BCA, MORA Genjot Ekspansi Jaringan Internet — Kabarbursa, Sep 2026",
+        "url": "https://www.kabarbursa.com/market-hari-ini/kantongi-pinjaman-jumbo-rp4-triliun-dari-bca-mora-genjot-ekspansi-jaringan-internet",
+        "jenis": "media"
+      },
+      {
+        "t": "Membaca Arah Transformasi Bisnis Emiten Grup Sinar Mas (DSSA) ke Ekosistem AI — Katadata, 22 Jul 2026",
+        "url": "https://katadata.co.id/amp/finansial/bursa/6a606592ac369/membaca-arah-transformasi-bisnis-emiten-grup-sinar-mas-dssa-ke-ekosistem-ai",
+        "jenis": "media"
+      },
+      {
+        "t": "DSSA Perluas EBT dan Digital, Panas Bumi Target 440 MW — Kabarbursa, 2026",
+        "url": "https://www.kabarbursa.com/ekonomi-hijau/dssa-perluas-ebt-dan-digital-panas-bumi-target-440-mw.md",
+        "jenis": "media"
+      },
+      {
+        "t": "Bersiap Merger dengan Smartfren, Ketahui Sepak Terjang Moratelindo di Industri Telekomunikasi — Selular.ID, Jun 2021",
+        "url": "https://selular.id/2021/06/bersiap-merger-dengan-smartfren-ketahui-sepak-terjang-moratelindo-di-industri-telekomunikasi/",
+        "jenis": "media"
+      },
+      {
+        "t": "Perkuat Layanan Industri Telekomunikasi, Moratelindo (MORA) dan Eka Mas Republic Siap Merger — Stockwatch, 18 Des 2025 (via aset-verified.json)",
+        "url": "https://stockwatch.id/",
+        "jenis": "media"
+      },
+      {
+        "t": "Pengaruh Kualitas Pelayanan dan Harga terhadap Kepuasan Pelanggan MyRepublic di Tangerang — Skripsi, Universitas Pembangunan Jaya (eprints), 2023",
+        "url": "https://eprints.upj.ac.id/id/eprint/4256/",
+        "jenis": "jurnal"
+      },
+      {
+        "t": "MyRepublic: Shaping the Future of High-Speed Internet in Indonesia — ZTE Technologies (VIP Voices), 2025",
+        "url": "https://www.zte.com.cn/global/about/magazine/zte-technologies/2025/special-topic--ai--core-network-/vip-voices/myrepublic--shaping-the-future-of-high-speed-internet-in-indones.html",
+        "jenis": "situs perusahaan"
+      },
+      {
+        "t": "Prospek Cerah Saham MORA Usai Merger dengan MyRepublic dan Rapor Hijau Kuartal I-2026 — Kontan",
+        "url": "https://insight.kontan.co.id/news/prospek-cerah-saham-mora-usai-merger-dengan-myrepublic-dan-rapor-hijau-kuartal-i-2026",
+        "jenis": "media"
+      }
+    ]
+  },
+  "NATO": {
+    "asOf": "2026-10-28",
+    "ringkasan": "NATO (PT Olympus Strategic Indonesia Tbk, d/h PT Surya Permata Andalan Tbk dan PT Nusantara Properti Internasional Tbk) mengambil alih 100% ORBIT MARKETING PTE. LTD. (Singapura) senilai SGD10.000 pada 16 Januari 2026, dengan tujuan resmi diversifikasi risiko; kegiatan usaha, aset, dan keuangan Orbit Marketing tidak diungkap, dan entitas ini belum ditemukan di basis data registri Singapura yang dapat diakses publik. Aset operasional NATO yang teridentifikasi adalah hotel butik dan vila skala kecil di Bali (Luna2 Seminyak 14 studio, Mangosteen Hotel Ubud 14 kamar dan vila, The Seri Villas 9 vila) serta resor Maratua Beach Resort (Kalimantan Timur), Takabonerate Resort (Sulawesi Selatan), dan Surfer Paradise Resort (Bali). Pendapatan historis hanya ±Rp16,7–17,9 miliar per tahun dengan laba tipis, sementara agregator mencatat lonjakan angka 2026 (pendapatan disetahunkan ±Rp1,4 triliun, aset ±Rp4,3 triliun) yang belum dapat diverifikasi ke laporan resmi. Pengendali baru PT Mercury Strategic Indonesia (26,87% sejak 12 Desember 2025, tender wajib Rp183,63 per saham) tidak diungkap pemilik akhirnya dan membuka opsi go private.",
+    "entitas": [
+      {
+        "nama": "ORBIT MARKETING PTE. LTD.",
+        "peran": "aset target (anak usaha 100%)",
+        "lokasi": "Singapura",
+        "berdiri": null,
+        "kegiatan": "Tidak diungkap; diklasifikasikan sebagai perusahaan investasi"
+      },
+      {
+        "nama": "PT Nusantara Jaya Realti (NJR)",
+        "peran": "anak usaha (99,99%)",
+        "lokasi": "Jakarta; aset di Bali",
+        "berdiri": null,
+        "kegiatan": "Investasi; menaungi The Seri Villas, Mangosteen Hotel, Luna2 Hotel"
+      },
+      {
+        "nama": "PT Nusantara Mandala Prima (NMP)",
+        "peran": "anak usaha (99,99%)",
+        "lokasi": "Jakarta; aset di Kalimantan Timur, Sulawesi Selatan, Bali",
+        "berdiri": null,
+        "kegiatan": "Investasi; menaungi Maratua Beach Resort, Takabonerate Resort, Surfer Paradise Resort"
+      },
+      {
+        "nama": "Quantum Global Strategic Pte. Ltd. dan Quantum Strategic Investments Pte. Ltd.",
+        "peran": "anak usaha (100%)",
+        "lokasi": "Singapura",
+        "berdiri": null,
+        "kegiatan": "Investasi"
+      },
+      {
+        "nama": "PT Mercury Strategic Indonesia (MSI)",
+        "peran": "induk (pengendali baru)",
+        "lokasi": "Jakarta Selatan",
+        "berdiri": null,
+        "kegiatan": "Perusahaan investasi; menyatakan tidak terafiliasi dengan pengendali lama"
+      }
+    ],
+    "operasional": [
+      {
+        "l": "Luna2 Seminyak (Bali)",
+        "t": "Hotel butik 14 studio",
+        "s": 0
+      },
+      {
+        "l": "Mangosteen Hotel (Ubud, Bali)",
+        "t": "14 kamar dan vila",
+        "s": 0
+      },
+      {
+        "l": "The Seri Villas (Bali)",
+        "t": "9 vila",
+        "s": 0
+      },
+      {
+        "l": "Resor lain",
+        "t": "Maratua Beach Resort (Kalimantan Timur), Takabonerate Resort (Sulawesi Selatan), Surfer Paradise Resort (Bali); jumlah kamar tidak diungkap",
+        "s": 1
+      },
+      {
+        "l": "Jaringan anak usaha",
+        "t": "10 entitas: 6 perhotelan (Aneka Dian Perkasa, Citra Multi Jaya, Mimpi Design, Mitra Graha Tangguhperkasa, Pelangi Anugerah Buana, Roku Bali Internasional Indonesia), 2 investasi domestik (NJR, NMP), 2 investasi Singapura (Quantum)",
+        "s": 0
+      },
+      {
+        "l": "Orbit Marketing",
+        "t": "Nilai akuisisi SGD10.000 untuk 100%; rampung 16 Januari 2026; diumumkan 12 Mei 2026; kegiatan usaha tidak diungkap",
+        "s": 2
+      }
+    ],
+    "tambang": null,
+    "pasar": "Bisnis inti NATO adalah perhotelan butik/vila di Bali (Seminyak, Ubud) dan resor bahari di destinasi terpencil (Maratua, Takabonerate). Pasar perhotelan Bali sangat kompetitif dengan ribuan vila dan hotel butik; pesaing tercatat antara lain jaringan hotel emiten seperti PNLF/Panin dan SRTG (dalam pembanding internal). Peran Orbit Marketing dalam pasar tidak diketahui. (Catatan: nama pesaing di paragraf ini dari pengetahuan umum, tanpa sumber yang dikutip.)",
+    "keuangan": [
+      {
+        "l": "Pendapatan & laba 2024",
+        "t": "Pendapatan Rp17,9 miliar; laba bersih Rp1,2 miliar",
+        "s": 0
+      },
+      {
+        "l": "Pendapatan & laba 2025",
+        "t": "Pendapatan Rp16,7 miliar; laba bersih Rp132,3 juta; total aset Rp805 miliar; ekuitas Rp802 miliar; tanpa utang (Carisaham). Simply Wall St (TTM Sep 2025): pendapatan Rp16,53 miliar, rugi Rp400,88 juta — sumber berbeda",
+        "s": 0
+      },
+      {
+        "l": "Indikasi 2026 (disetahunkan, agregator)",
+        "t": "Pendapatan ±Rp1,4 triliun; rugi ±Rp340 miliar; aset ±Rp4,3 triliun; ekuitas ±Rp2,1 triliun; utang ±Rp117 miliar — belum diverifikasi ke laporan keuangan resmi; EPS Juli 2026 −Rp10,31",
+        "s": 0
+      },
+      {
+        "l": "Nilai Orbit Marketing",
+        "t": "SGD10.000 (transaksi tidak material)",
+        "s": 2
+      },
+      {
+        "l": "Akuisisi pengendali",
+        "t": "2.150.000.000 saham (26,871%) @Rp183 = Rp393,45 miliar, 12 Desember 2025",
+        "s": 3
+      },
+      {
+        "l": "Tender wajib",
+        "t": "Maksimal 5.811.111.504 saham (73,129%) @Rp183,63; nilai maksimum Rp1.070.753.405.232; periode 19 Februari–20 Maret 2026; dana kas internal MSI; opsi go private",
+        "s": 4
+      }
+    ],
+    "pengendaliAset": [
+      {
+        "nama": "PT Mercury Strategic Indonesia",
+        "jenis": "Perusahaan investasi",
+        "lokasi": "Jakarta Selatan",
+        "detail": "Berkantor di Jakarta Selatan; menyatakan tidak terafiliasi dengan pengendali lama; dana tender dari kas internal; pemilik akhir, pengurus, dan aset lain tidak diungkap",
+        "hubungan": "Pengendali NATO sejak 12 Desember 2025",
+        "s": 6
+      }
+    ],
+    "jurnal": [],
+    "positif": [
+      "NATO memiliki portofolio properti perhotelan nyata di Bali dan destinasi bahari dengan ekuitas besar (±Rp802 miliar) dan hampir tanpa utang hingga 2025.",
+      "Nilai akuisisi Orbit Marketing sangat kecil (SGD10.000) sehingga tidak membebani keuangan.",
+      "Pengendali baru menyiapkan tender wajib hingga ±Rp1,07 triliun dari kas internal, menunjukkan kapasitas dana yang besar."
+    ],
+    "risiko": [
+      "Kegiatan usaha, aset, dan rencana pemanfaatan Orbit Marketing sama sekali tidak diungkap; entitas tidak ditemukan di basis data registri publik yang diakses.",
+      "Lonjakan indikatif pendapatan dan aset 2026 ke skala triliun (agregator) tidak dijelaskan dalam keterbukaan yang ditemukan; perlu verifikasi laporan keuangan resmi.",
+      "Pemilik akhir PT Mercury Strategic Indonesia tidak diketahui.",
+      "Opsi go private/delisting dapat merugikan likuiditas pemegang saham publik.",
+      "Saham disuspensi BEI pada 16 Desember 2025 dan 7 September 2026 karena kenaikan harga kumulatif signifikan.",
+      "Pendapatan perhotelan historis kecil (±Rp17 miliar) dibanding nilai aset dan kapitalisasi pasar."
+    ],
+    "belumDitemukan": [
+      "Kegiatan usaha, alamat, UEN, dan keuangan Orbit Marketing Pte. Ltd.",
+      "Penjelasan resmi lonjakan pendapatan/aset 2026",
+      "Jumlah kamar dan tingkat hunian Maratua Beach Resort, Takabonerate Resort, Surfer Paradise Resort",
+      "Pemilik akhir PT Mercury Strategic Indonesia dan aset lain grupnya",
+      "Hasil tender wajib dan porsi akhir pengendali",
+      "Jurnal ilmiah terkait aset NATO"
+    ],
+    "sumber": [
+      {
+        "t": "Analisa Fundamental Saham NATO — Carisaham (agregator data laporan keuangan)",
+        "url": "https://carisaham.com/emiten/profile/NATO",
+        "jenis": "dokumen"
+      },
+      {
+        "t": "Mercury Strategic Beli 26,8% Saham NATO, Resmi Jadi Pengendali Baru — Fortune IDN, 15 Desember 2025",
+        "url": "https://www.fortuneidn.com/market/mercury-strategic-beli-26-8-saham-nato-resmi-jadi-pengendali-baru-00-3dhnm-w2mvkq",
+        "jenis": "media"
+      },
+      {
+        "t": "Perkuat Strategi, NATO Rampungkan Akuisisi Saham Orbit Marketing — BCA Sekuritas/IQPlus, 12 Mei 2026",
+        "url": "https://bcasekuritas.co.id/latest-news/news/perkuat-strategi-nato-rampungkan-akuisisi-saham-orbit-marketing",
+        "jenis": "media"
+      },
+      {
+        "t": "NATO Punya Pengendali Baru, Nilai Transaksi Rp393,45 Miliar — CNBC Indonesia, 15 Desember 2025",
+        "url": "https://www.cnbcindonesia.com/market/20251215122924-17-694236/nato-punya-pengendali-baru-nilai-transaksi-rp-39345-miliar",
+        "jenis": "media"
+      },
+      {
+        "t": "Akuisisi NATO, Mercury Strategic Indonesia Siapkan Tender Rp1,07 Triliun — BCA Sekuritas/IQPlus, 18 Februari 2026",
+        "url": "https://bcasekuritas.co.id/latest-news/news/akuisisi-nato-mercury-strategic-indonesia-siapkan-tender-rp107-triliun",
+        "jenis": "media"
+      },
+      {
+        "t": "Reshuffle, NATO Rombak Kepala Direksi Usai Masuk Pengendali Baru — EmitenNews, 8 Februari 2026",
+        "url": "https://www.emitennews.com/news/reshuffle-nato-rombak-kepala-direksi-usai-masuk-pengendali-baru",
+        "jenis": "media"
+      },
+      {
+        "t": "Mercury Strategic Ambil Alih NATO, Siap Gelar Tender Wajib — BCA Sekuritas/IQPlus, Desember 2025",
+        "url": "https://bcasekuritas.co.id/latest-news/news/mercury-strategic-ambil-alih-nato-siap-gelar-tender-wajib",
+        "jenis": "media"
+      },
+      {
+        "t": "Surya Permata Andalan — data kepemilikan & kinerja TTM, Simply Wall St",
+        "url": "https://simplywall.st/stocks/id/consumer-services/idx-nato/surya-permata-andalan-shares",
+        "jenis": "dokumen"
       }
     ]
   },
@@ -3171,6 +4227,403 @@
         "t": "EDGAR full-text search \"Bangkok Tellink\" — 23 filing Arogo Capital (Des 2024–Jan 2026)",
         "url": "https://efts.sec.gov/LATEST/search-index?q=%22Bangkok%20Tellink%22",
         "jenis": "regulator"
+      }
+    ]
+  },
+  "NINE": {
+    "asOf": "2026-10-28",
+    "ringkasan": "NINE memegang opsi (sejak 28 Desember 2025) untuk membeli aset tambang Poh Golden Ger Resources Pte Ltd (PGGR), anak usaha Poh Group milik Poh Kay Ping yang juga pemegang saham pengendali NINE, sehingga transaksi bersifat afiliasi. PGGR disebut memiliki 100% atas dua konsesi batu bara (termal dan semi-soft coking coal) di Mongolia; nama konsesi, aimag, luas, dan cadangan tidak diungkap dalam keterbukaan maupun media. Rekam jejak publik menunjukkan PGGR sejak 2017 memegang hak tambang dan eksplorasi batu bara serta tembaga di Mongolia selatan dan tercatat sebagai pengembang proyek PLTU Nuurst 1.000 MW (status perizinan), sementara perusahaan lain Poh Kay Ping, Tian Poh Resources (ASX: TPO), pernah mengakuisisi sumber daya JORC 478 juta ton di Mongolia (2015). Nilai indikatif USD150 juta (Desember 2025) atau USD100 juta (Oktober 2026), menunggu dua penilai independen; injeksi aset direncanakan lewat rights issue tahap kedua setelah PMHMETD I (RUPSLB 18 November 2026).",
+    "entitas": [
+      {
+        "nama": "Poh Golden Ger Resources Pte Ltd (PGGR)",
+        "peran": "pemilik aset target",
+        "lokasi": "Singapura; operasi Mongolia (anak usaha PGGR LLC)",
+        "berdiri": "Tidak diungkap (aktif setidaknya sejak 2017)",
+        "kegiatan": "Pemegang dua konsesi batu bara di Mongolia; hak tambang/eksplorasi batu bara dan tembaga di Mongolia selatan; pengembang proyek PLTU Nuurst"
+      },
+      {
+        "nama": "Poh Group Pte",
+        "peran": "induk PGGR / grup pengendali NINE",
+        "lokasi": "Singapura",
+        "berdiri": "Tidak diungkap",
+        "kegiatan": "Pertambangan dan energi; didirikan dan dipimpin Poh Kay Ping"
+      },
+      {
+        "nama": "Kontraktor EPC+F (nama tidak diungkap)",
+        "peran": "mitra kerja sama tambang",
+        "lokasi": "Inner Mongolia, Tiongkok",
+        "berdiri": "1998",
+        "kegiatan": "Perusahaan swasta dengan >1.000 karyawan, aset >USD500 juta, mengoperasikan tambang terbuka dan bawah tanah; berencana investasi >USD100 juta"
+      }
+    ],
+    "operasional": [
+      {
+        "l": "Konsesi",
+        "t": "Dua konsesi batu bara (termal dan semi-soft coking coal) di Mongolia, 100% milik PGGR; nama/lokasi/luas tidak diungkap",
+        "s": 0
+      },
+      {
+        "l": "Kapasitas proyeksi",
+        "t": ">20 juta ton/tahun (proyeksi kerja sama EPC+F, bergantung uji tuntas dan persetujuan ODI Tiongkok)",
+        "s": 0
+      },
+      {
+        "l": "Investasi mitra",
+        "t": "EPC+F berencana investasi >USD100 juta",
+        "s": 0
+      },
+      {
+        "l": "Hak lain PGGR (2017)",
+        "t": "Hak penambangan dan eksplorasi batu bara dan tembaga di Mongolia selatan; MoU gasifikasi batu bara dan pembangkit dengan Kementerian Energi Mongolia (April 2017)",
+        "s": 2
+      },
+      {
+        "l": "Status",
+        "t": "Belum ada produksi yang diungkap; opsi beli berlaku 9 bulan sejak 28 Des 2025 (perpanjangan tidak ditemukan)",
+        "s": 1
+      }
+    ],
+    "tambang": {
+      "komoditas": "Batu bara termal dan semi-soft coking coal",
+      "lokasi": "Mongolia (aimag tidak diungkap). Catatan: rekam jejak grup Poh di Mongolia mencakup proyek Nuurst (±120 km tenggara Ulaanbaatar, dekat rel) dan Huabei Kuangye (coking coal, bersebelahan dengan tambang Shinejinst); keterkaitan keduanya dengan dua konsesi PGGR BELUM dikonfirmasi sumber.",
+      "izin": "Dua konsesi (jenis lisensi Mongolia, nomor, dan masa berlaku tidak diungkap)",
+      "luas": "Tidak diungkap",
+      "cadangan": "Tidak diungkap",
+      "sumberDaya": "Tidak diungkap untuk konsesi PGGR. Sebagai konteks grup: Tian Poh Resources (dipimpin Poh Kay Ping) mengakuisisi sumber daya batu bara JORC 478 juta ton di Mongolia (proyek Nuurst, Agustus 2015).",
+      "standar": "Tidak diungkap; penilaian oleh dua penilai independen (Indonesia dan Australia) belum terbit",
+      "kualitas": "Termal dan semi-soft coking coal (spesifikasi tidak diungkap)",
+      "produksi": "Proyeksi >20 juta ton/tahun (target kerja sama EPC+F, belum beroperasi)",
+      "umur": "Tidak dapat dihitung (cadangan tidak diungkap)",
+      "stripRatio": "Tidak diungkap",
+      "infrastruktur": "Tidak diungkap untuk konsesi PGGR; proyek Nuurst disebut berjarak >6 km dari jalur rel eksisting",
+      "s": 0
+    },
+    "pasar": "Batu bara Mongolia terutama diekspor ke Tiongkok melalui perbatasan darat; ekspor batu bara Mongolia mencetak rekor dalam beberapa tahun terakhir. Semi-soft coking coal dipakai dalam campuran kokas industri baja Tiongkok. Kontraktor EPC+F asal Inner Mongolia menunjukkan orientasi pasar Tiongkok. Pelanggan/offtaker dan harga jual tidak diungkap.",
+    "keuangan": [
+      {
+        "l": "Nilai indikatif aset",
+        "t": "USD150 juta (pengumuman Desember 2025); IDX Channel Oktober 2026 menyebut USD100 juta (±Rp1,8 triliun)",
+        "s": 1
+      },
+      {
+        "l": "Mekanisme harga",
+        "t": "Rata-rata hasil dua penilai independen (Indonesia dan Australia) yang disetujui para pihak",
+        "s": 1
+      },
+      {
+        "l": "Biaya proyek PLTU Nuurst (PGGR)",
+        "t": "±USD1.383 juta untuk 1.000 MW; status perizinan (data Desember 2021)",
+        "s": 3
+      }
+    ],
+    "pengendaliAset": [
+      {
+        "nama": "Proyek PLTU Nuurst 1.000 MW",
+        "jenis": "Pembangkit listrik tenaga uap (pengembang: Poh Golden Ger Resources)",
+        "lokasi": "Ulaanbaatar/Tuv, Mongolia; bahan bakar dari lapangan batu bara Modun",
+        "detail": "Kapasitas 1.000 MW, biaya ±USD1,38 miliar; target konstruksi 2023 dan COD 2025 (data 2021, kemungkinan usang)",
+        "hubungan": "Aset/proyek pemilik aset target; potensi pembeli batu bara domestik",
+        "s": 3
+      },
+      {
+        "nama": "Tian Poh Resources Ltd (ASX: TPO)",
+        "jenis": "Eksplorasi batu bara dan tembaga Mongolia",
+        "lokasi": "Perth (kantor), Mongolia (proyek); ±10-11 proyek seluas ±125.000 ha",
+        "detail": "Sumber daya JORC 478 juta ton (Nuurst thermal coal, diakuisisi 10 Agustus 2015); Huabei Kuangye coking coal dengan lisensi tambang 30 tahun; harga saham AUD0,05 (Agustus 2023, tidak lagi aktif diperdagangkan menurut Pearler)",
+        "hubungan": "Didirikan/dipimpin Poh Kay Ping (CEO, ±31% saat IPO 2014); hubungan dengan aset PGGR yang ditawarkan ke NINE belum dikonfirmasi",
+        "s": 4
+      },
+      {
+        "nama": "Kerja sama dengan pemegang IUP Indonesia",
+        "jenis": "Rencana KSO tambang emas, batu bara, timah, dan bauksit",
+        "lokasi": "Indonesia",
+        "detail": "Masih negosiasi; nama mitra tidak diungkap",
+        "hubungan": "Rencana Poh Group untuk mendukung NINE",
+        "s": 1
+      }
+    ],
+    "jurnal": [],
+    "positif": [
+      "Pemilik (Poh Kay Ping) memiliki rekam jejak lebih dari satu dekade di sektor batu bara Mongolia (Tian Poh, PGGR, MoU dengan Kementerian Energi Mongolia).",
+      "Mitra EPC+F berskala besar (aset >USD500 juta) dengan rencana investasi >USD100 juta dapat mengurangi kebutuhan modal NINE.",
+      "Skema inbreng/rights issue tanpa pembayaran tunai akuisisi.",
+      "Mongolia merupakan pemasok batu bara darat utama Tiongkok dengan permintaan semi-soft coking coal yang stabil."
+    ],
+    "risiko": [
+      "Tidak ada data publik tentang nama konsesi, lokasi, luas, cadangan JORC, atau kualitas — nilai USD100-150 juta belum dapat diverifikasi.",
+      "Transaksi afiliasi (pemilik aset = pengendali NINE); nilai indikatif sudah turun dari USD150 juta ke USD100 juta.",
+      "Opsi 9 bulan sejak 28 Desember 2025 telah lewat tanpa pengumuman perpanjangan yang ditemukan.",
+      "Proyeksi >20 juta ton/tahun sangat ambisius dan bergantung pada persetujuan ODI Tiongkok serta uji tuntas mitra.",
+      "Proyek-proyek Mongolia grup Poh sebelumnya (Tian Poh, Nuurst) tidak menunjukkan kemajuan produksi; Tian Poh berkinerja buruk di bursa.",
+      "Risiko yurisdiksi Mongolia (perizinan, logistik perbatasan, kebijakan ekspor)."
+    ],
+    "belumDitemukan": [
+      "Nama, aimag, nomor lisensi, dan luas kedua konsesi PGGR",
+      "Cadangan/sumber daya JORC dan kualitas batu bara",
+      "Laporan keuangan PGGR",
+      "Nama kontraktor EPC+F",
+      "Status perpanjangan opsi setelah September 2026"
+    ],
+    "sumber": [
+      {
+        "t": "Techno9 (NINE) Bagikan Perkembangan Terbaru soal Akuisisi Tambang di Mongolia — Kontan, 6 Jan 2026",
+        "url": "https://investasi.kontan.co.id/news/techno9-nine-bagikan-perkembangan-terbaru-soal-akuisisi-tambang-di-mongolia",
+        "jenis": "media"
+      },
+      {
+        "t": "Techno9 (NINE) Beberkan Rencana Akuisisi Aset Tambang Poh Group di Mongolia — Bisnis.com, 6 Jan 2026",
+        "url": "https://market.bisnis.com/read/20260106/192/1941978/techno9-nine-beberkan-rencana-akuisisi-aset-tambang-poh-group-di-mongolia",
+        "jenis": "media"
+      },
+      {
+        "t": "Singaporean company to construct Mongolian coal aerification plant — AKIpress, 12 Apr 2017",
+        "url": "https://m.akipress.com/news:591196:Singaporean_company_to_construct_Mongolian_coal_aerification_plant",
+        "jenis": "media"
+      },
+      {
+        "t": "Nuurst Coal-Fired Generation Facility, Mongolia — Power Technology/GlobalData, 1 Des 2021",
+        "url": "https://www.power-technology.com/marketdata/nuurst-coal-fired-generation-facility-mongolia/",
+        "jenis": "media"
+      },
+      {
+        "t": "Tian Poh Resources — Company Update (ASX announcement), 13 Mei 2016",
+        "url": "https://announcements.asx.com.au/asxpdf/20160513/pdf/4377fhgryq4tzx.pdf",
+        "jenis": "dokumen"
+      },
+      {
+        "t": "Tian Poh Resources (ASX: TPO) — profil Pearler",
+        "url": "https://pearler.com/share/ASX/TPO",
+        "jenis": "media"
+      },
+      {
+        "t": "Tian Poh launches IPO — Mining Monthly, 2014",
+        "url": "https://www.miningmonthly.com/international-coal-news/news/1289059/tian-poh-launches-ipo",
+        "jenis": "media"
+      },
+      {
+        "t": "NINE Siapkan Rights Issue untuk Integrasi Aset Tambang Mongolia Milik Poh Group — Investortrust, 9 Jan 2026",
+        "url": "https://investortrust.id/market/90854/nine-siapkan-rights-issue-untuk-integrasi-aset-tambang-mongolia-milik-poh-group",
+        "jenis": "media"
+      }
+    ]
+  },
+  "PACK": {
+    "asOf": "2026-10-28",
+    "ringkasan": "PACK memegang saham minoritas pada dua tambang bijih nikel laterit di Kabupaten Konawe Utara, Sulawesi Tenggara: PT Karyatama Konawe Utara (KKU, 34,5% via PT Adhi Prakarsa Raya; IUP 3.119 ha membentang dari Kec. Asera hingga Kec. Langgikima, IUP OP s.d. 2035) dan PT Konutara Sejati (KS, 30% via PT Sumber Cahaya Raya; Kec. Langgikima, IUP OP s.d. 2049). RKAB 2026 kedua tambang total 10 juta ton bijih (KKU 6 juta, KS 4 juta); penjualan semester I 2026 masing-masing Rp1,46 triliun dan Rp1,05 triliun, dengan bagian laba asosiasi ke PACK Rp202,84 miliar. Pengendali PACK adalah Deng Weiming (Chairman CNGR Advanced Material) melalui PT Eco Energi Perkasa (40,56%), dan pembeli utama bijih adalah PT Nadesico Nickel Industry, smelter JV CNGR (Zhongwei)-Delong di Morowali Utara, sehingga aset terintegrasi dengan rantai pasok grup pengendali. Cadangan dan kadar resmi (JORC/KCMI) tidak dipublikasikan.",
+    "entitas": [
+      {
+        "nama": "PT Karyatama Konawe Utara (KKU)",
+        "peran": "aset target / entitas asosiasi (34,5%)",
+        "lokasi": "Kec. Asera hingga Kec. Langgikima (termasuk Desa Tambakua), Kab. Konawe Utara, Sulawesi Tenggara",
+        "berdiri": "Tidak diungkap",
+        "kegiatan": "Penambangan bijih nikel laterit; IUP 3.119 ha"
+      },
+      {
+        "nama": "PT Konutara Sejati (KS)",
+        "peran": "aset target / entitas asosiasi (30%)",
+        "lokasi": "Kec. Langgikima, Kab. Konawe Utara, Sulawesi Tenggara (desa lingkar tambang: Sarimukti, Tobimeita, Marombo Pantai)",
+        "berdiri": "Tidak diungkap",
+        "kegiatan": "Penambangan bijih nikel laterit"
+      },
+      {
+        "nama": "PT Adhi Prakarsa Raya (APR) dan PT Sumber Cahaya Raya (SCR)",
+        "peran": "anak usaha PACK (kendaraan kepemilikan KKU dan KS)",
+        "lokasi": "Indonesia",
+        "berdiri": "Tidak diungkap",
+        "kegiatan": "Induk investasi"
+      },
+      {
+        "nama": "PT Eco Energi Perkasa (EEP)",
+        "peran": "induk/pengendali PACK (40,56%)",
+        "lokasi": "Indonesia",
+        "berdiri": "Tidak diungkap",
+        "kegiatan": "Holding milik Deng Weiming; menurut LK konsolidasian CNGR 2025, CNGR adalah entitas induk utama PACK melalui EEP"
+      },
+      {
+        "nama": "PT Nadesico Nickel Industry (NNI)",
+        "peran": "pembeli utama bijih (96,21% pendapatan perdagangan nikel PACK)",
+        "lokasi": "Kawasan Industri SEI, Morowali Utara, Sulawesi Tengah",
+        "berdiri": "Tidak diungkap",
+        "kegiatan": "Smelter nikel JV Zhongwei (CNGR) dan Delong Nickel; investasi >USD1,26 miliar"
+      }
+    ],
+    "operasional": [
+      {
+        "l": "Luas IUP KKU",
+        "t": "3.119 ha (Kec. Asera s.d. Kec. Langgikima)",
+        "s": 0
+      },
+      {
+        "l": "Masa IUP",
+        "t": "IUP OP KKU s.d. 2035; IUP OP KS s.d. 2049 (dapat diperpanjang)",
+        "s": 2
+      },
+      {
+        "l": "RKAB 2026",
+        "t": "KKU 6 juta ton + KS 4 juta ton = 10 juta ton bijih nikel (100% tambang, bukan porsi PACK)",
+        "s": 2
+      },
+      {
+        "l": "Penjualan 1H2026",
+        "t": "KKU Rp1,46 triliun; KS Rp1,05 triliun",
+        "s": 1
+      },
+      {
+        "l": "Bagian laba asosiasi PACK 1H2026",
+        "t": "Rp202,84 miliar dari KKU dan KS",
+        "s": 1
+      },
+      {
+        "l": "Estimasi akademik Blok A KKU (25 ha)",
+        "t": "IDW 371.280 ton (Ni 1,5->1,9%); Kriging 685.425 ton — hanya satu blok kecil, bukan cadangan perusahaan",
+        "s": 0
+      }
+    ],
+    "tambang": {
+      "komoditas": "Bijih nikel laterit (saprolit)",
+      "lokasi": "Kab. Konawe Utara, Sulawesi Tenggara: KKU di Kec. Asera-Langgikima (Desa Tambakua); KS di Kec. Langgikima (sekitar Desa Sarimukti, Tobimeita, Marombo Pantai). Koordinat tidak dipublikasikan.",
+      "izin": "IUP Operasi Produksi: KKU berlaku s.d. 2035, KS s.d. 2049 (nomor SK tidak diungkap)",
+      "luas": "KKU 3.119 ha; KS tidak diungkap",
+      "cadangan": "Tidak dipublikasikan (tidak ada laporan JORC/KCMI publik)",
+      "sumberDaya": "Tidak dipublikasikan. Studi akademik Blok A KKU (25 ha): 371.280-685.425 ton bijih tergantung metode.",
+      "standar": "Tidak diungkap; estimasi akademik oleh Hamsir, Rembah, Arif (Minetech Journal, Des 2023) memakai Surpac 6.6",
+      "kualitas": "Studi Blok A KKU: kadar Ni 1,5-1,7% (low grade), 1,7-1,9% (medium), >1,9% (high grade); proporsi high grade ±13% (IDW). Kadar rata-rata produksi tidak diungkap.",
+      "produksi": "RKAB 2026: KKU 6 juta ton, KS 4 juta ton bijih",
+      "umur": "Tidak dapat dihitung (cadangan tidak diungkap); secara legal dibatasi masa IUP (KKU 2035, KS 2049) kecuali diperpanjang",
+      "stripRatio": "Tidak diungkap",
+      "infrastruktur": "Tidak diungkap secara rinci; bijih dijual ke smelter NNI di Morowali Utara (Sulawesi Tengah), umumnya via tongkang dari jetty pesisir Konawe Utara (jetty spesifik tidak disebut sumber)",
+      "s": 0
+    },
+    "pasar": "Bijih nikel domestik untuk smelter RKEF/NPI dan nickel matte di Sulawesi. Pembeli utama PT Nadesico Nickel Industry (JV CNGR-Delong, Morowali Utara) menyerap 96,21% pendapatan perdagangan nikel PACK (±Rp204,93 miliar). Grup CNGR memiliki kapasitas nikel hampir 200.000 ton/tahun di Indonesia (Zhongtsing/IMIP 60.000 ton nikel kontain, North Morowali 80.000 ton, Weda Bay 55.000 ton) sehingga permintaan bijih internal grup besar. Harga mengikuti HPM nikel ESDM dan premi pasar domestik.",
+    "keuangan": [
+      {
+        "l": "Akuisisi tahap 1 (dari Denway Development)",
+        "t": "USD168,78 juta: APR membeli 34,5% KKU USD100,08 juta; SCR membeli 30% KS USD68,7 juta; lunas 28 Jan 2026",
+        "s": 3
+      },
+      {
+        "l": "Akuisisi tahap Mei 2026",
+        "t": "KKU Rp742,98 miliar + KS Rp586,55 miliar = Rp1.329,53 miliar (Investortrust: 15,62% KKU dan 14,62% KS, USD75,91 juta), didanai pinjaman perpetual EEP",
+        "s": 4
+      },
+      {
+        "l": "Penjualan KKU & KS 1H2026",
+        "t": "Rp1,46 triliun dan Rp1,05 triliun",
+        "s": 1
+      },
+      {
+        "l": "Kinerja PACK 1H2026",
+        "t": "Penjualan neto Rp213 miliar; laba bersih Rp190,73 miliar (1H2025 rugi Rp14,35 miliar)",
+        "s": 1
+      },
+      {
+        "l": "Implied valuasi 100% (dihitung sendiri)",
+        "t": "KKU: USD100,08 juta ÷ 34,5% ≈ USD290 juta; KS: USD68,7 juta ÷ 30% ≈ USD229 juta (berdasarkan harga tahap 1)",
+        "s": 3
+      }
+    ],
+    "pengendaliAset": [
+      {
+        "nama": "CNGR Advanced Material Co. (Zhongwei)",
+        "jenis": "Produsen material baterai (prekursor) dan nikel; tercatat di Shenzhen (2020) dan Hong Kong (2025)",
+        "lokasi": "Tiongkok; basis nikel di Indonesia",
+        "detail": "Kapasitas nikel Indonesia hampir 200.000 ton/tahun: Zhongtsing New Energy (IMIP) 60.000 ton nikel kontain (Fase II penuh Jan 2026), North Morowali 80.000 ton, Weda Bay 55.000 ton; NNI ±80.000 ton LGNM atau hingga 40.000 ton HGNM",
+        "hubungan": "Entitas induk utama PACK via EEP; pembeli bijih KKU/KS melalui NNI (transaksi pihak berelasi)",
+        "s": 5
+      },
+      {
+        "nama": "PT Gunbuster Nickel Industry (GNI) — rumor",
+        "jenis": "Smelter NPI",
+        "lokasi": "Sulawesi (Morowali Utara)",
+        "detail": "Kapasitas ±1,8 juta ton NPI/tahun; dalam PKPU sejak Juni 2026; CNGR dirumorkan menjajaki 80% saham",
+        "hubungan": "Potensi aset grup pengendali; belum terkonfirmasi",
+        "s": 6
+      },
+      {
+        "nama": "Grup Jhonlin (Haji Isam)",
+        "jenis": "Pertambangan batu bara, perkebunan, energi; pemegang 21,12% PACK",
+        "lokasi": "Kalimantan Selatan",
+        "detail": "Membeli 6,83 miliar saham PACK @Rp137 (±Rp936,65 miliar) pada 13 Mei 2026; aset rinci tidak dibahas sumber",
+        "hubungan": "Pemegang saham signifikan, bukan pengendali",
+        "s": 1
+      }
+    ],
+    "jurnal": [
+      {
+        "judul": "Analisis Perbandingan Metode Inverse Distance Weight (IDW) dan Kriging pada Estimasi Cadangan Nikel Laterit di PT. Karyatama Konawe Utara, Desa Tambakua, Kecamatan Langgikima, Kabupaten Konawe Utara",
+        "penulis": "La Ode Hamsir, Rina Rembah, Arif",
+        "tahun": "2023",
+        "terbitan": "Minetech Journal (Mining Science and Technology Journal) 2(3):140-146, Universitas Sulawesi Tenggara",
+        "url": "https://jurnal-unsultra.ac.id/index.php/minetech/article/download/490/324",
+        "temuan": "Mengonfirmasi luas IUP KKU 3.119 ha (Asera-Langgikima); Blok A seluas 25 ha berisi ±0,37-0,69 juta ton bijih berkadar Ni 1,5->1,9%, dengan selisih besar antar-metode estimasi."
+      }
+    ],
+    "positif": [
+      "Kedua tambang sudah berproduksi dan menghasilkan penjualan besar (Rp2,51 triliun gabungan pada 1H2026) serta laba asosiasi signifikan bagi PACK.",
+      "Kuota RKAB 2026 besar (10 juta ton) dan masa IUP KS panjang (s.d. 2049).",
+      "Pasar terjamin karena pembeli utama adalah smelter grup pengendali (CNGR) dengan kapasitas nikel ±200.000 ton/tahun di Indonesia.",
+      "Konawe Utara adalah salah satu distrik nikel laterit utama Indonesia."
+    ],
+    "risiko": [
+      "Kepemilikan minoritas (34,5% dan 30%); PACK tidak mengonsolidasi dan bergantung pada dividen/kebijakan mayoritas.",
+      "Ketergantungan pada satu pembeli pihak berelasi (96,21%) — risiko harga transfer dan tata kelola.",
+      "Cadangan, kadar, dan stripping ratio resmi tidak dipublikasikan; IUP KKU berakhir 2035.",
+      "Konawe Utara sedang menjadi sorotan kasus korupsi pemberian IUP nikel (Kejaksaan Agung, 2026; ±17 perusahaan) — keterkaitan KKU/KS tidak disebut, tetapi risiko regulasi kawasan meningkat.",
+      "Data porsi kepemilikan antar-sumber tidak konsisten (14,625%/15,62% tahap Mei vs total 34,5%/30%).",
+      "Harga nikel tertekan oleh kelebihan pasokan NPI Indonesia; kebijakan RKAB/kuota dapat berubah."
+    ],
+    "belumDitemukan": [
+      "Cadangan dan sumber daya JORC/KCMI KKU dan KS",
+      "Luas IUP dan nomor SK KS",
+      "Kadar rata-rata produksi dan stripping ratio",
+      "Jetty/pelabuhan muat yang digunakan",
+      "Pemegang saham mayoritas KKU dan KS"
+    ],
+    "sumber": [
+      {
+        "t": "Hamsir, Rembah, Arif (2023), Analisis Perbandingan Metode IDW dan Kriging pada Estimasi Cadangan Nikel Laterit di PT Karyatama Konawe Utara — Minetech Journal 2(3)",
+        "url": "https://jurnal-unsultra.ac.id/index.php/minetech/article/download/490/324",
+        "jenis": "jurnal"
+      },
+      {
+        "t": "Aksi Konglomerat Cina Duet Haji Isam di Balik Melonjaknya Harga Saham PACK — Katadata, Agu 2026",
+        "url": "https://katadata.co.id/finansial/bursa/6a88033eabbb4/aksi-konglomerat-cina-duet-haji-isam-di-balik-melonjaknya-harga-saham-pack",
+        "jenis": "media"
+      },
+      {
+        "t": "Emiten Nikel Afiliasi Haji Isam akan Tingkatkan Kapasitas Bijih Nikel — Fortune IDN, 2026",
+        "url": "https://www.fortuneidn.com/market/emiten-nikel-afiliasi-haji-isam-akan-tingkatkan-kapasitas-bijih-nikel-00-my5jv-q3n7zp",
+        "jenis": "media"
+      },
+      {
+        "t": "Indonesian Mining Tycoon 'Haji Isam' Scoops $58M Stake in PACK as Pivot to Nickel Intensifies — Investortrust, 2026",
+        "url": "https://investortrust.id/market/103323/indonesian-mining-tycoon-haji-isam-scoops-58m-stake-in-pack-as-pivot-to-nickel-intensifies",
+        "jenis": "media"
+      },
+      {
+        "t": "Usai Haji Isam Masuk, Abadi Nusantara (PACK) Akuisisi Dua Perusahaan Tambang Nikel — Investortrust, 20 Mei 2026",
+        "url": "https://investortrust.id/market/103801/usai-haji-isam-masuk-abadi-nusantara-pack-akuisisi-dua-perusahaan-tambang-nikel",
+        "jenis": "media"
+      },
+      {
+        "t": "CNGR's Zhongtsing New Energy Phase II Project fully operational in Indonesia — Asian Metal, Jan 2026; CNGR's NNI produces high-grade Ni matte — Argus, Nov 2024",
+        "url": "https://www.asianmetal.com/news/2275380/CNGR's-Zhongtsing-New-Energy-Phase-II-Project-fully-operational-in-Indonesia",
+        "jenis": "media"
+      },
+      {
+        "t": "CNGR Dirumorkan Incar 80 Persen Saham Smelter Gunbuster di Indonesia — IDX Channel, 14 Okt 2026",
+        "url": "https://www.rctiplus.com/news/detail/idxchannel/5493647/cngr-dirumorkan-incar-80-persen-saham-smelter-gunbuster-di-indonesia",
+        "jenis": "media"
+      },
+      {
+        "t": "Manuver PACK Siapkan Ekspansi Nikel Terintegrasi, Jadi Saingan Baru ANTM-INCO? — Katadata, 14 Sep 2026",
+        "url": "https://katadata.co.id/finansial/bursa/6aa785c52233d/manuver-pack-siapkan-ekspansi-nikel-terintegrasi-jadi-saingan-baru-antm-inco",
+        "jenis": "media"
+      },
+      {
+        "t": "Kejagung Ambil Alih Kasus Korupsi Nikel Konawe Utara — Republika, 2 Jan 2026",
+        "url": "https://news.republika.co.id/berita/t88e29409/kejagung-ambil-alih-kasus-korupsi-nikel-konawe-utara-rugikan-negara-rp27-t-yang-disetop-kpk",
+        "jenis": "media"
       }
     ]
   },
@@ -3504,6 +4957,199 @@
         "t": "Ekspansi Sektor Energi, PIPA Akuisisi Saham Aztech Pandu Persada — BCA Sekuritas, September 2026",
         "url": "https://bcasekuritas.co.id/latest-news/news/ekspansi-sektor-energi-pipa-akuisisi-saham-aztech-pandu-persada",
         "jenis": "media"
+      }
+    ]
+  },
+  "PTMR": {
+    "asOf": "2026-10-28",
+    "ringkasan": "PTMR (PT Master Print Tbk) berencana menjadi perusahaan holding dengan membeli 49% saham PT Samudera Layar Nusantara (SLN) dari Darmawan Wangsa senilai Rp88,05 miliar (semula Rp89,51 miliar), sekaligus menjual seluruh aktiva dan kewajiban percetakan kepada PT Mitra Pack Tbk (PTMP) senilai ±Rp102,18 miliar. SLN bergerak di angkutan laut kargo/komoditas domestik dan penyewaan kapal, berkantor di Gold Coast Office Tower, Pantai Indah Kapuk, Jakarta, dan mencatat laba bersih Rp19,66 miliar pada Januari–September 2025. Data armada publik sangat terbatas: basis data MagicPort mencatat hanya 1–2 kapal tunda/harbor craft dengan total 220–440 DWT, sehingga skala aset fisik tampak kecil dibanding laba yang dilaporkan. Calon pengendali baru PTMR adalah Deep Source Pte. Ltd. (Singapura), yang dimiliki Deep Source Holdings Ltd. (d/h Theme International Holdings, HKEX: 0990) dengan pemilik manfaat akhir You Zhenhua. RUPSLB 19 Juni 2026 dibatalkan atas arahan OJK dan per akhir September 2026 masih menunggu pemeriksaan OJK.",
+    "entitas": [
+      {
+        "nama": "PT Samudera Layar Nusantara (SLN)",
+        "peran": "aset target (49% dengan pengendalian efektif)",
+        "lokasi": "Unit D, Lantai 21, Gold Coast Office Tower Liberty, Pantai Indah Kapuk, Kel. Kamal Muara, Jakarta Utara",
+        "berdiri": null,
+        "kegiatan": "Angkutan laut kargo/komoditas domestik dan penyewaan kapal"
+      },
+      {
+        "nama": "PT Master Print Tbk (PTMR)",
+        "peran": "emiten (calon holding)",
+        "lokasi": "Indonesia",
+        "berdiri": "IPO Oktober 2024",
+        "kegiatan": "Percetakan/kemasan; akan dialihkan ke PTMP dan beralih menjadi holding"
+      },
+      {
+        "nama": "Deep Source Pte. Ltd.",
+        "peran": "induk (calon pengendali baru 77,19%)",
+        "lokasi": "Singapura",
+        "berdiri": null,
+        "kegiatan": "Kendaraan investasi; induknya bergerak di perdagangan komoditas mineral"
+      },
+      {
+        "nama": "PT Global Putra Kusuma",
+        "peran": "anak usaha yang akan dialihkan (99%)",
+        "lokasi": "Indonesia",
+        "berdiri": null,
+        "kegiatan": "Dibeli dari dana IPO PTMR; dialihkan ke PTMP senilai Rp26,90 miliar"
+      }
+    ],
+    "operasional": [
+      {
+        "l": "Armada (basis data kapal)",
+        "t": "MagicPort: 2 kapal tunda/harbor craft, total 440 DWT, umur 0–5 tahun; ringkasan lain dari situs yang sama menyebut 1 kapal 220 DWT — data tidak konsisten dan belum diverifikasi Kemenhub",
+        "s": 0
+      },
+      {
+        "l": "Bidang usaha",
+        "t": "Pengangkutan komoditas dan angkutan laut domestik; penyewaan kapal",
+        "s": 1
+      },
+      {
+        "l": "Studi kelayakan",
+        "t": "NPV Rp212,07 miliar; IRR 44,97% dengan asumsi pendapatan angkutan laut tumbuh hingga 2030",
+        "s": 1
+      },
+      {
+        "l": "Kantor",
+        "t": "Gold Coast Office Tower Liberty, PIK, Jakarta",
+        "s": 0
+      }
+    ],
+    "tambang": null,
+    "pasar": "SLN bermain di angkutan laut domestik berasas cabotage, terutama pengangkutan komoditas dengan kapal tunda/harbor craft. Pasar ini sangat terfragmentasi dan dipengaruhi volume komoditas (batu bara, nikel, mineral). Afiliasi calon pengendali (Deep Source Holdings) dengan perdagangan komoditas mineral dan rencana tambang nikel di Pulau Obi berpotensi menjadi sumber muatan captive. Pesaing tercatat antara lain TMAS, SMDR, HAIS, PSSI, dan BULL. Data pelanggan dan pangsa pasar SLN tidak ditemukan. (Catatan: nama pesaing di paragraf ini dari pengetahuan umum, tanpa sumber yang dikutip.)",
+    "keuangan": [
+      {
+        "l": "Laba bersih SLN Jan–Sep 2025",
+        "t": "Rp19,66 miliar",
+        "s": 2
+      },
+      {
+        "l": "Nilai transaksi 49% SLN",
+        "t": "Rp88.045.859.000 (CSPA awal Rp89,51 miliar)",
+        "s": 1
+      },
+      {
+        "l": "Proforma PTMR 31 Des 2025 (konsolidasi SLN)",
+        "t": "Pendapatan ±Rp215,62 miliar; laba neto ±Rp8,32 miliar; total aset ±Rp182,52 miliar",
+        "s": 1
+      },
+      {
+        "l": "Divestasi percetakan",
+        "t": "Rencana Januari 2026: seluruh aktiva & kewajiban ke PTMP ±Rp102,18 miliar, dinilai wajar oleh KJPP Syarif, Endang & Rekan; struktur terbaru (Mei 2026, keterbukaan): bisnis bersih percetakan Rp61,35 miliar dan 99% PT Global Putra Kusuma Rp26,90 miliar",
+        "s": 3
+      },
+      {
+        "l": "Akuisisi pengendali",
+        "t": "Deep Source membeli 1.472.000.000 saham (77,19%) dari PTMP (76,42%) dan Ardi Kusuma (0,77%); harga tender offer disebut Rp143/saham",
+        "s": 4
+      },
+      {
+        "l": "Aset, utang, EBITDA SLN mandiri",
+        "t": "Tidak diungkap",
+        "s": 1
+      }
+    ],
+    "pengendaliAset": [
+      {
+        "nama": "Deep Source Holdings Ltd. (d/h Theme International Holdings Ltd.)",
+        "jenis": "Emiten Bursa Hong Kong (kode 0990); perdagangan komoditas mineral",
+        "lokasi": "Hong Kong",
+        "detail": "Kapitalisasi pasar ±HK$12,29 miliar (Agustus 2025); menerbitkan 815 juta saham baru (±HK$407,4 juta); pemilik manfaat akhir You Zhenhua",
+        "hubungan": "Induk Deep Source Pte. Ltd., calon pengendali PTMR",
+        "s": 5
+      },
+      {
+        "nama": "PT Aneka Tambang Resources Indonesia (rencana 60%)",
+        "jenis": "Tambang nikel",
+        "lokasi": "Kepulauan Obi, Maluku Utara",
+        "detail": "MoU dengan PT Mitra Unggul Berjaya dan Yang Chenglin untuk akuisisi 60%; target memegang izin tambang nikel; nilai tidak disebut",
+        "hubungan": "Afiliasi calon pengendali; potensi muatan bagi SLN",
+        "s": 5
+      },
+      {
+        "nama": "Target 60% senilai RMB900 juta (nama tidak disebut)",
+        "jenis": "Tidak diungkap",
+        "lokasi": "Tidak diungkap",
+        "detail": "Transaksi besar Deep Source Holdings, Agustus 2025, disetujui pemegang saham pengendali",
+        "hubungan": "Afiliasi calon pengendali",
+        "s": 6
+      },
+      {
+        "nama": "BRC Asia Ltd.",
+        "jenis": "Pemasok baja tulangan/konstruksi (listing Singapura)",
+        "lokasi": "Singapura",
+        "detail": "Theme International membeli 61% pada 2022 (menurut Mikirduit, belum diverifikasi silang)",
+        "hubungan": "Afiliasi grup You Zhenhua",
+        "s": 4
+      },
+      {
+        "nama": "Southern Steel Bhd",
+        "jenis": "Produsen baja",
+        "lokasi": "Malaysia",
+        "detail": "Green Estell Pte. Ltd. membeli 50,1% senilai RM315,9 juta (awal 2025, menurut Mikirduit)",
+        "hubungan": "Afiliasi grup You Zhenhua",
+        "s": 4
+      }
+    ],
+    "jurnal": [],
+    "positif": [
+      "SLN sudah menghasilkan laba (Rp19,66 miliar dalam 9 bulan 2025), jauh di atas skala laba PTMR saat ini.",
+      "Studi kelayakan menunjukkan IRR 44,97% dan NPV Rp212,07 miliar.",
+      "Calon pengendali adalah grup komoditas dan baja regional yang terdaftar di HKEX dengan rencana tambang nikel di Indonesia, yang dapat memberi muatan captive.",
+      "Divestasi percetakan ke PTMP dinilai wajar oleh KJPP Syarif, Endang & Rekan."
+    ],
+    "risiko": [
+      "OJK membatalkan RUPSLB 19 Juni 2026 dan masih melakukan pemeriksaan; transaksi belum dapat dilaksanakan.",
+      "Data armada publik sangat kecil (1–2 kapal tunda, 220–440 DWT) dan tidak konsisten dengan laba yang dilaporkan; perlu verifikasi registri Kemenhub.",
+      "Hanya 49% saham yang dibeli; pengendalian bergantung pada perjanjian, bukan mayoritas kepemilikan.",
+      "Keuangan SLN mandiri (aset, utang, pendapatan) tidak dipublikasikan.",
+      "Sejarah PTMR: dana IPO Rp58 miliar langsung dipakai membeli PT Global Putra Kusuma yang kini dijual kembali ke PTMP; menimbulkan pertanyaan tata kelola.",
+      "Data aset grup You Zhenhua (BRC Asia, Southern Steel) bersumber dari blog dan belum diverifikasi silang."
+    ],
+    "belumDitemukan": [
+      "Daftar kapal SLN (nama, jenis, DWT/GT, tahun buat) dari Kemenhub/INSA",
+      "Pendapatan, EBITDA, total aset, dan utang SLN",
+      "Tahun pendirian SLN dan izin SIUPAL",
+      "Pelanggan dan rute SLN",
+      "Nama KJPP penilai 49% saham SLN",
+      "Hasil pemeriksaan OJK dan jadwal RUPSLB baru",
+      "Jurnal ilmiah tentang SLN"
+    ],
+    "sumber": [
+      {
+        "t": "Samudera Layar Nusantara — profil pemilik/manajer kapal, MagicPort (basis data AIS/kapal)",
+        "url": "https://magicport.ai/owners-managers/indonesia/samudera-layar-nusantara",
+        "jenis": "dokumen"
+      },
+      {
+        "t": "Rencana Perubahan Kegiatan Usaha PTMR 2026 — Pintarsaham.id, Mei 2026",
+        "url": "https://pintarsaham.id/rencana-perubahan-kegiatan-usaha-ptmr-2026/",
+        "jenis": "media"
+      },
+      {
+        "t": "Master Print (PTMR) Akuisisi Samudera Layar Nusantara, Banting Setir ke Angkutan Laut — Bisnis.com, 26 Januari 2026",
+        "url": "https://market.bisnis.com/read/20260126/192/1947210/master-print-ptmr-akuisisi-samudera-layar-nusantara-banting-setir-ke-angkutan-laut",
+        "jenis": "media"
+      },
+      {
+        "t": "PTMR Siap Jadi Holding, Jual Aset Rp102 Miliar ke PTMP dan Akuisisi Perusahaan Pelayaran — Stockwatch.id, 24 Januari 2026",
+        "url": "https://stockwatch.id/ptmr-siap-jadi-holding-jual-aset-rp102-miliar-ke-ptmp-dan-akuisisi-perusahaan-pelayaran/",
+        "jenis": "media"
+      },
+      {
+        "t": "Prospek Aksi Korporasi PTMR yang Terhadang Janji Manis Owner — Mikirduit, Juli 2025",
+        "url": "https://www.mikirduit.com/prospek-aksi-korporasi-ptmr-yang-terhadang-janji-manis-owner/",
+        "jenis": "media"
+      },
+      {
+        "t": "Deep Source Holdings Pursues Major Nickel Mining Acquisition in Indonesia — TipRanks (pengumuman HKEX), 4 Agustus 2025",
+        "url": "https://www.tipranks.com/news/company-announcements/deep-source-holdings-pursues-major-nickel-mining-acquisition-in-indonesia",
+        "jenis": "dokumen"
+      },
+      {
+        "t": "Deep Source Holdings Limited Announces Major Acquisition — TipRanks (pengumuman HKEX), 26 Agustus 2025",
+        "url": "https://www.tipranks.com/news/company-announcements/deep-source-holdings-limited-announces-major-acquisition",
+        "jenis": "dokumen"
       }
     ]
   },
@@ -4024,7 +5670,7 @@
       }
     ],
     "tambang": null,
-    "pasar": "SPAA bermain di segmen olahan daging sapi beku bermerek (bakso, sosis, nugget) yang dijual melalui ritel modern dan e-commerce; merek Bakso Sumber Selera dikenal luas di Jabodetabek. Pesaing utama di kategori ini adalah So Good/Bernardi/Kanzler (CPIN, JPFA, Japfa), Fiesta (Charoen Pokphand), Belfoods (Malindo/MAIN), Champ (Sierad/Japfa), serta importir/distributor daging beku seperti BEEF. Strategi TGUK menggabungkan kanal general trade, B2B, digital, dan gerai Toko Daging Platinum. Data pangsa pasar SPAA tidak ditemukan.",
+    "pasar": "SPAA bermain di segmen olahan daging sapi beku bermerek (bakso, sosis, nugget) yang dijual melalui ritel modern dan e-commerce; merek Bakso Sumber Selera dikenal luas di Jabodetabek. Pesaing utama di kategori ini adalah So Good/Bernardi/Kanzler (CPIN, JPFA, Japfa), Fiesta (Charoen Pokphand), Belfoods (Malindo/MAIN), Champ (Sierad/Japfa), serta importir/distributor daging beku seperti BEEF. Strategi TGUK menggabungkan kanal general trade, B2B, digital, dan gerai Toko Daging Platinum. Data pangsa pasar SPAA tidak ditemukan. (Catatan: nama pesaing di paragraf ini dari pengetahuan umum, tanpa sumber yang dikutip.)",
     "keuangan": [
       {
         "l": "TGUK semester I 2026",
@@ -4115,7 +5761,7 @@
         "jenis": "media"
       },
       {
-        "t": "Data internal ringkasan aset (keterbukaan TGUK kuartal I 2026)",
+        "t": "Keterbukaan informasi TGUK kuartal I 2026 (dirangkum data internal Stockbit; porsi 99,6% daging beku)",
         "url": "",
         "jenis": "dokumen"
       },
@@ -4222,7 +5868,7 @@
       }
     ],
     "tambang": null,
-    "pasar": "FFI disebut menguasai sekitar 21,72% pangsa produk susu nasional (Marketac, awal 2026), sedangkan ULTJ 37,3% (Nielsen, akhir 2025); gabungan diperkirakan melampaui 58% (perhitungan KabarBursa, metodologi berbeda sehingga perlu kehati-hatian). Klaim historis FFI: ±30% (2010) dan 25% (2015). Kategori utama FFI adalah susu kental manis, susu cair, dan susu bubuk, yang melengkapi lini UHT dan minuman non-susu ULTJ. Pesaing yang lazim di segmen ini antara lain Indolakto (ICBP), Cimory (CMRY), Nestlé Indonesia, dan Sarihusada/Danone (tidak dibandingkan langsung di sumber).",
+    "pasar": "FFI disebut menguasai sekitar 21,72% pangsa produk susu nasional (Marketac, awal 2026), sedangkan ULTJ 37,3% (Nielsen, akhir 2025); gabungan diperkirakan melampaui 58% (perhitungan KabarBursa, metodologi berbeda sehingga perlu kehati-hatian). Klaim historis FFI: ±30% (2010) dan 25% (2015). Kategori utama FFI adalah susu kental manis, susu cair, dan susu bubuk, yang melengkapi lini UHT dan minuman non-susu ULTJ. Pesaing yang lazim di segmen ini antara lain Indolakto (ICBP), Cimory (CMRY), Nestlé Indonesia, dan Sarihusada/Danone (tidak dibandingkan langsung di sumber). (Catatan: nama pesaing di paragraf ini dari pengetahuan umum, tanpa sumber yang dikutip.)",
     "keuangan": [
       {
         "l": "Pendapatan FFI 7 bulan 2026",
@@ -4439,7 +6085,7 @@
       }
     ],
     "tambang": null,
-    "pasar": "Studi kelayakan KJPP Ferdinand, Danar, Ichsan & Rekan memperkirakan HMBC melayani 8,1% penderita penyakit jantung di provinsi operasinya dengan penetrasi 35,9% di area tangkapan langsung. Pasar dominan pasien BPJS di Jawa Barat bagian timur (Cirebon–Kuningan–Indramayu–Majalengka). Pesaing langsung meliputi RS umum daerah dan swasta dengan cath lab di wilayah Ciayumajakuning (mis. RS Ciremai Cirebon, RSD Gunung Jati) serta jaringan RS nasional (MIKA, HEAL, SILO); program pemerintah memperluas cath lab ke daerah juga menambah persaingan dari RS pemerintah.",
+    "pasar": "Studi kelayakan KJPP Ferdinand, Danar, Ichsan & Rekan memperkirakan HMBC melayani 8,1% penderita penyakit jantung di provinsi operasinya dengan penetrasi 35,9% di area tangkapan langsung. Pasar dominan pasien BPJS di Jawa Barat bagian timur (Cirebon–Kuningan–Indramayu–Majalengka). Pesaing langsung meliputi RS umum daerah dan swasta dengan cath lab di wilayah Ciayumajakuning (mis. RS Ciremai Cirebon, RSD Gunung Jati) serta jaringan RS nasional (MIKA, HEAL, SILO); program pemerintah memperluas cath lab ke daerah juga menambah persaingan dari RS pemerintah. (Catatan: nama pesaing di paragraf ini dari pengetahuan umum, tanpa sumber yang dikutip.)",
     "keuangan": [
       {
         "l": "Pendapatan (periode s.d. April 2026)",
