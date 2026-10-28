@@ -45,16 +45,23 @@ function sampul(doc, { judul, sub, label, updated, seri, box }) {
 }
 
 // Tabel sederhana: header berlatar lembut, baris bergaris tipis; kolom = [{ t, w, align }].
-function tabel(doc, x, y, cols, rows, size = 8.5) {
-  doc.setFillColor(SOFT); doc.rect(x, y - 4.6, cols.reduce((a, c) => a + c.w, 0), 6.6, 'F')
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(size - 0.5); doc.setTextColor(PRIMER)
+// opt.baru: fungsi pembuat halaman baru (mengembalikan y awal); bila diberikan, tabel panjang pindah halaman dan
+// judul kolom diulang. Tanpa opt.baru tabel digambar apa adanya (dipakai halaman yang pasti muat).
+export function tabel(doc, x, y, cols, rows, size = 8.5, opt = {}) {
+  const kepala = () => {
+    doc.setFillColor(SOFT); doc.rect(x, y - 4.6, cols.reduce((a, c) => a + c.w, 0), 6.6, 'F')
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(size - 0.5); doc.setTextColor(PRIMER)
+    let hx = x
+    for (const c of cols) { doc.text(pdfText(c.t), c.align === 'right' ? hx + c.w - 1.5 : hx + 1.5, y, { align: c.align === 'right' ? 'right' : 'left' }); hx += c.w }
+    y += 6.5
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(size)
+  }
+  kepala()
   let cx = x
-  for (const c of cols) { doc.text(pdfText(c.t), c.align === 'right' ? cx + c.w - 1.5 : cx + 1.5, y, { align: c.align === 'right' ? 'right' : 'left' }); cx += c.w }
-  y += 6.5
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(size)
   for (const r of rows) {
     const lines = cols.map((c, i) => doc.splitTextToSize(pdfText(String(r[i]?.t ?? r[i] ?? '')), c.w - 3))
     const h = Math.max(...lines.map(l => l.length)) * size * 0.3528 * 1.3 + 2.4
+    if (opt.baru && y + h > (opt.bawah || 278)) { y = opt.baru() + 4; kepala() }
     cx = x
     cols.forEach((c, i) => {
       doc.setTextColor(r[i]?.color || INK); doc.setFont('helvetica', r[i]?.bold ? 'bold' : 'normal')

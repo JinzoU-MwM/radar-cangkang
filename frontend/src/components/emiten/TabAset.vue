@@ -128,6 +128,23 @@ watch(() => [props.ticker, store.updates.length], async ([t]) => {
   fakta.value = faktaAset(reps, { asOf })
 }, { immediate: true })
 
+// Unduh riset aset (PDF, format riset IHSG): fakta laporan diambil segar dari Stockbit saat tombol ditekan.
+const busyPdf = ref(false), errPdf = ref('')
+async function unduhPdf() {
+  busyPdf.value = true; errPdf.value = ''
+  try {
+    const [{ jsPDF }, { asetPdf, asetPdfName }] = await Promise.all([import('jspdf'), import('../../lib/asetPdf.js')])
+    let fk = fakta.value
+    try { const r = await api.get('/api/reports', { ticker: props.ticker, fresh: 1 }); if (r.items?.length) fk = faktaAset(r.items, { asOf: rs.value?.asOf || '' }) } catch { /* pakai fakta yang tampil */ }
+    const o = out.value
+    const dampak = executed.value ? [['Status', 'Penerbitan saham baru sudah tereksekusi; jumlah saham dan porsi publik kini sudah memuat dilusinya.']]
+      : o ? [['Saham baru', `${fmt(o.N / 1e6)} jt (${x2(o.N / o.S0)} saham sekarang)`], ['Porsi publik', `${fmt(o.f * 100, 2)}% menjadi ${fmt(o.pubAfter * 100, 2)}% bila publik tidak menebus`],
+        ['Nilai buku per saham', `${rp(o.vps)} (aset diakui sebesar nilai dibayar)`], ...(o.vpsSim != null ? [['Nilai buku per saham (simulasi)', `${rp(o.vpsSim)} (aset sebesar nilai tengah simulasi)`]] : [])] : null
+    const doc = await asetPdf({ t: props.ticker, riset: rs.value, aset: a.value, fakta: fk, ks: ks.value, sim: sim.value, nilai: val.value, mcap: mcapRp.value, dampak }, jsPDF)
+    doc.save(asetPdfName(props.ticker))
+  } catch (e) { errPdf.value = 'PDF gagal dibuat: ' + (e.message || e) } finally { busyPdf.value = false }
+}
+
 const sources = computed(() => [...(rs.value?.sumber || []).map(x => ({ t: x.t, url: x.url, ket: JENIS[x.jenis] || x.jenis })),
   ...(a.value?.sumber || []).map(t => ({ t })), ...(r.value?.sumber || [])])
 </script>
@@ -135,6 +152,10 @@ const sources = computed(() => [...(rs.value?.sumber || []).map(x => ({ t: x.t, 
 <template>
   <div class="tab-aset">
     <header class="hd rule-top">
+      <div class="unduh">
+        <button type="button" class="btn" :disabled="busyPdf || (!a && !rs)" @click="unduhPdf">{{ busyPdf ? 'Menyiapkan PDF…' : '⬇ Unduh riset aset (PDF)' }}</button>
+        <span v-if="errPdf" class="small muted">{{ errPdf }}</span>
+      </div>
       <div class="lbl">Aset yang diinjeksi ke {{ ticker }}</div>
       <h2 id="injTitle" class="t">{{ title }}</h2>
       <div v-if="sub" class="small muted">{{ sub }}</div>
@@ -403,7 +424,8 @@ const sources = computed(() => [...(rs.value?.sumber || []).map(x => ({ t: x.t, 
 
 <style scoped>
 .tab-aset{display:flex;flex-direction:column;gap:16px}
-.hd{padding-top:10px}
+.hd{padding-top:10px;position:relative}
+.unduh{float:right;display:flex;align-items:center;gap:8px;margin:0 0 6px 12px}
 .ent{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:6px}
 .ec{border:1px solid var(--rule);background:var(--sheet);padding:8px 12px;display:flex;flex-direction:column;gap:3px}
 .lap dt small{display:block;font:500 11px var(--f-body);text-transform:none;letter-spacing:0;color:var(--muted)}
