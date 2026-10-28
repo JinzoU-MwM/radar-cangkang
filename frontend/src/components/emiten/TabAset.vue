@@ -115,18 +115,44 @@ onMounted(async () => {
   for (const key of ['per', 'ps', 'pbv']) if (m[key] != null && si[key] == null) si[key] = Math.round(m[key] * 100) / 100
   peerNote.value = m.n ? `median ${m.n} pembanding Stockbit` : 'data pembanding kosong'
 })
-// Keterbukaan terbaru terkait aset (Stockbit Reports): poin kunci dokumen diambil otomatis setiap tab dibuka,
-// agar info yang lebih baru dari riset (mis. akuisisi lahan baru, pinjaman afiliasi) langsung terlihat.
-const ASET_RX = /akuisisi|pengambilalihan|aset|injeksi|inbreng|tambak|tambang|cadangan|konsesi|\biup\b|kjpp|penilai|cspa|afiliasi|pinjaman|rights|hmetd|penambahan modal|restrukturisasi|press rilis|public expose|fakta material|keterbukaan informasi|pabrik|kapasitas|lahan|produksi|kontrak/i
-const RUTIN_RX = /registrasi pemegang|bukti iklan|pemanggilan rapat|pemberitahuan rencana rapat|penggunaan dana hasil/i
-const kb = ref([]), kbErr = ref('')
+// Fakta aset dari laporan terakhir (Stockbit Reports, semua emiten): poin kunci dokumen yang memuat angka aset
+// (luas, kolam, kapasitas, cadangan, produksi, porsi akuisisi, nilai, izin, KJPP) dimasukkan ke tabel Operasional
+// dengan tanggal laporannya, sehingga data aset selalu mengikuti keterbukaan terbaru tanpa menunggu riset diperbarui.
+const RUTIN_RX = /registrasi pemegang|bukti iklan|pemanggilan rapat|pemberitahuan rencana rapat|penggunaan dana hasil|laporan bulanan/i
+const BUKAN_ASET = /remunerasi|dividen|komisaris|direktur|direksi|kuorum|rups|iklan|pemanggilan|volatilitas|tidak mengetahui informasi|harga saham|dana cadangan|sumber daya manusia|komite|rugi (bersih|konsolidasi)|laba bersih|obligasi|\bowk\b|plafon pinjaman/i
+// Urutan menentukan kategori: akuisisi didahulukan agar "akuisisi saham PMA tambak" tidak tercatat sebagai kolam.
+const FAKTA = [
+  ['Akuisisi / kepemilikan', /akuisisi|pengambilalihan|mengakuisisi|\b\d[\d.,]*\s*%\s*saham|inbreng|cspa|ppjb/i],
+  ['Luas lahan / konsesi', /\b(\d[\d.,]*)\s*(ha|hektare|hektar|m2|m²|km2)\b|\bluas\b/i],
+  ['Kolam / unit produksi', /\bkolam\b/i],
+  ['Cadangan / sumber daya', /cadangan|sumber daya|jorc|kcmi/i],
+  ['Kapasitas / produksi', /kapasitas|produksi|\b\d[\d.,]*\s*(ton|mw|mmscfd|liter|unit|kwh|tbps|homepass)\b/i],
+  ['Izin / konsesi', /\biup\b|iujp|konsesi|izin usaha|perizinan/i],
+  ['Penilaian KJPP', /kjpp|penilai|valuasi independen|appraisal/i],
+  ['Nilai transaksi / pendanaan', /(nilai|senilai|sebesar|transaksi|pinjaman|rights issue|hmetd|penambahan modal)[^.]*\b(rp|usd|us\$|sgd)\s?\d/i],
+]
+const fakta = ref([])
 watch(() => props.ticker, async t => {
-  kb.value = []; kbErr.value = ''
+  fakta.value = []
   try {
     const r = await api.get('/api/reports', { ticker: t })
-    kb.value = (r.items || []).filter(x => !RUTIN_RX.test(x.title || '') && ASET_RX.test(`${x.title} ${x.summary} ${x.points}`)).slice(0, 8)
-      .map(x => ({ ...x, pts: String(x.points || '').split(' · ').filter(Boolean), baru: !!rs.value?.asOf && String(x.date) > rs.value.asOf }))
-  } catch (e) { kbErr.value = e.message || String(e) }
+    const out = [], seen = new Set()
+    for (const x of r.items || []) {
+      if (RUTIN_RX.test(x.title || '')) continue
+      for (const pt of String(x.points || '').split(' · ').map(z => z.trim()).filter(Boolean)) {
+        if (BUKAN_ASET.test(pt)) continue
+        const f = FAKTA.find(([, rx]) => rx.test(pt))
+        if (!f) continue
+        const key = pt.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 60)
+        if (seen.has(key)) continue
+        seen.add(key)
+        out.push({ l: f[0], t: pt.replace(/\.$/, ''), d: String(x.date).slice(0, 10), url: x.url, judul: x.title,
+          baru: !!rs.value?.asOf && String(x.date).slice(0, 10) > rs.value.asOf })
+      }
+      if (out.length >= 10) break
+    }
+    fakta.value = out
+  } catch { fakta.value = [] }
 }, { immediate: true })
 
 const sources = computed(() => [...(rs.value?.sumber || []).map(x => ({ t: x.t, url: x.url, ket: JENIS[x.jenis] || x.jenis })),
@@ -141,16 +167,6 @@ const sources = computed(() => [...(rs.value?.sumber || []).map(x => ({ t: x.t, 
       <div v-if="sub" class="small muted">{{ sub }}</div>
       <div v-if="a" class="tags"><span class="tag" :class="'t-' + ks.tone">{{ ks.label }}</span><span v-if="ast.porsi" class="tag t-calm">porsi {{ ast.porsi.split(/[(;]/)[0].trim() }}</span></div>
     </header>
-
-    <section v-if="kb.length" class="sec">
-      <h3 class="lbl">Keterbukaan terbaru terkait aset <span class="small muted">Stockbit Reports, otomatis</span></h3>
-      <ol class="kb">
-        <li v-for="x in kb" :key="x.id"><span class="d">{{ fmtDate(x.date) }}</span>
-          <div><a :href="x.url" target="_blank" rel="noopener"><b>{{ x.title }}</b></a><span v-if="x.baru" class="tag t-good">lebih baru dari riset</span>
-            <ul v-if="x.pts.length" class="small"><li v-for="p in x.pts" :key="p">{{ p }}</li></ul>
-            <p v-else class="small muted">{{ String(x.summary || '').replace(/\s*\(Ringkasan AI Stockbit\)\s*$/, '') }}</p></div></li>
-      </ol>
-    </section>
 
     <!-- Riset aset dari berbagai sumber (jurnal, media, situs perusahaan, regulator). -->
     <template v-if="rs">
@@ -169,9 +185,13 @@ const sources = computed(() => [...(rs.value?.sumber || []).map(x => ({ t: x.t, 
           </article>
         </div>
       </section>
-      <section v-if="rs.operasional?.length" class="sec">
+      <section v-if="rs.operasional?.length || fakta.length" class="sec">
         <h3 class="lbl">Operasional</h3>
-        <dl class="kv"><div v-for="o in rs.operasional" :key="o.l"><dt>{{ o.l }}</dt><dd>{{ o.t }}<sup v-if="src(o.s)" class="sx" :title="src(o.s).t">[{{ o.s + 1 }}]</sup></dd></div></dl>
+        <dl class="kv">
+          <div v-for="f in fakta" :key="f.d + f.t" class="lap"><dt>{{ f.l }}<small>laporan {{ fmtDate(f.d) }}</small></dt>
+            <dd>{{ f.t }} <a :href="f.url" target="_blank" rel="noopener" class="sx" :title="f.judul">[laporan]</a><span v-if="f.baru" class="tag t-good">terbaru</span></dd></div>
+          <div v-for="o in rs.operasional || []" :key="o.l"><dt>{{ o.l }}</dt><dd>{{ o.t }}<sup v-if="src(o.s)" class="sx" :title="src(o.s).t">[{{ o.s + 1 }}]</sup></dd></div>
+        </dl>
       </section>
       <section v-if="rs.tambang" class="sec">
         <h3 class="lbl">Tambang: lokasi, cadangan, dan umur</h3>
@@ -208,7 +228,14 @@ const sources = computed(() => [...(rs.value?.sumber || []).map(x => ({ t: x.t, 
         <div><h3 class="lbl">Risiko aset</h3><ul><li v-for="x in rs.risiko" :key="x">{{ x }}</li></ul></div>
       </section>
     </template>
-    <p v-else class="small muted">Riset aset lintas sumber untuk {{ ticker }} belum tersedia; data di bawah dari keterbukaan informasi.</p>
+    <template v-else>
+      <p class="small muted">Riset aset lintas sumber untuk {{ ticker }} belum tersedia; data di bawah dari keterbukaan informasi.</p>
+      <section v-if="fakta.length" class="sec">
+        <h3 class="lbl">Operasional (dari laporan terakhir)</h3>
+        <dl class="kv"><div v-for="f in fakta" :key="f.d + f.t" class="lap"><dt>{{ f.l }}<small>laporan {{ fmtDate(f.d) }}</small></dt>
+          <dd>{{ f.t }} <a :href="f.url" target="_blank" rel="noopener" class="sx" :title="f.judul">[laporan]</a></dd></div></dl>
+      </section>
+    </template>
 
     <p v-if="!a && !r && !rs" class="muted">Data aset untuk {{ ticker }} belum ada.</p>
 
@@ -406,8 +433,8 @@ const sources = computed(() => [...(rs.value?.sumber || []).map(x => ({ t: x.t, 
 .hd{padding-top:10px}
 .ent{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:6px}
 .ec{border:1px solid var(--rule);background:var(--sheet);padding:8px 12px;display:flex;flex-direction:column;gap:3px}
-.kb{list-style:none;margin:6px 0 0;padding:0}.kb>li{display:grid;grid-template-columns:90px 1fr;gap:10px;padding:7px 0;border-bottom:1px solid var(--rule-2)}
-.kb .d{font:600 12px var(--f-display);color:var(--ink-2)}.kb ul{margin:4px 0 0;padding-left:18px}.kb .tag{margin-left:6px}
+.lap dt small{display:block;font:500 11px var(--f-body);text-transform:none;letter-spacing:0;color:var(--muted)}
+.lap .tag{margin-left:6px}
 .sx{color:var(--accent);font-size:10px;margin-left:2px;cursor:help}
 .jr{list-style:none;padding:0}.jr li{border-bottom:1px solid var(--rule-2);padding:6px 0}
 .pr{display:grid;grid-template-columns:1fr 1fr;gap:18px}
