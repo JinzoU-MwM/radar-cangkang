@@ -3,8 +3,8 @@ import PptxGenJS from 'pptxgenjs'
 import { buildInfoDeck, infoFileName } from '../deckInfo.js'
 import { THEMES, SECTORS } from '../deckThemes.js'
 
-describe('infografis (tear sheet A4 portrait)', () => {
-  it('dua halaman portrait, PDF sama jumlah halamannya', async () => {
+describe('infografis (slide 16:9 grafis)', () => {
+  it('12 slide 16:9, PDF sama jumlah halamannya', async () => {
     const { recommend } = await import('../recommend.js')
     const { jsPDF } = await import('jspdf')
     const { deckToPdf } = await import('../deckPdf.js')
@@ -13,11 +13,11 @@ describe('infografis (tear sheet A4 portrait)', () => {
       pa: { nilaiWajar: { bawah: 90, atas: 150 } }, pc: { pros: [], cons: [] }, deep: [], steps: [], milestones: [], reports: [] }
     d.rec = recommend(d)
     const pres = buildInfoDeck(PptxGenJS, d, Object.values(THEMES).flat()[0])
-    expect(pres.slides.length).toBe(2)
+    expect(pres.slides.length).toBe(12)
     const L = pres._presLayout || pres.presLayout
-    expect(L.height).toBeGreaterThan(L.width)
+    expect(L.width).toBeGreaterThan(L.height)
     const pdf = await deckToPdf(pres, jsPDF)
-    expect(pdf.getNumberOfPages()).toBe(2)
+    expect(pdf.getNumberOfPages()).toBe(12)
     expect(infoFileName('ABCD', '2026-10-28', { name: 'Biru Laut' })).toBe('ABCD_Infografis_2026-10-28_Biru-Laut.pptx')
   }, 60000)
 })
