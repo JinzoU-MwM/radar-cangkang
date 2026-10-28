@@ -1,7 +1,7 @@
 <script setup>
 // Unduh seluruh hasil analisa emiten sebagai presentasi PowerPoint atau PDF. Tema mengikuti bisnis emiten dan
 // berganti tiap unduhan (pemilih tema & tombol di DeckDownload).
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { store, storyOf, getBenchmark } from '../../store.js'
 import { api } from '../../api.js'
 import { collectDeck } from '../../lib/deckData.js'
@@ -9,8 +9,11 @@ import { buildDeck, deckFileName } from '../../lib/deck.js'
 import { buildInfoDeck, infoFileName } from '../../lib/deckInfo.js'
 import { sectorOf, pickTheme } from '../../lib/deckThemes.js'
 import DeckDownload from './DeckDownload.vue'
+import InfografisInteraktif from './InfografisInteraktif.vue'
 
 const props = defineProps({ ticker: { type: String, required: true } })
+// Infografis interaktif (layar penuh di situs) dengan data yang sama dengan presentasi unduhan.
+const interaktif = ref(false)
 
 // Perkiraan sektor sebelum data lengkap dimuat (dipakai untuk pratinjau tema); sektor final dihitung ulang saat unduh.
 const guess = computed(() => {
@@ -63,6 +66,9 @@ async function build({ PptxGenJS, choose, lastId, onStep, variant }) {
 
     <div class="grid">
       <div class="pane">
+        <button type="button" class="btn ig-btn" @click="interaktif = true">
+          <b>Buka infografis interaktif</b><small>angka berjalan, analogi rumah, simulasi skenario, garis waktu yang bisa diklik</small>
+        </button>
         <DeckDownload :sector-id="guess.id" :build="build" :infografis="true" />
       </div>
 
@@ -77,6 +83,7 @@ async function build({ PptxGenJS, choose, lastId, onStep, variant }) {
         <p class="muted note">Versi infografis: poster vertikal A4 dua halaman (angka kunci berikon, diagram transaksi, rekomendasi, aset dalam angka, garis waktu, katalis vs risiko, peta harga), hampir tanpa paragraf. Slide tanpa data dilewati otomatis. Data diambil saat tombol ditekan, sama dengan yang tampil di tab lain.</p>
       </div>
     </div>
+    <InfografisInteraktif v-if="interaktif" :ticker="ticker" @close="interaktif = false" />
   </section>
 </template>
 
@@ -93,6 +100,8 @@ async function build({ PptxGenJS, choose, lastId, onStep, variant }) {
 .slides b{font-size:13px}
 .slides small{font-size:11px;opacity:.7}
 .note{margin:12px 0 0;font-size:12px}
+.ig-btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;margin-bottom:14px;padding:12px 14px;text-align:left;background:var(--accent);color:var(--accent-ink,#fff);border:0;border-radius:4px;cursor:pointer}
+.ig-btn b{font-size:15px}.ig-btn small{opacity:.85}
 @media (max-width:760px){
   .grid{grid-template-columns:1fr}
   .slides{grid-template-columns:1fr}
