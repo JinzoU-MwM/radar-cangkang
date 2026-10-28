@@ -10,6 +10,8 @@ const props = defineProps({
   sectorId: { type: String, default: 'umum' },
   build: { type: Function, required: true },
   label: { type: String, default: 'presentasi' },
+  // true: tampilkan juga tombol unduh versi infografis (build menerima variant: 'info').
+  infografis: { type: Boolean, default: false },
 })
 const LAST_KEY = 'radar-cangkang.deckTheme.last'
 const readLast = () => { try { return localStorage.getItem(LAST_KEY) || '' } catch { return '' } }
@@ -24,16 +26,16 @@ const step = ref('')
 const done = ref(null)          // { file, theme, slides, sector }
 
 // kind: 'pptx' atau 'pdf'. PDF digambar ulang dari slide yang sama (jsPDF), jadi isi dan temanya identik.
-async function download(kind = 'pptx') {
+async function download(kind = 'pptx', variant = '') {
   if (busy.value) return
-  busy.value = kind; done.value = null
+  busy.value = kind + variant; done.value = null
   try {
     step.value = 'Memuat pustaka presentasi'
     const [{ default: PptxGenJS }, pdfLib] = await Promise.all([
       import('pptxgenjs'),
       kind === 'pdf' ? Promise.all([import('jspdf'), import('../../lib/deckPdf.js')]) : null,
     ])
-    const { pres, file: pptxFile, theme, sector } = await props.build({ PptxGenJS, choose: choice.value, lastId: readLast(), onStep: s => { step.value = s } })
+    const { pres, file: pptxFile, theme, sector } = await props.build({ PptxGenJS, choose: choice.value, lastId: readLast(), onStep: s => { step.value = s }, variant })
     let file = pptxFile
     if (kind === 'pdf') {
       const [{ jsPDF }, { deckToPdf, pdfFileName }] = pdfLib
@@ -85,6 +87,14 @@ async function download(kind = 'pptx') {
       <button type="button" class="btn go" :disabled="!!busy" @click="download('pdf')">
         {{ busy === 'pdf' ? (step || 'Menyiapkan') + '…' : `Unduh ${label} (.pdf)` }}
       </button>
+      <template v-if="infografis">
+        <button type="button" class="btn go info" :disabled="!!busy" @click="download('pptx', 'info')">
+          {{ busy === 'pptxinfo' ? (step || 'Menyiapkan') + '…' : `Unduh ${label} versi infografis (.pptx)` }}
+        </button>
+        <button type="button" class="btn go info" :disabled="!!busy" @click="download('pdf', 'info')">
+          {{ busy === 'pdfinfo' ? (step || 'Menyiapkan') + '…' : `Unduh ${label} versi infografis (.pdf)` }}
+        </button>
+      </template>
     </div>
     <p v-if="done" class="ok" role="status">
       Tersimpan: <b>{{ done.file }}</b> · {{ done.slides }} {{ /\.pdf$/.test(done.file) ? 'halaman' : 'slide' }} · tema {{ done.theme.name }}<template v-if="done.sector"> ({{ done.sector }})</template>.

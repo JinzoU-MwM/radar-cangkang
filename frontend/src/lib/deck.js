@@ -209,8 +209,10 @@ function makeKit(PptxGenJS, d, th, title) {
   return { pres, S, T, card, pill, dot, line, tone, sikapTone, scoreTone, dimTone, chartBase, slide, kpi, hbar, icon, flow, pointCard, bump: () => ++page, setSec: v => { sec = v } }
 }
 
-export function buildDeck(PptxGenJS, d, th) {
-  const K = makeKit(PptxGenJS, d, th, `${d.t}: Laporan Riset Ekuitas Backdoor Listing`)
+// opt.info = true: versi infografis (visual, angka besar, diagram & grafik; slide teks panjang dilewati).
+export function buildDeck(PptxGenJS, d, th, opt = {}) {
+  const info = !!opt.info
+  const K = makeKit(PptxGenJS, d, th, `${d.t}: ${info ? 'Infografis' : 'Laporan'} Riset Ekuitas Backdoor Listing`)
   const { pres, S, T, card, pill, dot, line, tone, sikapTone, scoreTone, dimTone, chartBase, slide, kpi, hbar, icon, flow, pointCard } = K
   const A = d.A || {}
   const hasDoc = !!(d.ri?.doc || d.riDoc)
@@ -224,7 +226,7 @@ export function buildDeck(PptxGenJS, d, th) {
     coverArt(s, d.sector?.motif, th, S, dot, line)
     T(s, 'RISET EKUITAS · BACKDOOR LISTING', { x: 0.7, y: 1.0, w: 5.2, h: 0.3, fontSize: 10, bold: true, color: th.accent2, charSpacing: 5 })
     T(s, d.t, { x: 0.7, y: 1.35, w: 5.2, h: 1.2, fontFace: th.head, fontSize: 66, bold: true, color: 'FFFFFF', valign: 'middle' })
-    T(s, 'Laporan Riset Investasi', { x: 0.7, y: 2.55, w: 5.6, h: 0.5, fontFace: th.head, fontSize: 22, color: 'FFFFFF' })
+    T(s, info ? 'Infografis Riset Investasi' : 'Laporan Riset Investasi', { x: 0.7, y: 2.55, w: 5.6, h: 0.5, fontFace: th.head, fontSize: 22, color: 'FFFFFF' })
     T(s, d.name || '', { x: 0.7, y: 3.1, w: 5.2, h: 0.35, fontSize: 15, color: th.accent2 })
     const topics = ['Pengendali', d.aset || A.sv?.injectType ? 'Aset injeksi' : null, 'Valuasi', 'Teknikal', 'Skenario'].filter(Boolean)
     T(s, topics.join('  •  '), { x: 0.7, y: 3.55, w: 5.4, h: 0.3, fontSize: 11, color: 'EAF2FA' })
@@ -236,6 +238,7 @@ export function buildDeck(PptxGenJS, d, th) {
   // ---------- Bagian: Ringkasan eksekutif (headline transaksi + rekomendasi di awal; rincian di bagian berikutnya) ----------
   K.setSec('Ringkasan')
   headlineSlides(K, th, d)
+  if (info) infoStatsSlide(K, th, d)
 
   // ---------- Bagian: Profil (struktur karya ilmiah: kesimpulan di akhir) ----------
   K.setSec('Profil')
@@ -286,7 +289,7 @@ export function buildDeck(PptxGenJS, d, th) {
   // Pengurus riset dilengkapi daftar terkini Stockbit; yang tidak lagi tercantum tidak ditampilkan.
   const mb = mergeBoard(d.profil?.pengurus, d.profile)
   const board = [...mb.direksi.map(x => ({ ...x, g: 'Direksi' })), ...mb.komisaris.map(x => ({ ...x, g: 'Komisaris' }))].filter(x => !x.notListed)
-  if (board.length) {
+  if (!info && board.length) {
     const nb = board.filter(x => x.orangPengendaliBaru).length
     const s = slide('Pengurus', 'Susunan Direksi dan Dewan Komisaris', `Sebanyak ${nb} dari ${board.length} anggota pengurus berasal dari pihak pengendali baru${board.some(x => (x.rangkap || []).length) ? ', dan sebagian merangkap jabatan di emiten lain' : ''}.`)
     // Kartu mengisi tinggi area: 1 baris bila ≤4 orang (kartu tinggi, dengan latar singkat), 2 baris bila lebih.
@@ -348,7 +351,7 @@ export function buildDeck(PptxGenJS, d, th) {
   }
 
   // ===== 6. Profil pengendali (1 slide; dilewati bila slide pengendali dari dokumen tersedia) =====
-  for (const o of hasDoc ? [] : (d.profil?.pengendali || []).slice(0, 1)) {
+  for (const o of hasDoc || info ? [] : (d.profil?.pengendali || []).slice(0, 1)) {
     const rj = (o.rekamJejak || []).slice(0, 5)
     const s = slide('Profil pengendali', short(o.nama, 44), o.karakteristik || o.risiko)
     card(s, M, TOP, 3.55, 3.35)
@@ -376,7 +379,7 @@ export function buildDeck(PptxGenJS, d, th) {
   }
 
   // Pengendali, key person, dan riwayat hukum dari dokumen (bagian Story & Pengendali, bukan Analisa).
-  personSlide(K, th, d.ri?.doc || d.riDoc)
+  if (!info) personSlide(K, th, d.ri?.doc || d.riDoc)
 
   // ===== 10. Transformasi bisnis: bisnis lama → pengendali baru → aset injeksi → bisnis baru (alur) =====
   {
@@ -420,7 +423,7 @@ export function buildDeck(PptxGenJS, d, th) {
   // ---------- Bagian: Berita (struktur karya ilmiah: kesimpulan di akhir) ----------
   K.setSec('Berita')
   // ===== 11c. Perkembangan berita terkini & kesimpulannya =====
-  if (d.newsSum && (d.newsRecent || []).length) {
+  if (!info && d.newsSum && (d.newsRecent || []).length) {
     const ns = d.newsSum, rows = d.newsRecent
     const s = slide('Berita terkini', 'Perkembangan Berita Terkini', ns.verdict)
     const lw = 5.75, rh = Math.min(0.68, 3.35 / rows.length)
@@ -448,7 +451,7 @@ export function buildDeck(PptxGenJS, d, th) {
   // ===== 11d. Analisa penjelasan atas permintaan penjelasan bursa (terakhir) =====
   {
     const pb = (d.ri?.doc || d.riDoc)?.penjelasanBursa
-    if (pb && (pb.poin || []).length) {
+    if (!info && pb && (pb.poin || []).length) {
       // Memo riset gaya fund manager: kesimpulan + dampak terhadap tesis, poin utama, implikasi, belum terjawab, dipantau.
       const m = pb.memo || {}
       const belum = pb.poin.filter(x => x.jawaban !== 'lengkap' && x.kurang)
@@ -489,7 +492,7 @@ export function buildDeck(PptxGenJS, d, th) {
   // ---------- Bagian: Analisa (struktur karya ilmiah: kesimpulan di akhir) ----------
   K.setSec('Analisa')
   // ===== 2b. Tesis analis (lengkap, per kalimat bernomor) =====
-  if (d.pa?.tesis) {
+  if (!info && d.pa?.tesis) {
     const pts = String(d.pa.tesis).split(/(?<=[.;])\s+(?=[A-Z0-9])/).map(x => x.trim()).filter(x => x.length > 15).slice(0, 4)
     const s = slide('Tesis analis', 'Dasar Penilaian Analis', d.pa.ringkas || '')
     const cols = pts.length > 3 ? 2 : 1, rows = Math.ceil(pts.length / cols)
@@ -543,7 +546,7 @@ export function buildDeck(PptxGenJS, d, th) {
 
   // ===== 8b. Rincian nilai aset injeksi (kisaran antar-sumber, cara bayar, KJPP, data belum diungkap) =====
   // Dilewati bila fakta dokumen tersedia: slide Kewajaran & Fakta dokumen sudah memuat nilainya.
-  if (!d.ri && !hasDoc) {
+  if (!info && !d.ri && !hasDoc) {
     const inj = d.ri?.inj || d.aset?.transaksi?.nilaiRp || null
     const det = d.ri?.detail || asetDetail(d.aset, inj)
     if (det && (det.lo || det.nama)) {
@@ -585,7 +588,7 @@ export function buildDeck(PptxGenJS, d, th) {
 
   // ===== 8b2. Kewajaran aset & fakta dokumen asli (bila sudah diekstrak) =====
   // Bila ada rights issue, kewajaran, fakta dokumen, dan valuasi tampil di bagian Rights Issue.
-  if (!d.ri) { docSlides(K, th, d.riDoc); penilaianSlide(K, th, d.riDoc) }
+  if (!info && !d.ri) { docSlides(K, th, d.riDoc); penilaianSlide(K, th, d.riDoc) }
 
   // ===== 9. Simulasi nilai KJPP (grafik) =====
   if (!d.ri && d.sim?.rows?.length) {
@@ -628,7 +631,7 @@ export function buildDeck(PptxGenJS, d, th) {
   {
     const bull = (A.bull || []).length ? A.bull : (d.pc?.pros || []).map(p => p.t)
     const bear = (A.bear || []).length ? A.bear : (d.pc?.cons || []).map(p => p.t)
-    if (bull.length || bear.length) {
+    if (!info && (bull.length || bear.length)) {
       const notes = (A.notes || []).slice(0, 2)
       const s = slide('Kasus naik dan turun', 'Pendorong Kenaikan dan Risiko Penurunan', `Terdapat ${bull.length} pendorong kenaikan dan ${bear.length} risiko penurunan${bear.length > bull.length ? '; risiko lebih dominan' : ''}.`)
       const h = notes.length ? 2.6 : 3.35
@@ -643,7 +646,7 @@ export function buildDeck(PptxGenJS, d, th) {
   }
 
   // ---------- Bagian: Rights Issue (isi sama dengan analisa rights issue di website) ----------
-  if (d.ri) riSlides(K, th, { ...d, c: d.ri, P: d.riP, U: 0 }, { inFull: true })
+  if (d.ri) riSlides(K, th, { ...d, c: d.ri, P: d.riP, U: 0 }, { inFull: true, info })
 
   // ---------- Bagian: Teknikal (struktur karya ilmiah: kesimpulan di akhir) ----------
   K.setSec('Teknikal')
@@ -754,7 +757,7 @@ export function buildDeck(PptxGenJS, d, th) {
   // ---------- Bagian: Penutup (struktur karya ilmiah: kesimpulan di akhir) ----------
   K.setSec('Penutup')
   // ===== 1b. Rekomendasi (tindakan, area harga, porsi, alasan) =====
-  if (d.rec) {
+  if (!info && d.rec) {
     const rc = d.rec, col = recTone(rc.tone)
     const s = slide('Rekomendasi', 'Rekomendasi Investasi', rc.holder)
     card(s, M, TOP, 3.35, 3.35, { fill: th.dark, line: th.dark })
@@ -785,7 +788,7 @@ export function buildDeck(PptxGenJS, d, th) {
   }
 
   // ===== 20b. Rencana aksi: bila terkonfirmasi / sekarang / bila gagal =====
-  if (d.rec) {
+  if (!info && d.rec) {
     const rc = d.rec
     const s = slide('Rencana tindakan', 'Rencana Tindakan Berdasarkan Skenario', rc.catalyst ? `Katalis berikutnya adalah ${rc.catalyst}.` : rc.holder)
     const cw = (CW - 0.3) / 3
@@ -825,7 +828,7 @@ export function buildDeck(PptxGenJS, d, th) {
   }
 
   // ===== 22. Lampiran: sumber & batasan =====
-  {
+  if (!info) {
     const pf = d.profil || {}
     const src = [...new Set([...(pf.pengendali || []).flatMap(o => o.sumber || []), ...(pf.afiliasi?.sumber || []), ...(d.aset?.sumber ? [].concat(d.aset.sumber) : [])])].slice(0, 7)
     const reps = (d.reports || []).slice(0, 6).map(r => `${fmtDate(String(r.date).slice(0, 10))} · ${r.title}`)
@@ -856,6 +859,35 @@ function priceLevels(d) {
   if (nw.bawah > 0) rows.push(['Nilai wajar bawah (analis)', nw.bawah])
   if (nw.atas > 0) rows.push(['Nilai wajar atas (analis)', nw.atas])
   return rows.sort((a, b) => a[1] - b[1])
+}
+
+// Versi infografis: enam angka kunci besar berikon (harga, kapitalisasi, pengendali, publik, nilai transaksi, skor).
+function infoStatsSlide(K, th, d) {
+  const { T, card, icon, slide, hbar } = K
+  const A = d.A || {}, m = A.p?.metrics || {}, st = A.p?.stats || {}
+  const nilai = d.tx || d.ri?.inj || null
+  const tiles = [
+    ['Rp', rpS(A.price), 'Harga terakhir', A.tender?.price ? `PTW ${rpS(A.tender.price)} (${pctS(A.price / A.tender.price - 1)})` : m.ret1y ? `1 tahun ${pctId(m.ret1y)}` : ''],
+    ['Kap', bigS(st.marketCap || A.mcap), 'Kapitalisasi pasar', m.pbv != null ? `PBV ${id(m.pbv, 2)}×` : ''],
+    ['Ctl', A.ctrlPct != null ? id(A.ctrlPct, 1) + '%' : '–', 'Porsi pengendali', short(entName(A.ctrlName || ''), 34)],
+    ['Pub', A.flt != null ? id(A.flt, 1) + '%' : '–', 'Porsi publik', A.flt != null && A.flt < 7.5 ? 'di bawah syarat 7,5%' : ''],
+    ['Tx', nilai ? bigS(nilai) : 'belum ada', 'Nilai transaksi/aset', nilai && A.mcap ? `${xS(nilai / A.mcap)} kapitalisasi` : ''],
+    ['Skor', A.score != null ? `${A.score}/100` : '–', 'Skor analisis', d.prog ? `progres transaksi ${d.prog.pct}%` : ''],
+  ]
+  const s = slide('Angka kunci', `${d.t} dalam Angka`, d.rec ? `Rekomendasi: ${d.rec.label}.` : '')
+  const cw = (CW - 0.3) / 3, ch = 1.6
+  tiles.forEach(([g, v, l, n], i) => {
+    const x = M + (i % 3) * (cw + 0.15), y = TOP + Math.floor(i / 3) * (ch + 0.15)
+    card(s, x, y, cw, ch)
+    // Singkatan teks (bukan simbol) agar tampil sama di PPTX dan PDF.
+    icon(s, x + 0.42, y + 0.42, 0.24, g, i === 5 ? th.good : th.accent)
+    T(s, v, { x: x + 0.8, y: y + 0.16, w: cw - 0.95, h: 0.55, fontFace: th.head, fontSize: 24, bold: true, valign: 'middle', fit: 'shrink' })
+    T(s, l.toUpperCase(), { x: x + 0.2, y: y + 0.82, w: cw - 0.4, h: 0.22, fontSize: 8, bold: true, color: th.accent, charSpacing: 2 })
+    T(s, n || '', { x: x + 0.2, y: y + 1.06, w: cw - 0.4, h: 0.26, fontSize: 9, color: th.muted, fit: 'shrink' })
+    if (i === 5 && A.score != null) hbar(s, x + 0.2, y + 1.36, cw - 0.4, A.score / 100, A.score >= 65 ? th.good : A.score >= 45 ? th.warn : th.bad, 0.1)
+    if (i === 2 && A.ctrlPct != null) hbar(s, x + 0.2, y + 1.36, cw - 0.4, A.ctrlPct / 100, th.accent, 0.1)
+    if (i === 3 && A.flt != null) hbar(s, x + 0.2, y + 1.36, cw - 0.4, A.flt / 100, th.muted, 0.1)
+  })
 }
 
 // Ringkasan eksekutif di awal presentasi: (1) headline transaksi/rencana korporasi dengan diagram struktur
@@ -1615,4 +1647,4 @@ function riSlides(K, th, d, opt = {}) {
 export const riDeckFileName = (t, date, theme) => `${t}_RightsIssue_${date}_${String(theme?.name || '').replace(/[^A-Za-z0-9]+/g, '-')}.pptx`
 
 // Nama berkas unduhan.
-export const deckFileName = (t, date, theme) => `${t}_Analisa_${date}_${String(theme?.name || '').replace(/[^A-Za-z0-9]+/g, '-')}.pptx`
+export const deckFileName = (t, date, theme, info = false) => `${t}_${info ? 'Infografis' : 'Analisa'}_${date}_${String(theme?.name || '').replace(/[^A-Za-z0-9]+/g, '-')}.pptx`
