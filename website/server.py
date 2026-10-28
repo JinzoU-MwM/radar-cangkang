@@ -1829,9 +1829,53 @@ def sync_updates(cfg: dict, delay: float = 0.4) -> dict:
             errors.append({"source": "Berita media", "error": str(e)[:120]})
     if changed:
         updates_put(changed)
+    try:
+        added += sync_akun_reports(cfg)
+    except Exception as e:
+        errors.append({"source": "Akun StockbitReports", "error": str(e)[:120]})
     NEWS_STATE.update({"at": iso_now(), "added": added, "addedNews": added_news, "errors": errors[:5],
                        "sbOk": st.get("sbOk"), "catchUp": pages > 1 and ok_any})
     return NEWS_STATE
+
+
+def sync_akun_reports(cfg: dict, days: int = 3, pages: int = 6) -> int:
+    """Sinkron cepat: postingan akun StockbitReports (seluruh BEI, terbaru dulu) untuk emiten di monitor.
+    Laporan sering muncul di akun ini lebih dulu daripada di kategori REPORTS per emiten (mis. MEJA 28 Okt 2026
+    "Rencana Penyelenggaraan Public Expose"), jadi dibaca terpisah agar tidak tertinggal. Mengembalikan jumlah baru."""
+    if not (cfg.get("reports") and get_token() and not token_expired()):
+        return 0
+    codes = {t for t in (it["ticker"] for it in items_all()) if TICKER_RE.match(t)}
+    old = {str(u["id"]): u for u in updates_all()}
+    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    changed, added, cursor = [], 0, 0
+    for _ in range(pages):
+        j = stockbit_post_api("https://exodus.stockbit.com/stream/v3/user/StockbitReports",
+                              {"category": "STREAM_CATEGORY_MAIN_IDEAS", "last_stream_id": cursor, "limit": 100}, True)
+        d = j.get("data") or {}
+        page = d.get("stream") or []
+        for p in page:
+            for t in p.get("topics") or []:
+                if t not in codes:
+                    continue
+                for it in convert_reports({"data": {"stream": [p]}}, t, cfg["reports"]):
+                    prev = old.get(it["id"])
+                    # Ringkasan AI Stockbit kadang menyusul: lengkapi baris lama yang masih kosong.
+                    new = {**it, "updatedAt": iso_now()} if prev is None else {**prev, **{k: v for k, v in it.items() if v}}
+                    if new != prev:
+                        added += prev is None
+                        changed.append(new)
+                        old[it["id"]] = new
+        if not page or (d.get("pagination") or {}).get("is_last_page") or str(page[-1].get("created_at") or "")[:10] < cutoff:
+            break
+        cursor = (d.get("pagination") or {}).get("next_cursor") or page[-1].get("stream_id")
+        time.sleep(0.3)
+    if changed:
+        updates_put(changed)
+    return added
+
+
+# Sinkron cepat akun StockbitReports tiap 15 menit pada jam aktif (06.00–22.00 WIB); sinkron penuh tetap tiap NEWS_GAP.
+QUICK_GAP = 15 * 60
 
 
 def news_loop() -> None:
@@ -1857,6 +1901,16 @@ def news_loop() -> None:
             if get_token() != tok:
                 print("[berita] token baru terdeteksi: sinkron segera", file=sys.stderr)
                 break
+            jam = datetime.now(timezone(timedelta(hours=7))).hour
+            if waited % QUICK_GAP == 0 and 6 <= jam < 22 and cfg:
+                try:
+                    n = sync_akun_reports(cfg)
+                    if n:
+                        print(f"[berita] sinkron cepat: {n} laporan baru dari akun StockbitReports", file=sys.stderr)
+                        if get_token():
+                            lengkapi_items()
+                except Exception as e:
+                    print(f"[berita] sinkron cepat gagal: {e}", file=sys.stderr)
 
 
 # ------------------------------------------------------------------- POV ----
