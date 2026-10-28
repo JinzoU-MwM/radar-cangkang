@@ -10,6 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 import BrokerPola from '../components/BrokerPola.vue'
 import IhsgOutlook from '../components/IhsgOutlook.vue'
 import RingPct from '../components/RingPct.vue'
+import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
 
 // Tab halaman: 'season' (Seasonality) atau 'broker' (Pola Broker), tersimpan di URL (?tab=broker).
 const route = useRoute(), router = useRouter()
@@ -28,7 +29,7 @@ async function load() {
 }
 watch([bulan, tahun], () => { if (tab.value === 'season') { load(); buka.value = '' } }, { immediate: true })
 watch(tab, v => { if (v === 'season' && !data.value) load() })
-const top5 = computed(() => (data.value?.saham || []).slice(0, 5))
+const top5 = computed(() => (data.value?.saham || []).filter(x => lolosHsc(x.t, f.hsc)).slice(0, 5))
 const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 2) + '%'
 const tone = p => p >= 70 ? 'c-good' : p >= 50 ? '' : 'c-strong'
 const rp = v => v == null ? '–' : 'Rp' + Math.round(v).toLocaleString('id-ID')
@@ -43,7 +44,7 @@ function planBar(p) {
 }
 
 // Saringan & urutan tabel saham.
-const f = reactive({ sektor: '', rr: false, radar: false, broker: false })
+const f = reactive({ sektor: '', rr: false, radar: false, broker: false, hsc: '' })
 const sort = reactive({ k: 'skor', desc: true })
 const SORTS = { skor: x => x.skor, prob: x => x.prob, median: x => x.median, worst: x => x.worst, beat: x => x.beatN ? x.beat / x.beatN : -1, rr: x => x.plan?.rr ?? -1 }
 function sortBy(k) { if (sort.k === k) sort.desc = !sort.desc; else { sort.k = k; sort.desc = true } }
@@ -53,6 +54,7 @@ const rows = computed(() => {
   if (f.rr) r = r.filter(x => (x.plan?.rr ?? 0) >= 1)
   if (f.radar) r = r.filter(x => x.radar)
   if (f.broker) r = r.filter(x => /akumulasi|beli/i.test(x.broker))
+  if (f.hsc) r = r.filter(x => lolosHsc(x.t, f.hsc))
   const g = SORTS[sort.k]
   return [...r].sort((a, b) => (sort.desc ? g(b) - g(a) : g(a) - g(b)))
 })
@@ -193,6 +195,10 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
           <button type="button" class="pill sm" :aria-pressed="String(f.rr)" @click="f.rr = !f.rr">R/R ≥ 1</button>
           <button type="button" class="pill sm" :aria-pressed="String(f.broker)" @click="f.broker = !f.broker">Broker akumulasi</button>
           <button type="button" class="pill sm" :aria-pressed="String(f.radar)" @click="f.radar = !f.radar">Radar / Kandidat</button>
+          <span class="hscg" role="group" aria-label="Saham HSC" :title="hscInfo()">
+            <span class="small muted">HSC:</span>
+            <button v-for="[v, l] in HSC_OPSI" :key="v" type="button" class="pill sm" :aria-pressed="String(f.hsc === v)" @click="f.hsc = v">{{ l }}</button>
+          </span>
         </div>
         <div class="scroll">
           <table class="ledger st">
@@ -209,7 +215,7 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
             <tbody>
               <template v-for="x in rows" :key="x.t">
                 <tr class="row" :class="{ open: buka === x.t }" tabindex="0" @click="toggle(x.t)" @keydown.enter="toggle(x.t)">
-                  <td><span class="car">{{ buka === x.t ? '▾' : '▸' }}</span> <b>{{ x.t }}</b><span v-if="x.radar" class="tag t-calm">{{ x.radar }}</span><span v-if="x.katalis.length" class="tag t-warn" :title="x.katalis.map(k => k.jenis + ' ' + k.tanggal).join(', ')">katalis</span></td>
+                  <td><span class="car">{{ buka === x.t ? '▾' : '▸' }}</span> <b>{{ x.t }}</b><span v-if="isHsc(x.t)" class="tag t-warn" title="Saham HSC: dikeluarkan dari perhitungan IHSG">HSC</span><span v-if="x.radar" class="tag t-calm">{{ x.radar }}</span><span v-if="x.katalis.length" class="tag t-warn" :title="x.katalis.map(k => k.jenis + ' ' + k.tanggal).join(', ')">katalis</span></td>
                   <td class="small">{{ x.sektorNama || '–' }}</td>
                   <td class="num" :class="tone(x.prob)"><span class="minibar"><i :style="{ width: x.prob + '%' }" :class="tone(x.prob)" /></span>{{ x.up }}/{{ x.n }}</td>
                   <td class="num">{{ pct(x.median) }}</td>
@@ -303,6 +309,7 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
 .track{height:12px;background:var(--rule);border-radius:6px;overflow:hidden}.track i{display:block;height:100%;background:var(--strong);transition:width .5s ease}.track i.c-good{background:var(--good)}.track i:not(.c-good):not(.c-strong){background:var(--warn,#c79a1a)}
 .flt{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
 .tag{margin-left:6px}
+.hscg{display:inline-flex;align-items:center;gap:4px;margin-left:8px}
 .srt{cursor:pointer;user-select:none}.srt:hover{text-decoration:underline}
 .row{cursor:pointer}.row:hover,.row.open{background:var(--sheet)}.car{color:var(--muted);font-size:11px}
 .minibar{display:inline-block;width:40px;height:6px;background:var(--rule);border-radius:3px;margin-right:6px;vertical-align:middle;overflow:hidden}
