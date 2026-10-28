@@ -11,13 +11,13 @@ const tgl = d => { const x = new Date(d); return isNaN(x) ? String(d || '') : `$
 const nadaWarna = a => a === 'positif' ? GOOD : a === 'negatif' ? BAD : MUTED
 
 // Latar krem + pita hijau-teal di atas + kaki halaman dengan nomor dalam bulatan emas.
-export function frame(doc, title, page) {
+export function frame(doc, title, page, seri = 'Riset IHSG') {
   doc.setFillColor(PAPER); doc.rect(0, 0, 210, 297, 'F')
   doc.setFillColor(PRIMER); doc.rect(0, 0, 210, 11, 'F')
   doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor('#ffffff'); doc.text('RADAR BACKDOOR RESEARCH', 14, 7.4)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.text(pdfText(title), 196, 7.4, { align: 'right' })
   doc.setDrawColor(GOLD); doc.setLineWidth(0.5); doc.line(14, 285, 186, 285)
-  doc.setFontSize(8); doc.setTextColor(MUTED); doc.text(pdfText(`Riset IHSG · ${title}`), 14, 290)
+  doc.setFontSize(8); doc.setTextColor(MUTED); doc.text(pdfText(`${seri} · ${title}`), 14, 290)
   doc.setFillColor(GOLD); doc.circle(193, 286, 4, 'F'); doc.setFont('helvetica', 'bold'); doc.setTextColor('#ffffff'); doc.text(String(page), 193, 287.3, { align: 'center' })
 }
 
