@@ -28,7 +28,7 @@ const rs = computed(() => d.value?.riset || {})
 const price = computed(() => A.value.price)
 const nilai = computed(() => d.value?.tx || d.value?.ri?.inj || null)
 // Nama dari kurasi bisa berupa kalimat panjang: ambil bagian sebelum kata kerja/koma agar muat di kotak.
-const nama = s => short(ent(s).split(/\s+(menuntaskan|membeli|mengambil|melalui|yang)\b|[,;]/)[0], 60)
+const nama = s => short(ent(s).split(/\s+(menuntaskan|mengakuisisi|membeli|mengambil|melalui|yang|selaku|sebagai)\b|[,;:]/)[0].trim(), 60)
 const who = computed(() => nama(d.value?.pv?.siapa || A.value.ctrlName || 'belum diketahui'))
 const injT = computed(() => nama(d.value?.ri?.injTarget || A.value.sv?.injectTarget || d.value?.aset?.aset?.nama || ''))
 const tone = computed(() => rc.value?.tone === 'good' ? 'good' : rc.value?.tone === 'bad' ? 'bad' : 'warn')

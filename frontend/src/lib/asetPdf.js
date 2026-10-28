@@ -28,11 +28,24 @@ export async function asetPdf(d, jsPDF) {
   doc.setDrawColor(GOLD); doc.setLineWidth(0.4); doc.line(28, 30, 196, 30)
   fitText(doc, d.t, 26, 92, 170, 96, { min: 48, baris: 1, color: PRIMER })
   doc.setFont('times', 'italic'); doc.setFontSize(22); doc.setTextColor(INK); doc.text(pdfText('Riset Aset Injeksi'), 28, 108)
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(GOLD); doc.text(doc.splitTextToSize(pdfText(judulAset.toUpperCase()), 168), 28, 118)
+  // Nama aset, keterangan, dan ringkasan disusun berurutan: posisi tiap bagian mengikuti tinggi bagian sebelumnya
+  // (nama aset panjang, mis. SOFA, bisa 3 baris) dan ringkasan dipotong per baris agar berhenti sebelum kotak ringkasan.
+  let cy = 118
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(GOLD)
+  const nm = doc.splitTextToSize(pdfText(judulAset.toUpperCase()), 168).slice(0, 4)
+  doc.text(nm, 28, cy, { lineHeightFactor: 1.25 }); cy += nm.length * 12 * 0.3528 * 1.25 + 3
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(MUTED)
-  doc.text(doc.splitTextToSize(pdfText([a.jenis, a.sektor, a.lokasi].filter(Boolean).join(' · ')), 168), 28, 134)
-  // Ringkasan riset di sampul.
-  if (rs.ringkasan) { doc.setFontSize(9.5); doc.setTextColor(INK); doc.text(doc.splitTextToSize(pdfText(rs.ringkasan), 168).slice(0, 14), 28, 150, { lineHeightFactor: 1.45 }) }
+  const ket = doc.splitTextToSize(pdfText([a.jenis, a.sektor, a.lokasi].filter(Boolean).join(' · ')), 168).slice(0, 3)
+  if (ket.length) { doc.text(ket, 28, cy, { lineHeightFactor: 1.25 }); cy += ket.length * 10 * 0.3528 * 1.25 + 6 }
+  // Ringkasan riset di sampul (maks. sampai di atas kotak ringkasan pada y = 232).
+  if (rs.ringkasan) {
+    doc.setFontSize(9.5); doc.setTextColor(INK)
+    const lh = 9.5 * 0.3528 * 1.45, maks = Math.max(0, Math.floor((226 - cy) / lh))
+    const rl = doc.splitTextToSize(pdfText(rs.ringkasan), 168)
+    const tampil = rl.slice(0, maks)
+    if (rl.length > maks && tampil.length) tampil[tampil.length - 1] = tampil[tampil.length - 1].replace(/\s*\S*$/, '') + '…'
+    doc.text(tampil, 28, cy, { lineHeightFactor: 1.45 })
+  }
   const box = [['Nilai transaksi', d.nilai ? big(d.nilai) : 'belum ada'], ['Porsi', String(a.porsi || '-').split(/[(;]/)[0].trim() || '-'],
     ['Penilaian KJPP', d.ks?.label || '-'], ['Sumber riset', `${(rs.sumber || []).length} sumber`]]
   const bw = (168 - 12) / 4
