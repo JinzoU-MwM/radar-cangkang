@@ -62,7 +62,22 @@ function toggleTheme() {
   try { localStorage.setItem('radar-cangkang.theme', theme.value) } catch {}
 }
 
-// Pintasan: Ctrl/⌘ K buka emiten, / cari, 1–3 pindah menu. Tidak aktif saat mengetik atau dialog terbuka.
+// Layar penuh (semua halaman): menyembunyikan menu kiri agar konten memakai seluruh lebar, sekaligus masuk
+// mode layar penuh browser bila didukung. Keluar lewat tombol, tombol F, atau Esc (browser keluar layar penuh).
+const penuh = ref(false)
+try { penuh.value = localStorage.getItem('radar-cangkang.penuh') === '1' } catch {}
+watch(penuh, v => { try { localStorage.setItem('radar-cangkang.penuh', v ? '1' : '0') } catch {} })
+function togglePenuh() {
+  penuh.value = !penuh.value
+  try {
+    if (penuh.value && !document.fullscreenElement) document.documentElement.requestFullscreen?.()?.catch?.(() => {})
+    else if (!penuh.value && document.fullscreenElement) document.exitFullscreen?.()?.catch?.(() => {})
+  } catch {}
+}
+// Esc keluar dari layar penuh browser: menu kiri ikut ditampilkan lagi.
+function onFs() { if (!document.fullscreenElement && penuh.value) penuh.value = false }
+
+// Pintasan: Ctrl/⌘ K buka emiten, / cari, 1–3 pindah menu, F layar penuh. Tidak aktif saat mengetik atau dialog terbuka.
 // Muat ulang ke versi terbaru (mempertahankan halaman yang sedang dibuka).
 function reloadApp() { location.reload() }
 const jump = ref(false)
@@ -71,6 +86,7 @@ function onKey(e) {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); jump.value = true; return }
   if (e.ctrlKey || e.metaKey || e.altKey) return
   if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName) || document.querySelector('[role="dialog"]')) return
+  if (e.key === 'f' || e.key === 'F') { e.preventDefault(); togglePenuh(); return }
   const to = { 1: '/', 2: '/kandidat', 3: '/berita' }[e.key]
   if (to) { router.push(to); return }
   if (e.key === '/') {
@@ -84,16 +100,17 @@ function onKey(e) {
 onMounted(() => {
   timer = setInterval(() => { now.value = Date.now() }, 60e3)
   addEventListener('keydown', onKey)
+  document.addEventListener('fullscreenchange', onFs)
 })
 // Pemindaian kandidat bisa lama saat belum ada hasil jadi: mulai setelah data utama termuat
 // supaya tidak memakan jatah koneksi browser saat pemuatan awal.
 watch(() => store.ready, r => r && loadKandidat(), { immediate: true })
-onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onKey) })
+onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onKey); document.removeEventListener('fullscreenchange', onFs) })
 </script>
 
 <template>
-  <div class="shell">
-    <nav class="rail" aria-label="Menu utama">
+  <div class="shell" :class="{ penuh }">
+    <nav v-show="!penuh" class="rail" aria-label="Menu utama">
       <div class="brand">
         <b>Radar Backdoor</b>
         <span>Pengambilalihan emiten · BEI</span>
@@ -110,11 +127,16 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
         <span v-if="store.status?.readOnly" class="tok">Versi publik · hanya baca</span>
         <span v-else-if="token && token.cls !== 'bad'" class="tok" :class="token.cls">{{ token.text }}</span>
         <span v-else-if="dataWarn" class="tok bad">{{ dataWarn }}</span>
-        <span>Ctrl K buka emiten · / cari · 1–3 menu</span>
+        <span>Ctrl K buka emiten · / cari · 1–3 menu · F layar penuh</span>
         <button type="button" class="theme" @click="toggleTheme">{{ theme === 'dark' ? 'Tema terang' : 'Tema gelap' }}</button>
       </div>
     </nav>
     <main class="content">
+      <button type="button" class="fs" :aria-pressed="String(penuh)" :title="penuh ? 'Kembali: tampilkan menu kiri (F atau Esc)' : 'Sembunyikan menu kiri, layar penuh (F)'" @click="togglePenuh">
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path v-if="!penuh" d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" fill="none" stroke="currentColor" stroke-width="1.8" />
+          <path v-else d="M5 1v4H1M13 5H9V1M9 13V9h4M1 9h4v4" fill="none" stroke="currentColor" stroke-width="1.8" /></svg>
+        {{ penuh ? 'Kembali' : 'Layar penuh' }}
+      </button>
       <p v-if="store.newVersion" class="newver" role="status">
         Versi baru website tersedia; tab ini masih memakai versi lama.
         <button type="button" class="btn" @click="reloadApp">Muat ulang</button>
@@ -157,7 +179,12 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
 .tok{font-weight:600}
 .tok.ok{color:#bfe6d1}.tok.warn{color:#ffd28a}.tok.bad{color:#ffb4a9}
 .theme{align-self:flex-start;background:none;border:1px solid var(--rail-rule);color:var(--rail-ink);border-radius:3px;padding:5px 10px;cursor:pointer}
-.content{flex:999 1 560px;min-width:0;padding:22px 28px 48px;box-sizing:border-box}
+.content{flex:999 1 560px;min-width:0;padding:22px 28px 48px;box-sizing:border-box;position:relative}
+/* Tombol layar penuh: pojok kanan atas konten, tetap terlihat saat menggulir. */
+.fs{position:fixed;top:10px;right:14px;z-index:40;display:inline-flex;align-items:center;gap:6px;padding:5px 10px;font:600 12px var(--f-data, inherit);
+  background:var(--sheet);color:var(--ink);border:1px solid var(--rule);border-radius:3px;box-shadow:var(--shadow);cursor:pointer;opacity:.85}
+.fs:hover,.fs[aria-pressed="true"]{opacity:1}
+.penuh .content{padding-top:40px}
 .skel{display:flex;flex-direction:column;gap:18px}
 .sk{background:linear-gradient(90deg,var(--rule-2) 0 40%,var(--sheet-2) 50%,var(--rule-2) 60% 100%) 0 0/300% 100%;border-radius:3px;animation:sk 1.4s ease-in-out infinite}
 .sk-h{height:34px;width:38%}
@@ -184,6 +211,7 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
   .jump{order:0;flex:none;margin:0 4px 0 0;padding:7px 9px}.jump kbd,.jump .jl{display:none}.jump .ji{display:block}
   .foot{display:none}
   .content{padding:14px 14px 40px}
+  .fs{top:auto;bottom:14px;right:14px}
   .mwarn{display:block;margin:0 0 12px;padding:8px 12px;background:var(--strong-bg);color:var(--strong);font-weight:600;font-size:13px;border-radius:3px}
   .sk-row{grid-template-columns:1fr}.sk-card:nth-child(n+2){display:none}
 }
