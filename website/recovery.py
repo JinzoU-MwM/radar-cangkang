@@ -1,0 +1,138 @@
+"""Recovery: saham yang sudah turun dalam dan berpotensi rebound karena didukung Seasonality dan Pola Broker.
+
+Teknikal harian (turun dari puncak 52 minggu, jarak dari dasar, RSI, EMA, pantulan) dihitung saat pembaruan malam;
+skor digabung saat diminta dengan peluang Seasonality bulan terpilih dan akumulasi broker (net bandar) terbaru.
+Skor 0-100 = kedalaman turun (30) + Seasonality (25) + akumulasi broker (25) + konfirmasi teknikal (20).
+"""
+from __future__ import annotations
+
+import json
+
+MIN_TURUN = 30.0  # % dari puncak 52 minggu agar dianggap "sudah turun banyak"
+MAX_DARI_DASAR = 40.0  # % di atas dasar kejatuhan; lebih dari ini = sudah pulih/lonjakan, bukan kandidat rebound
+LOMPATAN = -45.0  # perubahan harian <= -45% = kemungkinan aksi korporasi (stock split/reverse), data tidak sebanding
+
+
+def _ema(xs: list[float], n: int) -> list[float]:
+    k, out = 2 / (n + 1), []
+    for i, x in enumerate(xs):
+        out.append(x if i == 0 else x * k + out[-1] * (1 - k))
+    return out
+
+
+def _rsi(xs: list[float], n: int = 14) -> float | None:
+    if len(xs) <= n:
+        return None
+    gain = loss = 0.0
+    for a, b in zip(xs[-n - 1:-1], xs[-n:]):
+        d = b - a
+        gain += max(d, 0)
+        loss += max(-d, 0)
+    if loss == 0:
+        return 100.0
+    return round(100 - 100 / (1 + gain / loss), 1)
+
+
+def technical(bars: list[dict]) -> dict | None:
+    """Ringkasan teknikal 1 tahun untuk satu saham (bars = OHLC harian, terlama dulu)."""
+    if len(bars) < 60:
+        return None
+    c = [b["c"] for b in bars]
+    y = bars[-250:]
+    p = c[-1]
+    # Puncak 52 minggu, lalu dasar kejatuhan = titik terendah SETELAH puncak (bukan dasar sebelum lonjakan).
+    i_hi = max(range(len(y)), key=lambda i: y[i]["h"])
+    hi = y[i_hi]["h"]
+    seg = y[i_hi:]
+    i_lo = min(range(len(seg)), key=lambda i: seg[i]["l"])
+    lo = seg[i_lo]["l"]
+    if not p or not hi or not lo:
+        return None
+    e20, e50 = _ema(c, 20), _ema(c, 50)
+    hari_dari_dasar = len(seg) - 1 - i_lo
+    lompat = min((b["c"] / a["c"] - 1) * 100 for a, b in zip(y[:-1], y[1:]) if a["c"])
+    # Higher low: dasar 20 hari terakhir di atas dasar 20 hari sebelumnya.
+    low_a, low_b = min(b["l"] for b in bars[-20:]), min(b["l"] for b in bars[-40:-20])
+    vol20 = sum(b["v"] for b in bars[-20:]) / 20
+    vol60 = sum(b["v"] for b in bars[-80:-20]) / 60 if len(bars) >= 80 else vol20
+    return {
+        "harga": p, "tanggal": bars[-1]["d"], "tinggi52": hi, "rendah52": lo,
+        "turun": round((1 - p / hi) * 100, 1),            # % di bawah puncak 52 minggu
+        "dariDasar": round((p / lo - 1) * 100, 1),         # % di atas dasar 52 minggu
+        "hariDariDasar": hari_dari_dasar,
+        "ret20": round((p / c[-21] - 1) * 100, 1), "ret60": round((p / c[-61] - 1) * 100, 1),
+        "rsi": _rsi(c), "ema20": round(e20[-1], 1), "ema50": round(e50[-1], 1),
+        "diAtasEma20": p > e20[-1], "higherLow": low_a > low_b,
+        "volRasio": round(vol20 / vol60, 2) if vol60 else None,
+        "lompatan": round(lompat, 1) <= LOMPATAN,
+    }
+
+
+def _tick(v: float) -> int:
+    """Pembulatan ke fraksi harga BEI."""
+    f = 1 if v < 200 else 2 if v < 500 else 5 if v < 2000 else 10 if v < 5000 else 25
+    return int(round(v / f) * f)
+
+
+def plan(t: dict, avg_bandar: float | None) -> dict:
+    """Trading plan rebound: area beli dekat harga/dasar, target retracement 38,2% & 50% dari jatuhnya (dibatasi +25% /
+    +60% dari harga agar realistis untuk perdagangan pemulihan), batas rugi di bawah dasar kejatuhan."""
+    p, hi, lo = t["harga"], t["tinggi52"], t["rendah52"]
+    jatuh = hi - lo
+    tp1 = min(max(lo + jatuh * 0.382, p * 1.05), p * 1.25)
+    if avg_bandar and p * 1.03 < avg_bandar < tp1:
+        tp1 = avg_bandar  # harga rata-rata broker akumulasi sebagai target pertama bila lebih dekat
+    tp2 = min(max(lo + jatuh * 0.5, tp1 * 1.08), p * 1.6)
+    entry = [_tick(max(lo, p * 0.96)), _tick(p)]
+    sl = _tick(max(min(lo * 0.95, entry[0] * 0.92), entry[0] * 0.85))
+    risk = entry[1] - sl
+    return {"entry": entry, "tp1": _tick(tp1), "tp2": _tick(tp2), "sl": sl,
+            "rr": round((_tick(tp1) - entry[1]) / risk, 2) if risk > 0 else None}
+
+
+def score(t: dict, season: dict | None, bro: dict | None) -> dict:
+    """Skor & status satu saham. season = baris Seasonality (prob, median, ...); bro = {net, avg, bulan, dist}."""
+    turun = min(t["turun"], 70) / 70 * 30
+    prob = season.get("prob") if season else None
+    musim = (prob or 0) / 100 * 25
+    akum = bool(bro and bro.get("net", 0) > 0)
+    broker = 0.0
+    if akum:
+        broker = 18.0
+        if bro.get("avg") and t["harga"] <= bro["avg"] * 1.05:
+            broker += 7  # harga masih dekat/di bawah modal rata-rata broker pengakumulasi
+    tek = 0.0
+    if t["rsi"] is not None and t["rsi"] < 35:
+        tek += 5
+    if t["diAtasEma20"]:
+        tek += 7
+    if t["higherLow"] or t["dariDasar"] >= 8:
+        tek += 8
+    skor = round(turun + musim + broker + tek)
+    dukung = [x for x, ok in (("Seasonality", (prob or 0) >= 60), ("Akumulasi broker", akum),
+                                 ("Konfirmasi teknikal", t["diAtasEma20"] and (t["higherLow"] or t["dariDasar"] >= 8))) if ok]
+    status = "Siap rebound" if len(dukung) == 3 else "Mulai pulih" if len(dukung) == 2 else "Pantau"
+    alasan = [f"Turun {t['turun']:.0f}% dari puncak 52 minggu Rp{t['tinggi52']:,.0f}; kini {t['dariDasar']:.0f}% di atas dasar kejatuhan Rp{t['rendah52']:,.0f} ({t['hariDariDasar']} hari lalu)".replace(",", ".")]
+    if prob is not None:
+        alasan.append(f"Seasonality: naik {season['up']} dari {season['n']} tahun ({prob}%), median {season['median']:+.2f}%".replace(".", ",", 1))
+    if akum:
+        alasan.append(f"Broker akumulasi bulan {bro['bulanNama']}: net bandar Rp{bro['net'] / 1e9:,.1f} M".replace(",", "X").replace(".", ",").replace("X", ".")
+                      + (f" di avg Rp{bro['avg']:,.0f}".replace(",", ".") if bro.get("avg") else ""))
+    elif bro and bro.get("dist"):
+        alasan.append(f"Broker masih distribusi bulan {bro['bulanNama']}")
+    cek = []
+    if t["rsi"] is not None:
+        cek.append(f"RSI {t['rsi']:.0f}" + (" (jenuh jual)" if t["rsi"] < 35 else ""))
+    cek.append("di atas EMA20" if t["diAtasEma20"] else "di bawah EMA20")
+    if t["higherLow"]:
+        cek.append("higher low")
+    alasan.append("Teknikal: " + ", ".join(cek))
+    return {"skor": skor, "status": status, "dukung": dukung, "alasan": alasan,
+            "komponen": {"turun": round(turun, 1), "seasonality": round(musim, 1), "broker": round(broker, 1), "teknikal": round(tek, 1)}}
+
+
+def load(path) -> dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}

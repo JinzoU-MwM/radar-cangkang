@@ -8,13 +8,15 @@ import { api } from '../api.js'
 import { fmt } from '../lib/domain.js'
 import { useRoute, useRouter } from 'vue-router'
 import BrokerPola from '../components/BrokerPola.vue'
+import RecoveryPanel from '../components/RecoveryPanel.vue'
 import IhsgOutlook from '../components/IhsgOutlook.vue'
 import RingPct from '../components/RingPct.vue'
 import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
 
-// Tab halaman: 'season' (Seasonality) atau 'broker' (Pola Broker), tersimpan di URL (?tab=broker).
 const route = useRoute(), router = useRouter()
-const tab = computed({ get: () => route.query.tab === 'broker' ? 'broker' : 'season', set: v => router.replace({ query: { ...route.query, tab: v === 'broker' ? 'broker' : undefined } }) })
+// Tab halaman: 'season', 'broker' (Pola Broker), atau 'recovery' (Recovery), tersimpan di URL (?tab=...).
+const TABS = ['broker', 'recovery']
+const tab = computed({ get: () => TABS.includes(route.query.tab) ? route.query.tab : 'season', set: v => router.replace({ query: { ...route.query, tab: TABS.includes(v) ? v : undefined } }) })
 const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 // Default bulan depan (Desember -> Januari).
 const bulan = ref((new Date().getMonth() + 1) % 12 + 1)
@@ -27,6 +29,8 @@ async function load() {
     if (r.error) { err.value = r.error; data.value = null } else data.value = r
   } catch (e) { err.value = e.message || String(e) } finally { loading.value = false }
 }
+// Baris saham yang dibuka (dideklarasikan sebelum watch immediate di bawah yang mengosongkannya).
+const buka = ref('')
 watch([bulan, tahun], () => { if (tab.value === 'season') { load(); buka.value = '' } }, { immediate: true })
 watch(tab, v => { if (v === 'season' && !data.value) load() })
 const top5 = computed(() => (data.value?.saham || []).filter(x => lolosHsc(x.t, f.hsc)).slice(0, 5))
@@ -61,7 +65,7 @@ const rows = computed(() => {
 const arrow = k => sort.k === k ? (sort.desc ? ' ▾' : ' ▴') : ''
 
 // Baris yang dibuka: heatmap tahun x bulan dari /api/seasonality-detail (disimpan per kode+rentang).
-const buka = ref(''), detail = ref({})
+const detail = ref({})
 async function toggle(t) {
   buka.value = buka.value === t ? '' : t
   const key = t + tahun.value
@@ -80,9 +84,11 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
       <div class="tabs" role="tablist" aria-label="Bagian">
         <button type="button" role="tab" class="tab" :aria-selected="tab === 'season'" @click="tab = 'season'">Seasonality</button>
         <button type="button" role="tab" class="tab" :aria-selected="tab === 'broker'" @click="tab = 'broker'">Pola Broker</button>
+        <button type="button" role="tab" class="tab" :aria-selected="tab === 'recovery'" @click="tab = 'recovery'">Recovery</button>
       </div>
     </header>
     <BrokerPola v-if="tab === 'broker'" />
+    <RecoveryPanel v-else-if="tab === 'recovery'" />
     <template v-else>
     <header>
       <div class="ctl">

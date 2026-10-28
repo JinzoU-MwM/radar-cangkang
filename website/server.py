@@ -37,6 +37,7 @@ from pathlib import Path
 import brokerpola as BP
 import beritapasar as BN
 import ihsg as IH
+import recovery as RC
 import seasonality as SZ
 
 ROOT = Path(__file__).resolve().parent
@@ -2175,9 +2176,79 @@ def broker_build() -> None:
     print(f"[broker-pola] selesai: {len(data['broker'])} broker")
 
 
+RECOVERY_PATH = ROOT / ".recovery.json"
+
+
+def recovery_universe() -> list[str]:
+    """Saham Seasonality + saham yang muncul di akumulasi/distribusi Pola Broker (semua bulan)."""
+    uni = set((season_data().get("stock") or {}).keys())
+    for b in (broker_data().get("broker") or {}).values():
+        for x in (b.get("bulan") or {}).values():
+            uni |= {r["s"] for r in (x.get("beli") or []) + (x.get("jual") or [])}
+    return sorted(t for t in uni if re.match(r"^[A-Z]{4}$", t))
+
+
+def recovery_build(delay: float = 0.25) -> None:
+    """Teknikal harian 1 tahun tiap saham untuk tab Recovery (dijalankan setelah Seasonality & Pola Broker)."""
+    out = {}
+    for t in recovery_universe():
+        try:
+            tek = RC.technical(get_ohlc(t, "1y"))
+            if tek:
+                out[t] = tek
+        except Exception as e:
+            if "401" in str(e):
+                raise
+        time.sleep(delay)
+    if not out:
+        raise RuntimeError("data teknikal kosong")
+    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "tek": out}
+    tmp = RECOVERY_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(RECOVERY_PATH)
+    print(f"[recovery] {len(out)} saham", file=sys.stderr)
+
+
+def recovery_api(month: int) -> dict:
+    """Saham turun >= 30% dari puncak 52 minggu, diberi skor dukungan Seasonality (bulan terpilih) & Pola Broker."""
+    rd = RC.load(RECOVERY_PATH)
+    if not rd.get("tek"):
+        return {"error": "Data Recovery sedang disiapkan (pembaruan otomatis Senin-Sabtu pukul 00.01 WIB). Coba lagi beberapa menit lagi."}
+    sea = season_api(month, 10)
+    srow = {x["t"]: x for x in sea.get("saham") or []}
+    # Broker: bulan terakhir yang ada; akumulasi = net bandar positif, distribusi = negatif.
+    bd = broker_data()
+    bro, bulan_b = {}, None
+    if bd:
+        v = BP.view(bd, None, None, "")
+        bulan_b = max(v.get("bulanAda") or [0]) or None
+        if bulan_b:
+            v = BP.view(bd, bulan_b, None, "")
+            BL = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+            for x in (v.get("saham") or {}).get("akumulasi") or []:
+                bro[x["s"]] = {"net": x["bandar"], "avg": x.get("avgAkum"), "bulanNama": BL[bulan_b - 1], "broker": [z["b"] for z in x.get("akum") or []]}
+            for x in (v.get("saham") or {}).get("distribusi") or []:
+                bro.setdefault(x["s"], {"net": x["bandar"], "avg": None, "dist": True, "bulanNama": BL[bulan_b - 1]})
+    rows = []
+    for t, tek in rd["tek"].items():
+        # Hanya yang sudah turun dalam, masih dekat dasar kejatuhan, dan tanpa lompatan harga akibat aksi korporasi.
+        if tek["turun"] < RC.MIN_TURUN or tek["dariDasar"] > RC.MAX_DARI_DASAR or tek.get("lompatan"):
+            continue
+        se, b = srow.get(t), bro.get(t)
+        sc = RC.score(tek, se, b)
+        rows.append({"t": t, "nama": (se or {}).get("nama") or "", "sektorNama": (se or {}).get("sektorNama") or "",
+                     "radar": (se or {}).get("radar") or "", "tek": tek,
+                     "season": {k: se[k] for k in ("n", "up", "prob", "median", "worst")} if se else None,
+                     "broker": b, "plan": RC.plan(tek, (b or {}).get("avg") if b and not b.get("dist") else None), **sc})
+    # Didukung lebih banyak (Seasonality, broker, teknikal) lebih dulu, lalu skor.
+    rows.sort(key=lambda r: (-len(r["dukung"]), -r["skor"]))
+    return {"updated": rd["updated"], "bulan": month, "bulanBroker": bulan_b, "minTurun": RC.MIN_TURUN, "maxDariDasar": RC.MAX_DARI_DASAR,
+            "total": len(rd["tek"]), "saham": rows}
+
+
 def daily_builds() -> None:
-    """Pembaruan terjadwal: Seasonality lalu Pola Broker; masing-masing dicoba ulang tiap 30 menit (maks. 3 jam)."""
-    for fn in (season_build, broker_build):
+    """Pembaruan terjadwal: Seasonality, Pola Broker, lalu Recovery; masing-masing dicoba ulang tiap 30 menit (maks. 3 jam)."""
+    for fn in (season_build, broker_build, recovery_build):
         for _ in range(6):
             try:
                 fn()
@@ -2312,7 +2383,7 @@ def IH_load() -> dict:
 def season_loop() -> None:
     time.sleep(120)  # beri waktu loop kandidat/tsa mengisi universe lebih dulu
     # Belum ada data sama sekali: bangun sekarang agar halaman tidak kosong, lalu ikuti jadwal.
-    for path, fn in ((SEASON_PATH, season_build), (BROKER_PATH, broker_build)):
+    for path, fn in ((SEASON_PATH, season_build), (BROKER_PATH, broker_build), (RECOVERY_PATH, recovery_build)):
         while not path.exists():
             try:
                 if get_token():
@@ -2735,6 +2806,12 @@ class Handler(BaseHTTPRequestHandler):
             if self.qs("segar") == "1":
                 ihsg_segarkan(public=_req.public)
             self.reply_json(ihsg_api(month))
+        elif path == "api/recovery":
+            try:
+                month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month % 12 + 1))
+            except ValueError:
+                month = datetime.now().month % 12 + 1
+            self.reply_json(recovery_api(month))
         elif path == "api/broker-pola":
             d = broker_data()
             if not d:
