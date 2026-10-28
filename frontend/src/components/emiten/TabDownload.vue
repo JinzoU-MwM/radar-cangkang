@@ -43,11 +43,13 @@ const SECTIONS = [
 // Nomor slide berurutan lintas bagian (sampul tidak dihitung).
 const NUMBERED = SECTIONS.reduce((acc, [sec, items]) => { const start = acc.n; acc.list.push([sec, items.map((x, k) => [start + k + 1, ...x])]); acc.n += items.length; return acc }, { n: 0, list: [] }).list
 
-async function build({ PptxGenJS, choose, lastId, onStep }) {
+// variant 'info' = versi infografis (lihat buildDeck opt.info).
+async function build({ PptxGenJS, choose, lastId, onStep, variant }) {
   const d = await collectDeck(props.ticker, { store, api, storyOf, getBenchmark, onStep })
   const theme = pickTheme(d.sector.id, { lastId, choose })
   onStep('Menyusun slide')
-  return { pres: buildDeck(PptxGenJS, d, theme), file: deckFileName(props.ticker, d.date, theme), theme, sector: d.sector.label }
+  const info = variant === 'info'
+  return { pres: buildDeck(PptxGenJS, d, theme, { info }), file: deckFileName(props.ticker, d.date, theme, info), theme, sector: d.sector.label }
 }
 </script>
 
@@ -60,7 +62,7 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
 
     <div class="grid">
       <div class="pane">
-        <DeckDownload :sector-id="guess.id" :build="build" />
+        <DeckDownload :sector-id="guess.id" :build="build" :infografis="true" />
       </div>
 
       <div class="pane">
@@ -71,7 +73,7 @@ async function build({ PptxGenJS, choose, lastId, onStep }) {
             <li v-for="[n, a, b] in items" :key="a"><span class="n">{{ n }}</span><b>{{ a }}</b><small>{{ b }}</small></li>
           </ol>
         </div>
-        <p class="muted note">Slide tanpa data dilewati otomatis. Data diambil saat tombol ditekan, sama dengan yang tampil di tab lain.</p>
+        <p class="muted note">Versi infografis: ringkasan, angka kunci, diagram, dan grafik saja (slide teks panjang dilewati). Slide tanpa data dilewati otomatis. Data diambil saat tombol ditekan, sama dengan yang tampil di tab lain.</p>
       </div>
     </div>
   </section>
