@@ -2,7 +2,7 @@
 // halaman berbingkai, tabel, dan disclaimer. Isi = tab Aset: riset lintas sumber (aset-riset.json), fakta dari laporan
 // Stockbit terakhir, transaksi & KJPP (aset-verified.json), simulasi nilai KJPP otomatis, dampak ke saham, dan sumber.
 import { pdfText } from './deckPdf.js'
-import { PAPER, PRIMER, GOLD, INK, MUTED, LINE, GOOD, BAD, frame, heading, para, block, kpi } from './ihsgPdf.js'
+import { PAPER, PRIMER, GOLD, INK, MUTED, LINE, GOOD, BAD, frame, heading, para, block, kpi, fitText } from './ihsgPdf.js'
 import { tabel } from './ihsgModelPdf.js'
 
 const BLN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
@@ -26,7 +26,7 @@ export async function asetPdf(d, jsPDF) {
   doc.setFont('times', 'bold'); doc.setFontSize(12); doc.setTextColor(PRIMER); doc.text('RADAR BACKDOOR RESEARCH', 28, 26)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(MUTED); doc.text(pdfText(`Edisi ${tgl(new Date())} · riset per ${tgl(rs.asOf) || '-'}`), 196, 26, { align: 'right' })
   doc.setDrawColor(GOLD); doc.setLineWidth(0.4); doc.line(28, 30, 196, 30)
-  doc.setFont('times', 'bold'); doc.setFontSize(96); doc.setTextColor(PRIMER); doc.text(pdfText(d.t), 26, 92)
+  fitText(doc, d.t, 26, 92, 170, 96, { min: 48, baris: 1, color: PRIMER })
   doc.setFont('times', 'italic'); doc.setFontSize(22); doc.setTextColor(INK); doc.text(pdfText('Riset Aset Injeksi'), 28, 108)
   doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(GOLD); doc.text(doc.splitTextToSize(pdfText(judulAset.toUpperCase()), 168), 28, 118)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(MUTED)
@@ -40,7 +40,7 @@ export async function asetPdf(d, jsPDF) {
     const x = 28 + i * (bw + 4)
     doc.setFillColor('#ffffff'); doc.setDrawColor(LINE); doc.rect(x, 232, bw, 18, 'FD')
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(MUTED); doc.text(pdfText(kk), x + 4, 238.5)
-    doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(PRIMER); doc.text(doc.splitTextToSize(pdfText(v), bw - 6)[0], x + 4, 246)
+    fitText(doc, v, x + 4, 246, bw - 6, 11, { min: 7.5, color: PRIMER })
   })
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(MUTED)
   doc.text(doc.splitTextToSize(pdfText('Disusun dari keterbukaan informasi (Stockbit Reports), media nasional/daerah/asing, situs perusahaan, filing bursa, regulator, dan jurnal ilmiah. Bukan ajakan membeli atau menjual efek.'), 168), 28, 262)

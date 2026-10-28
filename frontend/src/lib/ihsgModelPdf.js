@@ -2,7 +2,7 @@
 // sampul krem dengan pita hijau-teal, judul serif, ringkasan berkotak, lalu halaman isi berbingkai, grafik, tabel, disclaimer.
 // Data dari /api/ihsg-astro dan /api/ihsg-runtun (diambil segar saat tombol ditekan). Tanpa warna merah.
 import { pdfText } from './deckPdf.js'
-import { PAPER, PRIMER, GOLD, INK, MUTED, LINE, GOOD, BAD, TEAL, SOFT, frame, heading, para, block, kpi } from './ihsgPdf.js'
+import { PAPER, PRIMER, GOLD, INK, MUTED, LINE, GOOD, BAD, TEAL, SOFT, frame, heading, para, block, kpi, fitText } from './ihsgPdf.js'
 
 const BLN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 const n0 = v => v == null || isNaN(v) ? '-' : Math.round(v).toLocaleString('id-ID')
@@ -37,8 +37,7 @@ function sampul(doc, { judul, sub, label, updated, seri, box }) {
     const x = 28 + i * (bw + 4)
     doc.setFillColor('#ffffff'); doc.setDrawColor(LINE); doc.rect(x, 214, bw, 18, 'FD')
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(MUTED); doc.text(pdfText(k), x + 4, 220.5)
-    doc.setFont('times', 'bold'); doc.setFontSize(box.length > 3 ? 11 : 12.5); doc.setTextColor(PRIMER)
-    doc.text(doc.splitTextToSize(pdfText(v), bw - 6)[0], x + 4, 228)
+    fitText(doc, v, x + 4, 228, bw - 6, box.length > 3 ? 11 : 12.5, { min: 7.5, color: PRIMER })
   })
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(MUTED)
   doc.text(doc.splitTextToSize(pdfText('Disusun otomatis dari harga harian IHSG (Stockbit), kalender astronomis, dan berita pasar. Bukan ajakan membeli atau menjual efek.'), 168), 28, 250)
@@ -100,7 +99,7 @@ export async function astroPdf(d, jsPDF) {
   heading(doc, 'Rekomendasi IHSG', 28)
   let y = 38
   doc.setFillColor('#ffffff'); doc.setDrawColor(GOLD); doc.setLineWidth(0.6); doc.rect(14, y - 5, 182, 30, 'FD')
-  doc.setFont('times', 'bold'); doc.setFontSize(17); doc.setTextColor(PRIMER); doc.text(pdfText(rk.tindakan || '-'), 19, y + 3)
+  fitText(doc, rk.tindakan || '-', 19, y + 3, 120, 17, { min: 11, baris: 1, color: PRIMER })
   doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(GOLD); doc.text(pdfText(`KEYAKINAN ${String(rk.keyakinan || '-').toUpperCase()}`), 192, y + 3, { align: 'right' })
   para(doc, rk.detail || '', 19, y + 10, 172, 9.5)
   y += 33

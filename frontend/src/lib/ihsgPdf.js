@@ -21,6 +21,22 @@ export function frame(doc, title, page, seri = 'Riset IHSG') {
   doc.setFillColor(GOLD); doc.circle(193, 286, 4, 'F'); doc.setFont('helvetica', 'bold'); doc.setTextColor('#ffffff'); doc.text(String(page), 193, 287.3, { align: 'center' })
 }
 
+// Teks dalam kotak sempit tanpa terpotong: ukuran huruf dikecilkan sampai muat satu baris (sampai min),
+// bila tetap terlalu panjang dipecah menjadi maks. `baris` baris pada ukuran min. Mengembalikan ukuran yang dipakai.
+export function fitText(doc, text, x, y, w, size, { min = 8, baris = 2, font = ['times', 'bold'], color } = {}) {
+  const t = pdfText(String(text ?? ''))
+  doc.setFont(...font); if (color) doc.setTextColor(color)
+  let sz = size
+  for (; sz > min; sz -= 0.5) { doc.setFontSize(sz); if (doc.getTextWidth(t) <= w) break }
+  doc.setFontSize(sz)
+  if (doc.getTextWidth(t) <= w) { doc.text(t, x, y); return sz }
+  const lines = doc.splitTextToSize(t, w)
+  const shown = lines.slice(0, baris)
+  if (lines.length > baris) shown[baris - 1] = shown[baris - 1].replace(/\s*\S*$/, '') + '…'
+  doc.text(shown, x, y - (shown.length - 1) * sz * 0.3528 * 0.55, { lineHeightFactor: 1.1 })
+  return sz
+}
+
 // Judul bagian: serif hijau-teal dengan garis bawah emas.
 export function heading(doc, text, y, size = 18) {
   doc.setFont('times', 'bold'); doc.setFontSize(size); doc.setTextColor(PRIMER); doc.text(pdfText(text), 14, y)
@@ -36,9 +52,11 @@ export function para(doc, text, x, y, w, size = 10, color = INK) {
 
 // Paragraf berlabel (Struktur / Flow / Rencana) dengan penanda emas di kiri.
 export function block(doc, label, text, y) {
-  doc.setFillColor(GOLD); doc.rect(14, y - 3.4, 1.2, 4.4, 'F')
-  doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(PRIMER); doc.text(pdfText(label), 18, y)
-  return para(doc, text, 18, y + 5, 178)
+  doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(PRIMER)
+  const lines = doc.splitTextToSize(pdfText(label), 178)
+  doc.setFillColor(GOLD); doc.rect(14, y - 3.4, 1.2, 4.4 + (lines.length - 1) * 4.6, 'F')
+  doc.text(lines, 18, y, { lineHeightFactor: 1.2 })
+  return para(doc, text, 18, y + 5 + (lines.length - 1) * 4.6, 178)
 }
 
 function chart(doc, tek, x, y, w, h) {
@@ -71,7 +89,7 @@ export function kpi(doc, x, y, w, label, value, color) {
   doc.setFillColor('#ffffff'); doc.setDrawColor(LINE); doc.setLineWidth(0.3); doc.rect(x, y, w, 19, 'FD')
   doc.setFillColor(color); doc.rect(x, y, 1.6, 19, 'F')
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(MUTED); doc.text(pdfText(label), x + 5, y + 6.5)
-  doc.setFont('times', 'bold'); doc.setFontSize(14); doc.setTextColor(color); doc.text(pdfText(value), x + 5, y + 14.5)
+  fitText(doc, value, x + 5, y + 14.5, w - 7, 14, { min: 8.5, color })
 }
 
 export async function ihsgPdf(d, jsPDF) {
@@ -105,8 +123,7 @@ export async function ihsgPdf(d, jsPDF) {
     const x = 28 + i * (bw + 4)
     doc.setFillColor('#ffffff'); doc.setDrawColor(LINE); doc.rect(x, 214, bw, 18, 'FD')
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(MUTED); doc.text(pdfText(k), x + 4, 220.5)
-    doc.setFont('times', 'bold'); doc.setFontSize(box.length > 3 ? 11 : 12.5); doc.setTextColor(PRIMER)
-    doc.text(doc.splitTextToSize(pdfText(v), bw - 6)[0], x + 4, 228)
+    fitText(doc, v, x + 4, 228, bw - 6, box.length > 3 ? 11 : 12.5, { min: 7.5, color: PRIMER })
   })
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(MUTED); doc.text('Disusun oleh', 28, 252); doc.text('Terbit', 100, 252)
   doc.setFont('times', 'bold'); doc.setFontSize(12); doc.setTextColor(INK); doc.text('Radar Backdoor', 28, 258); doc.text(pdfText(terbit), 100, 258)
