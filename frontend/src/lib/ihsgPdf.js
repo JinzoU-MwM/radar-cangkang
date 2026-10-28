@@ -3,15 +3,15 @@
 // Tema terang Radar Backdoor: kertas krem, hijau-teal tua sebagai warna utama, aksen emas, judul serif (tanpa merah).
 import { pdfText } from './deckPdf.js'
 
-const PAPER = '#fbf8f1', PRIMER = '#17494d', GOLD = '#c8962c', INK = '#2b2620', MUTED = '#7a7166', LINE = '#e6dccb'
-const GOOD = '#2e8b57', BAD = '#d9822b', TEAL = '#3b7ea1', SOFT = '#eef1ea'
+export const PAPER = '#fbf8f1', PRIMER = '#17494d', GOLD = '#c8962c', INK = '#2b2620', MUTED = '#7a7166', LINE = '#e6dccb'
+export const GOOD = '#2e8b57', BAD = '#d9822b', TEAL = '#3b7ea1', SOFT = '#eef1ea'
 const BLN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 const n0 = v => v == null ? '-' : Math.round(v).toLocaleString('id-ID')
 const tgl = d => { const x = new Date(d); return isNaN(x) ? String(d || '') : `${x.getDate()} ${BLN[x.getMonth()]} ${x.getFullYear()}` }
 const nadaWarna = a => a === 'positif' ? GOOD : a === 'negatif' ? BAD : MUTED
 
 // Latar krem + pita hijau-teal di atas + kaki halaman dengan nomor dalam bulatan emas.
-function frame(doc, title, page) {
+export function frame(doc, title, page) {
   doc.setFillColor(PAPER); doc.rect(0, 0, 210, 297, 'F')
   doc.setFillColor(PRIMER); doc.rect(0, 0, 210, 11, 'F')
   doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor('#ffffff'); doc.text('RADAR BACKDOOR RESEARCH', 14, 7.4)
@@ -22,12 +22,12 @@ function frame(doc, title, page) {
 }
 
 // Judul bagian: serif hijau-teal dengan garis bawah emas.
-function heading(doc, text, y, size = 18) {
+export function heading(doc, text, y, size = 18) {
   doc.setFont('times', 'bold'); doc.setFontSize(size); doc.setTextColor(PRIMER); doc.text(pdfText(text), 14, y)
   doc.setDrawColor(GOLD); doc.setLineWidth(0.8); doc.line(14, y + 2.2, 14 + Math.min(182, doc.getTextWidth(pdfText(text)) + 4), y + 2.2)
 }
 
-function para(doc, text, x, y, w, size = 10, color = INK) {
+export function para(doc, text, x, y, w, size = 10, color = INK) {
   doc.setFont('helvetica', 'normal'); doc.setFontSize(size); doc.setTextColor(color)
   const lines = doc.splitTextToSize(pdfText(text), w)
   doc.text(lines, x, y, { lineHeightFactor: 1.45 })
@@ -35,7 +35,7 @@ function para(doc, text, x, y, w, size = 10, color = INK) {
 }
 
 // Paragraf berlabel (Struktur / Flow / Rencana) dengan penanda emas di kiri.
-function block(doc, label, text, y) {
+export function block(doc, label, text, y) {
   doc.setFillColor(GOLD); doc.rect(14, y - 3.4, 1.2, 4.4, 'F')
   doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(PRIMER); doc.text(pdfText(label), 18, y)
   return para(doc, text, 18, y + 5, 178)
@@ -67,7 +67,7 @@ function chart(doc, tek, x, y, w, h) {
   for (const [c, t] of lg) { doc.setDrawColor(c); doc.setLineWidth(0.8); doc.line(lx, y - 2.2, lx + 5, y - 2.2); doc.setTextColor(INK); doc.text(pdfText(t), lx + 6.5, y - 1.4); lx += 38 }
 }
 
-function kpi(doc, x, y, w, label, value, color) {
+export function kpi(doc, x, y, w, label, value, color) {
   doc.setFillColor('#ffffff'); doc.setDrawColor(LINE); doc.setLineWidth(0.3); doc.rect(x, y, w, 19, 'FD')
   doc.setFillColor(color); doc.rect(x, y, 1.6, 19, 'F')
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(MUTED); doc.text(pdfText(label), x + 5, y + 6.5)
