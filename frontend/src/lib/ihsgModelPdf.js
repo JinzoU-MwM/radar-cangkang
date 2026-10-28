@@ -243,7 +243,7 @@ export async function runtunPdf(d, jsPDF) {
   for (const fk of d.faktor || []) {
     const nilai = fk.nama.startsWith('Sentimen') ? ` (skor ${fk.nilai}; ${d.sentimen?.nPos || 0} positif, ${d.sentimen?.nNeg || 0} negatif)` : fk.nama.startsWith('Musiman') && fk.nilai != null ? ` (median bulan ini ${pct(fk.nilai)})` : ''
     doc.setFillColor(arahWarna(fk.arah)); doc.circle(17, y - 1.3, 1.3, 'F')
-    y = para(doc, `${fk.nama}: ${fk.arah}${nilai} · efek ${fk.efek}`, 21, y, 175, 9.5) - 1
+    y = para(doc, `${fk.nama}: ${fk.arah}${nilai} · efek ${String(fk.efek).replace(/√/g, 'akar ')}`, 21, y, 175, 9.5) - 1
   }
   if (d.garch) y = para(doc, `Volatilitas GARCH(1,1): gejolak harian ${String(d.garch.harian).replace('.', ',')}% (rata-rata jangka panjang ${String(d.garch.panjang).replace('.', ',')}%), dipakai untuk lebar kisaran 80%.`, 14, y + 2, 182, 9, MUTED)
 
@@ -252,7 +252,7 @@ export async function runtunPdf(d, jsPDF) {
   heading(doc, 'Hasil tiap model', 28)
   y = para(doc, `Diuji mundur pada 40 hari terakhir. Galat = rata-rata selisih ramalan 1 hari / 5 hari; arah tepat 50% setara menebak. `
     + `Model dengan galat terkecil: ${(d.terbaik || []).join(', ')}.`, 14, 37, 182, 9, MUTED)
-  y = tabel(doc, 14, y + 2, [{ t: 'Model', w: 52 }, { t: 'Esok', w: 18, align: 'right' }, { t: '1 minggu', w: 20, align: 'right' }, { t: '1 bulan', w: 20, align: 'right' }, { t: 'Galat 1h/5h', w: 30, align: 'right' }, { t: 'Arah', w: 18, align: 'right' }, { t: 'Bobot', w: 24, align: 'right' }],
+  y = tabel(doc, 14, y + 2, [{ t: 'Model', w: 64 }, { t: 'Esok', w: 17, align: 'right' }, { t: '1 minggu', w: 19, align: 'right' }, { t: '1 bulan', w: 19, align: 'right' }, { t: 'Galat 1h/5h', w: 29, align: 'right' }, { t: 'Arah', w: 16, align: 'right' }, { t: 'Bobot', w: 18, align: 'right' }],
     (d.model || []).map(m => [{ t: `${m.nama}${m.kalahPatokan ? ' *' : ''}`, bold: true }, n0(m.proy['1']), n0(m.proy['5']), { t: n0(m.proy['21']), color: m.proy['21'] >= d.harga ? GOOD : BAD },
       `${String(m.uji.mape1 ?? '-').replace('.', ',')}% / ${String(m.uji.mape5 ?? '-').replace('.', ',')}%`, `${m.uji.arah ?? '-'}%`, `${d.bobot?.[m.kunci] ?? 0}%`]), 8)
   y = para(doc, '* Galat 5 hari lebih besar dari patokan random walk + drift: model belum menambah ketepatan dibanding patokan.', 14, y, 182, 8, MUTED)

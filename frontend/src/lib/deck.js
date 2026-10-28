@@ -705,7 +705,21 @@ export function buildDeck(PptxGenJS, d, th, opt = {}) {
       line(s, x0, y, x1 - x0, 0, th.line, { w: 4 })
       s.addShape(S.RECTANGLE, { x: X(pl.entryLo), y: y - 0.2, w: Math.max(0.06, X(pl.entryHi) - X(pl.entryLo)), h: 0.4, fill: { color: th.accent, transparency: 55 }, line: { color: th.accent, width: 0.5 } })
       const marks = [['Stop', pl.stop, th.bad], ['Entry', pl.entry, th.accent], ['Target 1', pl.tp1, th.good], ['Target 2', pl.tp2, th.good]]
-      marks.forEach(([l, v, col], i) => { if (!(v > 0)) return; const x = X(v); line(s, x, y - 0.35, 0, 0.7, col, { w: 2 }); T(s, l, { x: x - 0.6, y: i % 2 ? y + 0.42 : y - 0.68, w: 1.2, h: 0.2, fontSize: 9, bold: true, color: col, align: 'center' }); T(s, rpS(v), { x: x - 0.6, y: i % 2 ? y + 0.62 : y - 0.48, w: 1.2, h: 0.2, fontSize: 9.5, bold: true, align: 'center' }) })
+      // Label bergantian atas/bawah; bila berdekatan (< 1,25") dengan label lain di sisi yang sama, pindah sisi,
+      // dan bila kedua sisi penuh, ditumpuk satu tingkat lebih jauh dari garis (mis. Entry = Target 1).
+      const dipakai = { atas: [], bawah: [] }
+      marks.forEach(([l, v, col], i) => {
+        if (!(v > 0)) return
+        const x = X(v), dekat = sisi => dipakai[sisi].filter(p => Math.abs(p - x) < 1.25).length
+        let sisi = i % 2 ? 'bawah' : 'atas'
+        if (dekat(sisi) && !dekat(sisi === 'atas' ? 'bawah' : 'atas')) sisi = sisi === 'atas' ? 'bawah' : 'atas'
+        const tingkat = dekat(sisi)
+        dipakai[sisi].push(x)
+        line(s, x, y - 0.35, 0, 0.7, col, { w: 2 })
+        const yl = sisi === 'bawah' ? y + 0.42 + tingkat * 0.42 : y - 0.68 - tingkat * 0.42
+        T(s, l, { x: x - 0.6, y: yl, w: 1.2, h: 0.2, fontSize: 9, bold: true, color: col, align: 'center' })
+        T(s, rpS(v), { x: x - 0.6, y: yl + 0.2, w: 1.2, h: 0.2, fontSize: 9.5, bold: true, align: 'center' })
+      })
       dot(s, X(c), y, 0.09, th.dark)
     }
     if (pl.entry) {

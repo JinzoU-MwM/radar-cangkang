@@ -10,6 +10,8 @@ const W = 10, H = 5.625, M = 0.45, CW = W - 2 * M, TOP = 1.15
 const id = (v, d = 0) => v == null || isNaN(v) ? '–' : (+v).toLocaleString('id-ID', { maximumFractionDigits: d })
 const pctS = v => v == null || isNaN(v) ? '–' : `${v > 0 ? '+' : ''}${id(v * 100, 0)}%`
 const ent = s => String(s || '').replace(/\s*\(.*?\)/g, '').replace(/^\s*(grup|melalui)\s+/i, '').trim()
+// Nama dari kurasi bisa berupa kalimat ("PT X mengakuisisi 753 juta saham ..."): ambil nama inti sebelum kata kerja/koma.
+const nama = (s, n = 60) => short(ent(s).split(/\s+(menuntaskan|mengakuisisi|membeli|mengambil|melalui|yang|selaku|sebagai)\b|[,;:]/)[0].trim(), n)
 // Buang poin yang maknanya sama (mis. "Laporan KJPP" vs "Laporan KJPP terbit"): dua kata pertama dianggap kunci.
 const unik = list => {
   const seen = new Set()
@@ -28,6 +30,8 @@ function angkaUtama(label, v) {
   const all = [...t.matchAll(SATUAN_RX)].map(m => m[0].trim())
   const pick = /umur/i.test(label) ? all.find(x => /tahun/i.test(x)) : all.find(x => !/^\d{4}\s*tahun$/i.test(x))
   if (pick) return pick
+  // Umur tanpa angka bersatuan tahun (mis. hanya masa izin "s.d. 2035"): jangan ambil tahun kalender.
+  if (/umur/i.test(label)) return 'belum dapat dihitung'
   const n = [...t.matchAll(/[±~]?\d[\d.,]*/g)].map(m => m[0]).find(x => !/^(19|20)\d{2}$/.test(x))
   return n || short(t, 18)
 }
@@ -100,8 +104,8 @@ export function buildInfoDeck(PptxGenJS, d, th) {
   const A = d.A || {}, st = d.story || {}, sv = A.sv || {}, pv = d.pv || {}, pa = d.pa || {}, rc = d.rec, rs = d.riset || {}
   const m = A.p?.metrics || {}, sx = A.p?.stats || {}, p = A.price
   const nilai = d.tx || d.ri?.inj || null
-  const who = ent(pv.siapa || A.ctrlName || d.item?.acquirer || 'belum diketahui')
-  const injT = ent(d.ri?.injTarget || sv.injectTarget || d.aset?.aset?.nama || st.inject || '')
+  const who = nama(pv.siapa || A.ctrlName || d.item?.acquirer || 'belum diketahui')
+  const injT = nama(d.ri?.injTarget || sv.injectTarget || d.aset?.aset?.nama || st.inject || '', 80)
   const sk = skenario(d), base = sk[1]
   const rcol = rc?.tone === 'good' ? th.good : rc?.tone === 'bad' ? th.bad : th.warn
   const pct1 = v => v == null ? '–' : id(v, 1) + '%'
@@ -159,7 +163,7 @@ export function buildInfoDeck(PptxGenJS, d, th) {
     const bw = 2.3, bh = 0.72, ex = W / 2 - 1.2, ew = 2.4, cy = TOP + 1.25
     box(s, M, TOP + 0.05, bw, bh, th.card, { line: th.line })
     T(s, 'PENGENDALI LAMA', { x: M + 0.12, y: TOP + 0.11, w: bw - 0.24, h: 0.16, fontSize: 7, bold: true, color: th.muted, charSpacing: 2 })
-    T(s, short(ent(st.oldName) || 'belum diketahui', 40) + (st.oldPct ? ` (${st.oldPct})` : ''), { x: M + 0.12, y: TOP + 0.3, w: bw - 0.24, h: 0.4, fontSize: 10, bold: true, valign: 'middle' })
+    T(s, short(nama(st.oldName, 45) || 'belum diketahui', 40) + (st.oldPct ? ` (${st.oldPct})` : ''), { x: M + 0.12, y: TOP + 0.3, w: bw - 0.24, h: 0.4, fontSize: 10, bold: true, valign: 'middle' })
     arrow(s, M + bw / 2, TOP + 0.05 + bh, 0, 0.3, th.muted)
     box(s, M, cy - bh / 2 + 0.25, bw, bh, th.accent)
     T(s, 'PENGENDALI BARU', { x: M + 0.12, y: cy - bh / 2 + 0.31, w: bw - 0.24, h: 0.16, fontSize: 7, bold: true, color: th.accent2, charSpacing: 2 })
