@@ -108,6 +108,27 @@ const asetAngka = computed(() => {
 })
 const bukaAset = ref(-1)
 
+// Grafik harga 1 tahun (SVG area bergradasi) + garis PTW & target + titik harga kini.
+const grafik = computed(() => {
+  const bars = (d.value?.tech?.bars || []).filter(b => b.c > 0)
+  if (bars.length < 20) return null
+  const Wc = 900, Hc = 260, pad = 28
+  const refs = [A.value.tender?.price && ['PTW', A.value.tender.price], base.value.v && ['Target', base.value.v]].filter(Boolean)
+  const vals = bars.map(b => b.c).concat(refs.map(r => r[1]))
+  const lo = Math.min(...vals) * 0.94, hi = Math.max(...vals) * 1.06
+  const X = i => pad + i / (bars.length - 1) * (Wc - 2 * pad), Y = v => Hc - pad - (v - lo) / (hi - lo) * (Hc - 2 * pad)
+  const line = bars.map((b, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(b.c).toFixed(1)}`).join('')
+  return { Wc, Hc, line, area: `${line}L${X(bars.length - 1).toFixed(1)},${Hc - pad}L${pad},${Hc - pad}Z`,
+    ref: refs.map(([l, v]) => ({ l, v, y: Y(v) })), nx: X(bars.length - 1), ny: Y(bars.at(-1).c),
+    awal: String(bars[0].d).slice(0, 10), akhir: String(bars.at(-1).d).slice(0, 10), ubah: bars.at(-1).c / bars[0].c - 1,
+    tinggi: Math.max(...bars.map(b => b.c)), rendah: Math.min(...bars.map(b => b.c)) }
+})
+// Cincin donat (r = 42): panjang garis sesuai persentase, dianimasikan saat bagian tampil.
+const KEL = 2 * Math.PI * 42
+const dash = v => `${(Math.max(0, Math.min(100, +v || 0)) / 100 * KEL).toFixed(1)} ${KEL.toFixed(1)}`
+// Ikon kartu aset menurut jenis angka.
+const asetIkon = l => /cadangan|sumber daya/i.test(l) ? 'tumpuk' : /umur/i.test(l) ? 'jam' : /produksi|kapasitas/i.test(l) ? 'pabrik' : /luas|izin|lahan/i.test(l) ? 'peta' : 'titik'
+
 // Muncul bertahap saat digulir.
 let io = null
 async function load() {
@@ -141,6 +162,15 @@ onBeforeUnmount(() => { document.body.style.overflow = ''; removeEventListener('
           <div><b :class="base.r >= 0 ? 'g' : 'r'"><AnimNum :text="base.r != null ? pct(base.r) : '–'" /></b><span>Potensi</span></div>
           <div><b><AnimNum :text="A.score != null ? A.score + '/100' : '–'" /></b><span>Skor</span></div>
         </div>
+        <div class="hero-r" aria-hidden="true">
+          <svg viewBox="0 0 100 100" class="ring big">
+            <circle cx="50" cy="50" r="42" class="trk" />
+            <circle cx="50" cy="50" r="42" class="val" :style="{ strokeDasharray: dash(A.score) }" />
+            <text x="50" y="50" class="rt">{{ A.score ?? '–' }}</text><text x="50" y="66" class="rs">skor /100</text>
+          </svg>
+          <svg v-if="grafik" :viewBox="`0 0 ${grafik.Wc} ${grafik.Hc}`" class="spark" preserveAspectRatio="none"><path :d="grafik.line" /></svg>
+          <small v-if="grafik">1 tahun {{ pct(grafik.ubah) }}</small>
+        </div>
         <div class="scroll">gulir untuk menjelajah ↓</div>
       </header>
 
@@ -151,14 +181,14 @@ onBeforeUnmount(() => { document.body.style.overflow = ''; removeEventListener('
         <div class="alur">
           <template v-for="(l, i) in langkah" :key="l.k">
             <button type="button" class="lk" :class="{ on: pilihLangkah === i }" :aria-pressed="String(pilihLangkah === i)" @click="pilihLangkah = i">
-              <svg viewBox="0 0 60 60" aria-hidden="true" class="ic">
+              <span class="bulat" :class="'b' + i"><svg viewBox="0 0 60 60" aria-hidden="true" class="ic">
                 <template v-if="l.ikon === 'rumah'"><path d="M8 30 L30 10 L52 30 Z" /><rect x="14" y="29" width="32" height="22" rx="1" /><rect x="26" y="37" width="8" height="14" class="pintu" /></template>
                 <template v-else-if="l.ikon === 'orang'"><circle cx="30" cy="18" r="9" /><rect x="17" y="29" width="26" height="24" rx="8" /></template>
                 <template v-else><rect x="10" y="17" width="40" height="30" rx="2" /><rect x="27" y="17" width="6" height="30" class="pita" /></template>
-              </svg>
+              </svg><em class="no">{{ i + 1 }}</em></span>
               <b>{{ l.judul }}</b><small>{{ l.istilah }}</small>
             </button>
-            <span v-if="i < 3" class="panah" aria-hidden="true">➜</span>
+            <svg v-if="i < 3" class="panah" viewBox="0 0 60 40" aria-hidden="true"><path d="M4 30 Q30 2 52 24" class="alir" /><path d="M44 16 L54 26 L42 30" class="ujung" /></svg>
           </template>
         </div>
         <div class="det" aria-live="polite">
@@ -169,9 +199,12 @@ onBeforeUnmount(() => { document.body.style.overflow = ''; removeEventListener('
       </section>
 
       <!-- Diagram transaksi -->
-      <section class="sec rev">
+      <section class="sec rev alt">
         <h2><span>2</span> Transaksi dalam satu gambar</h2>
         <div class="dg">
+          <svg class="dg-ln" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M28 72 L39 50" class="alir" /><path d="M72 50 L61 50" class="alir" /><path d="M14 38 L14 52" class="alir tipis" />
+          </svg>
           <div class="nd mut" title="Pemilik sebelum diambil alih"><small>PENGENDALI LAMA</small><b>{{ ent(st.oldName) || 'belum diketahui' }}</b></div>
           <div class="nd acc" :title="`Menguasai ${p1(A.ctrlPct)}`"><small>PENGENDALI BARU</small><b>{{ who }}</b><em>{{ p1(A.ctrlPct) }}</em></div>
           <div class="nd em"><small>EMITEN</small><b class="tk">{{ d.t }}</b><em>{{ short(st.lama, 40) }} → {{ short(st.baru || A.sv?.baru, 40) }}</em></div>
@@ -184,10 +217,13 @@ onBeforeUnmount(() => { document.body.style.overflow = ''; removeEventListener('
         <h2><span>3</span> Angka kunci</h2>
         <div class="tiles">
           <div><b><AnimNum :text="big(A.p?.stats?.marketCap || A.mcap)" /></b><span>kapitalisasi pasar</span></div>
-          <div><b><AnimNum :text="p1(A.ctrlPct)" /></b><span>porsi pengendali</span><i :style="{ width: (A.ctrlPct || 0) + '%' }" /></div>
-          <div><b><AnimNum :text="p1(A.flt)" /></b><span>porsi publik</span><i class="mut" :style="{ width: (A.flt || 0) + '%' }" /></div>
+          <div class="rg"><svg viewBox="0 0 100 100" class="ring"><circle cx="50" cy="50" r="42" class="trk" /><circle cx="50" cy="50" r="42" class="val" :style="{ strokeDasharray: dash(A.ctrlPct) }" /></svg>
+            <div><b><AnimNum :text="p1(A.ctrlPct)" /></b><span>porsi pengendali</span></div></div>
+          <div class="rg"><svg viewBox="0 0 100 100" class="ring mut"><circle cx="50" cy="50" r="42" class="trk" /><circle cx="50" cy="50" r="42" class="val" :style="{ strokeDasharray: dash(A.flt) }" /></svg>
+            <div><b><AnimNum :text="p1(A.flt)" /></b><span>porsi publik</span></div></div>
           <div><b><AnimNum :text="nilai ? big(nilai) : '–'" /></b><span>nilai transaksi aset</span></div>
-          <div><b><AnimNum :text="d.prog ? d.prog.pct + '%' : '–'" /></b><span>progres transaksi</span><i class="good" :style="{ width: (d.prog?.pct || 0) + '%' }" /></div>
+          <div class="rg"><svg viewBox="0 0 100 100" class="ring good"><circle cx="50" cy="50" r="42" class="trk" /><circle cx="50" cy="50" r="42" class="val" :style="{ strokeDasharray: dash(d.prog?.pct) }" /></svg>
+            <div><b><AnimNum :text="d.prog ? d.prog.pct + '%' : '–'" /></b><span>progres transaksi</span></div></div>
           <div><b><AnimNum :text="A.p?.metrics?.pbv != null ? A.p.metrics.pbv.toLocaleString('id-ID', { maximumFractionDigits: 2 }) + 'x' : '–'" /></b><span>PBV</span></div>
         </div>
         <h3>Kamus singkat <small>(klik kartu)</small></h3>
@@ -198,19 +234,41 @@ onBeforeUnmount(() => { document.body.style.overflow = ''; removeEventListener('
         </div>
       </section>
 
+      <!-- Harga 1 tahun -->
+      <section v-if="grafik" class="sec rev alt">
+        <h2><span>4</span> Perjalanan harga 1 tahun</h2>
+        <div class="chart">
+          <svg :viewBox="`0 0 ${grafik.Wc} ${grafik.Hc}`" role="img" :aria-label="`Harga ${d.t} 1 tahun, berubah ${pct(grafik.ubah)}`">
+            <defs><linearGradient id="igArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="g0" /><stop offset="1" class="g1" /></linearGradient></defs>
+            <path :d="grafik.area" fill="url(#igArea)" />
+            <path :d="grafik.line" class="ln" />
+            <g v-for="r in grafik.ref" :key="r.l"><line x1="28" :x2="grafik.Wc - 28" :y1="r.y" :y2="r.y" class="rf" :class="r.l" /><text :x="grafik.Wc - 30" :y="r.y - 6" class="rft">{{ r.l }} {{ rp(r.v) }}</text></g>
+            <circle :cx="grafik.nx" :cy="grafik.ny" r="14" class="pulse" /><circle :cx="grafik.nx" :cy="grafik.ny" r="6" class="nowd" />
+          </svg>
+          <div class="cx"><span>{{ grafik.awal }}</span><span>Tertinggi {{ rp(grafik.tinggi) }} · Terendah {{ rp(grafik.rendah) }}</span><span>{{ grafik.akhir }}</span></div>
+        </div>
+      </section>
+
       <!-- Aset -->
       <section v-if="asetAngka.length" class="sec rev">
-        <h2><span>4</span> Aset dalam angka</h2>
+        <h2><span>5</span> Aset dalam angka</h2>
         <div class="aset">
           <button v-for="([l, v], i) in asetAngka" :key="l" type="button" class="ak" :aria-expanded="String(bukaAset === i)" @click="bukaAset = bukaAset === i ? -1 : i">
+            <svg viewBox="0 0 48 48" class="ai" aria-hidden="true">
+              <template v-if="asetIkon(l) === 'tumpuk'"><path d="M6 16 L24 8 L42 16 L24 24 Z" /><path d="M6 24 L24 32 L42 24" class="o" /><path d="M6 32 L24 40 L42 32" class="o" /></template>
+              <template v-else-if="asetIkon(l) === 'jam'"><path d="M14 6 H34 M14 42 H34 M16 6 C16 18 32 22 32 42 M32 6 C32 18 16 22 16 42" class="o" /><path d="M19 36 H29 L24 30 Z" /></template>
+              <template v-else-if="asetIkon(l) === 'pabrik'"><path d="M6 42 V22 L16 28 V22 L26 28 V22 L36 28 V10 H42 V42 Z" /></template>
+              <template v-else-if="asetIkon(l) === 'peta'"><path d="M6 12 L17 8 L31 12 L42 8 V36 L31 40 L17 36 L6 40 Z" class="o" /><path d="M17 8 V36 M31 12 V40" class="o" /></template>
+              <template v-else><circle cx="24" cy="24" r="14" /></template>
+            </svg>
             <b>{{ angkaUtama(l, v) }}</b><span>{{ l }}</span><small v-if="bukaAset === i">{{ v }}</small><em v-else>detail ▸</em>
           </button>
         </div>
       </section>
 
       <!-- Garis waktu -->
-      <section v-if="ms.length" class="sec rev">
-        <h2><span>5</span> Garis waktu transaksi</h2>
+      <section v-if="ms.length" class="sec rev alt">
+        <h2><span>6</span> Garis waktu transaksi</h2>
         <div class="tl">
           <div class="bar"><i :style="{ width: (d.prog?.pct || 0) + '%' }" /></div>
           <button v-for="(m, i) in ms" :key="m.id" type="button" class="mt" :class="{ ok: m.ok, on: pilihMs === i }" :style="{ left: (i / Math.max(1, ms.length - 1) * 100) + '%' }" @click="pilihMs = pilihMs === i ? -1 : i">
@@ -221,11 +279,12 @@ onBeforeUnmount(() => { document.body.style.overflow = ''; removeEventListener('
 
       <!-- Simulasi skenario -->
       <section class="sec rev">
-        <h2><span>6</span> Simulasi skenario</h2>
+        <h2><span>7</span> Simulasi skenario</h2>
         <label class="sl">Bila modal <b>Rp{{ modal.toLocaleString('id-ID') }} juta</b> dibelikan di harga {{ rp(price) }}:
           <input v-model.number="modal" type="range" min="1" max="500" step="1" aria-label="Modal simulasi (juta rupiah)" /></label>
         <div class="sk">
           <div v-for="x in hasil" :key="x.k" class="kc" :class="x.k">
+            <div class="tg"><i :style="{ height: Math.max(8, Math.min(100, 50 + (x.r || 0) * 40)) + '%' }" /></div>
             <small>{{ x.n.toUpperCase() }}</small><b>{{ x.v ? rp(x.v) : '–' }}</b><em>{{ x.r != null ? pct(x.r) : '' }}</em>
             <strong>{{ x.nilai != null ? big(x.nilai) : '–' }}</strong><span>nilai modal Anda</span>
           </div>
@@ -234,8 +293,8 @@ onBeforeUnmount(() => { document.body.style.overflow = ''; removeEventListener('
       </section>
 
       <!-- Peta harga -->
-      <section v-if="level.length && price" class="sec rev">
-        <h2><span>7</span> Peta harga</h2>
+      <section v-if="level.length && price" class="sec rev alt">
+        <h2><span>8</span> Peta harga</h2>
         <div class="peta">
           <div class="garis" />
           <div v-for="[l, v, c] in level" :key="l" class="lv" :class="c" :style="{ left: pos(v) }" :title="`${l}: ${rp(v)} (${pct(v / price - 1)})`"><i /><span>{{ l }}<br><b>{{ rp(v) }}</b></span></div>
@@ -245,7 +304,7 @@ onBeforeUnmount(() => { document.body.style.overflow = ''; removeEventListener('
 
       <!-- Katalis vs risiko -->
       <section class="sec rev">
-        <h2><span>8</span> Katalis vs risiko</h2>
+        <h2><span>9</span> Katalis vs risiko</h2>
         <div class="tabs2" role="tablist">
           <button type="button" role="tab" :aria-selected="tabKR === 'katalis'" class="g" @click="tabKR = 'katalis'">Katalis ({{ katalis.length }})</button>
           <button type="button" role="tab" :aria-selected="tabKR === 'risiko'" class="r" @click="tabKR = 'risiko'">Risiko ({{ risiko.length }})</button>
@@ -255,7 +314,7 @@ onBeforeUnmount(() => { document.body.style.overflow = ''; removeEventListener('
 
       <!-- Rekomendasi -->
       <section class="sec rev last">
-        <h2><span>9</span> Rekomendasi</h2>
+        <h2><span>10</span> Rekomendasi</h2>
         <div class="rk">
           <div class="act" :class="tone"><small>TINDAKAN</small><b>{{ rc?.label || '–' }}</b></div>
           <div><small>AREA BELI</small><b>{{ rc?.entry ? (rc.entry[1] ? `${rp(rc.entry[0])}–${rp(rc.entry[1])}` : `> ${rp(rc.entry[0])}`) : 'Tunggu' }}</b></div>
@@ -269,11 +328,11 @@ onBeforeUnmount(() => { document.body.style.overflow = ''; removeEventListener('
 </template>
 
 <style scoped>
-.ig{position:fixed;inset:0;z-index:100;overflow-y:auto;background:var(--paper,#f4f6f3);color:var(--ink);scroll-behavior:smooth}
+.ig{position:fixed;inset:0;z-index:100;overflow-y:auto;overflow-x:hidden;isolation:isolate;background:var(--paper,#f4f6f3);color:var(--ink);scroll-behavior:smooth}
 .tutup{position:fixed;top:12px;right:16px;z-index:2;padding:6px 12px;border:1px solid var(--rule);background:var(--sheet);border-radius:3px;cursor:pointer;font:600 13px var(--f-body)}
 .pad{padding:40px}.muat{animation:pul 1.2s infinite}
 @keyframes pul{50%{opacity:.4}}
-.hero{min-height:88vh;display:flex;flex-direction:column;justify-content:center;padding:40px 8vw;background:var(--accent);color:#fff;position:relative;overflow:hidden}
+.hero{min-height:88vh;display:flex;flex-direction:column;justify-content:center;background-image:radial-gradient(circle at 85% 20%,rgba(255,255,255,.14),transparent 45%),radial-gradient(circle at 10% 90%,rgba(255,255,255,.08),transparent 40%);padding:40px 8vw;background:var(--accent);color:#fff;position:relative;overflow:hidden}
 .hero::before,.hero::after{content:'';position:absolute;border-radius:50%;background:#fff;opacity:.08}
 .hero::before{width:60vw;height:60vw;right:-15vw;top:-20vw}.hero::after{width:30vw;height:30vw;right:10vw;bottom:-12vw}
 .hk{font:700 12px var(--f-display);letter-spacing:.2em;opacity:.8}
@@ -281,12 +340,26 @@ onBeforeUnmount(() => { document.body.style.overflow = ''; removeEventListener('
 .nm{font-size:18px;opacity:.9}
 .badge{align-self:flex-start;margin:18px 0;padding:8px 16px;border-radius:4px;font:700 18px var(--f-display);background:#fff;color:var(--ink)}
 .badge.good{background:#e8f6ec;color:#17803d}.badge.warn{background:#fff3dc;color:#9a6200}.badge.bad{background:#fde8e3;color:#b4441b}
-.kpi4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;max-width:760px}
+.kpi4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;max-width:min(760px,calc(100% - min(30vw,300px) - 6vw))}
 .kpi4 b{display:block;font:800 clamp(22px,3.4vw,38px) var(--f-display)}.kpi4>div>span{font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.8}
 .kpi4 .g{color:#b9f5c9}.kpi4 .r{color:#ffd1c2}
+/* Kolom kanan pembuka: donat skor + garis harga mini. */
+.hero-r{position:absolute;right:8vw;top:50%;transform:translateY(-50%);width:min(30vw,300px);display:flex;flex-direction:column;align-items:center;gap:8px}
+.hero-r small{opacity:.85;font-weight:700}
+.spark{width:100%;height:70px}.spark path{fill:none;stroke:#fff;stroke-width:5;opacity:.9;stroke-linejoin:round}
+.ring{width:100%;height:auto;transform:rotate(-90deg)}.ring circle{fill:none;stroke-width:12}
+.ring .trk{stroke:var(--rule)}.ring .val{stroke:var(--accent);stroke-linecap:round;transition:stroke-dasharray 1.4s ease}
+.ring.mut .val{stroke:var(--muted)}.ring.good .val{stroke:var(--good)}
+.rev:not(.in) .ring .val{stroke-dasharray:0 999!important}
+.ring.big .trk{stroke:rgba(255,255,255,.18)}.ring.big .val{stroke:#fff;animation:isi 1.6s ease both}
+@keyframes isi{from{stroke-dasharray:0 999}}
+.ring text{transform:rotate(90deg);transform-origin:50px 50px;text-anchor:middle;fill:#fff}
+.ring .rt{font:800 26px var(--f-display);dominant-baseline:middle}.ring .rs{font-size:8px;letter-spacing:.1em}
 .scroll{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-size:13px;opacity:.75;animation:bob 1.6s infinite}
 @keyframes bob{50%{transform:translate(-50%,6px)}}
-.sec{max-width:1040px;margin:0 auto;padding:56px 24px 24px}
+.sec{max-width:1040px;margin:0 auto;padding:56px 24px 40px;position:relative}
+/* Bagian bergantian: pita latar selebar layar. */
+.sec.alt::before{content:'';position:absolute;inset:0 calc(50% - 50vw);background:var(--accent-soft);opacity:.55;z-index:-1}
 .sec.last{padding-bottom:80px}
 .rev{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
 .rev.in{opacity:1;transform:none}
@@ -298,13 +371,23 @@ h3{margin:22px 0 8px;font:700 16px var(--f-display)}h3 small{font-weight:400;col
 .alur{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .lk{flex:1 1 160px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 10px;border:2px solid var(--rule);border-radius:12px;background:var(--sheet);cursor:pointer;color:inherit;font:inherit;transition:transform .2s,border-color .2s}
 .lk:hover{transform:translateY(-3px)}.lk.on{border-color:var(--accent);box-shadow:0 6px 18px rgba(0,0,0,.08)}
-.ic{width:72px;height:72px;fill:var(--accent)}.ic .pintu{fill:#fff}.ic .pita{fill:var(--warn)}
+.bulat{position:relative;display:grid;place-items:center;width:110px;height:110px;border-radius:50%;background:var(--accent-soft);transition:transform .3s}
+.bulat.b1{background:#e7f0fb}.bulat.b2{background:#fff3dc}.bulat.b3{background:#e3f5e9}
+.lk:hover .bulat,.lk.on .bulat{transform:scale(1.08) rotate(-3deg)}
+.bulat .no{position:absolute;top:-4px;left:-4px;width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font:800 15px/30px var(--f-display);font-style:normal;text-align:center}
+.ic{width:70px;height:70px;fill:var(--accent)}.ic .pintu{fill:#fff}.ic .pita{fill:var(--warn)}
 .lk b{font:700 17px var(--f-display);color:var(--accent)}.lk small{color:var(--muted);font-size:12px}
-.panah{font-size:28px;color:var(--good);animation:geser 1.4s infinite}
+.panah{width:54px;height:36px;flex:none}
+.panah .alir,.dg-ln .alir{fill:none;stroke:var(--good);stroke-width:4;stroke-linecap:round;stroke-dasharray:6 6;animation:alir 1s linear infinite}
+.panah .ujung{fill:none;stroke:var(--good);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+@keyframes alir{to{stroke-dashoffset:-24}}
 @keyframes geser{50%{transform:translateX(4px)}}
 .det{margin-top:14px;padding:14px 18px;border-left:4px solid var(--accent);background:var(--sheet);border-radius:4px}
 .det ul{margin:6px 0 0;padding-left:18px}
 .pub{margin-top:12px;padding:10px 14px;background:var(--accent-soft);border-radius:4px;font-size:14px}
+.dg-ln{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.dg-ln .alir{stroke:var(--accent);stroke-width:1.2;stroke-dasharray:2 2;vector-effect:non-scaling-stroke}.dg-ln .tipis{stroke:var(--muted)}
+.dg .nd{z-index:1}
 .dg{display:grid;grid-template-columns:1fr 1.2fr 1fr;grid-template-rows:auto auto;gap:14px 40px;align-items:center;position:relative}
 .nd{padding:12px 14px;border-radius:8px;border:1.5px solid var(--rule);background:var(--sheet);display:flex;flex-direction:column;gap:2px;position:relative;transition:transform .2s}
 .nd:hover{transform:scale(1.03)}
@@ -316,6 +399,7 @@ h3{margin:22px 0 8px;font:700 16px var(--f-display)}h3 small{font-weight:400;col
 .nd.acc::after,.nd.as::before{content:'➜';position:absolute;font-size:26px;color:var(--accent)}
 .nd.acc::after{right:-34px;top:50%;transform:translateY(-50%)}.nd.as::before{left:-34px;top:50%;transform:translateY(-50%) scaleX(-1)}
 .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.tiles .rg{display:flex;align-items:center;gap:12px}.tiles .rg .ring{width:64px;flex:none}
 .tiles>div{padding:16px;border-radius:10px;background:var(--sheet);border:1px solid var(--rule);position:relative;overflow:hidden}
 .tiles b{display:block;font:800 26px var(--f-display);color:var(--accent)}.tiles>div>span{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .tiles i{position:absolute;left:0;bottom:0;height:5px;background:var(--accent);transition:width 1.2s ease}.tiles i.mut{background:var(--muted)}.tiles i.good{background:var(--good)}
@@ -327,6 +411,7 @@ h3{margin:22px 0 8px;font:700 16px var(--f-display)}h3 small{font-weight:400;col
 .kk.flip .f{transform:rotateY(180deg)}.kk.flip .bk{transform:rotateY(360deg)}
 .aset{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .ak{display:flex;flex-direction:column;gap:4px;padding:18px 12px;border-radius:12px;border:1px solid var(--rule);background:var(--sheet);cursor:pointer;text-align:center;font:inherit;color:inherit;transition:transform .2s}
+.ai{width:46px;height:46px;margin:0 auto 4px;fill:var(--accent)}.ai .o{fill:none;stroke:var(--accent);stroke-width:3;stroke-linejoin:round}
 .ak:hover{transform:translateY(-3px)}.ak b{font:800 24px var(--f-display);color:var(--accent)}.ak span{font:700 12px var(--f-display);text-transform:uppercase;letter-spacing:.08em}
 .ak small{font-size:12px;color:var(--ink-2);text-align:left}.ak em{font-style:normal;font-size:12px;color:var(--muted)}
 .tl{position:relative;height:70px;margin:20px 22px 0}
@@ -338,9 +423,23 @@ h3{margin:22px 0 8px;font:700 16px var(--f-display)}h3 small{font-weight:400;col
 .sk{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:end}
 .kc{display:flex;flex-direction:column;align-items:center;gap:2px;padding:16px;border-radius:12px;border:2px solid;background:var(--sheet)}
 .kc.bear{border-color:var(--strong,#c2410c);min-height:180px}.kc.base{border-color:var(--accent);min-height:210px}.kc.bull{border-color:var(--good);min-height:240px}
+.kc .tg{width:18px;height:70px;border-radius:9px;background:var(--rule);display:flex;align-items:flex-end;overflow:hidden;margin-bottom:6px}
+.kc .tg i{display:block;width:100%;border-radius:9px;transition:height 1.2s ease}
+.kc.bear .tg i{background:linear-gradient(var(--strong,#c2410c),#f0a07a)}.kc.base .tg i{background:linear-gradient(var(--accent),var(--accent-soft))}.kc.bull .tg i{background:linear-gradient(var(--good),#a7e3b8)}
+.rev:not(.in) .kc .tg i{height:0!important}
 .kc small{font:700 13px var(--f-display);letter-spacing:.15em}.kc b{font:800 26px var(--f-display)}.kc em{font-style:normal;font-weight:700}
 .kc.bear em{color:var(--strong,#c2410c)}.kc.base em{color:var(--accent)}.kc.bull em{color:var(--good)}
 .kc strong{margin-top:10px;font:800 20px var(--f-display)}.kc span{font-size:12px;color:var(--muted)}
+.chart{background:var(--sheet);border-radius:12px;padding:12px;border:1px solid var(--rule)}
+.chart svg{display:block;width:100%;height:auto}
+.chart .g0{stop-color:var(--accent);stop-opacity:.35}.chart .g1{stop-color:var(--accent);stop-opacity:0}
+.chart .ln{fill:none;stroke:var(--accent);stroke-width:3;stroke-linejoin:round;stroke-dasharray:3000;stroke-dashoffset:3000;transition:stroke-dashoffset 2s ease}
+.rev.in .chart .ln{stroke-dashoffset:0}
+.chart .rf{stroke-dasharray:6 5;stroke-width:1.5;stroke:var(--muted)}.chart .rf.Target{stroke:var(--good)}
+.chart .rft{font:700 14px var(--f-display);text-anchor:end;fill:var(--ink-2)}
+.chart .nowd{fill:var(--ink)}.chart .pulse{fill:var(--accent);opacity:.3;transform-box:fill-box;transform-origin:center;animation:dn 1.6s ease-out infinite}
+@keyframes dn{from{transform:scale(.4);opacity:.6}to{transform:scale(1.6);opacity:0}}
+.cx{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px;flex-wrap:wrap;gap:6px}
 .note{font-size:12px;color:var(--muted);margin-top:10px}
 .peta{position:relative;height:140px;margin:30px 50px 10px}
 .peta .garis{position:absolute;left:0;right:0;top:60px;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--strong,#c2410c),var(--warn),var(--good))}
@@ -363,7 +462,10 @@ h3{margin:22px 0 8px;font:700 16px var(--f-display)}h3 small{font-weight:400;col
 .rk>div{padding:16px;border-radius:12px;background:var(--sheet);border:1px solid var(--rule)}
 .rk small{font:700 11px var(--f-display);letter-spacing:.14em;color:var(--muted)}.rk b{display:block;font:800 20px var(--f-display);margin-top:4px}
 .rk .act{color:#fff;border:0}.rk .act small{color:#fff;opacity:.85}.rk .act.good{background:var(--good)}.rk .act.warn{background:#c7900e}.rk .act.bad{background:var(--strong,#c2410c)}
+@media (prefers-reduced-motion:reduce){.panah .alir,.dg-ln .alir,.chart .pulse{animation:none}.chart .ln{transition:none;stroke-dashoffset:0}}
+@media (max-width:1000px){.hero-r{position:static;transform:none;width:min(60%,260px);margin:16px 0 0}.kpi4{max-width:760px}}
 @media (max-width:760px){
+  .dg-ln{display:none}
   .kpi4,.tiles,.kamus,.aset,.rk{grid-template-columns:repeat(2,minmax(0,1fr))}
   .dg{grid-template-columns:1fr;gap:12px}.nd.mut,.nd.acc,.nd.em,.nd.as{grid-column:1;grid-row:auto}
   .nd::after,.nd::before{display:none}.panah{display:none}.sk{grid-template-columns:1fr}.peta{margin:30px 24px 10px}
