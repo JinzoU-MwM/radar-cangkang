@@ -47,3 +47,5 @@ website/tsa-*.json
 **/.broker-pola.tmp
 **/.ihsg.json
 **/.ihsg.tmp
+**/.recovery.json
+**/.recovery.tmp
