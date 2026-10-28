@@ -2449,6 +2449,12 @@ def astro_api() -> dict:
     if not out:
         return {"error": "Data harga IHSG belum cukup untuk perhitungan Astronacci. Coba lagi beberapa menit lagi."}
     out["updated"] = d.get("updated")
+    try:
+        ts = runtun_api()
+    except Exception as e:
+        print(f"[astro] time series gagal: {e}", file=sys.stderr)
+        ts = None
+    out["rekomendasi"] = AS.rekomendasi(out, ts if ts and not ts.get("error") else None, IH.sentiment(d.get("berita") or []))
     _ts_memo["as"] = (key, out)
     return out
 

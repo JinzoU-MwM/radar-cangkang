@@ -1,5 +1,6 @@
 <script setup>
-// Time Series: proyeksi IHSG dari model runtun waktu klasik (AR, MA, ARMA, ARIMA, SARIMA, pemulusan eksponensial)
+// Time Series: proyeksi IHSG dari model runtun waktu klasik (AR, MA, ARMA, ARIMA, SARIMA, pemulusan eksponensial,
+// Theta, regresi tren, random walk sebagai patokan; GARCH untuk lebar kisaran)
 // yang dihitung server (/api/ihsg-runtun), digabung dengan bobot 1/galat uji mundur, lalu ditambah faktor
 // sentimen berita, flow asing, dan musiman bulan kalender. Perkiraan statistik, bukan kepastian.
 import { computed, ref } from 'vue'
@@ -30,7 +31,10 @@ const chart = computed(() => {
   const band = `M${X(last)},${Y(p0)} ` + pr.map(x => `L${X(last + x.h)},${Y(x.atas)}`).join(' ') + ' ' + [...pr].reverse().map(x => `L${X(last + x.h)},${Y(x.bawah)}`).join(' ') + 'Z'
   const gab = path([[last, p0], ...pr.map(x => [last + x.h, x.sentimen])])
   const ticks = [lo, (lo + hi) / 2, hi].map(v => ({ y: Y(v), t: n0(v) }))
-  return { hist: path(hist.map((x, i) => [i, x.c])), lines, band, gab, ticks, xNow: X(last), dNow: hist[last].d, dAwal: hist[0].d }
+  // Model terpilih: titik & angka proyeksi esok, 1 minggu, 1 bulan di jalurnya.
+  const m = models.find(x => x.kunci === pilih.value)
+  const sel = m ? [1, 5, 21].map(h => ({ h, x: X(last + h), y: Y(m.jalur[h - 1]), t: n0(m.jalur[h - 1]) })) : null
+  return { hist: path(hist.map((x, i) => [i, x.c])), lines, band, gab, ticks, sel, selNama: m?.nama, xNow: X(last), dNow: hist[last].d, dAwal: hist[0].d }
 })
 </script>
 
@@ -51,29 +55,15 @@ const chart = computed(() => {
         </article>
       </div>
 
-      <div class="chartbox">
-        <svg :viewBox="`0 0 ${W} ${Hh}`" role="img" :aria-label="'Grafik IHSG 120 hari dan proyeksi 21 hari bursa dari ' + d.model.length + ' model runtun waktu'">
-          <g v-for="t in chart.ticks" :key="t.y"><line :x1="34" :x2="W - 8" :y1="t.y" :y2="t.y" class="grid" /><text x="2" :y="t.y + 4" class="ax">{{ t.t }}</text></g>
-          <line :x1="chart.xNow" :x2="chart.xNow" y1="6" :y2="Hh - 18" class="now" />
-          <path :d="chart.band" class="band" />
-          <path :d="chart.hist" class="hist" />
-          <defs><clipPath id="ts-clip"><rect x="0" y="6" :width="W" :height="Hh - 24" /></clipPath></defs>
-          <path v-for="l in chart.lines" :key="l.k" :d="l.d" clip-path="url(#ts-clip)" class="mdl" :class="{ on: pilih === l.k, off: pilih && pilih !== l.k }" />
-          <path :d="chart.gab" class="gab" />
-          <text :x="34" :y="Hh - 4" class="ax">{{ fmtDate(chart.dAwal) }}</text>
-          <text :x="chart.xNow - 4" :y="Hh - 4" class="ax" text-anchor="end">{{ fmtDate(chart.dNow) }}</text>
-          <text :x="W - 8" :y="Hh - 4" class="ax" text-anchor="end">+21 hari bursa</text>
-        </svg>
-        <p class="small muted leg"><span class="k hist" /> IHSG <span class="k gab" /> proyeksi gabungan + sentimen <span class="k band" /> kisaran 80% <span class="k mdl" /> jalur tiap model (klik baris tabel untuk menyorot)</p>
-      </div>
-
       <h3 class="lbl">Model runtun waktu</h3>
       <div class="scroll">
         <table class="ledger">
           <thead><tr><th>Model</th><th class="r">Esok</th><th class="r">1 minggu</th><th class="r">1 bulan</th><th class="r" title="Galat rata-rata ramalan 1 hari / 5 hari pada uji mundur 40 hari">Galat 1h / 5h</th><th class="r" title="Ketepatan arah ramalan 1 hari pada uji mundur">Arah tepat</th><th class="r">Bobot</th></tr></thead>
           <tbody>
             <tr v-for="m in d.model" :key="m.kunci" class="row" :class="{ open: pilih === m.kunci }" tabindex="0" @click="pilih = pilih === m.kunci ? '' : m.kunci" @keydown.enter="pilih = pilih === m.kunci ? '' : m.kunci">
-              <td><b>{{ m.nama }}</b><div class="small muted">{{ m.ket }} <span class="mono">({{ m.param }})</span></div></td>
+              <td :title="m.ket"><span class="car">{{ pilih === m.kunci ? '▾' : '▸' }}</span> <b>{{ m.nama }}</b> <span class="mono muted">{{ m.param }}</span>
+                <span v-if="m.kalahPatokan" class="tag t-calm" title="Galat 5 hari lebih besar dari random walk + drift">kalah dari patokan</span>
+                <div v-if="pilih === m.kunci" class="small muted">{{ m.ket }}</div></td>
               <td v-for="h in ['1', '5', '21']" :key="h" class="r num" :class="arahCls((m.proy[h] / d.harga - 1) * 100)">{{ n0(m.proy[h]) }}</td>
               <td class="r small">{{ m.uji.mape1 ?? '–' }}% / {{ m.uji.mape5 ?? '–' }}%</td>
               <td class="r small">{{ m.uji.arah ?? '–' }}%</td>
@@ -82,7 +72,29 @@ const chart = computed(() => {
           </tbody>
         </table>
       </div>
-      <p class="small muted">Model dengan galat terkecil saat ini: <b>{{ d.terbaik.join(', ') }}</b>. Arah tepat 50% setara menebak; di atas 55% baru bermakna.</p>
+      <p class="small muted">Model dengan galat terkecil saat ini: <b>{{ d.terbaik.join(', ') }}</b>. Arah tepat 50% setara menebak; di atas 55% baru bermakna. Klik baris untuk menyorot jalurnya di grafik.
+        <template v-if="d.model.filter(m => m.kalahPatokan).length === d.model.length - 1"> Saat ini tidak ada model yang lebih tepat dari patokan random walk: pergerakan IHSG 40 hari terakhir sulit diramal dari pola harganya sendiri, sehingga faktor sentimen dan level teknikal lebih menentukan.</template></p>
+
+      <div class="chartbox">
+        <svg :viewBox="`0 0 ${W} ${Hh}`" role="img" :aria-label="'Grafik IHSG 120 hari dan proyeksi 21 hari bursa dari ' + d.model.length + ' model runtun waktu'">
+          <g v-for="t in chart.ticks" :key="t.y"><line :x1="34" :x2="W - 8" :y1="t.y" :y2="t.y" class="grid" /><text x="2" :y="t.y + 4" class="ax">{{ t.t }}</text></g>
+          <line :x1="chart.xNow" :x2="chart.xNow" y1="6" :y2="Hh - 18" class="now" />
+          <path :d="chart.band" class="band" />
+          <path :d="chart.hist" class="hist" />
+          <defs><clipPath id="ts-clip"><rect x="0" y="6" :width="W" :height="Hh - 24" /></clipPath></defs>
+          <path v-for="l in chart.lines" :key="l.k" :d="l.d" clip-path="url(#ts-clip)" class="mdl" :class="{ on: pilih === l.k, off: pilih && pilih !== l.k }" />
+          <path :d="chart.gab" class="gab" :class="{ off: pilih }" />
+          <g v-if="chart.sel"><circle v-for="t in chart.sel" :key="t.h" :cx="t.x" :cy="t.y" r="3.5" class="seld" /><text v-for="t in chart.sel" :key="'t' + t.h" :x="t.x - 4" :y="t.y - 7" class="sell" text-anchor="end">{{ t.t }}</text></g>
+          <text :x="34" :y="Hh - 4" class="ax">{{ fmtDate(chart.dAwal) }}</text>
+          <text :x="chart.xNow - 4" :y="Hh - 4" class="ax" text-anchor="end">{{ fmtDate(chart.dNow) }}</text>
+          <text :x="W - 8" :y="Hh - 4" class="ax" text-anchor="end">+21 hari bursa</text>
+        </svg>
+        <p v-if="chart.selNama" class="small selnm">Disorot: <b>{{ chart.selNama }}</b> · <button type="button" class="lnk" @click="pilih = ''">tampilkan semua</button></p>
+        <p class="small muted leg"><span class="k hist" /> IHSG <span class="k gab" /> proyeksi gabungan + sentimen <span class="k band" /> kisaran 80% <span class="k mdl" /> jalur tiap model (klik baris tabel untuk menyorot)</p>
+      </div>
+
+
+      <p v-if="d.garch" class="small"><b>Volatilitas GARCH(1,1)</b>: perkiraan gejolak harian {{ fmt(d.garch.harian, 2) }}% (rata-rata jangka panjang {{ fmt(d.garch.panjang, 2) }}%; α={{ d.garch.alpha }}, β={{ d.garch.beta }}). Dipakai untuk lebar kisaran 80% di atas.</p>
 
       <h3 class="lbl">Faktor sentimen yang ditambahkan</h3>
       <ul class="fk">
@@ -110,7 +122,9 @@ const chart = computed(() => {
 .hist{fill:none;stroke:var(--ink);stroke-width:1.6}
 .mdl{fill:none;stroke:var(--rail-mute,#9aa);stroke-width:1;opacity:.6}
 .mdl.on{stroke:var(--accent);stroke-width:2.2;opacity:1}.mdl.off{opacity:.15}
-.gab{fill:none;stroke:var(--now-ink,#0a7);stroke-width:2.6}
+.gab{fill:none;stroke:var(--now-ink,#0a7);stroke-width:2.6}.gab.off{opacity:.25}
+.seld{fill:var(--accent)}.sell{font:700 11px var(--f-body);fill:var(--accent)}
+.car{color:var(--muted)}.selnm{margin:4px 0 0}.lnk{background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;cursor:pointer;font:inherit}
 .band{fill:var(--accent-soft,#dfeee9);opacity:.7}
 .leg{margin:4px 0 0}.k{display:inline-block;width:14px;height:3px;vertical-align:middle;margin:0 4px 0 10px;background:var(--ink)}
 .k.gab{background:var(--now-ink,#0a7)}.k.band{background:var(--accent-soft,#dfeee9);height:8px}.k.mdl{background:var(--rail-mute,#9aa)}
