@@ -6,7 +6,8 @@ import { store, storyOf, getBenchmark } from '../../store.js'
 import { api } from '../../api.js'
 import { collectDeck } from '../../lib/deckData.js'
 import { buildVideo } from '../../lib/videoScript.js'
-import { scenesFor, insiderScenes, intelScenes } from '../../lib/slideTabs.js'
+import { scenesFor, insiderScenes, intelScenes, asetScenes } from '../../lib/slideTabs.js'
+import { faktaAset, laporanMaterial } from '../../lib/pembaruan.js'
 import SceneVisual from '../SceneVisual.vue'
 
 const props = defineProps({ ticker: { type: String, required: true }, tab: { type: String, required: true } })
@@ -29,6 +30,8 @@ async function load() {
     let s
     if (tab === 'insider') s = insiderScenes((await api.get('/api/insider-rows', { ticker: t })).rows, t)
     else if (tab === 'intel') s = intelScenes(await api.get('/api/tsa/summary', { ticker: t }), t)
+    else if (tab === 'aset') s = asetScenes(t, { riset: store.riset?.[t], aset: store.aset?.[t],
+      fakta: faktaAset(laporanMaterial(store.updates, t), { asOf: store.riset?.[t]?.asOf || '' }) })
     else s = scenesFor(tab, buildVideo(await deckOf(t), 'lengkap'))
     if (my === seq) slides.value = s
   } catch (e) { if (my === seq) error.value = e?.message || String(e) } finally { if (my === seq) loading.value = false }
