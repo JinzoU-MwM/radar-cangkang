@@ -5155,7 +5155,7 @@
   },
   "SMKM": {
     "asOf": "2026-10-28",
-    "ringkasan": "SMKM sedang mengambil alih dua entitas Singapura dari ekosistem Lim Shrimp: PanAsia Aquaculture Pte. Ltd. Group (PAA, estimasi USD100 juta, CSPA 22 Desember 2025) dan LSO Organization Holdings Pte. Ltd. (LOH, Rp172,25 miliar/SGD13 juta, CSPA 30 Januari 2026). Aset operasional yang dipublikasikan adalah tambak udang Sumbawa, NTB, seluas 37 ha dengan 40 kolam (sejak 2018) dan aset di Sabah, Malaysia, sekitar 49 ha (sejak 1998). Data SGX menunjukkan LOH baru dibeli Advanced Systems Automation (ASA) pada Agustus 2024 dan kinerja LSO pada FY2025 jauh di bawah proyeksi (rugi bersih tidak diaudit sekitar SGD1,3 juta; ASA mencatat penurunan nilai goodwill SGD14,06 juta). Per Oktober 2026 transaksi belum selesai: restrukturisasi internal PAA, audit, dan penilaian independen masih berjalan, long stop date diperpanjang ke 30 Juni 2027.",
+    "ringkasan": "SMKM sedang mengambil alih dua entitas Singapura dari ekosistem Lim Shrimp: PanAsia Aquaculture Pte. Ltd. Group (PAA, estimasi USD100 juta, CSPA 22 Desember 2025) dan LSO Organization Holdings Pte. Ltd. (LOH, Rp172,25 miliar/SGD13 juta, CSPA 30 Januari 2026). Aset operasional yang dipublikasikan adalah tambak udang Sumbawa, NTB, seluas 37 ha dengan 40 kolam (sejak 2018) dan aset di Sabah, Malaysia, sekitar 49 ha (sejak 1998). Data SGX menunjukkan LOH baru dibeli Advanced Systems Automation (ASA) pada Agustus 2024 dan kinerja LSO pada FY2025 jauh di bawah proyeksi (rugi bersih tidak diaudit sekitar SGD1,3 juta; ASA mencatat penurunan nilai goodwill SGD14,06 juta). Per Oktober 2026 transaksi belum selesai: restrukturisasi internal PAA, audit, dan penilaian independen masih berjalan, long stop date diperpanjang ke 30 Juni 2027. Pembaruan 7 Oktober 2026: grup PAA (lewat Ark Abundance) telah membeli 75% perusahaan PMA dengan lahan tambak 68,07 ha untuk budidaya udang intensif, sehingga lahan tambak grup di Indonesia menjadi sekitar 105 ha; SMKM juga meminjamkan hingga Rp30 miliar ke PAA (bunga 6%), yang pada 23 Oktober 2026 dinyatakan wajar kepada BEI.",
     "entitas": [
       {
         "nama": "PanAsia Aquaculture Pte. Ltd. Group of Companies (PAA)",
@@ -5207,8 +5207,23 @@
         "s": 1
       },
       {
+        "l": "Aset baru Indonesia (terbaru)",
+        "t": "Ark Abundance Pte Ltd (AAPL, bagian grup PAA) menyelesaikan akuisisi 75% saham sebuah perusahaan PMA pada 20 Juli 2026 dengan lahan tambak 68,07 ha (±680.700 m²) untuk dikembangkan menjadi budidaya udang intensif; lokasi dan nama PMA tidak diungkap",
+        "s": 11
+      },
+      {
+        "l": "Total lahan tambak Indonesia",
+        "t": "±105 ha (37 ha Sumbawa beroperasi + 68,07 ha lahan baru AAPL yang belum dikembangkan); dihitung dari dua sumber di atas",
+        "s": 11
+      },
+      {
+        "l": "Rencana ekspansi PAA (Okt 2026)",
+        "t": "Fasilitas pertanian & akuakultur terintegrasi di Semenanjung Malaysia, ekspansi tambak dan perdagangan udang di Malaysia Timur, serta usaha baru di kawasan Pasifik; menjadi alasan restrukturisasi internal PAA dan perpanjangan tenggat ke 30 Juni 2027",
+        "s": 11
+      },
+      {
         "l": "Aset Sabah",
-        "t": "Sekitar 49 ha, beroperasi sejak 1998 (jumlah kolam tidak diungkap)",
+        "t": "Sekitar 49 ha, beroperasi sejak 1998 (Katadata, Mei 2026; jumlah kolam tidak diungkap). Pembaruan 7 Okt 2026 hanya menyebut rencana ekspansi tambak dan perdagangan udang di Malaysia Timur, tanpa angka luas baru",
         "s": 1
       },
       {
@@ -5274,6 +5289,16 @@
         "l": "Provisi piutang LSO di ASA",
         "t": "Naik dari SGD538 ribu menjadi SGD735 ribu",
         "s": 3
+      },
+      {
+        "l": "Pinjaman SMKM ke PAA (afiliasi)",
+        "t": "Fasilitas sampai Rp30 miliar dari SMKM sebagai pemberi pinjaman kepada Panasia Aquaculture (perjanjian 26 Mei 2026), bunga 6% per tahun, tenor 1 tahun sejak penarikan, untuk belanja modal, modal kerja, investasi, dan operasional",
+        "s": 12
+      },
+      {
+        "l": "Klarifikasi BEI 23 Okt 2026",
+        "t": "SMKM menyatakan pinjaman afiliasi kepada Panasia wajar (dinilai KJPP), tidak mengandung benturan kepentingan, dan bukan transaksi material karena nilainya 14,52% ekuitas perseroan (keterbukaan transaksi afiliasi 2 Juni 2026 dan penjelasan bursa 23 Oktober 2026)",
+        "s": 13
       }
     ],
     "pengendaliAset": [
@@ -5327,6 +5352,8 @@
       "Pernah memiliki kontrak off-take jangka panjang dengan ecMAX/JD.com (2019) yang menunjukkan akses pasar Tiongkok."
     ],
     "risiko": [
+      "Dana SMKM (Rp30 miliar) dipinjamkan ke calon aset target milik pengendali sebelum akuisisi selesai; bila akuisisi batal atau PAA gagal bayar, kas emiten ikut berisiko (bunga 6% di bawah biaya dana umum).",
+      "Lahan baru 68,07 ha masih berupa properti yang akan dikembangkan; nilai ekonominya bergantung pada belanja modal dan waktu konstruksi tambak intensif.",
       "Skala fisik kecil (37 ha + ±49 ha) dibanding nilai indikatif USD100 juta; nilai wajar baru diketahui setelah penilaian independen.",
       "Data SGX: LSO merugi pada FY2025 (rugi bersih ±SGD1,3 juta) dan ASA menghapus goodwill SGD14,06 juta; proyeksi laba USD9,23 juta tidak tercapai.",
       "Proyek ekspansi (Selangor, Palau, pabrik pengolahan Indonesia) tertunda dan kesulitan pendanaan.",
@@ -5396,6 +5423,21 @@
         "t": "Kajian produksi udang Sumbawa — Journal of Indonesian Sustainable Development Planning (Bappenas), 2025",
         "url": "https://journal.pusbindiklatren.bappenas.go.id/lib/jisdep/article/view/731",
         "jenis": "jurnal"
+      },
+      {
+        "t": "SMKM Perpanjang Tenggat Akuisisi PanAsia Aquaculture hingga Juni 2027 — IDX Channel (RCTI+), 7 Okt 2026",
+        "url": "https://www.rctiplus.com/news/detail/idxchannel/5488315/smkm-perpanjang-tenggat-akuisisi-panasia-aquaculture-hingga-juni-2027",
+        "jenis": "media"
+      },
+      {
+        "t": "SMKM Beri Pinjaman ke Perusahaan Afiliasi Rp30 Miliar — BCA Sekuritas (mengutip IQPlus), Jun 2026",
+        "url": "https://bcasekuritas.co.id/latest-news/news/smkm-beri-pinjaman-ke-perushaan-afiliasi-rp30-miliar",
+        "jenis": "media"
+      },
+      {
+        "t": "Penjelasan atas Permintaan Penjelasan Bursa (pinjaman afiliasi dengan Panasia Aquaculture) — Stockbit Reports, 23 Okt 2026",
+        "url": "",
+        "jenis": "dokumen"
       }
     ]
   },
