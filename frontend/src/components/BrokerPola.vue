@@ -5,6 +5,7 @@ import { computed, ref, watch } from 'vue'
 import { api } from '../api.js'
 import { big, fmt } from '../lib/domain.js'
 import { h } from 'vue'
+import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
 
 const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 const bulan = ref(new Date().getMonth() + 1)
@@ -25,16 +26,22 @@ async function load() {
 watch([bulan, jenis, mode, broker], load, { immediate: true })
 
 // Grafik: batang dua arah (akumulasi kanan, distribusi kiri) untuk bulan terpilih; klik saham -> grafik bulanan.
+const hsc = ref('')              // '' | 'tanpa' | 'hanya' (saham HSC, lib/hsc.js)
+// Daftar saham per bulan setelah saringan HSC.
+const saham = computed(() => {
+  const s = data.value?.saham
+  return s ? { akumulasi: s.akumulasi.filter(x => lolosHsc(x.s, hsc.value)), distribusi: s.distribusi.filter(x => lolosHsc(x.s, hsc.value)) } : null
+})
 const pilih = ref('')
 const seri = ref(null)
 const bars = computed(() => {
-  const s = data.value?.saham
+  const s = saham.value
   if (!s) return null
   const ak = s.akumulasi.slice(0, 10), di = s.distribusi.slice(0, 10)
   const max = Math.max(1, ...ak.map(x => x.bandar), ...di.map(x => -x.bandar))
   return { ak, di, w: v => Math.max(2, Math.abs(v) / max * 100) + '%' }
 })
-watch(() => data.value?.saham, s => { if (s && !s.akumulasi.some(x => x.s === pilih.value) && !s.distribusi.some(x => x.s === pilih.value)) pilih.value = s.akumulasi[0]?.s || '' })
+watch(saham, s => { if (s && !s.akumulasi.some(x => x.s === pilih.value) && !s.distribusi.some(x => x.s === pilih.value)) pilih.value = s.akumulasi[0]?.s || '' })
 watch([pilih, jenis], async ([t]) => {
   seri.value = null
   if (!t) return
@@ -82,6 +89,10 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
         <button type="button" class="pill sm" :aria-pressed="String(jenis === '')" @click="jenis = ''">Semua</button>
         <button type="button" class="pill sm" :aria-pressed="String(jenis === 'asing')" @click="jenis = 'asing'">Asing</button>
         <button type="button" class="pill sm" :aria-pressed="String(jenis === 'domestik')" @click="jenis = 'domestik'">Domestik</button>
+      </div>
+      <div role="group" aria-label="Saham HSC" :title="hscInfo()">
+        <span class="small muted">HSC:</span>
+        <button v-for="[v, l] in HSC_OPSI" :key="v" type="button" class="pill sm" :aria-pressed="String(hsc === v)" @click="hsc = v">{{ l }}</button>
       </div>
     </div>
     <div v-if="mode === 'saham'" class="bln" role="group" aria-label="Bulan">
@@ -140,8 +151,9 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
             <table class="ledger cmp">
               <thead><tr><th>Saham</th><th class="num">Net bandar</th><th class="num">Lot</th><th class="num">Avg broker</th><th>Broker utama</th><th class="num">Asing / Dom.</th></tr></thead>
               <tbody>
-                <tr v-for="x in data.saham[side[0]].slice(0, 25)" :key="x.s">
+                <tr v-for="x in saham[side[0]].slice(0, 25)" :key="x.s">
                   <td><RouterLink :to="{ path: '/emiten/' + x.s, query: { tab: 'analisa' } }"><b>{{ x.s }}</b></RouterLink>
+                    <span v-if="isHsc(x.s)" class="tag t-warn" title="Saham HSC: dikeluarkan dari perhitungan IHSG">HSC</span>
                     <span v-if="x.repo" class="tag repo" :class="x.repo.kuat ? 't-strong' : 't-warn'" :title="x.repo.alasan.join(' · ')">repo?</span></td>
                   <td class="num" :class="side[2]">{{ rp(x.bandar) }}</td>
                   <td class="num">{{ lot(x.bandarLot) }}</td>
@@ -167,8 +179,9 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
               <table class="ledger">
                 <thead><tr><th>Saham</th><th class="num">Net lot</th><th class="num">Net nominal</th><th class="num">Avg {{ side[0] }}</th><th>Potensi repo</th></tr></thead>
                 <tbody>
-                  <tr v-for="r in x[side[0]].slice(0, 15)" :key="r.s">
-                    <td><RouterLink :to="{ path: '/emiten/' + r.s, query: { tab: 'analisa' } }"><b>{{ r.s }}</b></RouterLink></td>
+                  <tr v-for="r in x[side[0]].filter(r => lolosHsc(r.s, hsc)).slice(0, 15)" :key="r.s">
+                    <td><RouterLink :to="{ path: '/emiten/' + r.s, query: { tab: 'analisa' } }"><b>{{ r.s }}</b></RouterLink>
+                      <span v-if="isHsc(r.s)" class="tag t-warn" title="Saham HSC: dikeluarkan dari perhitungan IHSG">HSC</span></td>
                     <td class="num">{{ lot(r.lot) }}</td>
                     <td class="num" :class="side[2]">{{ rp(r.val) }}</td>
                     <td class="num">{{ avg(r[side[3]]) }}</td>
