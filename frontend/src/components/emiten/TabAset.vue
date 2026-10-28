@@ -5,11 +5,16 @@ import { store, itemOf } from '../../store.js'
 import { big, fmt, fmtDate, num, pctTxt, progressOf, rp, x2 } from '../../lib/domain.js'
 import { MECH_LABEL, dilusi, flowOf, injSteps, kjppStatus, mechOf, peerMultiples, reservesOf, simDefaults, simKjpp, toM, txValue } from '../../lib/emitenExtra.js'
 import { KURS } from '../../lib/analysis.js'
-import Modal from './Modal.vue'
 
-// Aset yang diinjeksi: aset-verified.json (27 emiten) + relasi-verified.json → <T>.injeksi bila ada (NAYZ, lebih rinci).
+// Tab Aset: seluruh analisa aset yang akan/sudah diinjeksi. Sumber: riset aset (aset-riset.json: jurnal, media, situs
+// perusahaan, regulator, aset lain milik pengendali), aset-verified.json (transaksi, KJPP, mekanisme), dan
+// relasi-verified.json → <T>.injeksi bila ada. Simulasi nilai KJPP dihitung otomatis tanpa isian manual.
 const props = defineProps({ ticker: { type: String, required: true } })
-const emit = defineEmits(['close'])
+const rs = computed(() => store.riset?.[props.ticker] || null)
+const src = i => rs.value?.sumber?.[i]
+const JENIS = { jurnal: 'jurnal', media: 'media', dokumen: 'dokumen', 'situs perusahaan': 'perusahaan', regulator: 'regulator' }
+const TB_R = [['komoditas', 'Komoditas'], ['lokasi', 'Lokasi'], ['izin', 'Izin'], ['luas', 'Luas'], ['cadangan', 'Cadangan'], ['sumberDaya', 'Sumber daya'],
+  ['standar', 'Standar pelaporan'], ['kualitas', 'Kualitas'], ['produksi', 'Produksi'], ['umur', 'Umur tambang'], ['stripRatio', 'Stripping ratio'], ['infrastruktur', 'Infrastruktur']]
 
 const a = computed(() => store.aset[props.ticker] || null)
 const r = computed(() => store.relasi[props.ticker]?.injeksi || null)
@@ -110,19 +115,78 @@ onMounted(async () => {
   for (const key of ['per', 'ps', 'pbv']) if (m[key] != null && si[key] == null) si[key] = Math.round(m[key] * 100) / 100
   peerNote.value = m.n ? `median ${m.n} pembanding Stockbit` : 'data pembanding kosong'
 })
-const sources = computed(() => [...(a.value?.sumber || []).map(t => ({ t })), ...(r.value?.sumber || [])])
+const sources = computed(() => [...(rs.value?.sumber || []).map(x => ({ t: x.t, url: x.url, ket: JENIS[x.jenis] || x.jenis })),
+  ...(a.value?.sumber || []).map(t => ({ t })), ...(r.value?.sumber || [])])
 </script>
 
 <template>
-  <Modal labelledby="injTitle" close-label="Tutup data aset" @close="emit('close')">
-    <template #title>
+  <div class="tab-aset">
+    <header class="hd rule-top">
       <div class="lbl">Aset yang diinjeksi ke {{ ticker }}</div>
       <h2 id="injTitle" class="t">{{ title }}</h2>
       <div v-if="sub" class="small muted">{{ sub }}</div>
       <div v-if="a" class="tags"><span class="tag" :class="'t-' + ks.tone">{{ ks.label }}</span><span v-if="ast.porsi" class="tag t-calm">porsi {{ ast.porsi.split(/[(;]/)[0].trim() }}</span></div>
-    </template>
+    </header>
 
-    <p v-if="!a && !r" class="muted">Data aset untuk {{ ticker }} belum ada.</p>
+    <!-- Riset aset dari berbagai sumber (jurnal, media, situs perusahaan, regulator). -->
+    <template v-if="rs">
+      <section class="sec">
+        <h3 class="lbl">Ringkasan riset aset <span class="small muted">per {{ fmtDate(rs.asOf) }}</span></h3>
+        <p class="desc">{{ rs.ringkasan }}</p>
+      </section>
+      <section v-if="rs.entitas?.length" class="sec">
+        <h3 class="lbl">Entitas aset</h3>
+        <div class="ent">
+          <article v-for="e in rs.entitas" :key="e.nama" class="ec">
+            <b>{{ e.nama }}</b><div class="small muted">{{ e.peran }}</div>
+            <div v-if="e.lokasi" class="small">Lokasi: {{ e.lokasi }}</div>
+            <div v-if="e.berdiri && !/tidak diungkap/i.test(e.berdiri)" class="small">Berdiri: {{ e.berdiri }}</div>
+            <div v-if="e.kegiatan" class="small">{{ e.kegiatan }}</div>
+          </article>
+        </div>
+      </section>
+      <section v-if="rs.operasional?.length" class="sec">
+        <h3 class="lbl">Operasional</h3>
+        <dl class="kv"><div v-for="o in rs.operasional" :key="o.l"><dt>{{ o.l }}</dt><dd>{{ o.t }}<sup v-if="src(o.s)" class="sx" :title="src(o.s).t">[{{ o.s + 1 }}]</sup></dd></div></dl>
+      </section>
+      <section v-if="rs.tambang" class="sec">
+        <h3 class="lbl">Tambang: lokasi, cadangan, dan umur</h3>
+        <dl class="kv"><template v-for="[f, l] in TB_R" :key="f"><div v-if="rs.tambang[f]"><dt>{{ l }}</dt><dd>{{ rs.tambang[f] }}</dd></div></template></dl>
+      </section>
+      <section v-if="rs.pasar" class="sec">
+        <h3 class="lbl">Pasar dan pelanggan</h3>
+        <p class="desc">{{ rs.pasar }}</p>
+      </section>
+      <section v-if="rs.keuangan?.length" class="sec">
+        <h3 class="lbl">Keuangan aset (riset)</h3>
+        <dl class="kv"><div v-for="o in rs.keuangan" :key="o.l"><dt>{{ o.l }}</dt><dd>{{ o.t }}<sup v-if="src(o.s)" class="sx" :title="src(o.s).t">[{{ o.s + 1 }}]</sup></dd></div></dl>
+      </section>
+      <section v-if="rs.pengendaliAset?.length" class="sec">
+        <h3 class="lbl">Aset lain milik pengendali</h3>
+        <div class="ent">
+          <article v-for="e in rs.pengendaliAset" :key="e.nama" class="ec">
+            <b>{{ e.nama }}</b><div class="small muted">{{ [e.jenis, e.lokasi].filter(Boolean).join(' · ') }}</div>
+            <div v-if="e.detail" class="small">{{ e.detail }}</div>
+            <div v-if="e.hubungan" class="small muted">Kaitan: {{ e.hubungan }}</div>
+          </article>
+        </div>
+      </section>
+      <section v-if="rs.jurnal?.length" class="sec">
+        <h3 class="lbl">Temuan jurnal ilmiah</h3>
+        <ul class="jr">
+          <li v-for="j in rs.jurnal" :key="j.judul"><a v-if="j.url" :href="j.url" target="_blank" rel="noopener"><b>{{ j.judul }}</b></a><b v-else>{{ j.judul }}</b>
+            <div class="small muted">{{ [j.penulis, j.tahun, j.terbitan].filter(Boolean).join(' · ') }}</div>
+            <div class="small">{{ j.temuan }}</div></li>
+        </ul>
+      </section>
+      <section v-if="rs.positif?.length || rs.risiko?.length" class="sec pr">
+        <div><h3 class="lbl">Pendukung nilai aset</h3><ul><li v-for="x in rs.positif" :key="x">{{ x }}</li></ul></div>
+        <div><h3 class="lbl">Risiko aset</h3><ul><li v-for="x in rs.risiko" :key="x">{{ x }}</li></ul></div>
+      </section>
+    </template>
+    <p v-else class="small muted">Riset aset lintas sumber untuk {{ ticker }} belum tersedia; data di bawah dari keterbukaan informasi.</p>
+
+    <p v-if="!a && !r && !rs" class="muted">Data aset untuk {{ ticker }} belum ada.</p>
 
     <template v-if="a">
       <section class="sec">
@@ -295,25 +359,33 @@ const sources = computed(() => [...(a.value?.sumber || []).map(t => ({ t })), ..
       </section>
     </template>
 
-    <details v-if="a?.tidakDitemukan?.length" class="more">
-      <summary>Data yang belum diungkap ({{ a.tidakDitemukan.length }})</summary>
-      <ul class="small"><li v-for="x in a.tidakDitemukan" :key="x">{{ x }}</li></ul>
+    <details v-if="a?.tidakDitemukan?.length || rs?.belumDitemukan?.length" class="more">
+      <summary>Data yang belum diungkap ({{ (a?.tidakDitemukan?.length || 0) + (rs?.belumDitemukan?.length || 0) }})</summary>
+      <ul class="small"><li v-for="x in [...(rs?.belumDitemukan || []), ...(a?.tidakDitemukan || [])]" :key="x">{{ x }}</li></ul>
     </details>
 
     <section v-if="sources.length" class="sec">
       <h3 class="lbl">Sumber</h3>
-      <ul class="small">
+      <ol class="small">
         <li v-for="s in sources" :key="s.t">
           <a v-if="s.url" :href="s.url" target="_blank" rel="noopener">{{ s.t }}</a><template v-else>{{ s.t }}</template>
           <template v-if="s.ket"> · {{ s.ket }}</template>
         </li>
-      </ul>
+      </ol>
       <p v-if="r?.asOf" class="small muted">Data relasi per {{ fmtDate(r.asOf) }}.</p>
     </section>
-  </Modal>
+  </div>
 </template>
 
 <style scoped>
+.tab-aset{display:flex;flex-direction:column;gap:16px}
+.hd{padding-top:10px}
+.ent{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:6px}
+.ec{border:1px solid var(--rule);background:var(--sheet);padding:8px 12px;display:flex;flex-direction:column;gap:3px}
+.sx{color:var(--accent);font-size:10px;margin-left:2px;cursor:help}
+.jr{list-style:none;padding:0}.jr li{border-bottom:1px solid var(--rule-2);padding:6px 0}
+.pr{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:760px){.pr{grid-template-columns:1fr}}
 .t{font-size:30px;line-height:1.05;margin:2px 0}
 .lbl{margin:0 0 6px}
 .lbl.sub{margin:14px 0 6px}

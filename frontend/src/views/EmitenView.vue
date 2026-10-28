@@ -8,6 +8,7 @@ import StageTrack from '../components/StageTrack.vue'
 import OwnershipFlow from '../components/OwnershipFlow.vue'
 import TabRingkasan from '../components/emiten/TabRingkasan.vue'
 import TabStory from '../components/emiten/TabStory.vue'
+import TabAset from '../components/emiten/TabAset.vue'
 import TabAnalisa from '../components/emiten/TabAnalisa.vue'
 import TabTeknikal from '../components/emiten/TabTeknikal.vue'
 import TabSpekulasi from '../components/emiten/TabSpekulasi.vue'
@@ -35,6 +36,7 @@ const TABS = [
   { id: 'ringkasan', name: 'Ringkasan' },
   { id: 'profil', name: 'Profil' },
   { id: 'story', name: 'Story & Pengendali' },
+  { id: 'aset', name: 'Aset' },
   { id: 'insider', name: 'Insider Activity' },
   { id: 'berita', name: 'Berita' },
   { id: 'analisa', name: 'Analisa' },
@@ -192,6 +194,7 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
         <p v-else-if="!known && RADAR_ONLY.includes(tab)" class="muted none">{{ T }} belum ada di radar, jadi {{ tab === 'story' ? 'story dan pengendali' : 'ringkasan transaksi' }} belum ada. Tab Analisa, Teknikal, Spekulasi, Profil, dan Berita tetap memakai data Stockbit.</p>
         <TabRingkasan v-else-if="tab === 'ringkasan'" :ticker="T" />
         <TabStory v-else-if="tab === 'story'" :ticker="T" @flow="openFlow" />
+        <TabAset v-else-if="tab === 'aset'" :ticker="T" />
         <TabInsider v-else-if="tab === 'insider'" :ticker="T" />
         <TabAnalisa v-else-if="tab === 'analisa'" :ticker="T" />
         <TabVideo v-else-if="tab === 'video'" :ticker="T" />

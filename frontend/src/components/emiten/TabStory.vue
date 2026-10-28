@@ -4,7 +4,7 @@ import { store, storyOf, itemOf } from '../../store.js'
 import { STAGES, big, fmt, fmtDate, num, progressOf, stageOf, x2 } from '../../lib/domain.js'
 import { storyValuation } from '../../lib/emitenExtra.js'
 import ControllerDialog from './ControllerDialog.vue'
-import InjeksiDialog from './InjeksiDialog.vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const props = defineProps({ ticker: { type: String, required: true } })
 const emit = defineEmits(['flow'])
@@ -66,6 +66,9 @@ const ctrlKini = computed(() => !ctrlBaru.value && ctrl.value ? ctrl.value : '')
 const sumberAuto = computed(() => reps.value.filter(x => !RUTIN.test(x.title || '')).slice(0, 4))
 
 const dlg = ref('')
+const route = useRoute(), router = useRouter()
+// Analisa aset lengkap (riset, KJPP, mekanisme) ada di tab Aset.
+const keAset = () => router.replace({ query: { ...route.query, tab: 'aset' } })
 function toFlow(node) { dlg.value = ''; emit('flow', node) }
 </script>
 
@@ -106,7 +109,7 @@ function toFlow(node) { dlg.value = ''; emit('flow', node) }
     </section>
 
     <component :is="inj ? 'button' : 'section'" :type="inj ? 'button' : undefined" class="card rule-top" :class="{ click: inj }"
-      :aria-haspopup="inj ? 'dialog' : undefined" @click="inj && (dlg = 'inj')">
+      :title="inj ? 'Buka tab Aset' : undefined" @click="inj && keAset()">
       <h2 class="lbl">Injeksi<span v-if="injTag" class="tag t-calm" :title="injTag.title">{{ injTag.t }}</span></h2>
       <p>{{ injText || 'belum ada' }}<template v-if="nominal"> · {{ nominal }}</template></p>
       <p v-if="sval" class="val">
@@ -147,7 +150,6 @@ function toFlow(node) { dlg.value = ''; emit('flow', node) }
     </section>
 
     <ControllerDialog v-if="dlg === 'ctrl'" :ticker="ticker" @close="dlg = ''" @flow="toFlow" />
-    <InjeksiDialog v-if="dlg === 'inj'" :ticker="ticker" @close="dlg = ''" />
   </div>
 </template>
 
