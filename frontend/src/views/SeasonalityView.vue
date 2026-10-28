@@ -9,14 +9,17 @@ import { fmt } from '../lib/domain.js'
 import { useRoute, useRouter } from 'vue-router'
 import BrokerPola from '../components/BrokerPola.vue'
 import RecoveryPanel from '../components/RecoveryPanel.vue'
+import TimeSeriesPanel from '../components/TimeSeriesPanel.vue'
+import AstronacciPanel from '../components/AstronacciPanel.vue'
 import SahamRingkas from '../components/SahamRingkas.vue'
 import IhsgOutlook from '../components/IhsgOutlook.vue'
 import RingPct from '../components/RingPct.vue'
 import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
 
 const route = useRoute(), router = useRouter()
-// Tab halaman: 'season', 'broker' (Pola Broker), atau 'recovery' (Recovery), tersimpan di URL (?tab=...).
-const TABS = ['broker', 'recovery']
+// Tab halaman (urutan tampil): 'astro' (Astronacci), 'ts' (Time Series), 'season', 'broker' (Pola Broker), 'recovery',
+// tersimpan di URL (?tab=...); tanpa ?tab = Seasonality.
+const TABS = ['astro', 'ts', 'broker', 'recovery']
 const tab = computed({ get: () => TABS.includes(route.query.tab) ? route.query.tab : 'season', set: v => router.replace({ query: { ...route.query, tab: TABS.includes(v) ? v : undefined } }) })
 const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 // Default bulan depan (Desember -> Januari).
@@ -85,12 +88,16 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
     <header>
       <h1>Seasonality</h1>
       <div class="tabs" role="tablist" aria-label="Bagian">
+        <button type="button" role="tab" class="tab" :aria-selected="tab === 'astro'" @click="tab = 'astro'">Astronacci</button>
+        <button type="button" role="tab" class="tab" :aria-selected="tab === 'ts'" @click="tab = 'ts'">Time Series</button>
         <button type="button" role="tab" class="tab" :aria-selected="tab === 'season'" @click="tab = 'season'">Seasonality</button>
         <button type="button" role="tab" class="tab" :aria-selected="tab === 'broker'" @click="tab = 'broker'">Pola Broker</button>
         <button type="button" role="tab" class="tab" :aria-selected="tab === 'recovery'" @click="tab = 'recovery'">Recovery</button>
       </div>
     </header>
-    <BrokerPola v-if="tab === 'broker'" />
+    <AstronacciPanel v-if="tab === 'astro'" />
+    <TimeSeriesPanel v-else-if="tab === 'ts'" />
+    <BrokerPola v-else-if="tab === 'broker'" />
     <RecoveryPanel v-else-if="tab === 'recovery'" />
     <template v-else>
     <header>
