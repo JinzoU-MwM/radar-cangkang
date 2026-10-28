@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { api } from '../../api.js'
 import { store, itemOf } from '../../store.js'
 import { big, fmt, fmtDate, num, pctTxt, progressOf, rp, x2 } from '../../lib/domain.js'
@@ -115,6 +115,20 @@ onMounted(async () => {
   for (const key of ['per', 'ps', 'pbv']) if (m[key] != null && si[key] == null) si[key] = Math.round(m[key] * 100) / 100
   peerNote.value = m.n ? `median ${m.n} pembanding Stockbit` : 'data pembanding kosong'
 })
+// Keterbukaan terbaru terkait aset (Stockbit Reports): poin kunci dokumen diambil otomatis setiap tab dibuka,
+// agar info yang lebih baru dari riset (mis. akuisisi lahan baru, pinjaman afiliasi) langsung terlihat.
+const ASET_RX = /akuisisi|pengambilalihan|aset|injeksi|inbreng|tambak|tambang|cadangan|konsesi|\biup\b|kjpp|penilai|cspa|afiliasi|pinjaman|rights|hmetd|penambahan modal|restrukturisasi|press rilis|public expose|fakta material|keterbukaan informasi|pabrik|kapasitas|lahan|produksi|kontrak/i
+const RUTIN_RX = /registrasi pemegang|bukti iklan|pemanggilan rapat|pemberitahuan rencana rapat|penggunaan dana hasil/i
+const kb = ref([]), kbErr = ref('')
+watch(() => props.ticker, async t => {
+  kb.value = []; kbErr.value = ''
+  try {
+    const r = await api.get('/api/reports', { ticker: t })
+    kb.value = (r.items || []).filter(x => !RUTIN_RX.test(x.title || '') && ASET_RX.test(`${x.title} ${x.summary} ${x.points}`)).slice(0, 8)
+      .map(x => ({ ...x, pts: String(x.points || '').split(' · ').filter(Boolean), baru: !!rs.value?.asOf && String(x.date) > rs.value.asOf }))
+  } catch (e) { kbErr.value = e.message || String(e) }
+}, { immediate: true })
+
 const sources = computed(() => [...(rs.value?.sumber || []).map(x => ({ t: x.t, url: x.url, ket: JENIS[x.jenis] || x.jenis })),
   ...(a.value?.sumber || []).map(t => ({ t })), ...(r.value?.sumber || [])])
 </script>
@@ -127,6 +141,16 @@ const sources = computed(() => [...(rs.value?.sumber || []).map(x => ({ t: x.t, 
       <div v-if="sub" class="small muted">{{ sub }}</div>
       <div v-if="a" class="tags"><span class="tag" :class="'t-' + ks.tone">{{ ks.label }}</span><span v-if="ast.porsi" class="tag t-calm">porsi {{ ast.porsi.split(/[(;]/)[0].trim() }}</span></div>
     </header>
+
+    <section v-if="kb.length" class="sec">
+      <h3 class="lbl">Keterbukaan terbaru terkait aset <span class="small muted">Stockbit Reports, otomatis</span></h3>
+      <ol class="kb">
+        <li v-for="x in kb" :key="x.id"><span class="d">{{ fmtDate(x.date) }}</span>
+          <div><a :href="x.url" target="_blank" rel="noopener"><b>{{ x.title }}</b></a><span v-if="x.baru" class="tag t-good">lebih baru dari riset</span>
+            <ul v-if="x.pts.length" class="small"><li v-for="p in x.pts" :key="p">{{ p }}</li></ul>
+            <p v-else class="small muted">{{ String(x.summary || '').replace(/\s*\(Ringkasan AI Stockbit\)\s*$/, '') }}</p></div></li>
+      </ol>
+    </section>
 
     <!-- Riset aset dari berbagai sumber (jurnal, media, situs perusahaan, regulator). -->
     <template v-if="rs">
@@ -382,6 +406,8 @@ const sources = computed(() => [...(rs.value?.sumber || []).map(x => ({ t: x.t, 
 .hd{padding-top:10px}
 .ent{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:6px}
 .ec{border:1px solid var(--rule);background:var(--sheet);padding:8px 12px;display:flex;flex-direction:column;gap:3px}
+.kb{list-style:none;margin:6px 0 0;padding:0}.kb>li{display:grid;grid-template-columns:90px 1fr;gap:10px;padding:7px 0;border-bottom:1px solid var(--rule-2)}
+.kb .d{font:600 12px var(--f-display);color:var(--ink-2)}.kb ul{margin:4px 0 0;padding-left:18px}.kb .tag{margin-left:6px}
 .sx{color:var(--accent);font-size:10px;margin-left:2px;cursor:help}
 .jr{list-style:none;padding:0}.jr li{border-bottom:1px solid var(--rule-2);padding:6px 0}
 .pr{display:grid;grid-template-columns:1fr 1fr;gap:18px}
