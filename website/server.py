@@ -2209,11 +2209,8 @@ def recovery_build(delay: float = 0.25) -> None:
     print(f"[recovery] {len(out)} saham", file=sys.stderr)
 
 
-def recovery_api(month: int) -> dict:
-    """Saham turun >= 30% dari puncak 52 minggu, diberi skor dukungan Seasonality (bulan terpilih) & Pola Broker."""
-    rd = RC.load(RECOVERY_PATH)
-    if not rd.get("tek"):
-        return {"error": "Data Recovery sedang disiapkan (pembaruan otomatis Senin-Sabtu pukul 00.01 WIB). Coba lagi beberapa menit lagi."}
+def recovery_ctx(month: int) -> tuple[dict, dict, int | None]:
+    """(baris Seasonality per kode untuk bulan terpilih, broker per kode bulan terakhir, bulan broker)."""
     sea = season_api(month, 10)
     srow = {x["t"]: x for x in sea.get("saham") or []}
     # Broker: bulan terakhir yang ada; akumulasi = net bandar positif, distribusi = negatif.
@@ -2228,7 +2225,17 @@ def recovery_api(month: int) -> dict:
             for x in (v.get("saham") or {}).get("akumulasi") or []:
                 bro[x["s"]] = {"net": x["bandar"], "avg": x.get("avgAkum"), "bulanNama": BL[bulan_b - 1], "broker": [z["b"] for z in x.get("akum") or []]}
             for x in (v.get("saham") or {}).get("distribusi") or []:
-                bro.setdefault(x["s"], {"net": x["bandar"], "avg": None, "dist": True, "bulanNama": BL[bulan_b - 1]})
+                bro.setdefault(x["s"], {"net": x["bandar"], "avg": None, "dist": True, "bulanNama": BL[bulan_b - 1],
+                                        "broker": [z["b"] for z in x.get("dist") or []]})
+    return srow, bro, bulan_b
+
+
+def recovery_api(month: int) -> dict:
+    """Saham turun >= 30% dari puncak 52 minggu, diberi skor dukungan Seasonality (bulan terpilih) & Pola Broker."""
+    rd = RC.load(RECOVERY_PATH)
+    if not rd.get("tek"):
+        return {"error": "Data Recovery sedang disiapkan (pembaruan otomatis Senin-Sabtu pukul 00.01 WIB). Coba lagi beberapa menit lagi."}
+    srow, bro, bulan_b = recovery_ctx(month)
     rows = []
     for t, tek in rd["tek"].items():
         # Hanya yang sudah turun dalam, masih dekat dasar kejatuhan, dan tanpa lompatan harga akibat aksi korporasi.
@@ -2244,6 +2251,32 @@ def recovery_api(month: int) -> dict:
     rows.sort(key=lambda r: (-len(r["dukung"]), -r["skor"]))
     return {"updated": rd["updated"], "bulan": month, "bulanBroker": bulan_b, "minTurun": RC.MIN_TURUN, "maxDariDasar": RC.MAX_DARI_DASAR,
             "total": len(rd["tek"]), "saham": rows}
+
+
+def saham_detail(t: str, month: int) -> dict:
+    """Rincian satu saham untuk panel klik di Seasonality, Pola Broker, dan Recovery: alasan (turun/dasar, Seasonality,
+    broker, teknikal), komponen skor, trading plan Seasonality (bila ada) dan plan rebound (bila turun >= 30%)."""
+    rd = RC.load(RECOVERY_PATH)
+    tek = (rd.get("tek") or {}).get(t)
+    if not tek:
+        try:
+            tek = RC.technical(get_ohlc(t, "1y"))
+        except Exception:
+            tek = None
+    srow, bro, bulan_b = recovery_ctx(month)
+    se, b = srow.get(t), bro.get(t)
+    out = {"t": t, "bulan": month, "bulanBroker": bulan_b, "season": None, "broker": b, "tek": tek,
+           "planSeason": (se or {}).get("plan"), "planRebound": None, "updated": rd.get("updated")}
+    if se:
+        out["season"] = {k: se.get(k) for k in ("n", "up", "prob", "median", "worst", "best", "skor", "sektorNama", "nama", "radar")}
+    if not tek:
+        out["alasan"] = ["Data harga harian belum tersedia."]
+        return out
+    sc = RC.score(tek, se, b)
+    out.update(alasan=sc["alasan"], komponen=sc["komponen"], status=sc["status"], dukung=sc["dukung"], skor=sc["skor"])
+    if tek["turun"] >= RC.MIN_TURUN and tek["dariDasar"] <= RC.MAX_DARI_DASAR and not tek.get("lompatan"):
+        out["planRebound"] = RC.plan(tek, (b or {}).get("avg") if b and not b.get("dist") else None)
+    return out
 
 
 def daily_builds() -> None:
@@ -2806,6 +2839,16 @@ class Handler(BaseHTTPRequestHandler):
             if self.qs("segar") == "1":
                 ihsg_segarkan(public=_req.public)
             self.reply_json(ihsg_api(month))
+        elif path == "api/saham-detail":
+            kode = (self.qs("kode") or "").upper()
+            try:
+                month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month % 12 + 1))
+            except ValueError:
+                month = datetime.now().month % 12 + 1
+            if not re.match(r"^[A-Z]{4}$", kode):
+                self.reply_json({"error": "Kode saham tidak valid."}, 400)
+            else:
+                self.reply_json(saham_detail(kode, month))
         elif path == "api/recovery":
             try:
                 month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month % 12 + 1))

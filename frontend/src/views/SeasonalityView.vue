@@ -9,6 +9,7 @@ import { fmt } from '../lib/domain.js'
 import { useRoute, useRouter } from 'vue-router'
 import BrokerPola from '../components/BrokerPola.vue'
 import RecoveryPanel from '../components/RecoveryPanel.vue'
+import SahamRingkas from '../components/SahamRingkas.vue'
 import IhsgOutlook from '../components/IhsgOutlook.vue'
 import RingPct from '../components/RingPct.vue'
 import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
@@ -31,6 +32,8 @@ async function load() {
 }
 // Baris saham yang dibuka (dideklarasikan sebelum watch immediate di bawah yang mengosongkannya).
 const buka = ref('')
+// Kartu prioritas yang dibuka (rincian di bawah kartu).
+const kartu = ref('')
 watch([bulan, tahun], () => { if (tab.value === 'season') { load(); buka.value = '' } }, { immediate: true })
 watch(tab, v => { if (v === 'season' && !data.value) load() })
 const top5 = computed(() => (data.value?.saham || []).filter(x => lolosHsc(x.t, f.hsc)).slice(0, 5))
@@ -131,11 +134,11 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
       <!-- Kondisi IHSG sekarang: tren, support/resistance, sentimen, dan probabilitas pola bulan ini berulang. -->
       <IhsgOutlook :bulan="bulan" :nama-bulan="BLN[bulan - 1]" />
 
-      <!-- Prioritas: cincin peluang + garis trading plan; klik kartu untuk analisa emiten. -->
+      <!-- Prioritas: cincin peluang + garis trading plan; klik kartu untuk rincian (alasan + trading plan). -->
       <section class="rule-top">
         <h2>Prioritas {{ BLN[bulan - 1] }}</h2>
         <div class="cards">
-          <RouterLink v-for="x in top5" :key="x.t" class="card" :to="{ path: '/emiten/' + x.t, query: { tab: 'analisa' } }">
+          <button v-for="x in top5" :key="x.t" type="button" class="card" :class="{ on: kartu === x.t }" :aria-expanded="String(kartu === x.t)" @click="kartu = kartu === x.t ? '' : x.t">
             <div class="ch">
               <RingPct :v="x.prob" :size="50" label="Peluang naik" />
               <div class="cht"><b>{{ x.t }}</b><span class="small muted">{{ x.sektorNama || 'sektor –' }}</span></div>
@@ -151,8 +154,9 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
               <span class="small muted">R/R <b :class="{ 'c-strong': x.plan.rr != null && x.plan.rr < 1 }">{{ x.plan.rr ?? '–' }}</b> · {{ x.plan.timeframe }} · uji TP1 {{ x.plan.kenaTp1 }}/{{ x.plan.n }}, SL {{ x.plan.kenaSl }}/{{ x.plan.n }}</span>
             </template>
             <span v-if="x.alasan[0]" class="small muted ell" :title="x.alasan.join(' · ')">{{ x.alasan[0] }}</span>
-          </RouterLink>
+          </button>
         </div>
+        <div v-if="kartu" class="kp"><SahamRingkas :kode="kartu" :bulan="bulan" /></div>
         <!-- Tabel trading plan lengkap tetap tersedia. -->
         <details v-if="top5.some(x => x.plan)" class="tpd">
           <summary class="small">Tabel trading plan {{ BLN[bulan - 1] }} (waktu masuk/keluar & uji historis)</summary>
@@ -233,6 +237,7 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
                 </tr>
                 <tr v-if="buka === x.t" class="xd">
                   <td colspan="9">
+                    <SahamRingkas :kode="x.t" :bulan="bulan" :plan="false" />
                     <div class="xg">
                       <div>
                         <h4>Heatmap {{ x.t }} · return bulanan (%)</h4>
@@ -332,4 +337,5 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
 .xg ul{margin:0 0 6px;padding-left:16px}
 @media (max-width:800px){.xg{grid-template-columns:1fr}}
 @media (max-width:700px){.months{grid-template-columns:repeat(6,1fr)}.sr{grid-template-columns:1fr 1fr 44px}.sr .small{display:none}}
+button.card{text-align:left;font:inherit;color:inherit;cursor:pointer}.card.on{outline:2px solid var(--now-ink)}.kp{border:1px solid var(--rule);background:var(--sheet);padding:6px 12px;margin-top:10px}
 </style>

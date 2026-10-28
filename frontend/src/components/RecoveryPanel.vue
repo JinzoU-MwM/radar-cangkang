@@ -7,6 +7,7 @@ import { api } from '../api.js'
 import { fmt } from '../lib/domain.js'
 import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
 import RingPct from './RingPct.vue'
+import SahamRingkas from './SahamRingkas.vue'
 
 const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 const bulan = ref((new Date().getMonth() + 1) % 12 + 1)
@@ -29,6 +30,7 @@ const unggulan = computed(() => rows.value.filter(x => x.status !== 'Pantau').sl
 const hitung = computed(() => Object.fromEntries(STATUS.map(s => [s, (data.value?.saham || []).filter(x => lolosHsc(x.t, f.hsc) && x.status === s).length])))
 
 const buka = ref('')
+const kartu = ref('')  // kartu unggulan yang dibuka
 const rp = v => v == null ? '–' : 'Rp' + Math.round(v).toLocaleString('id-ID')
 const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + '%'
 const miliar = v => v == null ? '–' : (v >= 0 ? '+' : '−') + 'Rp' + fmt(Math.abs(v) / 1e9, 1) + ' M'
@@ -61,10 +63,10 @@ const cls = s => s === 'Siap rebound' ? 'c-good' : s === 'Mulai pulih' ? 'c-warn
     <template v-else-if="data">
       <!-- Kandidat terkuat: didukung minimal dua dari Seasonality, akumulasi broker, dan teknikal. -->
       <div v-if="unggulan.length" class="cards">
-        <article v-for="x in unggulan" :key="x.t" class="card">
+        <article v-for="x in unggulan" :key="x.t" class="card klik" :class="{ on: kartu === x.t }" tabindex="0" role="button" :aria-expanded="String(kartu === x.t)" @click="kartu = kartu === x.t ? '' : x.t" @keydown.enter="kartu = kartu === x.t ? '' : x.t">
           <div class="ch">
             <RingPct :v="x.skor" :size="52" label="Skor recovery" />
-            <div><RouterLink :to="{ path: '/emiten/' + x.t, query: { tab: 'analisa' } }"><b class="kode">{{ x.t }}</b></RouterLink>
+            <div><b class="kode">{{ x.t }}</b>
               <span v-if="isHsc(x.t)" class="tag t-warn">HSC</span>
               <div class="small" :class="cls(x.status)">{{ x.status }}</div></div>
           </div>
@@ -73,6 +75,8 @@ const cls = s => s === 'Siap rebound' ? 'c-good' : s === 'Mulai pulih' ? 'c-warn
           <p class="small">Beli {{ rp(x.plan.entry[0]) }}–{{ rp(x.plan.entry[1]) }} · TP {{ rp(x.plan.tp1) }} / {{ rp(x.plan.tp2) }} · SL {{ rp(x.plan.sl) }}</p>
         </article>
       </div>
+
+      <div v-if="kartu" class="kp"><SahamRingkas :kode="kartu" :bulan="bulan" /></div>
 
       <div class="mh"><h2>Kandidat rebound</h2><span class="small muted">{{ rows.length }} dari {{ data.saham.length }} saham turun dalam ({{ data.total }} dipindai) · data {{ data.updated }}<template v-if="data.bulanBroker"> · broker {{ BLN[data.bulanBroker - 1] }}</template></span></div>
       <div class="scroll">
@@ -138,7 +142,9 @@ const cls = s => s === 'Siap rebound' ? 'c-good' : s === 'Mulai pulih' ? 'c-warn
 .hscg{display:inline-flex;align-items:center;gap:4px;margin-left:8px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-bottom:14px}
 .card{border:1px solid var(--rule);background:var(--sheet);padding:10px 12px}.card p{margin:4px 0}
-.ch{display:flex;gap:10px;align-items:center}.kode{font-size:18px}
+.ch{display:flex;gap:10px;align-items:center}
+.klik{cursor:pointer}.klik:hover,.card.on{outline:2px solid var(--now-ink)}
+.kp{border:1px solid var(--rule);background:var(--sheet);padding:6px 12px;margin-bottom:14px}.kode{font-size:18px}
 .mh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.mh h2{margin:6px 0}
 .scroll{overflow-x:auto}
 .row{cursor:pointer}.row:hover,.row.open{background:var(--accent-soft)}
