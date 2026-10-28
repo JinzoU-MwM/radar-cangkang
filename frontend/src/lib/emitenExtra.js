@@ -144,14 +144,30 @@ export function peerMultiples(profiles) {
   }
 }
 
-// Nilai awal isian simulasi (Rp miliar per tahun, laba/pendapatan parsial disetahunkan).
+// Acuan nilai cadangan in-situ (USD per ton cadangan) dari transaksi akuisisi tambang sejenis di Indonesia.
+// Perkiraan kasar dan konservatif; dipakai otomatis agar simulasi tidak bergantung pada isian manual.
+export function autoUsdTon(aset) {
+  const a = aset?.aset || {}, tb = a.tambang || {}, s = `${a.sektor || ''} ${a.nama || ''} ${tb.kalori || ''} ${tb.cadangan || ''}`.toLowerCase()
+  if (/batu ?bara|coal/.test(s)) {
+    const kal = +((String(tb.kalori || '').match(/(\d[\d.]{2,})\s*kkal/) || [])[1] || '').replace(/\./g, '') || null
+    if (/kokas|coking|metalurgi/.test(s) || kal >= 6500) return { v: 3, note: 'acuan transaksi batu bara kalori tinggi/kokas ±USD3/ton' }
+    if (kal >= 5000 || /> ?5\.000/.test(s)) return { v: 1.5, note: 'acuan transaksi batu bara kalori menengah ±USD1,5/ton' }
+    return { v: 0.8, note: 'acuan transaksi batu bara kalori rendah ±USD0,8/ton' }
+  }
+  if (/nikel|nickel/.test(s)) return { v: 2, note: 'acuan transaksi bijih nikel ±USD2/ton' }
+  if (/bauksit|bijih besi|iron ore/.test(s)) return { v: 1, note: 'acuan transaksi bijih mineral ±USD1/ton' }
+  return null
+}
+
+// Nilai awal simulasi (Rp miliar per tahun, laba/pendapatan parsial disetahunkan). Semua otomatis dari data aset;
+// kelipatan pembanding diisi dari median emiten pembanding Stockbit (peerMultiples) oleh pemanggil.
 export function simDefaults(aset, sv) {
   const fin = aset?.aset?.keuangan || {}, af = annualFactor(fin.periode), ann = v => v == null ? null : v * af
-  const res = reservesOf(aset?.aset?.tambang)
+  const res = reservesOf(aset?.aset?.tambang), ut = res ? autoUsdTon(aset) : null
   return {
     tx: toM(txValue(aset, sv)), porsi: pctOf(aset?.aset?.porsi) ?? pctOf(sv?.injectTarget) ?? 100,
     laba: toM(ann(fin.labaBersih)), pend: toM(ann(fin.pendapatan)), eq: toM(fin.ekuitas),
-    res: res?.mt ?? null, usdTon: null, per: null, ps: null, pbv: null, af,
+    res: res?.mt ?? null, usdTon: ut?.v ?? null, usdTonNote: ut?.note || '', per: null, ps: null, pbv: null, af,
   }
 }
 

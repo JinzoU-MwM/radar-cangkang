@@ -63,12 +63,14 @@ export async function collectDeck(t, { store, api, storyOf, getBenchmark, onStep
     mech = mechOf(aset, A.sv)
     steps = injSteps(mech, { sv: A.sv, ms: prog?.ms || {} })
     const peers = (aset?.pembanding || []).filter(x => /^[A-Z]{4}$/.test(x)).slice(0, 5)
+    // Simulasi otomatis: kelipatan pembanding Stockbit (bila ada) + acuan cadangan tambang dari simDefaults.
+    let m = { n: 0 }
     if (peers.length) {
       onStep('Membandingkan dengan emiten sejenis')
       const ps = await Promise.all(peers.map(p => safe(api.get('/api/profile', { ticker: p }))))
-      const m = peerMultiples(ps)
-      sim = { ...simKjpp({ ...simDefaults(aset, A.sv), per: m.per, ps: m.ps, pbv: m.pbv }), peers, n: m.n }
+      m = peerMultiples(ps)
     }
+    sim = { ...simKjpp({ ...simDefaults(aset, A.sv), per: m.per, ps: m.ps, pbv: m.pbv }), peers, n: m.n }
   }
 
   const sector = sectorOf({ baru: story?.baru || verified[t]?.baru, aset: [aset?.aset?.sektor, aset?.aset?.nama].filter(Boolean).join(' '),
