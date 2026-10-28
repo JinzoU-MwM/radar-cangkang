@@ -132,10 +132,10 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
       </div>
     </nav>
     <main class="content">
-      <button type="button" class="fs" :aria-pressed="String(penuh)" :title="penuh ? 'Tampilkan menu kiri (F atau Esc)' : 'Sembunyikan menu kiri, layar penuh (F)'" @click="togglePenuh">
+      <button type="button" class="fs" :aria-pressed="String(penuh)" :title="penuh ? 'Kembali: tampilkan menu kiri (F atau Esc)' : 'Sembunyikan menu kiri, layar penuh (F)'" @click="togglePenuh">
         <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path v-if="!penuh" d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" fill="none" stroke="currentColor" stroke-width="1.8" />
           <path v-else d="M5 1v4H1M13 5H9V1M9 13V9h4M1 9h4v4" fill="none" stroke="currentColor" stroke-width="1.8" /></svg>
-        {{ penuh ? 'Keluar layar penuh' : 'Layar penuh' }}
+        {{ penuh ? 'Kembali' : 'Layar penuh' }}
       </button>
       <p v-if="store.newVersion" class="newver" role="status">
         Versi baru website tersedia; tab ini masih memakai versi lama.
