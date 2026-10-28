@@ -907,7 +907,10 @@ function headlineSlides(K, th, d) {
     const jenis = ri ? (ri.kind === 'merger' ? 'Merger' : /pmthmetd|tanpa hmetd/i.test(ri.jenis || '') ? 'Penambahan modal tanpa HMETD' : 'Rights issue')
       : inj ? 'Injeksi aset' : 'Pengambilalihan pengendali'
     const head = `${d.t}: ${jenis}${injT ? ' untuk ' + entName(injT) : who ? ' oleh ' + entName(who) : ''}${nilai ? ' senilai ' + bigS(nilai) : ''}`
-    const take = d.pos?.next ? `Posisi saat ini: ${d.pos.now || '–'}. Tahap berikutnya: ${d.pos.next}.` : (pv.rencana ? points(pv.rencana, 1)[0] : '')
+    // Laporan terbaru (lebih baru dari analisa) didahulukan agar ringkasan tidak tertinggal.
+    const lb = d.lapBaru?.items?.[0]
+    const take = lb ? `Laporan ${fmtDate(lb.date)}: ${lb.points[0] || lb.title}.${d.pos?.next ? ' Tahap berikutnya: ' + d.pos.next + '.' : ''}`
+      : d.pos?.next ? `Posisi saat ini: ${d.pos.now || '–'}. Tahap berikutnya: ${d.pos.next}.` : (pv.rencana ? points(pv.rencana, 1)[0] : '')
     const s = slide('Ringkasan transaksi', short(head, 90), take)
 
     // Diagram: pengendali lama ↓ pengendali baru → EMITEN ← aset injeksi (↑ pemilik/penjual aset).

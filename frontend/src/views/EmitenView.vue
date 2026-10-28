@@ -9,6 +9,7 @@ import OwnershipFlow from '../components/OwnershipFlow.vue'
 import TabRingkasan from '../components/emiten/TabRingkasan.vue'
 import TabStory from '../components/emiten/TabStory.vue'
 import TabAset from '../components/emiten/TabAset.vue'
+import PembaruanBanner from '../components/emiten/PembaruanBanner.vue'
 import TabAnalisa from '../components/emiten/TabAnalisa.vue'
 import TabTeknikal from '../components/emiten/TabTeknikal.vue'
 import TabSpekulasi from '../components/emiten/TabSpekulasi.vue'
@@ -178,6 +179,9 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
             :to="{ path: '/emiten/' + t, query: { tab: 'analisa' } }">{{ t }}</RouterLink>
         </nav>
       </div>
+
+      <!-- Laporan Stockbit baru sejak analisa/riset kurasi: tampil di semua tab agar tidak ada yang tertinggal. -->
+      <PembaruanBanner :ticker="T" />
 
       <div class="tabs" role="tablist" aria-label="Bagian emiten">
         <button v-for="(t, i) in TABS" :key="t.id" :ref="el => (tabEls[i] = el)" type="button" role="tab" class="tab"
