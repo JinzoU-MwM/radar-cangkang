@@ -15,10 +15,10 @@ async function load() {
     if (r.error) { err.value = r.error } else { data.value = r; err.value = '' }
   } catch (e) { err.value = e.message || String(e) } finally { loading.value = false }
 }
-// Muat ulang tiap 30 detik saat jam bursa (server memperbarui tiap menit), 5 menit di luar jam bursa; jeda saat tab tersembunyi.
+// Muat ulang tiap 20 detik saat jam bursa (server memperbarui tiap menit), 5 menit di luar jam bursa; jeda saat tab tersembunyi.
 function jadwal() {
   clearTimeout(poll)
-  poll = setTimeout(async () => { if (!document.hidden) await load(); jadwal() }, data.value?.jamBursa === false ? 300000 : 30000)
+  poll = setTimeout(async () => { if (!document.hidden) await load(); jadwal() }, data.value?.jamBursa === false ? 300000 : 20000)
 }
 onMounted(async () => { await load(); jadwal(); loadVoices(); synth?.addEventListener?.('voiceschanged', loadVoices) })
 onBeforeUnmount(() => { clearTimeout(poll); synth?.cancel(); synth?.removeEventListener?.('voiceschanged', loadVoices) })
@@ -79,14 +79,14 @@ function suarakan() {
   })
 }
 function diam() { synth?.cancel(); bicara.value = false }
-// Suara otomatis: dibacakan ulang saat kesimpulan berubah atau IHSG bergerak lagi ≥ 0,5% sejak pembacaan terakhir.
+// Suara otomatis: kondisi IHSG dibacakan tiap ada data menit baru (server memperbarui tiap menit saat jam bursa).
 const otomatis = ref(false)
 let terakhir = null
 function cekOtomatis() {
   const d = data.value
   if (!otomatis.value || !d) return
-  const kini = { label: d.label, ch: d.ubahPct ?? 0 }
-  if (!terakhir || terakhir.label !== kini.label || Math.abs(kini.ch - terakhir.ch) >= 0.5) { terakhir = kini; suarakan() }
+  const kini = `${d.titik?.at(-1)?.t || d.waktu}|${d.harga}`
+  if (kini !== terakhir) { terakhir = kini; suarakan() }
 }
 function toggleOtomatis() { otomatis.value = !otomatis.value; terakhir = null; if (otomatis.value) cekOtomatis(); else diam() }
 watch(data, cekOtomatis)
@@ -96,7 +96,7 @@ watch(data, cekOtomatis)
   <section class="lv">
     <p class="small muted intro">Grafik IHSG berjalan (diperbarui otomatis tiap menit saat jam bursa) dan kesimpulan gabungan dari
       <b>Astronacci</b>, <b>Time Series</b>, <b>Seasonality</b>, <b>Pola Broker</b>, <b>Recovery</b>, serta pergerakan hari ini —
-      lengkap dengan suara kondisi IHSG.</p>
+      lengkap dengan suara kondisi IHSG. Aktifkan <b>Suara tiap menit</b> untuk mendengar kondisi terbaru setiap menit.</p>
 
     <p v-if="loading" class="muted">Memuat data Live…</p>
     <p v-else-if="err && !data" class="muted">{{ err }}</p>
@@ -117,7 +117,7 @@ watch(data, cekOtomatis)
         </div>
         <div class="suara">
           <button type="button" class="pill" :aria-pressed="String(bicara)" :disabled="!synth" @click="bicara ? diam() : suarakan()">{{ bicara ? '■ Hentikan suara' : '🔊 Suarakan kondisi' }}</button>
-          <button type="button" class="pill" :aria-pressed="String(otomatis)" :disabled="!synth" @click="toggleOtomatis">Suara otomatis: {{ otomatis ? 'aktif' : 'mati' }}</button>
+          <button type="button" class="pill" :aria-pressed="String(otomatis)" :disabled="!synth" @click="toggleOtomatis">Suara tiap menit: {{ otomatis ? 'aktif' : 'mati' }}</button>
           <span class="small muted">{{ voice ? voice.name : (synth ? 'Suara browser bawaan' : 'Browser tidak mendukung suara') }}</span>
         </div>
       </div>

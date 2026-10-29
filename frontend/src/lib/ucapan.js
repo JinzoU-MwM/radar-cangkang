@@ -92,6 +92,8 @@ const UANG = [
 
 export function speakable(text) {
   let s = String(text || '')
+  // Jam "pukul 13.39" / "13:39" dibaca "pukul tiga belas lewat tiga puluh sembilan menit" (bukan angka desimal).
+  s = s.replace(/\bpukul\s+(\d{1,2})[.:](\d{2})\b/gi, (_, h, m) => `pukul ${Number(h)}` + (Number(m) ? ` lewat ${Number(m)} menit` : ' tepat'))
   // Pengali bahasa Inggris (Bn/mn) dijadikan kata lebih dulu agar pola uang membacanya ("USD1,2 Bn" → "1,2 miliar dolar Amerika").
   s = s.replace(/(\d)\s*[Bb]n\b/g, '$1 miliar').replace(/(\d)\s*[Mm]n\b/g, '$1 juta')
   // Tanggal ISO dan penanda kuartal/semester.

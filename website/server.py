@@ -2701,24 +2701,24 @@ def live_api() -> dict:
     else:
         label = "Cenderung naik" if skor >= 15 else "Cenderung turun" if skor <= -15 else "Netral, menunggu arah"
     nada = "good" if skor >= 15 else "bad" if skor <= -15 else "warn"
-    dukung = [x["nama"] for x in modul if x["skor"] > 0.15]
-    lawan = [x["nama"] for x in modul if x["skor"] < -0.15]
     sup = [x["v"] for x in (tek or {}).get("support") or []]
     res = [x["v"] for x in (tek or {}).get("resistance") or []]
-    waktu = "saat ini" if h.get("jamBursa") else "pada penutupan terakhir"
-    gerak = (f"{'naik' if ch > 0 else 'turun'} {_idn(abs(ch))} persen" if abs(ch) >= 0.01 else "tidak berubah") + " dari penutupan sebelumnya"
-    narasi = [f"IHSG {waktu} di level {_idn(h['harga'])}, {gerak}.",
-              f"Gabungan analisa Astronacci, Time Series, Seasonality, Pola Broker, dan Recovery memberi skor {skor:+d}: {label.lower()}."]
-    if dukung:
-        narasi.append(f"Pendukung naik: {', '.join(dukung)}.")
-    if lawan:
-        narasi.append(f"Penekan: {', '.join(lawan)}.")
+    # Narasi suara: hanya kondisi IHSG saat ini (tanpa menyebut nama analisa) agar bisa dibacakan tiap menit.
+    vs = [x["v"] for x in h.get("titik") or []]
+    jam_t = (re.search(r"(\d{1,2}):(\d{2})", (h.get("titik") or [{}])[-1].get("t", "")) if h.get("titik") else None)
+    pukul = f"pukul {jam_t.group(1)}.{jam_t.group(2)}" if jam_t and h.get("jamBursa") else ("saat ini" if h.get("jamBursa") else "pada penutupan terakhir")
+    gerak = (f"{'naik' if ch > 0 else 'turun'} {_idn(abs(ch))} persen" if abs(ch) >= 0.01 else "tidak berubah") + " dari penutupan kemarin"
+    narasi = [f"IHSG {pukul} di {_idn(h['harga'], 0)}, {gerak}."]
+    if h.get("jamBursa") and len(vs) >= 6:
+        m5 = (vs[-1] / vs[-6] - 1) * 100
+        narasi.append("Beberapa menit terakhir " + ("sedang menguat." if m5 > 0.05 else "sedang melemah." if m5 < -0.05 else "bergerak datar."))
+    narasi.append(f"Kondisi saat ini: {label.lower()}.")
     if label == "Potensi rebound" and sup:
-        narasi.append(f"Perhatikan pantulan di support {_idn(sup[0], 0)}; target terdekat resistance {_idn(res[0], 0)}." if res else f"Perhatikan pantulan di support {_idn(sup[0], 0)}.")
+        narasi.append(f"Perhatikan pantulan di {_idn(sup[0], 0)}" + (f", target terdekat {_idn(res[0], 0)}." if res else "."))
     elif label in ("Potensi turun lagi", "Rawan berbalik turun") and sup:
-        narasi.append(f"Waspadai uji support {_idn(sup[0], 0)}" + (f", lalu {_idn(sup[1], 0)}." if len(sup) > 1 else "."))
+        narasi.append(f"Waspadai turun ke {_idn(sup[0], 0)}" + (f", lalu {_idn(sup[1], 0)}." if len(sup) > 1 else "."))
     elif label == "Potensi lanjut naik" and res:
-        narasi.append(f"Ruang naik menuju resistance {_idn(res[0], 0)}.")
+        narasi.append(f"Ruang naik menuju {_idn(res[0], 0)}.")
     return {**h, "skor": skor, "label": label, "nada": nada, "kondisi": kondisi, "modul": modul,
             "support": sup, "resistance": res, "narasi": narasi,
             "catatan": "Skor gabungan -100 sampai +100 dari bobot tiap modul. Analisa otomatis berbasis data historis dan harga berjalan, bukan rekomendasi beli/jual."}
