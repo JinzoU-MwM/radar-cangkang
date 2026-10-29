@@ -2363,9 +2363,13 @@ def recovery_api(month: int) -> dict:
         dasar.append({"t": t, "nama": (se or {}).get("nama") or "", "sektorNama": (se or {}).get("sektorNama") or "", "radar": (se or {}).get("radar") or "",
                       "tek": tek, "ret": {**(tek.get("ret") or {}), **pj.get(t, {})}, "broker": bro.get(t)})
     dasar.sort(key=lambda r: -r["tek"]["turun"])
+    # Tab "Low per periode": kinerja per periode semua saham terpantau (ringkas) untuk saringan low 1D..10Y di peramban.
+    low = [{"t": t, "nama": (srow.get(t) or {}).get("nama") or "", "harga": tek.get("harga"), "turun": tek.get("turun"),
+            "dariRendah": tek.get("dariRendah"), "ret": {**(tek.get("ret") or {}), **pj.get(t, {})}}
+           for t, tek in rd["tek"].items() if tek.get("ret") and not tek.get("lompatan")]
     return {"updated": rd["updated"], "bulan": month, "bulanBroker": bulan_b, "minTurun": RC.MIN_TURUN, "maxDariDasar": RC.MAX_DARI_DASAR,
             "dasarTurun": RC.DASAR_TURUN, "dasarJarak": RC.DASAR_JARAK, "skemaLama": not any("ret" in x for x in list(rd["tek"].values())[:5]),
-            "total": len(rd["tek"]), "saham": rows, "cepat": [r["t"] for r in cepat], "dasar": dasar[:80]}
+            "total": len(rd["tek"]), "saham": rows, "cepat": [r["t"] for r in cepat], "dasar": dasar[:80], "low": low}
 
 
 def saham_detail(t: str, month: int) -> dict:
