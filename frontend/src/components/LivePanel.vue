@@ -115,6 +115,12 @@ watch(data, cekOtomatis)
           <div class="skor">Skor <b>{{ data.skor > 0 ? '+' : '' }}{{ data.skor }}</b> <span class="small">/ ±100</span></div>
           <div class="meter" aria-hidden="true"><span :style="{ left: (50 + data.skor / 2) + '%' }"></span></div>
         </div>
+        <!-- Arah dari transaksi real time saja (net asing, antrean beli/jual, arah saham penggerak). -->
+        <div v-if="data.arahTransaksi" class="vonis" :class="'n-' + data.arahTransaksi.nada">
+          <div class="small">Arah transaksi real time</div>
+          <div class="lbl">{{ data.arahTransaksi.nada === 'good' ? '▲ ' : data.arahTransaksi.nada === 'bad' ? '▼ ' : '' }}{{ data.arahTransaksi.label }}</div>
+          <div class="small">data {{ data.arahTransaksi.waktu }} WIB</div>
+        </div>
         <div class="suara">
           <button type="button" class="pill" :aria-pressed="String(bicara)" :disabled="!synth" @click="bicara ? diam() : suarakan()">{{ bicara ? '■ Hentikan suara' : '🔊 Suarakan kondisi' }}</button>
           <button type="button" class="pill" :aria-pressed="String(otomatis)" :disabled="!synth" @click="toggleOtomatis">Suara tiap menit: {{ otomatis ? 'aktif' : 'mati' }}</button>
