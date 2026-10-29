@@ -2247,6 +2247,31 @@ def recovery_universe() -> list[str]:
     return sorted(t for t in uni if re.match(r"^[A-Z]{4}$", t))
 
 
+def kinerja_panjang(t: str) -> dict:
+    """Kinerja 3Y/5Y/10Y dari deret harga penutupan Stockbit (timeframe terpanjang yang tersedia); periode yang
+    datanya tidak mencakup rentang itu dilewati (tidak ditebak)."""
+    out, deret = {}, []
+    for tf in ("10y", "5y", "3y"):
+        try:
+            res = sb_fetch(f"/charts/{t}/daily?timeframe={tf}")
+            pr = [(str(x["formatted_date"])[:10], float(x["value"])) for x in (res.get("data", {}).get("prices") or []) if x.get("formatted_date") and x.get("value")]
+        except Exception:
+            pr = []
+        if len(pr) > len(deret):
+            deret = sorted(pr)
+        if deret and deret[0][0] <= (datetime.now() - timedelta(days=365 * 9.5)).strftime("%Y-%m-%d"):
+            break
+    if not deret:
+        return out
+    akhir = deret[-1][1]
+    for label, th in (("3Y", 3), ("5Y", 5), ("10Y", 10)):
+        batas = (datetime.now() - timedelta(days=365 * th)).strftime("%Y-%m-%d")
+        lama = [v for d, v in deret if d <= batas]
+        if lama and lama[-1] and deret[0][0] <= batas:
+            out[label] = round((akhir / lama[-1] - 1) * 100, 2)
+    return out
+
+
 def recovery_build(delay: float = 0.25) -> None:
     """Teknikal harian 1 tahun tiap saham untuk tab Recovery (dijalankan setelah Seasonality & Pola Broker)."""
     out = {}
@@ -2261,7 +2286,18 @@ def recovery_build(delay: float = 0.25) -> None:
         time.sleep(delay)
     if not out:
         raise RuntimeError("data teknikal kosong")
-    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "tek": out}
+    # Kinerja 3Y/5Y/10Y hanya untuk kategori "Sudah di dasar" (maks. 60 saham) agar panggilan Stockbit tetap hemat.
+    panjang = {}
+    for t in sorted((t for t, x in out.items() if RC.dasar(x)), key=lambda t: -out[t]["turun"])[:60]:
+        try:
+            kp = kinerja_panjang(t)
+            if kp:
+                panjang[t] = kp
+        except Exception as e:
+            if "401" in str(e):
+                break
+        time.sleep(delay)
+    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "tek": out, "panjang": panjang}
     tmp = RECOVERY_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     tmp.replace(RECOVERY_PATH)
@@ -2308,8 +2344,24 @@ def recovery_api(month: int) -> dict:
                      "broker": b, "plan": RC.plan(tek, (b or {}).get("avg") if b and not b.get("dist") else None), **sc})
     # Didukung lebih banyak (Seasonality, broker, teknikal) lebih dulu, lalu skor.
     rows.sort(key=lambda r: (-len(r["dukung"]), -r["skor"]))
+    # Kategori "Recovery tercepat": kandidat dengan momentum pulih (skor kecepatan) dan perkiraan hari ke target 1.
+    for r in rows:
+        r["cepat"] = RC.kecepatan(r["tek"], r["plan"])
+    cepat = sorted((r for r in rows if r["cepat"]["estimasiHari"] and r["cepat"]["skor"] >= 50),
+                   key=lambda r: (r["cepat"]["estimasiHari"], -r["cepat"]["skor"]))[:40]
+    # Kategori "Sudah di dasar": seluruh saham terpantau (tidak harus lolos filter kandidat rebound).
+    pj = rd.get("panjang") or {}
+    dasar = []
+    for t, tek in rd["tek"].items():
+        if not RC.dasar(tek):
+            continue
+        se = srow.get(t)
+        dasar.append({"t": t, "nama": (se or {}).get("nama") or "", "sektorNama": (se or {}).get("sektorNama") or "", "radar": (se or {}).get("radar") or "",
+                      "tek": tek, "ret": {**(tek.get("ret") or {}), **pj.get(t, {})}, "broker": bro.get(t)})
+    dasar.sort(key=lambda r: -r["tek"]["turun"])
     return {"updated": rd["updated"], "bulan": month, "bulanBroker": bulan_b, "minTurun": RC.MIN_TURUN, "maxDariDasar": RC.MAX_DARI_DASAR,
-            "total": len(rd["tek"]), "saham": rows}
+            "dasarTurun": RC.DASAR_TURUN, "dasarJarak": RC.DASAR_JARAK, "skemaLama": not any("ret" in x for x in list(rd["tek"].values())[:5]),
+            "total": len(rd["tek"]), "saham": rows, "cepat": [r["t"] for r in cepat], "dasar": dasar[:80]}
 
 
 def saham_detail(t: str, month: int) -> dict:
@@ -2525,6 +2577,13 @@ def IH_load() -> dict:
 
 def season_loop() -> None:
     time.sleep(120)  # beri waktu loop kandidat/tsa mengisi universe lebih dulu
+    # Recovery versi lama (tanpa kinerja per periode): bangun ulang sekali agar kategori Dasar/Tercepat langsung terisi.
+    try:
+        rd0 = RC.load(RECOVERY_PATH)
+        if rd0.get("tek") and not any("ret" in x for x in list(rd0["tek"].values())[:5]) and get_token():
+            recovery_build()
+    except Exception as e:
+        print(f"[recovery] bangun ulang skema gagal: {e}", file=sys.stderr)
     # Belum ada data sama sekali: bangun sekarang agar halaman tidak kosong, lalu ikuti jadwal.
     for path, fn in ((SEASON_PATH, season_build), (BROKER_PATH, broker_build), (RECOVERY_PATH, recovery_build)):
         while not path.exists():
