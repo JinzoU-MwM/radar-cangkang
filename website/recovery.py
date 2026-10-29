@@ -11,6 +11,11 @@ import json
 MIN_TURUN = 30.0  # % dari puncak 52 minggu agar dianggap "sudah turun banyak"
 MAX_DARI_DASAR = 40.0  # % di atas dasar kejatuhan; lebih dari ini = sudah pulih/lonjakan, bukan kandidat rebound
 LOMPATAN = -45.0  # perubahan harian <= -45% = kemungkinan aksi korporasi (stock split/reverse), data tidak sebanding
+# Kategori "Sudah di dasar": turun dalam dari puncak 52 minggu dan harga masih menempel titik terendah setahun.
+DASAR_TURUN = 50.0     # % di bawah puncak 52 minggu
+DASAR_JARAK = 10.0     # % maksimal di atas titik terendah 52 minggu
+# Periode kinerja (hari bursa) seperti tabel kinerja aplikasi saham: 1D, 1W, 1M, 3M, 6M, 1Y (+ YTD dihitung terpisah).
+PERIODE = (("1D", 1), ("1W", 5), ("1M", 21), ("3M", 63), ("6M", 126), ("1Y", 245))
 
 
 def _ema(xs: list[float], n: int) -> list[float]:
@@ -53,6 +58,15 @@ def technical(bars: list[dict]) -> dict | None:
     lompat = min((b["c"] / a["c"] - 1) * 100 for a, b in zip(y[:-1], y[1:]) if a["c"])
     # Higher low: dasar 20 hari terakhir di atas dasar 20 hari sebelumnya.
     low_a, low_b = min(b["l"] for b in bars[-20:]), min(b["l"] for b in bars[-40:-20])
+    # Kinerja per periode & YTD (harga penutupan terakhir tahun lalu sebagai dasar YTD).
+    ret = {k: round((p / c[-1 - n] - 1) * 100, 2) for k, n in PERIODE if len(c) > n and c[-1 - n]}
+    tahun = str(bars[-1]["d"])[:4]
+    sebelum = [b["c"] for b in bars if str(b["d"])[:4] < tahun]
+    if sebelum and sebelum[-1]:
+        ret["YTD"] = round((p / sebelum[-1] - 1) * 100, 2)
+    rendah_th = min(b["l"] for b in y if b["l"])
+    # Laju 10 hari terakhir (rata-rata perubahan harian) untuk perkiraan kecepatan pulih.
+    harian = [(b["c"] / a["c"] - 1) for a, b in zip(bars[-11:-1], bars[-10:]) if a["c"]]
     vol20 = sum(b["v"] for b in bars[-20:]) / 20
     vol60 = sum(b["v"] for b in bars[-80:-20]) / 60 if len(bars) >= 80 else vol20
     return {
@@ -65,6 +79,8 @@ def technical(bars: list[dict]) -> dict | None:
         "diAtasEma20": p > e20[-1], "higherLow": low_a > low_b,
         "volRasio": round(vol20 / vol60, 2) if vol60 else None,
         "lompatan": round(lompat, 1) <= LOMPATAN,
+        "ret": ret, "rendahTahun": rendah_th, "dariRendah": round((p / rendah_th - 1) * 100, 1) if rendah_th else None,
+        "laju10": round(sum(harian) / len(harian) * 100, 3) if harian else None, "hariNaik10": sum(1 for x in harian if x > 0),
     }
 
 
@@ -129,6 +145,37 @@ def score(t: dict, season: dict | None, bro: dict | None) -> dict:
     alasan.append("Teknikal: " + ", ".join(cek))
     return {"skor": skor, "status": status, "dukung": dukung, "alasan": alasan,
             "komponen": {"turun": round(turun, 1), "seasonality": round(musim, 1), "broker": round(broker, 1), "teknikal": round(tek, 1)}}
+
+
+def dasar(t: dict) -> bool:
+    """Sudah di dasar: turun >= DASAR_TURUN% dari puncak 52 minggu dan <= DASAR_JARAK% di atas terendah setahun."""
+    return (t.get("turun") or 0) >= DASAR_TURUN and t.get("dariRendah") is not None and t["dariRendah"] <= DASAR_JARAK and not t.get("lompatan")
+
+
+def kecepatan(t: dict, pl: dict) -> dict:
+    """Potensi pulih tercepat: sinyal momentum (0-100) dan perkiraan hari bursa menuju target pertama bila laju
+    10 hari terakhir bertahan. Perkiraan kasar, bukan kepastian; None bila laju belum positif."""
+    sinyal = []
+    sk = 0
+    if t.get("diAtasEma20"):
+        sk += 25; sinyal.append("di atas EMA20")
+    if t.get("higherLow"):
+        sk += 20; sinyal.append("higher low")
+    if (t.get("ret20") or 0) > 0:
+        sk += 15; sinyal.append(f"naik {t['ret20']:.1f}% 20 hari".replace(".", ","))
+    if (t.get("volRasio") or 0) >= 1.2:
+        sk += 15; sinyal.append(f"volume {t['volRasio']:.1f}x rata-rata".replace(".", ","))
+    if t.get("rsi") is not None and 40 <= t["rsi"] <= 65:
+        sk += 15; sinyal.append(f"RSI pulih {t['rsi']:.0f}")
+    if (t.get("hariNaik10") or 0) >= 6:
+        sk += 10; sinyal.append(f"{t['hariNaik10']} dari 10 hari terakhir naik")
+    laju = (t.get("laju10") or 0) / 100
+    tp1, p = (pl or {}).get("tp1"), t.get("harga")
+    hari = None
+    if laju > 0.001 and tp1 and p and tp1 > p:
+        import math
+        hari = max(1, min(250, math.ceil(math.log(tp1 / p) / math.log(1 + laju))))
+    return {"skor": sk, "sinyal": sinyal, "estimasiHari": hari, "tp1": tp1}
 
 
 def load(path) -> dict:
