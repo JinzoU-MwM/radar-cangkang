@@ -24,19 +24,9 @@ const calmCase = t => { const x = String(t || ''); return x === x.toUpperCase() 
 const lower1 = s => { const t = String(s || ''); return t && !/^[A-Z]{2,}/.test(t) ? t.charAt(0).toLowerCase() + t.slice(1) : t }
 const cap = s => { const t = String(s || '').trim(); return t ? t.charAt(0).toUpperCase() + t.slice(1) : t }
 
-// Teks yang dibacakan mesin suara: angka & singkatan diubah agar enak didengar ("Rp2,48 T" → "2,48 triliun rupiah").
-export function speakable(text) {
-  return String(text || '')
-    // Rentang lebih dulu ("Rp11–Rp49", "1–2%") agar tanda pisah terbaca "hingga".
-    .replace(/(\d)\s*[–-]\s*(Rp\s?)?(\d)/g, '$1 hingga $2$3')
-    .replace(/Rp\s?([\d.,]+)\s*T\b/g, '$1 triliun rupiah').replace(/Rp\s?([\d.,]+)\s*M\b/g, '$1 miliar rupiah')
-    .replace(/Rp\s?([\d.,]+)\s*jt\b/g, '$1 juta rupiah').replace(/Rp\s?([\d.,]+)/g, '$1 rupiah')
-    .replace(/USD\s?([\d.,]+)\s*juta/gi, '$1 juta dolar AS').replace(/(\d)\s*%/g, '$1 persen').replace(/(\d)\s*×/g, '$1 kali')
-    .replace(/→/g, ' menjadi ').replace(/≥/g, 'minimal ').replace(/±/g, 'sekitar ')
-    .replace(/\bPMHMETD\b/g, 'rights issue').replace(/\bPMTHMETD\b/g, 'private placement').replace(/\bTbk\.?/g, 'T B K')
-    .replace(/\bKJPP\b/g, 'K J P P').replace(/\bPTW\b/g, 'P T W').replace(/\bUBO\b/g, 'U B O').replace(/\bSPV\b/g, 'S P V')
-    .replace(/\s*[·|]\s*/g, ', ').replace(/\s+/g, ' ').trim()
-}
+// Teks yang dibacakan mesin suara: lihat lib/ucapan.js (angka → terbilang, singkatan dieja, satuan & istilah diucapkan wajar).
+import { speakable } from './ucapan.js'
+export { speakable }
 
 // Urutan adegan mengikuti urutan slide presentasi (deck.js buildDeck).
 const ORDER = ['buka', 'profilp', 'pengurus', 'pengendali', 'profil', 'transformasi', 'progres', 'berita', 'penjelasan-bursa', 'tesis', 'skor', 'kasus',
@@ -372,7 +362,8 @@ export function buildVideo(d, mode = 'ringkas') {
 }
 
 // Perkiraan durasi (detik) satu kalimat pada kecepatan baca normal (±2,4 kata per detik untuk suara Indonesia).
-export const lineSecs = (text, rate = 1) => Math.max(2.5, speakable(text).split(/\s+/).length / (2.4 * rate) + 0.4)
+// Angka sudah dieja menjadi kata (kata pendek, diucapkan lebih cepat), jadi laju ±2,8 kata per detik.
+export const lineSecs = (text, rate = 1) => Math.max(2.5, speakable(text).split(/\s+/).length / (2.8 * rate) + 0.4)
 
 // Subtitle .srt dari perkiraan durasi.
 export function toSrt(scenes, rate = 1) {
