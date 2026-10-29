@@ -289,7 +289,7 @@ def cache_ttl(url: str) -> int:
 # Statistik pemakaian Stockbit (1 jam terakhir) untuk /api/status.
 FRESH_MIN_AGE = 5 * 60  # fresh=1 tidak memanggil ulang salinan yang umurnya < 5 menit
 # Pengecualian tab Live: grafik IHSG intraday boleh diambil ulang bila salinan > 15 detik (hanya oleh live_loop).
-LIVE_URL = re.compile(r"/charts/IHSG/daily\?timeframe=(today|1d)$")
+LIVE_URL = re.compile(r"/charts/IHSG/daily\?timeframe=(today|1d)$|/marketdetectors/\w+\?from=(\d{4}-\d\d-\d\d)&to=\2&")
 LIVE_FRESH_AGE = 15
 FAIL_BACKOFF = 5 * 60   # jeda setelah panggilan gagal sebelum mencoba Stockbit lagi
 _fail_until: dict[str, int] = {}
@@ -2509,7 +2509,10 @@ WIB = timezone(timedelta(hours=7))
 LIVE: dict = {"harga": None, "modul": None, "modulT": 0.0, "harianT": 0.0, "harian": []}
 LIVE_LOCK = threading.Lock()
 LIVE_TF = ("today", "1d")          # timeframe intraday Stockbit yang dicoba berurutan
-LIVE_BOBOT = {"astro": 0.15, "ts": 0.2, "season": 0.2, "broker": 0.15, "recovery": 0.15, "hariini": 0.15}
+LIVE_BOBOT = {"astro": 0.15, "ts": 0.2, "season": 0.2, "broker": 0.15, "recovery": 0.15, "hariini": 0.15, "transaksi": 0.2}
+# Saham kapitalisasi terbesar penggerak IHSG: transaksi broker hari ini dipantau tiap LIVE_TRX_GAP detik.
+LIVE_BESAR = ["BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "AMMN", "BREN", "DSSA", "TPIA"]
+LIVE_TRX_GAP = 240
 BULAN_ID = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
 
 
@@ -2663,6 +2666,83 @@ def live_hari_ini(h: dict, tek: dict | None) -> dict:
             "skor": round(sk, 2), "teks": "; ".join(cat).capitalize() + "."}
 
 
+def _num(v) -> float:
+    try:
+        return abs(float(v or 0))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def live_transaksi() -> dict | None:
+    """Transaksi hari ini di saham penggerak IHSG dari ringkasan broker Stockbit (net per broker, pasar reguler):
+    net asing (broker bertipe Asing) dan net 3 broker terbesar (akumulasi/distribusi) per saham."""
+    hari = datetime.now(WIB).strftime("%Y-%m-%d")
+    rows, kunci = [], []
+    for sym in LIVE_BESAR:
+        try:
+            r = sb_fetch(f"/marketdetectors/{sym}?from={hari}&to={hari}&transaction_type=TRANSACTION_TYPE_NET"
+                         f"&market_board=MARKET_BOARD_REGULER&investor_type=INVESTOR_TYPE_ALL&limit=25", True)
+        except Exception as e:
+            print(f"[live] transaksi {sym} gagal: {e}", file=sys.stderr)
+            continue
+        d = r.get("data") or {}
+        kunci = kunci or sorted(d.keys())
+        bs = d.get("broker_summary") or {}
+        beli, jual = bs.get("brokers_buy") or [], bs.get("brokers_sell") or []
+        if not beli and not jual:
+            continue
+        asing = sum(_num(x.get("bval")) for x in beli if str(x.get("type")).lower() == "asing") - \
+            sum(_num(x.get("sval")) for x in jual if str(x.get("type")).lower() == "asing")
+        b3 = sorted((_num(x.get("bval")) for x in beli), reverse=True)[:3]
+        j3 = sorted((_num(x.get("sval")) for x in jual), reverse=True)[:3]
+        top3 = sum(b3) - sum(j3)
+        nilai = sum(_num(x.get("bval")) for x in beli) + sum(_num(x.get("sval")) for x in jual)
+        bd = (d.get("bandar_detector") or {}).get("top3") or {}
+        rows.append({"s": sym, "asing": round(asing), "top3": round(top3), "nilai": round(nilai),
+                     "status": "akumulasi" if top3 > 0.05 * max(nilai, 1) else "distribusi" if top3 < -0.05 * max(nilai, 1) else "netral",
+                     "detektor": bd.get("accdist") or None})
+        time.sleep(0.2)
+    if not rows:
+        return None
+    total = sum(x["asing"] for x in rows)
+    akum = sum(1 for x in rows if x["status"] == "akumulasi")
+    dist = sum(1 for x in rows if x["status"] == "distribusi")
+    # Riwayat net asing hari ini untuk melihat arah ±15 menit terakhir (asing makin banyak beli atau jual).
+    rw = [x for x in LIVE.get("trxRiwayat") or [] if x[0][:10] == hari]
+    rw.append((datetime.now(WIB).strftime("%Y-%m-%d %H:%M"), total))
+    LIVE["trxRiwayat"] = rw[-120:]
+    return {"tanggal": hari, "waktu": rw[-1][0], "saham": sorted(rows, key=lambda x: -abs(x["asing"])), "asing": total,
+            "akumulasi": akum, "distribusi": dist, "n": len(rows), "kunci": kunci}
+
+
+def arah_asing(net: float, tren: float) -> str:
+    """Perubahan net asing dalam kalimat: beli/jual asing bertambah atau mulai berkurang."""
+    if tren > 0:
+        return "beli asing bertambah" if net >= 0 else "jual asing mulai berkurang"
+    return "jual asing bertambah" if net < 0 else "beli asing mulai berkurang"
+
+
+def live_trx_modul(tx: dict | None) -> dict | None:
+    """Sinyal transaksi: net asing di saham penggerak (60%) + selisih saham akumulasi vs distribusi top 3 broker (40%),
+    ditambah perubahan net asing ±15 menit terakhir."""
+    if not tx:
+        return None
+    sk = 0.6 * _klip(tx["asing"] / 250e9) + 0.4 * (tx["akumulasi"] - tx["distribusi"]) / max(1, tx["n"])
+    rw = LIVE.get("trxRiwayat") or []
+    lalu = next((v for t, v in reversed(rw) if t <= (datetime.now(WIB) - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M")), None)
+    tren = None if lalu is None else tx["asing"] - lalu
+    if tren is not None:
+        sk += 0.2 * _klip(tren / 100e9)
+    sk = _klip(sk)
+    m = lambda v: f"Rp{_idn(abs(v) / 1e9, 1)} miliar"
+    teks = (f"{len(tx['saham'])} saham penggerak IHSG: asing net {'beli' if tx['asing'] >= 0 else 'jual'} {m(tx['asing'])}; "
+            f"{tx['akumulasi']} akumulasi, {tx['distribusi']} distribusi (3 broker terbesar)")
+    if tren is not None and abs(tren) >= 5e9:
+        teks += f"; 15 menit terakhir {arah_asing(tx['asing'], tren)} ({m(tren)})"
+    return {"kunci": "transaksi", "nama": "Transaksi hari ini", "arah": "naik" if sk > 0.15 else "turun" if sk < -0.15 else "mendatar",
+            "skor": round(sk, 2), "teks": teks + ".", "tren": tren}
+
+
 def live_refresh() -> None:
     h = live_harga()
     if h:
@@ -2670,6 +2750,12 @@ def live_refresh() -> None:
     if time.time() - LIVE["modulT"] > 300 or LIVE["modul"] is None:
         LIVE["modul"] = live_modul()
         LIVE["modulT"] = time.time()
+    # Transaksi broker hari ini: hanya saat jam bursa (atau sekali bila belum ada), tiap LIVE_TRX_GAP detik.
+    if (ihsg_jam_bursa() or not LIVE.get("trx")) and time.time() - LIVE.get("trxT", 0) > LIVE_TRX_GAP:
+        LIVE["trxT"] = time.time()
+        tx = live_transaksi()
+        if tx:
+            LIVE["trx"] = tx
 
 
 def live_loop() -> None:
@@ -2690,7 +2776,9 @@ def live_api() -> dict:
     if not h:
         return {"error": "Data Live IHSG sedang disiapkan (diperbarui tiap menit saat jam bursa). Coba lagi sebentar lagi."}
     tek = IH_load().get("tek")
-    modul = list(LIVE.get("modul") or []) + [live_hari_ini(h, tek)]
+    trx = LIVE.get("trx")
+    tm = live_trx_modul(trx)
+    modul = list(LIVE.get("modul") or []) + [live_hari_ini(h, tek)] + ([tm] if tm else [])
     w = sum(LIVE_BOBOT.get(x["kunci"], 0.1) for x in modul) or 1
     skor = round(sum(x["skor"] * LIVE_BOBOT.get(x["kunci"], 0.1) for x in modul) / w * 100)
     for x in modul:
@@ -2716,6 +2804,13 @@ def live_api() -> dict:
     if h.get("jamBursa") and len(vs) >= 6:
         m5 = (vs[-1] / vs[-6] - 1) * 100
         narasi.append("Beberapa menit terakhir " + ("sedang menguat." if m5 > 0.05 else "sedang melemah." if m5 < -0.05 else "bergerak datar."))
+    if tm:
+        # Kalimat transaksi untuk suara: arah dana asing dan dominasi akumulasi/distribusi di saham penggerak.
+        dom = "lebih banyak akumulasi" if trx["akumulasi"] > trx["distribusi"] else "lebih banyak distribusi" if trx["distribusi"] > trx["akumulasi"] else "seimbang"
+        kal = f"Transaksi saham besar: asing net {'beli' if trx['asing'] >= 0 else 'jual'} {_idn(abs(trx['asing']) / 1e9, 0)} miliar rupiah, {dom}"
+        if tm.get("tren") is not None and abs(tm["tren"]) >= 5e9:
+            kal += ", " + arah_asing(trx["asing"], tm["tren"])
+        narasi.append(kal + ", " + ("mendukung naik." if tm["skor"] > 0.15 else "menekan turun." if tm["skor"] < -0.15 else "belum memberi arah."))
     narasi.append(f"Kondisi saat ini: {label.lower()}.")
     if label == "Potensi rebound" and sup:
         narasi.append(f"Perhatikan pantulan di {_idn(sup[0], 0)}" + (f", target terdekat {_idn(res[0], 0)}." if res else "."))
@@ -2723,7 +2818,7 @@ def live_api() -> dict:
         narasi.append(f"Waspadai turun ke {_idn(sup[0], 0)}" + (f", lalu {_idn(sup[1], 0)}." if len(sup) > 1 else "."))
     elif label == "Potensi lanjut naik" and res:
         narasi.append(f"Ruang naik menuju {_idn(res[0], 0)}.")
-    return {**h, "skor": skor, "label": label, "nada": nada, "kondisi": kondisi, "modul": modul,
+    return {**h, "skor": skor, "label": label, "nada": nada, "kondisi": kondisi, "modul": modul, "transaksi": trx,
             "support": sup, "resistance": res, "narasi": narasi,
             "catatan": "Skor gabungan -100 sampai +100 dari bobot tiap modul. Analisa otomatis berbasis data historis dan harga berjalan, bukan rekomendasi beli/jual."}
 

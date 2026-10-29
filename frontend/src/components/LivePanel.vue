@@ -25,6 +25,7 @@ onBeforeUnmount(() => { clearTimeout(poll); synth?.cancel(); synth?.removeEventL
 
 const angka = (v, dp = 2) => v == null ? '–' : Number(v).toLocaleString('id-ID', { minimumFractionDigits: dp, maximumFractionDigits: dp })
 const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 2) + '%'
+const miliar = v => v == null ? '–' : 'Rp' + fmt(Math.abs(v) / 1e9, 1) + ' M'
 const toneOf = s => s > 0.15 ? 'c-good' : s < -0.15 ? 'c-strong' : 'muted'
 const arahIkon = a => a === 'naik' ? '▲' : a === 'turun' ? '▼' : '◆'
 const jam = t => (String(t).match(/(\d{1,2}:\d{2})/) || [])[1] || ''
@@ -145,6 +146,27 @@ watch(data, cekOtomatis)
         <p v-for="(t, i) in data.narasi" :key="i">{{ t }}</p>
       </div>
 
+      <!-- Transaksi hari ini di saham penggerak IHSG (ringkasan broker, pasar reguler), diperbarui ±4 menit saat jam bursa. -->
+      <template v-if="data.transaksi">
+        <h2>Transaksi saham penggerak IHSG</h2>
+        <p class="small muted">Asing net <b :class="data.transaksi.asing >= 0 ? 'c-good' : 'c-strong'">{{ data.transaksi.asing >= 0 ? 'beli' : 'jual' }} {{ miliar(data.transaksi.asing) }}</b>
+          · {{ data.transaksi.akumulasi }} akumulasi, {{ data.transaksi.distribusi }} distribusi · data {{ data.transaksi.waktu }} WIB</p>
+        <div class="scroll">
+          <table class="ledger trx">
+            <thead><tr><th>Saham</th><th class="num">Net asing</th><th class="num">Net 3 broker terbesar</th><th class="num">Nilai transaksi</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr v-for="x in data.transaksi.saham" :key="x.s">
+                <td><RouterLink :to="'/emiten/' + x.s"><b>{{ x.s }}</b></RouterLink></td>
+                <td class="num" :class="x.asing >= 0 ? 'c-good' : 'c-strong'">{{ x.asing >= 0 ? '+' : '−' }}{{ miliar(x.asing) }}</td>
+                <td class="num" :class="x.top3 >= 0 ? 'c-good' : 'c-strong'">{{ x.top3 >= 0 ? '+' : '−' }}{{ miliar(x.top3) }}</td>
+                <td class="num">{{ miliar(x.nilai) }}</td>
+                <td class="small" :class="x.status === 'akumulasi' ? 'c-good' : x.status === 'distribusi' ? 'c-strong' : 'muted'">{{ x.status }}<template v-if="x.detektor"> · {{ x.detektor }}</template></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
+
       <h2>Sinyal per analisa</h2>
       <div class="mods">
         <article v-for="m in data.modul" :key="m.kunci" class="mod">
@@ -162,6 +184,7 @@ watch(data, cekOtomatis)
 
 <style scoped>
 .intro{max-width:120ch;margin:6px 0 12px}
+.scroll{overflow-x:auto;margin-bottom:14px}.trx td,.trx th{white-space:nowrap}
 .top{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;align-items:stretch;margin-bottom:12px}
 .harga,.vonis,.suara{border:1px solid var(--rule);background:var(--sheet);padding:10px 14px}
 .big{font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
