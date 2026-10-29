@@ -60,6 +60,9 @@ def technical(bars: list[dict]) -> dict | None:
     low_a, low_b = min(b["l"] for b in bars[-20:]), min(b["l"] for b in bars[-40:-20])
     # Kinerja per periode & YTD (harga penutupan terakhir tahun lalu sebagai dasar YTD).
     ret = {k: round((p / c[-1 - n] - 1) * 100, 2) for k, n in PERIODE if len(c) > n and c[-1 - n]}
+    # Data harian 1 tahun Stockbit kadang < 246 bar (hari libur): 1Y memakai bar paling awal bila rentangnya ~setahun.
+    if "1Y" not in ret and len(c) >= 200 and c[0]:
+        ret["1Y"] = round((p / c[0] - 1) * 100, 2)
     tahun = str(bars[-1]["d"])[:4]
     sebelum = [b["c"] for b in bars if str(b["d"])[:4] < tahun]
     if sebelum and sebelum[-1]:
