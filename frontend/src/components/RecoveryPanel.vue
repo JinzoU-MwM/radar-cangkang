@@ -33,7 +33,18 @@ const hitung = computed(() => Object.fromEntries(STATUS.map(s => [s, (data.value
 const KAT = [['rebound', 'Kandidat rebound'], ['dasar', 'Sudah di dasar'], ['cepat', 'Recovery tercepat']]
 const kat = ref('rebound')
 const PER = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', '10Y']
-const dasar = computed(() => (data.value?.dasar || []).filter(x => lolosHsc(x.t, f.hsc)))
+// Saringan "Sudah di dasar" per periode low: pilih periode (1D..10Y) -> hanya saham yang turun pada periode itu,
+// diurutkan dari penurunan terdalam; batas = penurunan minimal pada periode terpilih.
+const fp = ref(''), batas = ref(0)
+const BATAS = [0, 10, 25, 50, 75]
+function pilihPer(p) { fp.value = fp.value === p ? '' : p; if (!fp.value) batas.value = 0 }
+const dasar = computed(() => {
+  let r = (data.value?.dasar || []).filter(x => lolosHsc(x.t, f.hsc))
+  if (!fp.value) return r
+  const p = fp.value
+  r = r.filter(x => x.ret?.[p] != null && x.ret[p] < 0 && x.ret[p] <= -batas.value)
+  return [...r].sort((a, b) => a.ret[p] - b.ret[p])
+})
 const cepat = computed(() => {
   const by = Object.fromEntries((data.value?.saham || []).map(x => [x.t, x]))
   return (data.value?.cepat || []).map(t => by[t]).filter(x => x && lolosHsc(x.t, f.hsc))
@@ -61,14 +72,22 @@ const cls = s => s === 'Siap rebound' ? 'c-good' : s === 'Mulai pulih' ? 'c-warn
     </div>
 
     <div class="ctl">
-      <div class="bln" role="group" aria-label="Bulan Seasonality">
+      <div v-if="kat !== 'dasar'" class="bln" role="group" aria-label="Bulan Seasonality">
         <button v-for="(b, i) in BLN" :key="b" type="button" class="pill sm" :aria-pressed="String(bulan === i + 1)" @click="bulan = i + 1">{{ b }}</button>
+      </div>
+      <div v-if="kat === 'dasar' && fp" class="flt" role="group" aria-label="Penurunan minimal">
+        <span class="small muted">Turun {{ fp }} minimal:</span>
+        <button v-for="b in BATAS" :key="b" type="button" class="pill sm" :aria-pressed="String(batas === b)" @click="batas = b">{{ b ? b + '%' : 'Semua' }}</button>
       </div>
       <div class="flt" role="group" aria-label="Saringan">
         <template v-if="kat === 'rebound'">
         <button v-for="s in STATUS" :key="s" type="button" class="pill sm" :aria-pressed="String(f.status === s)" @click="f.status = f.status === s ? '' : s">{{ s }} <span class="muted">{{ hitung[s] }}</span></button>
         <button type="button" class="pill sm" :aria-pressed="String(f.musim)" @click="f.musim = !f.musim">Seasonality ≥ 60%</button>
         <button type="button" class="pill sm" :aria-pressed="String(f.broker)" @click="f.broker = !f.broker">Broker akumulasi</button>
+        </template>
+        <template v-if="kat === 'dasar'">
+          <span class="small muted">Low periode:</span>
+          <button v-for="p in PER" :key="p" type="button" class="pill sm" :aria-pressed="String(fp === p)" @click="pilihPer(p)">{{ p }}</button>
         </template>
         <span class="hscg" role="group" aria-label="Saham HSC" :title="hscInfo()">
           <span class="small muted">HSC:</span>
@@ -81,13 +100,13 @@ const cls = s => s === 'Siap rebound' ? 'c-good' : s === 'Mulai pulih' ? 'c-warn
     <p v-else-if="err" class="muted">{{ err }}</p>
     <template v-else-if="data && kat === 'dasar'">
       <!-- Sudah di dasar: turun dalam dari puncak 52 minggu dan harga masih menempel titik terendah setahun. -->
-      <div class="mh"><h2>Sudah di dasar</h2><span class="small muted">{{ dasar.length }} saham turun ≥ {{ data.dasarTurun ?? 50 }}% dari puncak 52 minggu dan ≤ {{ data.dasarJarak ?? 10 }}% di atas titik terendah setahun · data {{ data.updated }}</span></div>
+      <div class="mh"><h2>Sudah di dasar</h2><span class="small muted"><template v-if="fp">{{ dasar.length }} saham turun pada periode {{ fp }}{{ batas ? ` ≥ ${batas}%` : '' }}, terdalam lebih dulu · </template>{{ fp ? '' : dasar.length + ' ' }}saham turun ≥ {{ data.dasarTurun ?? 50 }}% dari puncak 52 minggu dan ≤ {{ data.dasarJarak ?? 10 }}% di atas titik terendah setahun · data {{ data.updated }}</span></div>
       <p v-if="data.skemaLama" class="muted small">Kinerja per periode sedang dihitung ulang server; muat ulang beberapa menit lagi.</p>
       <div class="scroll">
         <table class="ledger">
           <thead><tr>
             <th>Saham</th><th class="num">Harga</th><th class="num">Turun</th><th class="num">Di atas terendah</th>
-            <th v-for="p in PER" :key="p" class="num">{{ p }}</th>
+            <th v-for="p in PER" :key="p" class="num sortable" :class="{ aktif: fp === p }" :title="`Saring & urutkan menurut low ${p}`" @click="pilihPer(p)">{{ p }}{{ fp === p ? ' ▴' : '' }}</th>
           </tr></thead>
           <tbody>
             <template v-for="x in dasar" :key="x.t">
@@ -231,4 +250,5 @@ const cls = s => s === 'Siap rebound' ? 'c-good' : s === 'Mulai pulih' ? 'c-warn
 .ret.up{color:var(--good,#1a8a4a);background:color-mix(in srgb,var(--good,#1a8a4a) 12%,transparent)}
 .ret.dn{color:var(--warn,#c77a1a);background:color-mix(in srgb,var(--warn,#c77a1a) 12%,transparent)}
 .sinyal{margin:4px 0 0;padding-left:18px}
+.sortable{cursor:pointer;user-select:none}.sortable:hover,.aktif{background:var(--accent-soft)}
 </style>
