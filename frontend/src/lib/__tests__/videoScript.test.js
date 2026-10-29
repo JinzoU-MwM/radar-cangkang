@@ -2,10 +2,15 @@ import { describe, it, expect } from 'vitest'
 import { speakable, sentences, buildVideo, lineSecs, toSrt, toScript } from '../videoScript.js'
 
 describe('speakable', () => {
-  it('angka, satuan, dan singkatan dibaca wajar', () => {
+  it('angka dibaca terbilang, satuan dan simbol diucapkan wajar', () => {
     expect(speakable('Nilai Rp2,48 T dan Rp197,6 M, porsi 58,9% → 27,6%, 15,3× kapitalisasi'))
-      .toBe('Nilai 2,48 triliun rupiah dan 197,6 miliar rupiah, porsi 58,9 persen menjadi 27,6 persen, 15,3 kali kapitalisasi')
-    expect(speakable('Kisaran Rp11–Rp49 · PMHMETD belum dinilai KJPP')).toBe('Kisaran 11 rupiah hingga 49 rupiah, rights issue belum dinilai K J P P')
+      .toBe('Nilai dua koma empat puluh delapan triliun rupiah dan seratus sembilan puluh tujuh koma enam miliar rupiah, porsi lima puluh delapan koma sembilan persen menjadi dua puluh tujuh koma enam persen, lima belas koma tiga kali kapitalisasi')
+    expect(speakable('Kisaran Rp11–Rp49 · PMHMETD belum dinilai KJPP')).toBe('Kisaran sebelas rupiah hingga empat puluh sembilan rupiah, raits isyu belum dinilai ka je pe pe')
+  })
+  it('ribuan bertitik, tanda minus, tanggal ISO, satuan, singkatan', () => {
+    expect(speakable('IHSG 5.282 (-3,35%) pada 2026-10-28')).toBe('i ha es ge lima ribu dua ratus delapan puluh dua, minus tiga koma tiga puluh lima persen, pada dua puluh delapan Oktober dua ribu dua puluh enam')
+    expect(speakable('IUP 11.640 ha, 2.600 kkal/kg')).toBe('i u pe sebelas ribu enam ratus empat puluh hektare, dua ribu enam ratus kilokalori per kilogram')
+    expect(speakable('RUPSLB dan USD100 juta')).toBe('rups el be dan seratus juta dolar Amerika')
   })
 })
 

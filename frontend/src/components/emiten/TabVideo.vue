@@ -41,7 +41,7 @@ let audio = null
 // Suara pria gratis hanya ada di Microsoft Edge ("Ardi"). Di browser lain tampil tombol buka di Edge
 // (Windows: skema microsoft-edge: membuka halaman yang sama langsung di Edge).
 const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
-const isEdge = /Edg(e|A|iOS)?\//.test(ua)
+const isEdge = /\bEdg(e|A|iOS)?\//.test(ua)
 const isWindows = /Windows/.test(ua)
 const hasMale = computed(() => voices.value.some(v => v.server || MALE.test(v.name)))
 const edgeHref = computed(() => 'microsoft-edge:' + (typeof location !== 'undefined' ? location.href : ''))
@@ -95,11 +95,14 @@ function upcoming() {
   if (!sc) return ''
   return li.value < sc.lines.length - 1 ? sc.lines[li.value + 1] : scenes.value[si.value + 1]?.lines[0] || ''
 }
+// Jeda alami: antar-kalimat singkat, antar-adegan lebih panjang (seperti narator berganti topik).
+const jeda = () => (li.value >= (scene.value?.lines.length || 1) - 1 ? 800 : 350) / rate.value
 function speakBrowser(text, my, v) {
   if (synth && v) {
     const u = new SpeechSynthesisUtterance(speakable(text))
-    u.lang = v.lang; u.voice = v; u.rate = rate.value; u.pitch = MALE.test(v.name) ? 1 : 0.7
-    u.onend = () => { if (my === token && playing.value) timer = setTimeout(next, 250) }
+    // Pitch normal: menurunkan pitch suara lain membuatnya terdengar tidak alami.
+    u.lang = v.lang; u.voice = v; u.rate = rate.value; u.pitch = 1
+    u.onend = () => { if (my === token && playing.value) timer = setTimeout(next, jeda()) }
     u.onerror = () => { if (my === token && playing.value) timer = setTimeout(next, lineSecs(text, rate.value) * 1000) }
     synth.speak(u)
   } else timer = setTimeout(() => { if (my === token) next() }, lineSecs(text, rate.value) * 1000)
@@ -113,7 +116,7 @@ function speak() {
     const a = new Audio(ttsUrl(text))
     audio = a
     a.playbackRate = rate.value
-    a.onended = () => { if (my === token && playing.value) timer = setTimeout(next, 200) }
+    a.onended = () => { if (my === token && playing.value) timer = setTimeout(next, jeda()) }
     // Server tidak tersedia (204/kuota habis/jaringan): kalimat ini dibacakan suara browser.
     a.onerror = () => { if (my === token && playing.value) speakBrowser(text, my, browserVoice.value) }
     a.play().catch(() => { if (my === token && playing.value) speakBrowser(text, my, browserVoice.value) })
