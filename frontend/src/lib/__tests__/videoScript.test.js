@@ -11,6 +11,8 @@ describe('speakable', () => {
     expect(speakable('IHSG 5.282 (-3,35%) pada 2026-10-28')).toBe('i ha es ge lima ribu dua ratus delapan puluh dua, minus tiga koma tiga puluh lima persen, pada dua puluh delapan Oktober dua ribu dua puluh enam')
     expect(speakable('IUP 11.640 ha, 2.600 kkal/kg')).toBe('i u pe sebelas ribu enam ratus empat puluh hektare, dua ribu enam ratus kilokalori per kilogram')
     expect(speakable('RUPSLB dan USD100 juta')).toBe('rups el be dan seratus juta dolar Amerika')
+    expect(speakable('Lim Shrimp Org Pte. Ltd. di Kec. Utan, Kab. Sumbawa dll.')).toBe('Lim Shrimp Organization pi ti i limited di kecamatan Utan, kabupaten Sumbawa dan lain-lain')
+    expect(speakable('Laba USD1,2 Bn')).toBe('Laba satu koma dua miliar dolar Amerika')
   })
 })
 
