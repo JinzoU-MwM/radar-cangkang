@@ -10,6 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 import BrokerPola from '../components/BrokerPola.vue'
 import RecoveryPanel from '../components/RecoveryPanel.vue'
 import LivePanel from '../components/LivePanel.vue'
+import LowPanel from '../components/LowPanel.vue'
 import TimeSeriesPanel from '../components/TimeSeriesPanel.vue'
 import AstronacciPanel from '../components/AstronacciPanel.vue'
 import SahamRingkas from '../components/SahamRingkas.vue'
@@ -20,7 +21,7 @@ import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
 const route = useRoute(), router = useRouter()
 // Tab halaman (urutan tampil): 'astro' (Astronacci), 'ts' (Time Series), 'season', 'broker' (Pola Broker), 'recovery', 'live',
 // tersimpan di URL (?tab=...); tanpa ?tab = Seasonality.
-const TABS = ['astro', 'ts', 'broker', 'recovery', 'live']
+const TABS = ['astro', 'ts', 'broker', 'recovery', 'low', 'live']
 const tab = computed({ get: () => TABS.includes(route.query.tab) ? route.query.tab : 'season', set: v => router.replace({ query: { ...route.query, tab: TABS.includes(v) ? v : undefined } }) })
 const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 // Default bulan depan (Desember -> Januari).
@@ -94,6 +95,7 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
         <button type="button" role="tab" class="tab" :aria-selected="tab === 'season'" @click="tab = 'season'">Seasonality</button>
         <button type="button" role="tab" class="tab" :aria-selected="tab === 'broker'" @click="tab = 'broker'">Pola Broker</button>
         <button type="button" role="tab" class="tab" :aria-selected="tab === 'recovery'" @click="tab = 'recovery'">Recovery</button>
+        <button type="button" role="tab" class="tab" :aria-selected="tab === 'low'" @click="tab = 'low'">Low</button>
         <button type="button" role="tab" class="tab" :aria-selected="tab === 'live'" @click="tab = 'live'"><span class="dotlive" aria-hidden="true"></span>Live</button>
       </div>
     </header>
@@ -101,6 +103,7 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
     <TimeSeriesPanel v-else-if="tab === 'ts'" />
     <BrokerPola v-else-if="tab === 'broker'" />
     <RecoveryPanel v-else-if="tab === 'recovery'" />
+    <LowPanel v-else-if="tab === 'low'" />
     <LivePanel v-else-if="tab === 'live'" />
     <template v-else>
     <header>

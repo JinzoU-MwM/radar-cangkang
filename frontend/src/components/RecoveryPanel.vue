@@ -29,27 +29,14 @@ const rows = computed(() => (data.value?.saham || []).filter(x =>
 const unggulan = computed(() => rows.value.filter(x => x.status !== 'Pantau').slice(0, 4))
 const hitung = computed(() => Object.fromEntries(STATUS.map(s => [s, (data.value?.saham || []).filter(x => lolosHsc(x.t, f.hsc) && x.status === s).length])))
 
-// Kategori: kandidat rebound (daftar utama), sudah di dasar (dekat titik terendah setahun), recovery tercepat (momentum pulih).
-const KAT = [['rebound', 'Kandidat rebound'], ['dasar', 'Sudah di dasar'], ['cepat', 'Recovery tercepat']]
+// Kategori: kandidat rebound (daftar utama) dan recovery tercepat (momentum pulih). Saham di dasar/low ada di tab Low.
+const KAT = [['rebound', 'Kandidat rebound'], ['cepat', 'Recovery tercepat']]
 const kat = ref('rebound')
-const PER = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', '10Y']
-// Saringan "Sudah di dasar" per periode low: pilih periode (1D..10Y) -> hanya saham yang turun pada periode itu,
-// diurutkan dari penurunan terdalam; batas = penurunan minimal pada periode terpilih.
-const fp = ref(''), batas = ref(0)
-const BATAS = [0, 10, 25, 50, 75]
-function pilihPer(p) { fp.value = fp.value === p ? '' : p; if (!fp.value) batas.value = 0 }
-const dasar = computed(() => {
-  let r = (data.value?.dasar || []).filter(x => lolosHsc(x.t, f.hsc))
-  if (!fp.value) return r
-  const p = fp.value
-  r = r.filter(x => x.ret?.[p] != null && x.ret[p] < 0 && x.ret[p] <= -batas.value)
-  return [...r].sort((a, b) => a.ret[p] - b.ret[p])
-})
 const cepat = computed(() => {
   const by = Object.fromEntries((data.value?.saham || []).map(x => [x.t, x]))
   return (data.value?.cepat || []).map(t => by[t]).filter(x => x && lolosHsc(x.t, f.hsc))
 })
-const hitungKat = computed(() => ({ rebound: rows.value.length, dasar: dasar.value.length, cepat: cepat.value.length }))
+const hitungKat = computed(() => ({ rebound: rows.value.length, cepat: cepat.value.length }))
 const hari = n => n == null ? '–' : n <= 5 ? `±${n} hari` : n <= 22 ? `±${Math.round(n / 5)} minggu` : `±${Math.round(n / 21)} bulan`
 
 const buka = ref('')
@@ -72,22 +59,14 @@ const cls = s => s === 'Siap rebound' ? 'c-good' : s === 'Mulai pulih' ? 'c-warn
     </div>
 
     <div class="ctl">
-      <div v-if="kat !== 'dasar'" class="bln" role="group" aria-label="Bulan Seasonality">
+      <div class="bln" role="group" aria-label="Bulan Seasonality">
         <button v-for="(b, i) in BLN" :key="b" type="button" class="pill sm" :aria-pressed="String(bulan === i + 1)" @click="bulan = i + 1">{{ b }}</button>
-      </div>
-      <div v-if="kat === 'dasar' && fp" class="flt" role="group" aria-label="Penurunan minimal">
-        <span class="small muted">Turun {{ fp }} minimal:</span>
-        <button v-for="b in BATAS" :key="b" type="button" class="pill sm" :aria-pressed="String(batas === b)" @click="batas = b">{{ b ? b + '%' : 'Semua' }}</button>
       </div>
       <div class="flt" role="group" aria-label="Saringan">
         <template v-if="kat === 'rebound'">
         <button v-for="s in STATUS" :key="s" type="button" class="pill sm" :aria-pressed="String(f.status === s)" @click="f.status = f.status === s ? '' : s">{{ s }} <span class="muted">{{ hitung[s] }}</span></button>
         <button type="button" class="pill sm" :aria-pressed="String(f.musim)" @click="f.musim = !f.musim">Seasonality ≥ 60%</button>
         <button type="button" class="pill sm" :aria-pressed="String(f.broker)" @click="f.broker = !f.broker">Broker akumulasi</button>
-        </template>
-        <template v-if="kat === 'dasar'">
-          <span class="small muted">Low periode:</span>
-          <button v-for="p in PER" :key="p" type="button" class="pill sm" :aria-pressed="String(fp === p)" @click="pilihPer(p)">{{ p }}</button>
         </template>
         <span class="hscg" role="group" aria-label="Saham HSC" :title="hscInfo()">
           <span class="small muted">HSC:</span>
@@ -98,36 +77,6 @@ const cls = s => s === 'Siap rebound' ? 'c-good' : s === 'Mulai pulih' ? 'c-warn
 
     <p v-if="loading" class="muted">Memuat data Recovery…</p>
     <p v-else-if="err" class="muted">{{ err }}</p>
-    <template v-else-if="data && kat === 'dasar'">
-      <!-- Sudah di dasar: turun dalam dari puncak 52 minggu dan harga masih menempel titik terendah setahun. -->
-      <div class="mh"><h2>Sudah di dasar</h2><span class="small muted"><template v-if="fp">{{ dasar.length }} saham turun pada periode {{ fp }}{{ batas ? ` ≥ ${batas}%` : '' }}, terdalam lebih dulu · </template>{{ fp ? '' : dasar.length + ' ' }}saham turun ≥ {{ data.dasarTurun ?? 50 }}% dari puncak 52 minggu dan ≤ {{ data.dasarJarak ?? 10 }}% di atas titik terendah setahun · data {{ data.updated }}</span></div>
-      <p v-if="data.skemaLama" class="muted small">Kinerja per periode sedang dihitung ulang server; muat ulang beberapa menit lagi.</p>
-      <div class="scroll">
-        <table class="ledger">
-          <thead><tr>
-            <th>Saham</th><th class="num">Harga</th><th class="num">Turun</th><th class="num">Di atas terendah</th>
-            <th v-for="p in PER" :key="p" class="num sortable" :class="{ aktif: fp === p }" :title="`Saring & urutkan menurut low ${p}`" @click="pilihPer(p)">{{ p }}{{ fp === p ? ' ▴' : '' }}</th>
-          </tr></thead>
-          <tbody>
-            <template v-for="x in dasar" :key="x.t">
-              <tr class="row" :class="{ open: buka === x.t }" tabindex="0" @click="buka = buka === x.t ? '' : x.t" @keydown.enter="buka = buka === x.t ? '' : x.t">
-                <td><span class="car">{{ buka === x.t ? '▾' : '▸' }}</span> <b>{{ x.t }}</b>
-                  <span v-if="isHsc(x.t)" class="tag t-warn" title="Saham HSC: dikeluarkan dari perhitungan IHSG">HSC</span>
-                  <div v-if="x.nama" class="small muted nm">{{ x.nama }}</div></td>
-                <td class="num">{{ rp(x.tek.harga) }}</td>
-                <td class="num c-strong">−{{ fmt(x.tek.turun, 0) }}%</td>
-                <td class="num">{{ pct(x.tek.dariRendah) }}</td>
-                <td v-for="p in PER" :key="p" class="num"><span v-if="x.ret?.[p] != null" class="ret" :class="x.ret[p] >= 0 ? 'up' : 'dn'">{{ pct(x.ret[p]) }}</span><span v-else class="muted">–</span></td>
-              </tr>
-              <tr v-if="buka === x.t" class="det"><td :colspan="4 + PER.length"><SahamRingkas :kode="x.t" :bulan="bulan" /></td></tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
-      <p class="small muted">Kinerja 1D–1Y dihitung dari harga penutupan harian; 3Y/5Y/10Y dari riwayat harga Stockbit bila tersedia (kosong bila
-        riwayat tidak mencakup periode itu). Harga di dasar belum tentu berbalik — konfirmasi pemulihan ada di kategori <b>Recovery tercepat</b>.</p>
-    </template>
-
     <template v-else-if="data && kat === 'cepat'">
       <!-- Recovery tercepat: momentum pulih terkuat dan perkiraan hari bursa menuju target pertama bila laju 10 hari bertahan. -->
       <div class="mh"><h2>Recovery tercepat</h2><span class="small muted">{{ cepat.length }} kandidat dengan sinyal pulih ≥ 50/100, diurutkan menurut perkiraan waktu ke target pertama · data {{ data.updated }}</span></div>
@@ -250,5 +199,4 @@ const cls = s => s === 'Siap rebound' ? 'c-good' : s === 'Mulai pulih' ? 'c-warn
 .ret.up{color:var(--good,#1a8a4a);background:color-mix(in srgb,var(--good,#1a8a4a) 12%,transparent)}
 .ret.dn{color:var(--warn,#c77a1a);background:color-mix(in srgb,var(--warn,#c77a1a) 12%,transparent)}
 .sinyal{margin:4px 0 0;padding-left:18px}
-.sortable{cursor:pointer;user-select:none}.sortable:hover,.aktif{background:var(--accent-soft)}
 </style>
