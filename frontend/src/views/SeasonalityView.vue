@@ -9,6 +9,7 @@ import { fmt } from '../lib/domain.js'
 import { useRoute, useRouter } from 'vue-router'
 import BrokerPola from '../components/BrokerPola.vue'
 import RecoveryPanel from '../components/RecoveryPanel.vue'
+import LivePanel from '../components/LivePanel.vue'
 import TimeSeriesPanel from '../components/TimeSeriesPanel.vue'
 import AstronacciPanel from '../components/AstronacciPanel.vue'
 import SahamRingkas from '../components/SahamRingkas.vue'
@@ -17,9 +18,9 @@ import RingPct from '../components/RingPct.vue'
 import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
 
 const route = useRoute(), router = useRouter()
-// Tab halaman (urutan tampil): 'astro' (Astronacci), 'ts' (Time Series), 'season', 'broker' (Pola Broker), 'recovery',
+// Tab halaman (urutan tampil): 'astro' (Astronacci), 'ts' (Time Series), 'season', 'broker' (Pola Broker), 'recovery', 'live',
 // tersimpan di URL (?tab=...); tanpa ?tab = Seasonality.
-const TABS = ['astro', 'ts', 'broker', 'recovery']
+const TABS = ['astro', 'ts', 'broker', 'recovery', 'live']
 const tab = computed({ get: () => TABS.includes(route.query.tab) ? route.query.tab : 'season', set: v => router.replace({ query: { ...route.query, tab: TABS.includes(v) ? v : undefined } }) })
 const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 // Default bulan depan (Desember -> Januari).
@@ -93,12 +94,14 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
         <button type="button" role="tab" class="tab" :aria-selected="tab === 'season'" @click="tab = 'season'">Seasonality</button>
         <button type="button" role="tab" class="tab" :aria-selected="tab === 'broker'" @click="tab = 'broker'">Pola Broker</button>
         <button type="button" role="tab" class="tab" :aria-selected="tab === 'recovery'" @click="tab = 'recovery'">Recovery</button>
+        <button type="button" role="tab" class="tab" :aria-selected="tab === 'live'" @click="tab = 'live'"><span class="dotlive" aria-hidden="true"></span>Live</button>
       </div>
     </header>
     <AstronacciPanel v-if="tab === 'astro'" />
     <TimeSeriesPanel v-else-if="tab === 'ts'" />
     <BrokerPola v-else-if="tab === 'broker'" />
     <RecoveryPanel v-else-if="tab === 'recovery'" />
+    <LivePanel v-else-if="tab === 'live'" />
     <template v-else>
     <header>
       <div class="ctl">
@@ -345,4 +348,6 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
 @media (max-width:800px){.xg{grid-template-columns:1fr}}
 @media (max-width:700px){.months{grid-template-columns:repeat(6,1fr)}.sr{grid-template-columns:1fr 1fr 44px}.sr .small{display:none}}
 button.card{text-align:left;font:inherit;color:inherit;cursor:pointer}.card.on{outline:2px solid var(--now-ink)}.kp{border:1px solid var(--rule);background:var(--sheet);padding:6px 12px;margin-top:10px}
+.dotlive{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--good);margin-right:6px;vertical-align:middle;animation:kedip 1.6s infinite}
+@keyframes kedip{50%{opacity:.25}}
 </style>
