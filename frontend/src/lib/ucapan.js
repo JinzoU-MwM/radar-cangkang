@@ -60,6 +60,18 @@ const INGGRIS = [
   // Singkatan huruf kecil yang tetap dieja.
   [/\biup\b/g, 'i u pe'], [/\biujp\b/g, 'i u je pe'], [/\brkab\b/g, 'er ka a be'], [/\bkjpp\b/g, 'ka je pe pe'],
 ]
+// Singkatan umum yang salah dibaca mesin suara (mis. "Org" terbaca "orang", "Kab." terbaca "kab").
+const SINGKAT = [
+  [/\bOrg\b\.?/g, 'Organization'], [/\bCorp\b\.?/g, 'Corporation'], [/\bInc\b\.?/g, 'Incorporated'], [/\bCo\.(?=\s|$|,)/g, 'Company'],
+  [/\bSdn\.?\s*Bhd\.?/g, 'Sendirian Berhad'], [/\bBhd\b\.?/g, 'Berhad'], [/\bLLC\b/g, 'el el si'], [/\bGrp\b\.?/g, 'Group'], [/\bInt'?l\b\.?/g, 'International'],
+  [/\bJl\.\s*/g, 'jalan '], [/\bKab\.\s*/g, 'kabupaten '], [/\bKec\.\s*/g, 'kecamatan '], [/\bKel\.\s*/g, 'kelurahan '], [/\bProv\.\s*/g, 'provinsi '],
+  [/\bDs\.\s*/g, 'desa '], [/\bKota\s+Adm\.\s*/g, 'kota administrasi '], [/\bNo\.\s*(?=\d)/g, 'nomor '],
+  [/\bdll\b\.?/g, 'dan lain-lain'], [/\bdsb\b\.?/g, 'dan sebagainya'], [/\bdkk\b\.?/g, 'dan kawan-kawan'], [/\btsb\b\.?/g, 'tersebut'],
+  [/\byg\b/g, 'yang'], [/\bdg\b/g, 'dengan'], [/\bdgn\b/g, 'dengan'], [/\bmis\.\s*/g, 'misalnya '], [/\bmaks\.\s*/g, 'maksimal '], [/\bmin\.\s*/g, 'minimal '],
+  [/\bvs\.?(?=\s)/gi, 'versus'], [/\ba\.n\.\s*/g, 'atas nama '], [/\ba\.l\.\s*/g, 'antara lain '], [/\bu\.p\.\s*/g, 'untuk perhatian '],
+  [/(\d)\s*Bn\b/g, '$1 miliar'], [/(\d)\s*bn\b/g, '$1 miliar'], [/(\d)\s*mn\b/g, '$1 juta'], [/(\d)\s*Mn\b/g, '$1 juta'],
+  [/\bDr\.\s*/g, 'doktor '], [/\bIr\.\s*/g, 'insinyur '], [/\bProf\.\s*/g, 'profesor '],
+]
 const SATUAN_UKUR = [
   [/(\d)\s*kkal\/kg\b/gi, '$1 kilokalori per kilogram'], [/(\d)\s*juta\s*MT\b/g, '$1 juta metrik ton'], [/(\d)\s*MT\b/g, '$1 metrik ton'],
   [/(\d)\s*MMSCFD\b/g, '$1 juta kaki kubik per hari'], [/(\d)\s*MVA\b/g, '$1 mega volt ampere'], [/(\d)\s*MW\b/g, '$1 megawatt'], [/(\d)\s*GW\b/g, '$1 gigawatt'],
@@ -80,6 +92,8 @@ const UANG = [
 
 export function speakable(text) {
   let s = String(text || '')
+  // Pengali bahasa Inggris (Bn/mn) dijadikan kata lebih dulu agar pola uang membacanya ("USD1,2 Bn" → "1,2 miliar dolar Amerika").
+  s = s.replace(/(\d)\s*[Bb]n\b/g, '$1 miliar').replace(/(\d)\s*[Mm]n\b/g, '$1 juta')
   // Tanggal ISO dan penanda kuartal/semester.
   s = s.replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, (_, y, m, d) => `${+d} ${BULAN[+m - 1] || m} ${y}`)
   s = s.replace(/\bQ([1-4])\b/g, (_, q) => `kuartal ${['satu', 'dua', 'tiga', 'empat'][q - 1]}`).replace(/\b([1-2])H\b/g, (_, h) => `semester ${h === '1' ? 'satu' : 'dua'}`)
@@ -105,6 +119,7 @@ export function speakable(text) {
     .replace(/\s*[·|•]\s*/g, ', ').replace(/\s*\(\s*/g, ', ').replace(/\s*\)\s*/g, ', ').replace(/\s*;\s*/g, ', ')
     .replace(/([A-Za-z])\/([A-Za-z])/g, '$1 atau $2').replace(/\s*\/\s*/g, ' per ').replace(/["“”]/g, '')
   s = s.replace(/\bTbk\.?/g, 'te be ka').replace(/\bPte\.?\s*Ltd\.?/g, 'pi ti i limited').replace(/\bLtd\.?/g, 'limited').replace(/\bPT\b\.?/g, 'pe te')
+  for (const [rx, r] of SINGKAT) s = s.replace(rx, r)
   for (const [rx, r] of INGGRIS) s = s.replace(rx, r)
   s = s.replace(/\b([A-Z]{1,5})(\d{1,3})\b/g, (_, h, n) => `${KATA[h] || eja(h)} ${n}`)
   // Singkatan/kata huruf kapital (2–12 huruf, mis. PMTHMETD, UNDERWEIGHT): kata lazim atau dieja per huruf Indonesia.
