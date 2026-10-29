@@ -288,6 +288,9 @@ def cache_ttl(url: str) -> int:
 
 # Statistik pemakaian Stockbit (1 jam terakhir) untuk /api/status.
 FRESH_MIN_AGE = 5 * 60  # fresh=1 tidak memanggil ulang salinan yang umurnya < 5 menit
+# Pengecualian tab Live: grafik IHSG intraday boleh diambil ulang bila salinan > 15 detik (hanya oleh live_loop).
+LIVE_URL = re.compile(r"/charts/IHSG/daily\?timeframe=(today|1d)$")
+LIVE_FRESH_AGE = 15
 FAIL_BACKOFF = 5 * 60   # jeda setelah panggilan gagal sebelum mencoba Stockbit lagi
 _fail_until: dict[str, int] = {}
 _stats_lock = threading.Lock()
@@ -533,7 +536,8 @@ def cached_text(url: str, fetch, fresh: bool = False) -> str:
         return hit
     # fresh=1 (tombol "Perbarui") tetap memakai salinan yang baru diambil < 5 menit lalu,
     # supaya klik berulang atau beberapa perangkat sekaligus tidak memanggil Stockbit lagi.
-    hit = cache_read(url, now - (FRESH_MIN_AGE if fresh else cache_ttl(url)))
+    umur = (LIVE_FRESH_AGE if LIVE_URL.search(url) else FRESH_MIN_AGE) if fresh else cache_ttl(url)
+    hit = cache_read(url, now - umur)
     if hit is None and _fail_until.get(url, 0) > now:
         # Baru saja gagal (mis. token kedaluwarsa): jangan ulangi selama jeda, pakai salinan lama.
         hit = cache_read(url, 0)
@@ -2677,8 +2681,8 @@ def live_loop() -> None:
                     live_refresh()
         except Exception as e:
             print(f"[live] gagal: {e}", file=sys.stderr)
-        # Jam bursa tiap 1 menit; di luar jam bursa tiap 30 menit (harga penutupan sudah final).
-        time.sleep(60 if ihsg_jam_bursa() else 1800)
+        # Jam bursa tiap 20 detik (mendekati realtime); di luar jam bursa tiap 30 menit (harga penutupan sudah final).
+        time.sleep(20 if ihsg_jam_bursa() else 1800)
 
 
 def live_api() -> dict:

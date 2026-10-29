@@ -15,10 +15,10 @@ async function load() {
     if (r.error) { err.value = r.error } else { data.value = r; err.value = '' }
   } catch (e) { err.value = e.message || String(e) } finally { loading.value = false }
 }
-// Muat ulang tiap 20 detik saat jam bursa (server memperbarui tiap menit), 5 menit di luar jam bursa; jeda saat tab tersembunyi.
+// Muat ulang tiap 10 detik saat jam bursa (server memperbarui tiap 20 detik), 5 menit di luar jam bursa; jeda saat tab tersembunyi.
 function jadwal() {
   clearTimeout(poll)
-  poll = setTimeout(async () => { if (!document.hidden) await load(); jadwal() }, data.value?.jamBursa === false ? 300000 : 20000)
+  poll = setTimeout(async () => { if (!document.hidden) await load(); jadwal() }, data.value?.jamBursa === false ? 300000 : 10000)
 }
 onMounted(async () => { await load(); jadwal(); loadVoices(); synth?.addEventListener?.('voiceschanged', loadVoices) })
 onBeforeUnmount(() => { clearTimeout(poll); synth?.cancel(); synth?.removeEventListener?.('voiceschanged', loadVoices) })
@@ -94,7 +94,7 @@ watch(data, cekOtomatis)
 
 <template>
   <section class="lv">
-    <p class="small muted intro">Grafik IHSG berjalan (diperbarui otomatis tiap menit saat jam bursa) dan kesimpulan gabungan dari
+    <p class="small muted intro">Grafik IHSG berjalan (diperbarui otomatis tiap 20 detik saat jam bursa) dan kesimpulan gabungan dari
       <b>Astronacci</b>, <b>Time Series</b>, <b>Seasonality</b>, <b>Pola Broker</b>, <b>Recovery</b>, serta pergerakan hari ini —
       lengkap dengan suara kondisi IHSG. Aktifkan <b>Suara tiap menit</b> untuk mendengar kondisi terbaru setiap menit.</p>
 
