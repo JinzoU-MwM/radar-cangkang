@@ -2830,14 +2830,12 @@ def live_api() -> dict:
     if h.get("jamBursa") and len(vs) >= 6:
         m5 = (vs[-1] / vs[-6] - 1) * 100
         narasi.append("Beberapa menit terakhir " + ("sedang menguat." if m5 > 0.05 else "sedang melemah." if m5 < -0.05 else "bergerak datar."))
+    # Arah transaksi real time (net asing, antrean bid/offer, arah saham penggerak): cukup potensi naik/turun.
+    arah_trx = None
     if tm:
-        # Kalimat transaksi untuk suara: arah dana asing dan dominasi akumulasi/distribusi di saham penggerak.
-        tk = trx.get("tekanan")
-        dom = "antrean beli lebih tebal" if tk is not None and tk >= 55 else "antrean jual lebih tebal" if tk is not None and tk <= 45 else "antrean seimbang"
-        kal = f"Transaksi: asing net {'beli' if tm['net'] >= 0 else 'jual'} {_rupiah(tm['net'])}, {dom}"
-        if tm.get("tren") is not None and abs(tm["tren"]) >= 5e9:
-            kal += ", " + arah_asing(tm["net"], tm["tren"])
-        narasi.append(kal + ", " + ("mendukung naik." if tm["skor"] > 0.15 else "menekan turun." if tm["skor"] < -0.15 else "belum memberi arah."))
+        arah_trx = {"label": "Potensi naik" if tm["skor"] > 0.15 else "Potensi turun" if tm["skor"] < -0.15 else "Belum ada arah",
+                    "nada": "good" if tm["skor"] > 0.15 else "bad" if tm["skor"] < -0.15 else "warn", "waktu": trx.get("waktu")}
+        narasi.append(f"Arah transaksi real time: {arah_trx['label'].lower()}.")
     narasi.append(f"Kondisi saat ini: {label.lower()}.")
     if label == "Potensi rebound" and sup:
         narasi.append(f"Perhatikan pantulan di {_idn(sup[0], 0)}" + (f", target terdekat {_idn(res[0], 0)}." if res else "."))
@@ -2845,7 +2843,7 @@ def live_api() -> dict:
         narasi.append(f"Waspadai turun ke {_idn(sup[0], 0)}" + (f", lalu {_idn(sup[1], 0)}." if len(sup) > 1 else "."))
     elif label == "Potensi lanjut naik" and res:
         narasi.append(f"Ruang naik menuju {_idn(res[0], 0)}.")
-    return {**h, "skor": skor, "label": label, "nada": nada, "kondisi": kondisi, "modul": modul, "transaksi": trx, 
+    return {**h, "skor": skor, "label": label, "nada": nada, "kondisi": kondisi, "modul": modul, "transaksi": trx, "arahTransaksi": arah_trx, 
             "support": sup, "resistance": res, "narasi": narasi,
             "catatan": "Skor gabungan -100 sampai +100 dari bobot tiap modul. Analisa otomatis berbasis data historis dan harga berjalan, bukan rekomendasi beli/jual."}
 
