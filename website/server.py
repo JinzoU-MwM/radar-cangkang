@@ -2497,6 +2497,233 @@ def ihsg_loop() -> None:
         time.sleep(1800 if ihsg_jam_bursa() else 2 * 3600)
 
 
+# ------------------------------------------------------------------ Live ----
+# Tab Live (Seasonality): harga IHSG intraday (diperbarui tiap menit saat jam bursa oleh live_loop, di luar
+# permintaan pengunjung) + gabungan sinyal Astronacci, Time Series, Seasonality, Pola Broker, Recovery, dan
+# pergerakan hari ini menjadi satu kesimpulan: potensi rebound, potensi turun lagi, lanjut naik, atau netral.
+WIB = timezone(timedelta(hours=7))
+LIVE: dict = {"harga": None, "modul": None, "modulT": 0.0, "harianT": 0.0, "harian": []}
+LIVE_LOCK = threading.Lock()
+LIVE_TF = ("today", "1d")          # timeframe intraday Stockbit yang dicoba berurutan
+LIVE_BOBOT = {"astro": 0.15, "ts": 0.2, "season": 0.2, "broker": 0.15, "recovery": 0.15, "hariini": 0.15}
+BULAN_ID = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+
+
+def _idn(v: float, dp: int = 2) -> str:
+    """Angka format Indonesia: 7123.4 -> '7.123,40'."""
+    return f"{v:,.{dp}f}".replace(",", "#").replace(".", ",").replace("#", ".")
+
+
+def _klip(x: float) -> float:
+    return max(-1.0, min(1.0, x))
+
+
+def live_intraday() -> tuple[str | None, list[dict], dict]:
+    """Titik harga sesi terakhir dari grafik intraday Stockbit. Hanya titik bertanggal sama dengan titik terakhir
+    yang dipakai; deret harian (satu titik per hari) ditolak agar tidak dikira intraday."""
+    for tf in LIVE_TF:
+        try:
+            res = sb_fetch(f"/charts/IHSG/daily?timeframe={tf}", True)
+        except Exception as e:
+            print(f"[live] intraday {tf} gagal: {e}", file=sys.stderr)
+            continue
+        d = res.get("data") or {}
+        pts = []
+        for x in d.get("prices") or []:
+            t, v = x.get("formatted_date") or x.get("date"), x.get("value") or x.get("close")
+            try:
+                if t and v:
+                    pts.append({"t": str(t), "v": float(v)})
+            except (TypeError, ValueError):
+                continue
+        if len(pts) < 2:
+            continue
+        hari = pts[-1]["t"][:10]
+        sesi = [p for p in pts if p["t"][:10] == hari]
+        if len(sesi) >= 2:
+            meta = {k: v for k, v in d.items() if isinstance(v, (int, float, str)) and not isinstance(v, bool)}
+            return tf, sesi, meta
+    return None, [], {}
+
+
+def live_harga() -> dict:
+    """Harga terkini IHSG: intraday bila tersedia, cadangan candle harian terbaru (bar hari ini ikut bergerak)."""
+    now = time.time()
+    if now - LIVE["harianT"] > 600 or not LIVE["harian"]:
+        try:
+            LIVE["harian"] = get_ohlc("IHSG", "1y", True)
+            LIVE["harianT"] = now
+        except Exception as e:
+            print(f"[live] harian gagal: {e}", file=sys.stderr)
+    bars = LIVE["harian"] or ihsg_bars()
+    tf, sesi, meta = live_intraday()
+    today = datetime.now(WIB).strftime("%Y-%m-%d")
+    tgl_sesi = sesi[-1]["t"][:10] if sesi and sesi[-1]["t"][:4].isdigit() else today
+    prev = next((float(v) for k, v in meta.items() if re.search(r"prev", k, re.I) and re.match(r"^[\d.]+$", str(v))), None)
+    if prev is None and bars:
+        lalu = [b for b in bars if str(b["d"])[:10] < tgl_sesi]
+        prev = lalu[-1]["c"] if lalu else None
+    if sesi:
+        harga, sumber = sesi[-1]["v"], f"intraday ({tf})"
+    else:
+        harga, sumber = (bars[-1]["c"] if bars else None), "candle harian"
+        tgl_sesi = str(bars[-1]["d"])[:10] if bars else today
+        if bars and len(bars) > 1:
+            prev = bars[-2]["c"]
+    if harga is None:
+        return {}
+    vs = [p["v"] for p in sesi] or [harga]
+    return {"harga": harga, "prev": prev, "ubah": round(harga - prev, 2) if prev else None,
+            "ubahPct": round((harga / prev - 1) * 100, 2) if prev else None, "tinggi": max(vs), "rendah": min(vs),
+            "titik": sesi, "tanggal": tgl_sesi, "sumber": sumber, "jamBursa": ihsg_jam_bursa(),
+            "waktu": datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S")}
+
+
+def live_modul() -> list[dict]:
+    """Sinyal per modul (skor -1..1) dari data harian yang sudah dihitung halaman lain."""
+    out, m = [], datetime.now(WIB).month
+    try:
+        a = astro_api()
+        if not a.get("error"):
+            pr, rk = a["proyeksi"], a.get("rekomendasi") or {}
+            out.append({"kunci": "astro", "nama": "Astronacci", "arah": pr["bias"], "skor": {"naik": 0.8, "turun": -0.8}.get(pr["bias"], 0.0),
+                        "teks": f"Bias {pr['bias']} ({pr['ubah']:+.1f}%) menuju {_idn(pr['target'], 0)}" +
+                                (f" sampai {pr['sampai'][8:]}/{pr['sampai'][5:7]}" if pr.get("sampai") else "") + (f"; {rk['tindakan'].lower()}." if rk.get("tindakan") else ".")})
+    except Exception as e:
+        print(f"[live] astro gagal: {e}", file=sys.stderr)
+    try:
+        ts = runtun_api()
+        if not ts.get("error"):
+            p1 = next((x for x in ts["proyeksi"] if x["h"] == 1), None)
+            p5 = next((x for x in ts["proyeksi"] if x["h"] == 5), None)
+            if p5:
+                arah = "naik" if p5["ubah"] > 0.3 else "turun" if p5["ubah"] < -0.3 else "mendatar"
+                out.append({"kunci": "ts", "nama": "Time Series", "arah": arah, "skor": round(_klip(p5["ubah"] / 1.5), 2),
+                            "teks": f"Gabungan model: esok {p1['ubah']:+.2f}%, 1 minggu {p5['ubah']:+.2f}% ke {_idn(p5['sentimen'], 0)}; "
+                                    f"{p5['setuju']}% model memproyeksikan naik."})
+    except Exception as e:
+        print(f"[live] time series gagal: {e}", file=sys.stderr)
+    ih = {}
+    try:
+        ih = ihsg_api(m)
+        if not ih.get("error"):
+            esok = next((h for h in (ih.get("proyeksi") or {}).get("horizon") or [] if h["kunci"] == "esok"), None)
+            mu = ih.get("musiman") or {}
+            pe = esok["prob"] if esok else 50
+            out.append({"kunci": "season", "nama": "Seasonality", "arah": "naik" if pe >= 55 else "turun" if pe <= 45 else "mendatar",
+                        "skor": round(_klip((pe - 50) / 20), 2),
+                        "teks": f"Peluang naik esok {pe}%" + (f"; {BULAN_ID[m - 1]} naik {mu['up']} dari {mu['n']} tahun (median {mu['median']:+.2f}%)" if mu.get("n") else "") + "."})
+    except Exception as e:
+        print(f"[live] seasonality gagal: {e}", file=sys.stderr)
+    fl = (ih or {}).get("flow")
+    if fl:
+        net = fl.get("asing") or 0
+        out.append({"kunci": "broker", "nama": "Pola Broker", "arah": "naik" if net > 0 else "turun" if net < 0 else "mendatar",
+                    "skor": round(_klip(net / 2e12), 2) if net else 0.0,
+                    "teks": f"Asing net {'beli' if net > 0 else 'jual'} Rp{_idn(abs(net) / 1e12, 2)} triliun ({fl.get('bulanNama')}); "
+                            f"domestik net {'beli' if (fl.get('domestik') or 0) > 0 else 'jual'} Rp{_idn(abs(fl.get('domestik') or 0) / 1e12, 2)} triliun."})
+    try:
+        tek = (RC.load(RECOVERY_PATH).get("tek") or {}).values()
+        tek = [x for x in tek if x.get("ema20")]
+        if tek:
+            luas = sum(1 for x in tek if x.get("diAtasEma20")) / len(tek) * 100
+            pulih = sum(1 for x in tek if x["turun"] >= RC.MIN_TURUN and x.get("diAtasEma20") and x.get("higherLow"))
+            dasar = sum(1 for x in tek if RC.dasar(x))
+            out.append({"kunci": "recovery", "nama": "Recovery", "arah": "naik" if luas >= 55 else "turun" if luas <= 45 else "mendatar",
+                        "skor": round(_klip((luas - 50) / 25), 2),
+                        "teks": f"{luas:.0f}% saham di atas EMA20".replace(".", ",") + f"; {pulih} saham turun dalam mulai pulih, {dasar} saham masih di dasar."})
+    except Exception as e:
+        print(f"[live] recovery gagal: {e}", file=sys.stderr)
+    return out
+
+
+def live_hari_ini(h: dict, tek: dict | None) -> dict:
+    """Sinyal pergerakan sesi berjalan: posisi terhadap support/resistance harian dan momentum ±30 titik terakhir."""
+    p, vs = h["harga"], [x["v"] for x in h.get("titik") or []]
+    sup = [x["v"] for x in (tek or {}).get("support") or []]
+    res = [x["v"] for x in (tek or {}).get("resistance") or []]
+    sk, cat = 0.0, []
+    mom = (p / vs[-min(30, len(vs))] - 1) * 100 if len(vs) >= 5 else (h.get("ubahPct") or 0)
+    sk += _klip(mom / 0.6) * 0.5
+    cat.append(f"momentum terakhir {mom:+.2f}%".replace(".", ","))
+    if sup and p < sup[0] * 0.998:
+        sk -= 0.5; cat.append(f"di bawah support {_idn(sup[0], 0)}")
+    elif sup and p <= sup[0] * 1.007 and vs and p > min(vs) * 1.003:
+        sk += 0.5; cat.append(f"memantul dekat support {_idn(sup[0], 0)}")
+    if res and p > res[0] * 1.002:
+        sk += 0.4; cat.append(f"menembus resistance {_idn(res[0], 0)}")
+    elif res and p >= res[0] * 0.995:
+        sk -= 0.2; cat.append(f"mendekati resistance {_idn(res[0], 0)}")
+    sk = _klip(sk)
+    return {"kunci": "hariini", "nama": "Pergerakan hari ini", "arah": "naik" if sk > 0.15 else "turun" if sk < -0.15 else "mendatar",
+            "skor": round(sk, 2), "teks": "; ".join(cat).capitalize() + "."}
+
+
+def live_refresh() -> None:
+    h = live_harga()
+    if h:
+        LIVE["harga"] = h
+    if time.time() - LIVE["modulT"] > 300 or LIVE["modul"] is None:
+        LIVE["modul"] = live_modul()
+        LIVE["modulT"] = time.time()
+
+
+def live_loop() -> None:
+    time.sleep(30)
+    while True:
+        try:
+            if get_token():
+                with LIVE_LOCK:
+                    live_refresh()
+        except Exception as e:
+            print(f"[live] gagal: {e}", file=sys.stderr)
+        # Jam bursa tiap 1 menit; di luar jam bursa tiap 30 menit (harga penutupan sudah final).
+        time.sleep(60 if ihsg_jam_bursa() else 1800)
+
+
+def live_api() -> dict:
+    h = LIVE.get("harga")
+    if not h:
+        return {"error": "Data Live IHSG sedang disiapkan (diperbarui tiap menit saat jam bursa). Coba lagi sebentar lagi."}
+    tek = IH_load().get("tek")
+    modul = list(LIVE.get("modul") or []) + [live_hari_ini(h, tek)]
+    w = sum(LIVE_BOBOT.get(x["kunci"], 0.1) for x in modul) or 1
+    skor = round(sum(x["skor"] * LIVE_BOBOT.get(x["kunci"], 0.1) for x in modul) / w * 100)
+    for x in modul:
+        x["bobot"] = round(LIVE_BOBOT.get(x["kunci"], 0.1) / w * 100)
+        x["teks"] = re.sub(r"(\d)\.(\d+%)", r"\1,\2", x["teks"])  # desimal persen gaya Indonesia (+1,1%)
+    ch = h.get("ubahPct") or 0
+    kondisi = "naik" if ch > 0.15 else "turun" if ch < -0.15 else "datar"
+    if kondisi == "turun":
+        label = "Potensi rebound" if skor >= 15 else "Potensi turun lagi" if skor <= -15 else "Turun, belum ada arah"
+    elif kondisi == "naik":
+        label = "Potensi lanjut naik" if skor >= 15 else "Rawan berbalik turun" if skor <= -15 else "Naik, belum ada arah"
+    else:
+        label = "Cenderung naik" if skor >= 15 else "Cenderung turun" if skor <= -15 else "Netral, menunggu arah"
+    nada = "good" if skor >= 15 else "bad" if skor <= -15 else "warn"
+    dukung = [x["nama"] for x in modul if x["skor"] > 0.15]
+    lawan = [x["nama"] for x in modul if x["skor"] < -0.15]
+    sup = [x["v"] for x in (tek or {}).get("support") or []]
+    res = [x["v"] for x in (tek or {}).get("resistance") or []]
+    waktu = "saat ini" if h.get("jamBursa") else "pada penutupan terakhir"
+    gerak = (f"{'naik' if ch > 0 else 'turun'} {_idn(abs(ch))} persen" if abs(ch) >= 0.01 else "tidak berubah") + " dari penutupan sebelumnya"
+    narasi = [f"IHSG {waktu} di level {_idn(h['harga'])}, {gerak}.",
+              f"Gabungan analisa Astronacci, Time Series, Seasonality, Pola Broker, dan Recovery memberi skor {skor:+d}: {label.lower()}."]
+    if dukung:
+        narasi.append(f"Pendukung naik: {', '.join(dukung)}.")
+    if lawan:
+        narasi.append(f"Penekan: {', '.join(lawan)}.")
+    if label == "Potensi rebound" and sup:
+        narasi.append(f"Perhatikan pantulan di support {_idn(sup[0], 0)}; target terdekat resistance {_idn(res[0], 0)}." if res else f"Perhatikan pantulan di support {_idn(sup[0], 0)}.")
+    elif label in ("Potensi turun lagi", "Rawan berbalik turun") and sup:
+        narasi.append(f"Waspadai uji support {_idn(sup[0], 0)}" + (f", lalu {_idn(sup[1], 0)}." if len(sup) > 1 else "."))
+    elif label == "Potensi lanjut naik" and res:
+        narasi.append(f"Ruang naik menuju resistance {_idn(res[0], 0)}.")
+    return {**h, "skor": skor, "label": label, "nada": nada, "kondisi": kondisi, "modul": modul,
+            "support": sup, "resistance": res, "narasi": narasi,
+            "catatan": "Skor gabungan -100 sampai +100 dari bobot tiap modul. Analisa otomatis berbasis data historis dan harga berjalan, bukan rekomendasi beli/jual."}
+
+
 def ihsg_api(month: int) -> dict:
     d = IH_load()
     if not d.get("tek"):
@@ -3004,6 +3231,8 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json(runtun_api())
         elif path == "api/ihsg-astro":
             self.reply_json(astro_api())
+        elif path == "api/ihsg-live":
+            self.reply_json(live_api())
         elif path == "api/ihsg-outlook":
             try:
                 month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month % 12 + 1))
@@ -3345,6 +3574,7 @@ def main() -> int:
     threading.Thread(target=pov_loop, daemon=True).start()
     threading.Thread(target=season_loop, daemon=True).start()
     threading.Thread(target=ihsg_loop, daemon=True).start()
+    threading.Thread(target=live_loop, daemon=True).start()
     threading.Thread(target=snapshot_loop, daemon=True).start()
     threading.Thread(target=tsa_loop, daemon=True).start()
     print(f"Radar Backdoor berjalan di http://localhost:{args.port}")
