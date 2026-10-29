@@ -2677,18 +2677,27 @@ def live_transaksi() -> dict | None:
     """Transaksi hari ini di saham penggerak IHSG dari ringkasan broker Stockbit (net per broker, pasar reguler):
     net asing (broker bertipe Asing) dan net 3 broker terbesar (akumulasi/distribusi) per saham."""
     hari = datetime.now(WIB).strftime("%Y-%m-%d")
-    rows, kunci = [], []
+    rows, kunci, diag = [], [], []
     for sym in LIVE_BESAR:
-        try:
-            r = sb_fetch(f"/marketdetectors/{sym}?from={hari}&to={hari}&transaction_type=TRANSACTION_TYPE_NET"
-                         f"&market_board=MARKET_BOARD_REGULER&investor_type=INVESTOR_TYPE_ALL&limit=25", True)
-        except Exception as e:
-            print(f"[live] transaksi {sym} gagal: {e}", file=sys.stderr)
-            continue
-        d = r.get("data") or {}
+        beli = jual = None
+        d = {}
+        # Papan reguler lebih dulu; bila kosong, semua papan (sebagian data hari berjalan hanya tersedia di sana).
+        for papan in ("MARKET_BOARD_REGULER", "MARKET_BOARD_ALL"):
+            try:
+                r = sb_fetch(f"/marketdetectors/{sym}?from={hari}&to={hari}&transaction_type=TRANSACTION_TYPE_NET"
+                             f"&market_board={papan}&investor_type=INVESTOR_TYPE_ALL&limit=25", True)
+            except Exception as e:
+                diag.append({"s": sym, "papan": papan, "hasil": "gagal: " + str(e)[:120]})
+                continue
+            d = r.get("data") or {}
+            bs = d.get("broker_summary") or {}
+            beli, jual = bs.get("brokers_buy") or [], bs.get("brokers_sell") or []
+            diag.append({"s": sym, "papan": papan, "hasil": f"{len(beli)} beli / {len(jual)} jual", "kunci": sorted(d.keys())[:12],
+                         "kunciBs": sorted(bs.keys())[:12] if isinstance(bs, dict) else str(type(bs))})
+            if beli or jual:
+                break
+        LIVE["trxDiag"] = {"waktu": datetime.now(WIB).strftime("%H:%M:%S"), "rincian": diag[-20:]}
         kunci = kunci or sorted(d.keys())
-        bs = d.get("broker_summary") or {}
-        beli, jual = bs.get("brokers_buy") or [], bs.get("brokers_sell") or []
         if not beli and not jual:
             continue
         asing = sum(_num(x.get("bval")) for x in beli if str(x.get("type")).lower() == "asing") - \
@@ -2818,7 +2827,7 @@ def live_api() -> dict:
         narasi.append(f"Waspadai turun ke {_idn(sup[0], 0)}" + (f", lalu {_idn(sup[1], 0)}." if len(sup) > 1 else "."))
     elif label == "Potensi lanjut naik" and res:
         narasi.append(f"Ruang naik menuju {_idn(res[0], 0)}.")
-    return {**h, "skor": skor, "label": label, "nada": nada, "kondisi": kondisi, "modul": modul, "transaksi": trx,
+    return {**h, "skor": skor, "label": label, "nada": nada, "kondisi": kondisi, "modul": modul, "transaksi": trx, "transaksiDiag": LIVE.get("trxDiag"),
             "support": sup, "resistance": res, "narasi": narasi,
             "catatan": "Skor gabungan -100 sampai +100 dari bobot tiap modul. Analisa otomatis berbasis data historis dan harga berjalan, bukan rekomendasi beli/jual."}
 
