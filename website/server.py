@@ -2673,6 +2673,43 @@ def _num(v) -> float:
         return 0.0
 
 
+# Uji sumber transaksi realtime Stockbit (sekali per 10 menit selama data broker hari ini kosong): yang dicatat
+# hanya nama kolom dan contoh nilai angka/teks pendek, tanpa token.
+LIVE_PROBE = {
+    "orderbook": "/company-price-feed/v2/orderbook/companies/BBCA",
+    "runningTrade": "/order-trade/running-trade?sort=DESC&limit=5&order_by=RUNNING_TRADE_ORDER_BY_TIME&symbols[]=BBCA",
+    "tradeBook": "/order-trade/trade-book?symbol=BBCA&group_by=GROUP_BY_TIME",
+    "foreignFlow": "/findata-view/foreign-domestic/v1/chart-data/BBCA?market_type=MARKET_TYPE_REGULAR&period=PERIOD_RANGE_1D",
+    "bandarHariIni": None,
+}
+
+
+def _ringkas(v, depth: int = 0):
+    """Struktur JSON diringkas: dict -> kunci (maks. 25) dengan nilai skalar pendek, list -> panjang + contoh elemen pertama."""
+    if isinstance(v, dict):
+        return {k: _ringkas(x, depth + 1) for k, x in list(v.items())[:25]} if depth < 3 else sorted(v.keys())[:25]
+    if isinstance(v, list):
+        return {"n": len(v), "contoh": _ringkas(v[0], depth + 1) if v else None} if depth < 3 else f"list[{len(v)}]"
+    return v if isinstance(v, (int, float, bool)) or v is None else str(v)[:40]
+
+
+def live_probe(bandar: dict | None) -> None:
+    if time.time() - LIVE.get("probeT", 0) < 600:
+        return
+    LIVE["probeT"] = time.time()
+    out = {}
+    for nama, path in LIVE_PROBE.items():
+        if path is None:
+            out[nama] = _ringkas(bandar)
+            continue
+        try:
+            out[nama] = _ringkas(stockbit_api(SB + path, True).get("data"))
+        except Exception as e:
+            out[nama] = "gagal: " + str(e)[:120]
+        time.sleep(0.3)
+    LIVE["probe"] = {"waktu": datetime.now(WIB).strftime("%H:%M:%S"), "hasil": out}
+
+
 def live_transaksi() -> dict | None:
     """Transaksi hari ini di saham penggerak IHSG dari ringkasan broker Stockbit (net per broker, pasar reguler):
     net asing (broker bertipe Asing) dan net 3 broker terbesar (akumulasi/distribusi) per saham."""
@@ -2697,6 +2734,8 @@ def live_transaksi() -> dict | None:
             if beli or jual:
                 break
         LIVE["trxDiag"] = {"waktu": datetime.now(WIB).strftime("%H:%M:%S"), "rincian": diag[-20:]}
+        if sym == LIVE_BESAR[0] and not beli and not jual:
+            live_probe(d.get("bandar_detector"))
         kunci = kunci or sorted(d.keys())
         if not beli and not jual:
             continue
@@ -2827,7 +2866,7 @@ def live_api() -> dict:
         narasi.append(f"Waspadai turun ke {_idn(sup[0], 0)}" + (f", lalu {_idn(sup[1], 0)}." if len(sup) > 1 else "."))
     elif label == "Potensi lanjut naik" and res:
         narasi.append(f"Ruang naik menuju {_idn(res[0], 0)}.")
-    return {**h, "skor": skor, "label": label, "nada": nada, "kondisi": kondisi, "modul": modul, "transaksi": trx, "transaksiDiag": LIVE.get("trxDiag"),
+    return {**h, "skor": skor, "label": label, "nada": nada, "kondisi": kondisi, "modul": modul, "transaksi": trx, "transaksiDiag": LIVE.get("trxDiag"), "transaksiProbe": LIVE.get("probe"),
             "support": sup, "resistance": res, "narasi": narasi,
             "catatan": "Skor gabungan -100 sampai +100 dari bobot tiap modul. Analisa otomatis berbasis data historis dan harga berjalan, bukan rekomendasi beli/jual."}
 
