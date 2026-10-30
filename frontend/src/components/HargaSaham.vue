@@ -19,11 +19,11 @@ const judul = computed(() => x.value ? [['1W', x.value.w], ['1M', x.value.m], ['
   <span v-if="!x" class="muted">–</span>
   <span v-else class="hs" :title="judul">
     <b>{{ rp(x.h) }}</b>
-    <span v-if="x.d != null" class="small" :class="nada(x.d)"> {{ pct(x.d) }}</span>
-    <span v-if="vsAvg != null" class="small muted av">{{ pct(vsAvg) }} vs avg</span>
+    <span v-if="x.d != null" class="small ln" :class="nada(x.d)">{{ pct(x.d) }} 1D</span>
+    <span v-if="vsAvg != null" class="small muted ln">{{ pct(vsAvg) }} vs avg</span>
   </span>
 </template>
 
 <style scoped>
-.hs{white-space:nowrap}.av{display:block}
+.hs{white-space:nowrap;display:inline-block;line-height:1.3}.ln{display:block}
 </style>
