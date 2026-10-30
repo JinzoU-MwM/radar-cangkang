@@ -556,6 +556,10 @@ def cached_text(url: str, fetch, fresh: bool = False) -> str:
         body = fetch()
     except Exception as e:
         _fail_until[url] = now + FAIL_BACKOFF
+        # Galat terakhir (tanpa token/kueri) untuk /api/status: jalur URL, waktu, dan pesan singkat.
+        _galat.append({"waktu": datetime.now(timezone(timedelta(hours=7))).strftime("%H:%M:%S"),
+                       "jalur": re.sub(r"\?.*$", "", url.replace(SB, ""))[:80], "pesan": str(e)[:120]})
+        del _galat[:-15]
         old = cache_read(url, 0)
         if old is not None:
             print(f"[cache] basi dipakai ({e}): {url}", file=sys.stderr)
@@ -567,6 +571,7 @@ def cached_text(url: str, fetch, fresh: bool = False) -> str:
 
 # ------------------------------------------------------------- http util ----
 
+_galat: list[dict] = []
 _inflight: dict[str, threading.Lock] = {}
 _inflight_lock = threading.Lock()
 
@@ -3391,6 +3396,7 @@ class Handler(BaseHTTPRequestHandler):
                 "news": bool(cfg.get("news", {}).get("sources")) if cfg else False,
                 "tenders": bool(cfg.get("tenders", {}).get("url")) if cfg else False,
                 "stockbit1h": stats_1h(),
+                "galatStockbit": _galat[-8:],
                 "readOnly": is_public_request(),
                 "newsAt": NEWS_STATE["at"],
             })
