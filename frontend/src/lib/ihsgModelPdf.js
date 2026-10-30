@@ -13,7 +13,7 @@ const yunani = s => String(s || '').replace(/φ/g, 'phi').replace(/Φ/g, 'Phi').
 const arahWarna = a => /naik|positif|support/i.test(a || '') ? GOOD : /turun|negatif|resistance/i.test(a || '') ? BAD : MUTED
 
 // Sampul seragam dengan riset IHSG: pita vertikal, judul besar, subjudul, ornamen garis harga, kotak ringkasan.
-function sampul(doc, { judul, sub, label, updated, seri, box }) {
+export function sampul(doc, { judul, sub, label, updated, seri, box, catatan }) {
   const terbit = tgl(new Date())
   doc.setFillColor(PAPER); doc.rect(0, 0, 210, 297, 'F')
   doc.setFillColor(PRIMER); doc.rect(0, 0, 16, 297, 'F')
@@ -40,7 +40,7 @@ function sampul(doc, { judul, sub, label, updated, seri, box }) {
     fitText(doc, v, x + 4, 228, bw - 6, box.length > 3 ? 11 : 12.5, { min: 7.5, color: PRIMER })
   })
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(MUTED)
-  doc.text(doc.splitTextToSize(pdfText('Disusun otomatis dari harga harian IHSG (Stockbit), kalender astronomis, dan berita pasar. Bukan ajakan membeli atau menjual efek.'), 168), 28, 250)
+  doc.text(doc.splitTextToSize(pdfText(catatan || 'Disusun otomatis dari harga harian IHSG (Stockbit), kalender astronomis, dan berita pasar. Bukan ajakan membeli atau menjual efek.'), 168), 28, 250)
 }
 
 // Tabel sederhana: header berlatar lembut, baris bergaris tipis; kolom = [{ t, w, align }].
@@ -73,7 +73,7 @@ export function tabel(doc, x, y, cols, rows, size = 8.5, opt = {}) {
   return y + 2
 }
 
-function disclaimer(doc, page, updated, metode) {
+export function disclaimer(doc, page, updated, metode) {
   doc.addPage(); frame(doc, 'Disclaimer', page)
   heading(doc, 'Disclaimer', 28)
   para(doc, `${metode} Riset ini disusun otomatis oleh Radar Backdoor dari data yang diyakini dapat diandalkan, namun tidak ada jaminan atas ketepatan, `

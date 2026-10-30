@@ -311,6 +311,25 @@ class HolderNameTest(unittest.TestCase):
         self.assertEqual(server.holder_key("PT Triple Bersama Berkah Tbk"), server.holder_key("TRIPLE BERKAH BERSAMA"))
 
 
+class HscAnalisaTest(unittest.TestCase):
+    def test_kontribusi_dan_kesimpulan(self):
+        hs = json.loads((Path(server.__file__).parent / "hsc.json").read_text(encoding="utf-8"))["kode"]
+        hg = {t: {"h": 100, "d": -2.0, "w": -4.0, "m": -10.0, "y": -20.0, "tgl": "2026-10-29"} for t in hs}
+        hg.update({t: {"h": 5000, "d": 1.0, "w": 2.0, "m": 3.0, "y": 4.0, "tgl": "2026-10-29"} for t in ("BBCA", "BBRI", "BMRI", "BBNI", "ASII", "TLKM")})
+        lama = (server.harga_semua, server.broker_data, server.LIVE.get("harga"))
+        server.harga_semua, server.broker_data, server.LIVE["harga"] = (lambda: hg), (lambda: {}), {"harga": 5000.0}
+        try:
+            r = server.hsc_analisa()
+        finally:
+            server.harga_semua, server.broker_data, server.LIVE["harga"] = lama
+        self.assertEqual(r["bank4"]["sens"], 13.7)                       # 27,45% x 5000 / 100
+        self.assertEqual(r["bank4"]["ret"]["1W"], 2.0)
+        bbca = next(x for x in r["penggerak"] if x["t"] == "BBCA")
+        self.assertEqual(bbca["poin"]["w"], 9.0)                        # 9% x 2% x 5000
+        self.assertEqual(r["keranjang"]["hsc"]["1M"]["median"], -10.0)
+        self.assertTrue(any("sepekan" in k["teks"] for k in r["kesimpulan"]))
+
+
 class TsaSummaryTest(unittest.TestCase):
     """Data intel pasar tradersaham: helper tsa_summary (tanpa HTTP)."""
 

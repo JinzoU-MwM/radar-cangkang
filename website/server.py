@@ -2459,6 +2459,100 @@ def harga_semua() -> dict:
     return _harga_memo[1]
 
 
+BLN_ID = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+
+
+def _median(xs: list[float]) -> float | None:
+    xs = sorted(xs)
+    if not xs:
+        return None
+    n = len(xs)
+    return round(xs[n // 2] if n % 2 else (xs[n // 2 - 1] + xs[n // 2]) / 2, 2)
+
+
+def hsc_analisa() -> dict:
+    """Analisa dampak pengecualian saham HSC dari IHSG, dihitung dari data situs: harga & kinerja (data Recovery),
+    IHSG terakhir (Live), arus broker/asing bulan terakhir (Pola Broker), dan bobot estimasi di hsc.json."""
+    h = json.loads((ROOT / "hsc.json").read_text(encoding="utf-8"))
+    an = h.get("analisa") or {}
+    hs = set(h.get("kode") or [])
+    hg = harga_semua()
+    lv = LIVE.get("harga") or {}
+    b4 = an.get("bank4") or {}
+    ihsg = lv.get("harga") or b4.get("basis") or 0
+    per = [("d", "1D"), ("w", "1W"), ("m", "1M"), ("y", "YTD")]
+
+    # Arus broker bulan terakhir per saham (net bandar & porsi asing) dari Pola Broker.
+    arus, bulan_b = {}, None
+    bd = broker_data()
+    if bd:
+        bulan_b = max(BP.view(bd, None, None, "").get("bulanAda") or [0]) or None
+        if bulan_b:
+            s = BP.view(bd, bulan_b, None, "").get("saham") or {}
+            for x in (s.get("akumulasi") or []) + (s.get("distribusi") or []):
+                arus[x["s"]] = {"bandar": x["bandar"], "asing": x["asing"], "domestik": x["domestik"]}
+
+    # Penggerak baru: kinerja & kontribusi poin dengan bobot lama vs baru (poin = bobot% x ret% x IHSG).
+    pg = []
+    for x in an.get("penggerak") or []:
+        r = hg.get(x["t"]) or {}
+        ret = {k: r.get(k) for k, _ in per}
+        pg.append({**x, "harga": r.get("h"), "tgl": r.get("tgl"), "ret": ret, "arus": arus.get(x["t"]),
+                   "poin": {k: round(x["ke"] / 100 * v / 100 * ihsg, 1) if v is not None and ihsg else None for k, v in ret.items()},
+                   "poinLama": {k: round(x["dari"] / 100 * v / 100 * ihsg, 1) if v is not None and ihsg else None for k, v in ret.items()}})
+    kode4 = set(b4.get("kode") or [])
+    bank = [x for x in pg if x["t"] in kode4]
+    bobot4 = sum(x["ke"] for x in bank)
+    ret4 = {lbl: round(sum(x["ke"] * x["ret"][k] for x in bank) / bobot4, 2)
+            if bank and bobot4 and all(x["ret"][k] is not None for x in bank) else None for k, lbl in per}
+    sens = round(b4.get("ke", 0) / 100 * ihsg / 100, 1) if ihsg else None
+    skenario = [{"gerak": g, "poin": round(sens * g, 1), "level": round(ihsg + sens * g)} for g in (-3, -2, -1, 1, 2, 3)] if sens else []
+
+    # Keranjang HSC vs non-HSC: median kinerja, persentase saham naik, dan saham HSC paling turun/naik sebulan.
+    def keranjang(kode):
+        out = {}
+        for k, lbl in per:
+            v = [hg[t][k] for t in kode if t in hg and hg[t].get(k) is not None]
+            out[lbl] = {"median": _median(v), "naik": round(sum(1 for z in v if z > 0) / len(v) * 100) if v else None, "n": len(v)}
+        return out
+    kh, kn = keranjang(hs), keranjang(set(hg) - hs)
+    hm = sorted((t for t in hs if t in hg and hg[t].get("m") is not None), key=lambda t: hg[t]["m"])
+    gerak = lambda ts: [{"t": t, "m": hg[t]["m"], "h": hg[t]["h"]} for t in ts]
+    asing_hsc = sum(arus[t]["asing"] for t in hs if t in arus)
+
+    # Kesimpulan otomatis dari angka di atas (nada objektif: naik/turun/netral beserta alasannya).
+    ks = []
+    f = lambda v, n=1: f"{v:+.{n}f}".replace(".", ",")
+    if ret4.get("1W") is not None and sens:
+        p = round(ret4["1W"] * sens, 1)
+        ks.append({"nada": "naik" if p > 0 else "turun" if p < 0 else "netral",
+                   "teks": f"Big-4 bank bergerak {f(ret4['1W'])}% sepekan (tertimbang bobot baru); dengan bobot {str(b4.get('ke')).replace('.', ',')}% "
+                           f"setara {f(p)} poin IHSG. Arah IHSG ex-HSC akan sangat mengikuti saham bank."})
+    a4 = [x["arus"]["asing"] for x in bank if x.get("arus")]
+    if a4:
+        tot = sum(a4)
+        ks.append({"nada": "naik" if tot > 0 else "turun",
+                   "teks": f"Asing net {'beli' if tot > 0 else 'jual'} big-4 bank Rp{abs(tot) / 1e9:,.1f} M pada {BLN_ID[bulan_b - 1]} (Pola Broker)"
+                           .replace(",", "X").replace(".", ",").replace("X", ".") +
+                           ("; mendukung catatan foreign flow negatif." if tot < 0 else "; berbeda dengan catatan foreign flow negatif.")})
+    mh, mn = kh["1M"]["median"], kn["1M"]["median"]
+    if mh is not None and mn is not None:
+        lebih = mh < mn
+        ks.append({"nada": "naik" if lebih else "turun",
+                   "teks": f"Median saham HSC sebulan {f(mh)}% vs non-HSC {f(mn)}%. " +
+                           ("Saham HSC turun lebih dalam, sehingga keluarnya HSC mengurangi tekanan dari kelompok ini pada IHSG."
+                            if lebih else "Saham HSC lebih kuat dari non-HSC, sehingga IHSG kehilangan sebagian penopang setelah HSC keluar.")})
+    if kh["1D"]["naik"] is not None:
+        ks.append({"nada": "netral", "teks": f"Hari terakhir: {kh['1D']['naik']}% saham HSC naik vs {kn['1D']['naik']}% saham non-HSC."})
+
+    return {"ihsg": ihsg, "ihsgWaktu": lv.get("waktu"), "ihsgSumber": "Live" if lv.get("harga") else "basis sumber",
+            "bobotHsc": an.get("bobotHsc"), "bank4": {**b4, "ret": ret4, "sens": sens}, "penggerak": pg, "skenario": skenario,
+            "keranjang": {"hsc": kh, "non": kn}, "terburuk": gerak(hm[:5]), "terbaik": gerak(hm[-5:][::-1]),
+            "sorot": gerak([t for t in ("BREN", "BYAN", "DSSA") if t in hg]),
+            "asingHsc": asing_hsc if arus else None, "bulanBroker": BLN_ID[bulan_b - 1] if bulan_b else None, "kesimpulan": ks,
+            "updated": next((v["tgl"] for v in hg.values() if v.get("tgl")), None)}
+
+
 def recovery_api(month: int) -> dict:
     """Saham turun >= 30% dari puncak 52 minggu, diberi skor dukungan Seasonality (bulan terpilih) & Pola Broker."""
     rd = RC.load(RECOVERY_PATH)
@@ -3509,6 +3603,11 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json(runtun_api())
         elif path == "api/ihsg-astro":
             self.reply_json(astro_api())
+        elif path == "api/hsc-analisa":
+            try:
+                self.reply_json(hsc_analisa())
+            except Exception as e:
+                self.reply_json({"error": f"Analisa HSC belum bisa dihitung: {e}"})
         elif path == "api/harga-saham":
             self.reply_json(harga_semua())
         elif path == "api/nama-saham":

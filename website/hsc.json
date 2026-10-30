@@ -214,6 +214,12 @@
         "ke": 6.95
       },
       {
+        "t": "BBNI",
+        "dari": 2.08,
+        "ke": 2.5,
+        "turunan": true
+      },
+      {
         "t": "ASII",
         "dari": 3.35,
         "ke": 4.15
@@ -222,13 +228,20 @@
     "bank4": {
       "dari": 24.33,
       "ke": 27.45,
-      "basis": 5030
+      "basis": 5030,
+      "kode": [
+        "BBCA",
+        "BBRI",
+        "BMRI",
+        "BBNI"
+      ]
     },
     "implikasi": [
       "IHSG kini menjadi proxy bank: sensitif terhadap rupiah dan foreign flow, yang saat ini sama-sama negatif.",
       "Volatilitas belum tentu turun. Simulasi menunjukkan volatilitas IHSG ex-HSC 31% vs aktual 29%.",
       "P/E agregat IHSG kemungkinan turun karena basket berubah. Target berbasis valuasi historis perlu dihitung ulang."
     ],
-    "catatan": "Bobot penggerak baru adalah estimasi; angka resmi mengikuti publikasi BEI setelah 2 November 2026."
+    "catatan": "Bobot penggerak baru adalah estimasi sumber; bobot BBNI diturunkan dari total big-4 bank dikurangi tiga bank lainnya. Angka resmi mengikuti publikasi BEI setelah 2 November 2026.",
+    "bobotHsc": 18
   }
 }
