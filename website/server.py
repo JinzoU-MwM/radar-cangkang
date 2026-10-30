@@ -2228,6 +2228,70 @@ def broker_data() -> dict:
     return _broker_memo[1]
 
 
+BROKER_HARIAN_PATH = ROOT / ".broker-harian.json"
+BROKER_HARIAN_HARI = 20          # hari bursa yang disimpan/diisi ulang
+_broker_harian_memo: tuple = (None, {})
+
+
+def broker_harian_data() -> dict:
+    global _broker_harian_memo
+    try:
+        m = BROKER_HARIAN_PATH.stat().st_mtime
+    except OSError:
+        return {}
+    if _broker_harian_memo[0] != m:
+        _broker_harian_memo = (m, BP.load(BROKER_HARIAN_PATH))
+    return _broker_harian_memo[1]
+
+
+def broker_daftar() -> dict:
+    """{kode: {jenis, nama}} dari data Pola Broker bulanan."""
+    return {c: {"jenis": b.get("jenis", ""), "nama": b.get("nama", "")} for c, b in (broker_data().get("broker") or {}).items()}
+
+
+def broker_harian_build() -> None:
+    """Pola Broker harian: net beli/jual tiap broker per hari bursa (20 hari terakhir). Hari ini hanya diambil setelah
+    16.45 WIB (data broker hari berjalan baru lengkap setelah bursa tutup); hari ini & kemarin selalu diperbarui."""
+    brokers = broker_daftar()
+    if len(brokers) < 20:
+        raise RuntimeError("daftar broker belum tersedia")
+    now = datetime.now(WIB)
+    akhir = now.date() if (now.hour, now.minute) >= (16, 45) else now.date() - timedelta(days=1)
+    dates, d = [], akhir
+    while len(dates) < BROKER_HARIAN_HARI:
+        if d.weekday() < 5:
+            dates.append(d.isoformat())
+        d -= timedelta(days=1)
+    fresh = set(dates[:2])
+    data = BP.build_harian(lambda p, f=False: sb_fetch(p, f), broker_harian_data(), brokers, dates, fresh,
+                           log=lambda m: print(m, file=sys.stderr))
+    tmp = BROKER_HARIAN_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(BROKER_HARIAN_PATH)
+
+
+def broker_harian_loop() -> None:
+    """Isi awal 20 hari (sekali), lalu tiap hari bursa setelah 16.45 WIB dan sekali lagi setelah 19.30 WIB."""
+    time.sleep(240)
+    selesai = set()
+    while True:
+        try:
+            now = datetime.now(WIB)
+            kunci = None
+            if now.weekday() < 5 and (now.hour, now.minute) >= (19, 30):
+                kunci = now.strftime("%Y-%m-%d") + "b"
+            elif now.weekday() < 5 and (now.hour, now.minute) >= (16, 45):
+                kunci = now.strftime("%Y-%m-%d") + "a"
+            awal = not BROKER_HARIAN_PATH.exists()
+            if get_token() and broker_data() and (awal or (kunci and kunci not in selesai)):
+                broker_harian_build()
+                if kunci:
+                    selesai.add(kunci)
+        except Exception as e:
+            print(f"[broker-harian] gagal: {e}", file=sys.stderr)
+        time.sleep(600)
+
+
 def broker_build() -> None:
     data = BP.build(lambda p: sb_fetch(p), BP.load(BROKER_PATH), log=lambda m: print(m, file=sys.stderr),
                     insider=lambda t: [r for r in (insider_row(m) for m in insider_moves(t, 2)) if r])
@@ -3397,7 +3461,15 @@ class Handler(BaseHTTPRequestHandler):
                 bro = (self.qs("broker") or "").upper()
                 jn = self.qs("jenis") if self.qs("jenis") in ("asing", "domestik") else ""
                 sym = (self.qs("saham") or "").upper()
-                if re.match(r"^[A-Z]{4}$", sym):
+                harian = self.qs("harian") == "1"
+                if harian and not broker_harian_data().get("hari"):
+                    self.reply_json({"error": "Data harian sedang disiapkan (20 hari bursa terakhir, diperbarui tiap hari bursa setelah 16.45 WIB). Coba lagi beberapa menit lagi."})
+                elif harian and re.match(r"^[A-Z]{4}$", sym):
+                    self.reply_json({"saham": sym, "jenis": jn, "harian": True, "seri": BP.series_harian(broker_harian_data(), sym, broker_daftar(), jn)})
+                elif harian:
+                    tg = self.qs("tanggal") or ""
+                    self.reply_json(BP.view_harian(broker_harian_data(), tg if re.match(r"^\d{4}-\d\d-\d\d$", tg) else "", broker_daftar(), jn))
+                elif re.match(r"^[A-Z]{4}$", sym):
                     self.reply_json({"saham": sym, "jenis": jn, "tahun": d.get("tahun"), "seri": BP.series(d, sym, jn)})
                 else:
                     self.reply_json(BP.view(d, month, bro if re.match(r"^[A-Z0-9]{2}$", bro) else None, jn))
@@ -3703,6 +3775,7 @@ def main() -> int:
     threading.Thread(target=season_loop, daemon=True).start()
     threading.Thread(target=ihsg_loop, daemon=True).start()
     threading.Thread(target=live_loop, daemon=True).start()
+    threading.Thread(target=broker_harian_loop, daemon=True).start()
     threading.Thread(target=snapshot_loop, daemon=True).start()
     threading.Thread(target=tsa_loop, daemon=True).start()
     print(f"Radar Backdoor berjalan di http://localhost:{args.port}")

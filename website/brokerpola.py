@@ -225,6 +225,61 @@ def series(data: dict, sym: str, jenis: str = "") -> list[dict]:
     return out
 
 
+def harian_ke_data(hari: dict, tanggal: str, brokers: dict) -> dict:
+    """Bentuk data satu hari agar bisa memakai view(): tiap broker punya satu "bulan" (kunci "1") berisi net hari itu."""
+    rec = hari.get(tanggal) or {}
+    return {"broker": {c: {"jenis": (brokers.get(c) or {}).get("jenis", ""), "nama": (brokers.get(c) or {}).get("nama", ""), "bulan": {"1": x}}
+                       for c, x in (rec.get("broker") or {}).items()}, "repo": {}, "nego": {}}
+
+
+def view_harian(hd: dict, tanggal: str, brokers: dict, jenis: str = "") -> dict:
+    """Akumulasi/distribusi per saham pada satu hari bursa (agregat semua broker sesuai jenis)."""
+    ada = sorted((d for d, x in (hd.get("hari") or {}).items() if x.get("broker")), reverse=True)
+    if tanggal not in ada:
+        tanggal = ada[0] if ada else ""
+    v = view(harian_ke_data(hd.get("hari") or {}, tanggal, brokers), 1, None, jenis) if tanggal else {"saham": None, "brokers": []}
+    v.pop("bulanAda", None)
+    return {**v, "harian": True, "tanggal": tanggal, "tanggalAda": ada, "updated": hd.get("updated")}
+
+
+def series_harian(hd: dict, sym: str, brokers: dict, jenis: str = "") -> list[dict]:
+    """Net bandar satu saham per hari bursa (hari tersimpan, terlama ke terbaru) untuk grafik harian."""
+    out = []
+    for d in sorted(d for d, x in (hd.get("hari") or {}).items() if x.get("broker")):
+        s = view(harian_ke_data(hd["hari"], d, brokers), 1, None, jenis).get("saham") or {}
+        a = next((x for side in ("akumulasi", "distribusi") for x in s.get(side, []) if x["s"] == sym), None)
+        out.append({"tanggal": d, "bandar": a["bandar"] if a else 0, "avgAkum": a and a.get("avgAkum"), "avgDist": a and a.get("avgDist"),
+                    "asing": a["asing"] if a else 0, "domestik": a["domestik"] if a else 0,
+                    "akum": [z["b"] for z in a["akum"]] if a else [], "dist": [z["b"] for z in a["dist"]] if a else []})
+    return out
+
+
+def build_harian(fetch, old: dict, brokers: dict, dates: list[str], fresh_dates: set, pause: float = 0.25, log=print) -> dict:
+    """Net beli/jual per broker per hari bursa: {"hari": {tanggal: {"broker": {kode: net_month(...)}} | {"libur": True}}}.
+    Tanggal yang sudah lengkap tidak diambil ulang; tanggal di fresh_dates (hari ini/kemarin) diperbarui."""
+    data = {"hari": dict(old.get("hari") or {})}
+    for d in dates:
+        if d in data["hari"] and d not in fresh_dates:
+            continue
+        rec = {}
+        for c in sorted(brokers):
+            try:
+                r = net_month(fetch(f"/order-trade/broker/activity?broker_code={c}&from={d}&to={d}", d in fresh_dates))
+                r.pop("nama", None)
+                if r["beli"] or r["jual"]:
+                    rec[c] = r
+            except Exception as e:
+                log(f"[broker-harian] {c} {d}: {e}")
+            time.sleep(pause)
+        # Tanpa transaksi di semua broker = hari libur bursa (atau data belum tersedia untuk hari ini).
+        data["hari"][d] = {"broker": rec} if rec else {"libur": True}
+        log(f"[broker-harian] {d}: {len(rec)} broker")
+    keep = sorted(data["hari"], reverse=True)[:40]
+    data["hari"] = {d: data["hari"][d] for d in keep}
+    data["updated"] = time.strftime("%Y-%m-%d %H:%M")
+    return data
+
+
 def market_flow(data: dict) -> dict | None:
     """Flow pasar bulan terakhir: total net broker Asing vs Domestik (dari 25 saham teratas tiap broker), broker asing
     terbesar, dan saham paling diakumulasi/didistribusi asing."""
