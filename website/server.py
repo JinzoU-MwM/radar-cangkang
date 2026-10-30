@@ -2405,6 +2405,13 @@ def recovery_ctx(month: int) -> tuple[dict, dict, int | None]:
     return srow, bro, bulan_b
 
 
+def nama_saham(t: str, srow: dict | None = None) -> str:
+    """Nama perusahaan: baris Seasonality, data Seasonality lengkap, lalu snapshot tradersaham (signals/gems)."""
+    se = (srow or {}).get(t) or {}
+    return (se.get("nama") or ((season_data().get("stock") or {}).get(t) or {}).get("name")
+            or (tsa_load("signals").get(t) or {}).get("companyName") or (tsa_load("gems").get(t) or {}).get("stockName") or "")
+
+
 def recovery_api(month: int) -> dict:
     """Saham turun >= 30% dari puncak 52 minggu, diberi skor dukungan Seasonality (bulan terpilih) & Pola Broker."""
     rd = RC.load(RECOVERY_PATH)
@@ -2418,7 +2425,7 @@ def recovery_api(month: int) -> dict:
             continue
         se, b = srow.get(t), bro.get(t)
         sc = RC.score(tek, se, b)
-        rows.append({"t": t, "nama": (se or {}).get("nama") or "", "sektorNama": (se or {}).get("sektorNama") or "",
+        rows.append({"t": t, "nama": nama_saham(t, srow), "sektorNama": (se or {}).get("sektorNama") or "",
                      "radar": (se or {}).get("radar") or "", "tek": tek,
                      "season": {k: se[k] for k in ("n", "up", "prob", "median", "worst")} if se else None,
                      "broker": b, "plan": RC.plan(tek, (b or {}).get("avg") if b and not b.get("dist") else None), **sc})
@@ -2436,11 +2443,11 @@ def recovery_api(month: int) -> dict:
         if not RC.dasar(tek):
             continue
         se = srow.get(t)
-        dasar.append({"t": t, "nama": (se or {}).get("nama") or "", "sektorNama": (se or {}).get("sektorNama") or "", "radar": (se or {}).get("radar") or "",
+        dasar.append({"t": t, "nama": nama_saham(t, srow), "sektorNama": (se or {}).get("sektorNama") or "", "radar": (se or {}).get("radar") or "",
                       "tek": tek, "ret": {**(tek.get("ret") or {}), **pj.get(t, {})}, "broker": bro.get(t), "potensi": RC.potensi(tek)})
     dasar.sort(key=lambda r: -r["tek"]["turun"])
     # Tab "Low per periode": kinerja per periode semua saham terpantau (ringkas) untuk saringan low 1D..10Y di peramban.
-    low = [{"t": t, "nama": (srow.get(t) or {}).get("nama") or "", "harga": tek.get("harga"), "turun": tek.get("turun"),
+    low = [{"t": t, "nama": nama_saham(t, srow), "harga": tek.get("harga"), "turun": tek.get("turun"),
             "dariRendah": tek.get("dariRendah"), "ret": {**(tek.get("ret") or {}), **pj.get(t, {})}, "potensi": RC.potensi(tek)}
            for t, tek in rd["tek"].items() if tek.get("ret") and not tek.get("lompatan")]
     return {"updated": rd["updated"], "bulan": month, "bulanBroker": bulan_b, "minTurun": RC.MIN_TURUN, "maxDariDasar": RC.MAX_DARI_DASAR,
