@@ -189,5 +189,46 @@
     "TMAS": "Temas Tbk",
     "WBSA": "BSA Logistics Indonesia Tbk",
     "YUPI": "Yupi Indo Jelly Gum Tbk"
+  },
+  "analisa": {
+    "judul": "IHSG tanpa saham HSC: berlaku 2 November 2026",
+    "ringkas": "BEI menyesuaikan divisor, sehingga level pembukaan 2 November sama dengan penutupan Jumat (30/10). Yang berubah adalah komposisi indeks, bukan levelnya.",
+    "fakta": [
+      "Saham HSC dikeluarkan dari IHSG (81 emiten menurut pengumuman BEI; daftar terbaru 82 setelah FILM masuk lagi), termasuk BREN, BYAN, dan DSSA, dengan bobot sekitar 18%.",
+      "Data terakhir: IHSG Sesi I 30/10 ditutup 5.032 (−1,29%), sempat menyentuh 4.979."
+    ],
+    "penggerak": [
+      {
+        "t": "BBCA",
+        "dari": 8.75,
+        "ke": 9.0
+      },
+      {
+        "t": "BBRI",
+        "dari": 7.93,
+        "ke": 9.0
+      },
+      {
+        "t": "BMRI",
+        "dari": 5.57,
+        "ke": 6.95
+      },
+      {
+        "t": "ASII",
+        "dari": 3.35,
+        "ke": 4.15
+      }
+    ],
+    "bank4": {
+      "dari": 24.33,
+      "ke": 27.45,
+      "basis": 5030
+    },
+    "implikasi": [
+      "IHSG kini menjadi proxy bank: sensitif terhadap rupiah dan foreign flow, yang saat ini sama-sama negatif.",
+      "Volatilitas belum tentu turun. Simulasi menunjukkan volatilitas IHSG ex-HSC 31% vs aktual 29%.",
+      "P/E agregat IHSG kemungkinan turun karena basket berubah. Target berbasis valuasi historis perlu dihitung ulang."
+    ],
+    "catatan": "Bobot penggerak baru adalah estimasi; angka resmi mengikuti publikasi BEI setelah 2 November 2026."
   }
 }
