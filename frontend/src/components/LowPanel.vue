@@ -46,6 +46,35 @@ const low = computed(() => {
 })
 watch([fp, batas, () => g.rebound, () => g.pulih, () => g.urut], () => { lowN.value = 100 })
 const hitung = computed(() => ({ dasar: dasar.value.length, low: low.value.length }))
+// Silang-rujuk ke tab Recovery: saham yang juga masuk Kandidat rebound.
+const diRecovery = computed(() => new Set((data.value?.saham || []).map(x => x.t)))
+
+// Unduh riset (PDF, format sama dengan riset IHSG): harga diambil ulang agar terbaru.
+const busyPdf = ref(false), errPdf = ref('')
+async function unduhPdf() {
+  busyPdf.value = true; errPdf.value = ''
+  try {
+    const [{ jsPDF }, P] = await Promise.all([import('jspdf'), import('../lib/daftarPdf.js')])
+    let hg = {}
+    try { const r = await api.get('/api/harga-saham'); if (!r.error) hg = r } catch { /* tanpa harga terbaru */ }
+    const [spec, nama] = specPdf(P, hg)
+    ;(await P.daftarPdf(spec, jsPDF)).save(P.daftarPdfName(nama))
+  } catch (e) { errPdf.value = 'PDF gagal dibuat: ' + (e.message || e) } finally { busyPdf.value = false }
+}
+function specPdf(P, hg) {
+  const h = (t, v) => hg[t]?.h ?? v
+  const pot = x => `${x.potensi?.rebound.label || '-'} / ${x.potensi?.pulih.label || '-'}`
+  return [{ seri: 'Riset Low', judul: 'Low: Saham di Titik Terendah', label: `SUDAH DI DASAR · LOW ${fp.value}${batas.value ? ' >= ' + batas.value + '%' : ''}`,
+    sub: 'Saham yang dekat terendah setahun setelah jatuh dalam, serta daftar penurunan terdalam per periode, dengan potensi rebound dan recovery.',
+    updated: data.value.updated, box: [['Sudah di dasar', String(dasar.value.length)], [`Low ${fp.value}`, String(low.value.length)], ['Dipindai', String(data.value.low?.length || 0)]],
+    bagian: [{ judul: 'Sudah di dasar', ket: 'Turun dari puncak 52 minggu dan masih dekat terendah setahun. Potensi = rebound / recovery.',
+      cols: [{ t: 'Saham', w: 16 }, { t: 'Nama', w: 56 }, { t: 'Harga', w: 18, align: 'right' }, { t: 'Turun', w: 16, align: 'right' }, { t: 'Di atas terendah', w: 26, align: 'right' }, { t: 'Potensi', w: 50 }],
+      rows: dasar.value.map(x => [{ t: x.t, bold: true }, x.nama || namaSaham(x.t) || '-', P.n0(h(x.t, x.tek.harga)), '-' + Math.round(x.tek.turun) + '%', P.pct(x.tek.dariRendah), pot(x)]) },
+    { judul: `Low per periode ${fp.value}`, ket: `Saham turun pada periode ${fp.value}${batas.value ? ' minimal ' + batas.value + '%' : ''}, terdalam lebih dulu (maks. 150).`,
+      cols: [{ t: 'Saham', w: 16 }, { t: 'Nama', w: 52 }, { t: 'Harga', w: 18, align: 'right' }, { t: fp.value, w: 18, align: 'right' }, { t: 'Di atas terendah', w: 26, align: 'right' }, { t: 'Potensi', w: 52 }],
+      rows: low.value.slice(0, 150).map(x => [{ t: x.t, bold: true }, x.nama || namaSaham(x.t) || '-', P.n0(h(x.t, x.harga)), { t: P.pct(x.ret[fp.value]), color: P.warna(x.ret[fp.value]) }, P.pct(x.dariRendah), pot(x)]) }],
+    metode: 'Potensi rebound dan recovery dihitung dari pantulan harga, momentum, volume, dan RSI; bukan kepastian arah.' }, 'Low']
+}
 const buka = ref('')
 const rp = v => v == null ? '–' : 'Rp' + Math.round(v).toLocaleString('id-ID')
 const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + '%'
@@ -55,6 +84,8 @@ const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + '%'
   <section class="lw">
     <p class="small muted intro">Saham yang sudah berada di titik terendah: <b>Sudah di dasar</b> (dekat terendah setahun) dan
       <b>Low per periode</b> (penurunan terdalam pada periode 1D–10Y). Diperbarui otomatis Senin–Sabtu pukul 00.01 WIB.</p>
+<div class="unduh"><span v-if="errPdf" class="small c-strong">{{ errPdf }}</span>
+      <button type="button" class="btn" :disabled="busyPdf || !data" @click="unduhPdf">{{ busyPdf ? 'Menyiapkan PDF…' : '⬇ Unduh riset Low (PDF)' }}</button></div>
     <div class="kat" role="tablist" aria-label="Kategori Low">
       <button v-for="[k, l] in KAT" :key="k" type="button" role="tab" class="pill" :aria-selected="String(kat === k)" :aria-pressed="String(kat === k)" @click="kat = k; buka = ''">
         {{ l }} <span v-if="data" class="muted">{{ hitung[k] }}</span></button>
@@ -95,6 +126,7 @@ const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + '%'
               <tr class="row" :class="{ open: buka === x.t }" tabindex="0" @click="buka = buka === x.t ? '' : x.t" @keydown.enter="buka = buka === x.t ? '' : x.t">
                 <td><span class="car">{{ buka === x.t ? '▾' : '▸' }}</span> <b>{{ x.t }}</b>
                   <span v-if="isHsc(x.t)" class="tag t-warn" title="Saham HSC: dikeluarkan dari perhitungan IHSG">HSC</span>
+                  <span v-if="diRecovery.has(x.t)" class="tag t-calm" title="Juga masuk tab Recovery (Kandidat rebound)">juga di Recovery</span>
                   <div v-if="x.nama || namaSaham(x.t)" class="small muted nm">{{ x.nama || namaSaham(x.t) }}</div></td>
                 <td class="num"><HargaSaham :kode="x.t" /></td>
                 <td class="num">{{ x.turun != null ? '−' + fmt(x.turun, 0) + '%' : '–' }}</td>
@@ -134,6 +166,7 @@ const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + '%'
               <tr class="row" :class="{ open: buka === x.t }" tabindex="0" @click="buka = buka === x.t ? '' : x.t" @keydown.enter="buka = buka === x.t ? '' : x.t">
                 <td><span class="car">{{ buka === x.t ? '▾' : '▸' }}</span> <b>{{ x.t }}</b>
                   <span v-if="isHsc(x.t)" class="tag t-warn" title="Saham HSC: dikeluarkan dari perhitungan IHSG">HSC</span>
+                  <span v-if="diRecovery.has(x.t)" class="tag t-calm" title="Juga masuk tab Recovery (Kandidat rebound)">juga di Recovery</span>
                   <div v-if="x.nama || namaSaham(x.t)" class="small muted nm">{{ x.nama || namaSaham(x.t) }}</div></td>
                 <td class="num"><HargaSaham :kode="x.t" /></td>
                 <td class="num c-strong">−{{ fmt(x.tek.turun, 0) }}%</td>
@@ -171,4 +204,5 @@ const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + '%'
 .ret.dn{color:var(--warn,#c77a1a);background:color-mix(in srgb,var(--warn,#c77a1a) 12%,transparent)}
 .sortable{cursor:pointer;user-select:none}.sortable:hover,.aktif{background:var(--accent-soft)}
 .pot{white-space:nowrap}.sep{margin-left:10px}.c-warn{color:var(--warn,#c79a1a)}
+.unduh{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin:0 0 10px}
 </style>

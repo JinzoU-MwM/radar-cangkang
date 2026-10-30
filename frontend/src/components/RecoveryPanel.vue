@@ -39,6 +39,38 @@ const cepat = computed(() => {
   return (data.value?.cepat || []).map(t => by[t]).filter(x => x && lolosHsc(x.t, f.hsc))
 })
 const hitungKat = computed(() => ({ rebound: rows.value.length, cepat: cepat.value.length }))
+// Silang-rujuk ke tab Low: saham yang juga masuk kategori "Sudah di dasar".
+const diLow = computed(() => new Set((data.value?.dasar || []).map(x => x.t)))
+
+// Unduh riset (PDF, format sama dengan riset IHSG): harga diambil ulang agar terbaru.
+const busyPdf = ref(false), errPdf = ref('')
+async function unduhPdf() {
+  busyPdf.value = true; errPdf.value = ''
+  try {
+    const [{ jsPDF }, P] = await Promise.all([import('jspdf'), import('../lib/daftarPdf.js')])
+    let hg = {}
+    try { const r = await api.get('/api/harga-saham'); if (!r.error) hg = r } catch { /* tanpa harga terbaru */ }
+    const [spec, nama] = specPdf(P, hg)
+    ;(await P.daftarPdf(spec, jsPDF)).save(P.daftarPdfName(nama))
+  } catch (e) { errPdf.value = 'PDF gagal dibuat: ' + (e.message || e) } finally { busyPdf.value = false }
+}
+function specPdf(P, hg) {
+  const h = t => hg[t]?.h
+  const row = x => [{ t: x.t, bold: true }, P.n0(h(x.t) ?? x.tek.harga), x.status, { t: '-' + Math.round(x.tek.turun) + '%' }, P.pct(x.tek.dariDasar),
+    String(x.tek.rsi ?? '-'), x.season ? `${x.season.prob}% (${x.season.up}/${x.season.n})` : '-', { t: x.broker ? P.miliar(x.broker.net) : '-', color: P.warna(x.broker?.net) },
+    `${P.n0(x.plan.entry[0])}-${P.n0(x.plan.entry[1])}`, P.n0(x.plan.tp1), P.n0(x.plan.sl), String(x.skor)]
+  const cols = [{ t: 'Saham', w: 15 }, { t: 'Harga', w: 15, align: 'right' }, { t: 'Status', w: 20 }, { t: 'Turun', w: 12, align: 'right' }, { t: 'Dasar', w: 13, align: 'right' },
+    { t: 'RSI', w: 10, align: 'right' }, { t: 'Season', w: 18, align: 'right' }, { t: 'Net bandar', w: 20, align: 'right' }, { t: 'Area beli', w: 22, align: 'right' },
+    { t: 'TP1', w: 13, align: 'right' }, { t: 'SL', w: 13, align: 'right' }, { t: 'Skor', w: 11, align: 'right' }]
+  return [{ seri: 'Riset Recovery', judul: 'Recovery: Kandidat Rebound', label: `SEASONALITY ${BLN[bulan.value - 1].toUpperCase()} · BROKER · TEKNIKAL`,
+    sub: `Saham turun >= ${data.value.minTurun}% dari puncak 52 minggu dan masih dekat dasar kejatuhannya, diurutkan menurut dukungan Seasonality, akumulasi broker, dan teknikal.`,
+    updated: data.value.updated, box: [['Kandidat', String(rows.value.length)], ['Siap rebound', String(hitung.value['Siap rebound'] || 0)], ['Recovery tercepat', String(cepat.value.length)]],
+    bagian: [{ judul: 'Kandidat rebound', ket: 'Harga = penutupan terakhir. Area beli, TP1, dan SL dari trading plan rebound (retracement 38,2%/50%, batas di bawah dasar).', cols, rows: rows.value.map(row) },
+      { judul: 'Recovery tercepat', ket: 'Momentum pulih terkuat: laju 10 hari, hari naik, dan perkiraan waktu ke TP1.', cols: [{ t: 'Saham', w: 18 }, { t: 'Harga', w: 20, align: 'right' }, { t: 'Status', w: 26 },
+        { t: 'Perkiraan hari ke TP1', w: 34, align: 'right' }, { t: 'TP1', w: 20, align: 'right' }, { t: 'Sinyal', w: 64 }],
+      rows: cepat.value.map(x => [{ t: x.t, bold: true }, P.n0(h(x.t) ?? x.tek.harga), x.status, String(x.cepat?.estimasiHari ?? '-'), P.n0(x.cepat?.tp1), (x.cepat?.sinyal || []).join(', ')]) }],
+    metode: 'Skor gabungan turun dari puncak, Seasonality, akumulasi broker, dan teknikal; trading plan adalah kerangka, bukan kepastian.' }, 'Recovery']
+}
 const hari = n => n == null ? '–' : n <= 5 ? `±${n} hari` : n <= 22 ? `±${Math.round(n / 5)} minggu` : `±${Math.round(n / 21)} bulan`
 
 const buka = ref('')
@@ -55,6 +87,8 @@ const cls = s => s === 'Siap rebound' ? 'c-good' : s === 'Mulai pulih' ? 'c-warn
       (≤ {{ data?.maxDariDasar ?? 40 }}% di atas dasar), diurutkan menurut dukungan <b>Seasonality</b> bulan terpilih, <b>akumulasi broker</b>, dan
       konfirmasi teknikal. Diperbarui otomatis Senin–Sabtu pukul 00.01 WIB.</p>
 
+<div class="unduh"><span v-if="errPdf" class="small c-strong">{{ errPdf }}</span>
+      <button type="button" class="btn" :disabled="busyPdf || !data" @click="unduhPdf">{{ busyPdf ? 'Menyiapkan PDF…' : '⬇ Unduh riset Recovery (PDF)' }}</button></div>
     <div class="kat" role="tablist" aria-label="Kategori Recovery">
       <button v-for="[k, l] in KAT" :key="k" type="button" role="tab" class="pill" :aria-selected="String(kat === k)" :aria-pressed="String(kat === k)" @click="kat = k; kartu = ''">
         {{ l }} <span v-if="data" class="muted">{{ hitungKat[k] }}</span></button>
@@ -135,6 +169,7 @@ const cls = s => s === 'Siap rebound' ? 'c-good' : s === 'Mulai pulih' ? 'c-warn
                 <td><span class="car">{{ buka === x.t ? '▾' : '▸' }}</span> <b>{{ x.t }}</b>
                   <span v-if="isHsc(x.t)" class="tag t-warn" title="Saham HSC: dikeluarkan dari perhitungan IHSG">HSC</span>
                   <span v-if="x.radar" class="tag t-calm">{{ x.radar }}</span>
+                  <span v-if="diLow.has(x.t)" class="tag t-calm" title="Juga masuk tab Low (Sudah di dasar)">juga di Low</span>
                   <div v-if="namaSaham(x.t)" class="small muted nm">{{ namaSaham(x.t) }}</div></td>
                 <td class="num"><HargaSaham :kode="x.t" :avg="x.broker?.avg && !x.broker.dist ? x.broker.avg : null" /></td>
                 <td class="small" :class="cls(x.status)">{{ x.status }}</td>
@@ -205,4 +240,5 @@ const cls = s => s === 'Siap rebound' ? 'c-good' : s === 'Mulai pulih' ? 'c-warn
 .ret.up{color:var(--good,#1a8a4a);background:color-mix(in srgb,var(--good,#1a8a4a) 12%,transparent)}
 .ret.dn{color:var(--warn,#c77a1a);background:color-mix(in srgb,var(--warn,#c77a1a) 12%,transparent)}
 .sinyal{margin:4px 0 0;padding-left:18px}
+.unduh{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin:0 0 10px}
 </style>

@@ -23,6 +23,21 @@ function jadwal() {
 onMounted(async () => { await load(); jadwal(); loadVoices(); synth?.addEventListener?.('voiceschanged', loadVoices) })
 onBeforeUnmount(() => { clearTimeout(poll); synth?.cancel(); synth?.removeEventListener?.('voiceschanged', loadVoices) })
 
+// Salin ringkasan kondisi IHSG sebagai teks biasa (siap tempel ke chat/WhatsApp).
+const disalin = ref(false)
+async function salin() {
+  const d = data.value
+  if (!d) return
+  const t = [`IHSG ${d.tanggal || ''} ${d.waktu ? d.waktu.slice(11, 16) + ' WIB' : ''}`.trim(),
+    `Harga: ${angka(d.harga)} (${d.ubahPct > 0 ? '+' : ''}${angka(d.ubahPct)}%)`,
+    `Kesimpulan: ${d.label} (skor ${d.skor})`,
+    d.arahTransaksi ? `Arah transaksi real time: ${d.arahTransaksi.label}` : null,
+    d.support?.length ? `Support: ${d.support.slice(0, 2).map(v => angka(v, 0)).join(' / ')}` : null,
+    d.resistance?.length ? `Resistance: ${d.resistance.slice(0, 2).map(v => angka(v, 0)).join(' / ')}` : null,
+    '', ...(d.narasi || []).map(x => '- ' + x),
+    '', 'https://saham.aseprudal.web.id/#/seasonality?tab=live'].filter(x => x !== null).join('\n')
+  try { await navigator.clipboard.writeText(t); disalin.value = true; setTimeout(() => { disalin.value = false }, 2500) } catch { disalin.value = false }
+}
 const angka = (v, dp = 2) => v == null ? '–' : Number(v).toLocaleString('id-ID', { minimumFractionDigits: dp, maximumFractionDigits: dp })
 const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 2) + '%'
 const toneOf = s => s > 0.15 ? 'c-good' : s < -0.15 ? 'c-strong' : 'muted'
@@ -119,6 +134,7 @@ watch(data, cekOtomatis)
         </div>
         <div class="suara">
           <button type="button" class="pill" :aria-pressed="String(bicara)" :disabled="!synth" @click="bicara ? diam() : suarakan()">{{ bicara ? '■ Hentikan suara' : '🔊 Suarakan kondisi' }}</button>
+          <button type="button" class="pill" @click="salin">{{ disalin ? '✓ Tersalin' : '📋 Salin ringkasan' }}</button>
           <button type="button" class="pill" :aria-pressed="String(otomatis)" :disabled="!synth" @click="toggleOtomatis">Suara tiap menit: {{ otomatis ? 'aktif' : 'mati' }}</button>
           <span class="small muted">{{ voice ? voice.name : (synth ? 'Suara browser bawaan' : 'Browser tidak mendukung suara') }}</span>
         </div>

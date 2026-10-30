@@ -47,6 +47,33 @@ const saham = computed(() => {
   const s = data.value?.saham
   return s ? { akumulasi: s.akumulasi.filter(x => lolosHsc(x.s, hsc.value)), distribusi: s.distribusi.filter(x => lolosHsc(x.s, hsc.value)) } : null
 })
+
+// Unduh riset (PDF, format sama dengan riset IHSG): harga diambil ulang agar terbaru.
+const busyPdf = ref(false), errPdf = ref('')
+async function unduhPdf() {
+  busyPdf.value = true; errPdf.value = ''
+  try {
+    const [{ jsPDF }, P] = await Promise.all([import('jspdf'), import('../lib/daftarPdf.js')])
+    let hg = {}
+    try { const r = await api.get('/api/harga-saham'); if (!r.error) hg = r } catch { /* tanpa harga terbaru */ }
+    const [spec, nama] = specPdf(P, hg)
+    ;(await P.daftarPdf(spec, jsPDF)).save(P.daftarPdfName(nama))
+  } catch (e) { errPdf.value = 'PDF gagal dibuat: ' + (e.message || e) } finally { busyPdf.value = false }
+}
+function specPdf(P, hg) {
+  const jn = jenis.value ? ` (${jenis.value})` : ''
+  const cols = [{ t: 'Saham', w: 15 }, { t: 'Nama', w: 47 }, { t: 'Harga', w: 17, align: 'right' }, { t: 'Net bandar', w: 24, align: 'right' }, { t: 'Avg', w: 17, align: 'right' },
+    { t: 'Broker utama', w: 26 }, { t: 'Asing', w: 18, align: 'right' }, { t: 'Domestik', w: 18, align: 'right' }]
+  const row = (x, side) => [{ t: x.s, bold: true }, namaSaham(x.s) || '-', P.n0(hg[x.s]?.h), { t: P.miliar(x.bandar), color: P.warna(x.bandar) },
+    P.n0(side === 'akum' ? x.avgAkum : x.avgDist), (x[side] || []).map(z => z.b).join(', '), { t: P.miliar(x.asing), color: P.warna(x.asing) }, { t: P.miliar(x.domestik), color: P.warna(x.domestik) }]
+  const s = saham.value || { akumulasi: [], distribusi: [] }
+  return [{ seri: 'Riset Pola Broker', judul: `Pola Broker ${harian.value ? 'Harian' : 'Bulanan'}${jn}`, label: `AKUMULASI & DISTRIBUSI · ${String(judul.value).toUpperCase()}`,
+    sub: 'Net beli (akumulasi) dan net jual (distribusi) broker per saham: ukuran bandar dari 3 broker pembeli dan 3 penjual teratas, harga rata-rata, dan porsi asing/domestik.',
+    updated: data.value.updated, box: [['Periode', judul.value || '-'], ['Akumulasi', String(s.akumulasi.length)], ['Distribusi', String(s.distribusi.length)]],
+    bagian: [{ judul: 'Akumulasi', ket: 'Diurutkan dari net bandar terbesar. Avg = harga rata-rata broker pembeli utama.', cols, rows: s.akumulasi.map(x => row(x, 'akum')) },
+      { judul: 'Distribusi', ket: 'Diurutkan dari net jual terbesar. Avg = harga rata-rata broker penjual utama.', cols, rows: s.distribusi.map(x => row(x, 'dist')) }],
+    metode: 'Data broker activity Stockbit pasar reguler; net bandar adalah ukuran gaya Bandar Detector, bukan kepemilikan.' }, `Pola-Broker-${harian.value ? 'Harian' : 'Bulanan'}`]
+}
 const pilih = ref('')
 // Baris tabel yang dibuka untuk rincian saham (kunci = sisi/bulan + kode).
 const bukaB = ref('')
@@ -98,6 +125,8 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
 <template>
   <div class="bp">
     <p class="muted small">Akumulasi (net beli) dan distribusi (net jual) tiap broker per bulan tahun {{ data?.tahun || new Date().getFullYear() }} atau per hari (20 hari bursa terakhir, diperbarui tiap hari bursa setelah 16.45 WIB): saham, net lot, net nominal, dan harga rata-rata beli/jual. Sumber: broker activity Stockbit, pasar reguler. Diperbarui otomatis Senin–Sabtu pukul 00.01 WIB.</p>
+<div class="unduh"><span v-if="errPdf" class="small c-strong">{{ errPdf }}</span>
+      <button type="button" class="btn" :disabled="busyPdf || !saham" @click="unduhPdf">{{ busyPdf ? 'Menyiapkan PDF…' : '⬇ Unduh riset Pola Broker (PDF)' }}</button></div>
     <div class="ctl">
       <div role="group" aria-label="Tampilan">
         <button type="button" class="pill sm" :aria-pressed="String(mode === 'saham')" @click="mode = 'saham'">Per saham</button>
@@ -267,4 +296,5 @@ h4{margin:6px 0}
 @media (max-width:1100px){.mo .two{grid-template-columns:1fr}}
 .row{cursor:pointer}.row:hover,.row.open{background:var(--accent-soft)}.car{color:var(--muted)}.det td{background:var(--sheet)}
 .nm{max-width:26ch;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400}
+.unduh{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin:0 0 10px}
 </style>
