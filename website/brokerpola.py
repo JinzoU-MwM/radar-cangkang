@@ -239,7 +239,8 @@ def view_harian(hd: dict, tanggal: str, brokers: dict, jenis: str = "") -> dict:
         tanggal = ada[0] if ada else ""
     v = view(harian_ke_data(hd.get("hari") or {}, tanggal, brokers), 1, None, jenis) if tanggal else {"saham": None, "brokers": []}
     v.pop("bulanAda", None)
-    return {**v, "harian": True, "tanggal": tanggal, "tanggalAda": ada, "updated": hd.get("updated")}
+    return {**v, "harian": True, "tanggal": tanggal, "tanggalAda": ada, "updated": hd.get("updated"),
+            "diag": None if ada else (hd.get("diag") or [])[:6]}
 
 
 def series_harian(hd: dict, sym: str, brokers: dict, jenis: str = "") -> list[dict]:
@@ -257,23 +258,40 @@ def series_harian(hd: dict, sym: str, brokers: dict, jenis: str = "") -> list[di
 def build_harian(fetch, old: dict, brokers: dict, dates: list[str], fresh_dates: set, pause: float = 0.25, log=print) -> dict:
     """Net beli/jual per broker per hari bursa: {"hari": {tanggal: {"broker": {kode: net_month(...)}} | {"libur": True}}}.
     Tanggal yang sudah lengkap tidak diambil ulang; tanggal di fresh_dates (hari ini/kemarin) diperbarui."""
-    data = {"hari": dict(old.get("hari") or {})}
+    # Versi 2: data versi lama (hari gagal tercatat sebagai libur) dibuang dan diisi ulang.
+    data = {"versi": 2, "hari": dict(old.get("hari") or {}) if old.get("versi") == 2 else {}, "diag": []}
     for d in dates:
         if d in data["hari"] and d not in fresh_dates:
             continue
-        rec = {}
+        rec, gagal, kosong = {}, 0, 0
         for c in sorted(brokers):
             try:
-                r = net_month(fetch(f"/order-trade/broker/activity?broker_code={c}&from={d}&to={d}", d in fresh_dates))
+                resp = fetch(f"/order-trade/broker/activity?broker_code={c}&from={d}&to={d}", d in fresh_dates)
+                r = net_month(resp)
                 r.pop("nama", None)
                 if r["beli"] or r["jual"]:
                     rec[c] = r
+                else:
+                    kosong += 1
+                    if kosong == 1:
+                        t = (resp.get("data") or {}).get("broker_activity_transaction")
+                        data["diag"].append({"tanggal": d, "broker": c, "kunci": sorted((resp.get("data") or {}).keys())[:12],
+                                             "isi": {k: len(v) for k, v in t.items() if isinstance(v, list)} if isinstance(t, dict) else str(type(t))})
             except Exception as e:
+                gagal += 1
+                if gagal == 1:
+                    data["diag"].append({"tanggal": d, "broker": c, "gagal": str(e)[:120]})
                 log(f"[broker-harian] {c} {d}: {e}")
             time.sleep(pause)
-        # Tanpa transaksi di semua broker = hari libur bursa (atau data belum tersedia untuk hari ini).
-        data["hari"][d] = {"broker": rec} if rec else {"libur": True}
-        log(f"[broker-harian] {d}: {len(rec)} broker")
+        if rec:
+            data["hari"][d] = {"broker": rec}
+        elif gagal == 0:
+            data["hari"][d] = {"libur": True}   # semua broker kosong tanpa galat = hari libur bursa
+        # Banyak galat tanpa data: tanggal tidak dicatat agar dicoba lagi di putaran berikutnya.
+        log(f"[broker-harian] {d}: {len(rec)} broker, {kosong} kosong, {gagal} gagal")
+        if gagal > 10 and not rec:
+            break
+    data["diag"] = data["diag"][-30:]
     keep = sorted(data["hari"], reverse=True)[:40]
     data["hari"] = {d: data["hari"][d] for d in keep}
     data["updated"] = time.strftime("%Y-%m-%d %H:%M")
