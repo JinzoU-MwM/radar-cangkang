@@ -2421,6 +2421,10 @@ def nama_semua() -> dict:
     if time.time() - _nama_memo[0] < 1800 and _nama_memo[1]:
         return _nama_memo[1]
     out = {}
+    try:  # nama saham HSC (hsc.json) sebagai cadangan paling dasar
+        out.update(json.loads((ROOT / "hsc.json").read_text(encoding="utf-8")).get("nama") or {})
+    except (OSError, ValueError):
+        pass
     for t, x in (tsa_load("gems") or {}).items():
         if isinstance(x, dict) and x.get("stockName"):
             out[t] = x["stockName"]
