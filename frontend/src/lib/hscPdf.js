@@ -45,7 +45,24 @@ export async function hscPdf(a, h, hg, jsPDF) {
     y = para(doc, k.teks, 21, y, 175, 9.5) - 1
   }
 
-  // 3) Keranjang HSC vs non-HSC, sorotan, dan catatan sumber.
+  // 3) Analisa naratif dan estimasi IHSG tanpa HSC.
+  doc.addPage(); frame(doc, 'Analisa', ++page, 'Riset HSC')
+  heading(doc, 'Analisa dampak', 28); y = 40
+  for (const n of a.narasi || []) {
+    if (y > 250) { doc.addPage(); frame(doc, 'Analisa', ++page, 'Riset HSC'); y = 28 }
+    y = block(doc, n.judul, n.teks || (n.poin || []).map(p => '- ' + p).join('\n'), y) + 2
+  }
+  if (a.exHsc?.length) {
+    if (y > 220) { doc.addPage(); frame(doc, 'Analisa', ++page, 'Riset HSC'); y = 22 }
+    heading(doc, 'Estimasi IHSG tanpa HSC', y + 6, 15); y += 15
+    y = tabel(doc, 14, y, [{ t: 'Periode', w: 30 }, { t: 'IHSG aktual', w: 38, align: 'right' }, { t: 'Median HSC', w: 38, align: 'right' },
+      { t: 'Estimasi ex-HSC', w: 40, align: 'right' }, { t: 'Selisih', w: 36, align: 'right' }],
+    a.exHsc.map(x => [{ t: x.periode, bold: true }, { t: pct(x.ihsg), color: warna(x.ihsg) }, { t: pct(x.hsc), color: warna(x.hsc) },
+      { t: pct(x.ex), color: warna(x.ex), bold: true }, { t: `${poin(x.selisih)} pp`, color: warna(x.selisih) }]), 9)
+    y = para(doc, `ex-HSC = (IHSG - ${a.bobotHsc}% x median HSC) / ${100 - a.bobotHsc}%. Median dipakai sebagai proksi kinerja HSC karena kapitalisasi tiap saham belum tersedia; hasilnya perkiraan arah.`, 14, y, 182, 8.5, MUTED)
+  }
+
+  // 4) Keranjang HSC vs non-HSC, sektor, asing, sorotan, dan catatan sumber.
   doc.addPage(); frame(doc, 'Keranjang HSC', ++page, 'Riset HSC')
   heading(doc, 'Saham HSC vs non-HSC', 28)
   y = para(doc, 'Median perubahan harga dan persentase saham yang naik per periode (data harian terakhir).', 14, 37, 182, 9, MUTED)
@@ -58,6 +75,19 @@ export async function hscPdf(a, h, hg, jsPDF) {
   y = block(doc, 'Saham HSC paling turun sebulan', daftar(a.terburuk), y + 4)
   y = block(doc, 'Saham HSC paling naik sebulan', daftar(a.terbaik), y + 2)
   if (a.sorot?.length) y = block(doc, 'Sorotan bobot besar', daftar(a.sorot), y + 2)
+  const uang = xs => (xs || []).map(x => `${x.t} ${miliar(x.asing)}`).join(', ') || '-'
+  if (a.asingBeli?.length || a.asingJual?.length) {
+    y = block(doc, `Asing net beli terbesar di saham HSC (${a.bulanBroker})`, uang(a.asingBeli), y + 2)
+    y = block(doc, `Asing net jual terbesar di saham HSC (${a.bulanBroker})`, uang(a.asingJual), y + 2)
+  }
+  const baruAn = () => { doc.addPage(); frame(doc, 'Keranjang HSC', ++page, 'Riset HSC'); return 22 }
+  if (a.sektor?.length) {
+    if (y > 230) y = baruAn()
+    heading(doc, 'Sektor saham HSC', y + 6, 15); y += 15
+    y = tabel(doc, 14, y, [{ t: 'Sektor', w: 50 }, { t: 'Emiten', w: 18, align: 'right' }, { t: 'Median 1M', w: 24, align: 'right' }, { t: 'Kode', w: 90 }],
+      a.sektor.map(s => [{ t: s.sektor, bold: true }, String(s.n), { t: pct(s.m), color: warna(s.m) }, s.kode.join(', ')]), 8, { baru: baruAn })
+  }
+  if (y > 240) y = baruAn()
   heading(doc, 'Catatan sumber', y + 6, 15); y += 15
   for (const t of [...(an.fakta || []), ...(an.implikasi || [])]) {
     doc.setFillColor(GOLD); doc.circle(17, y - 1.3, 1.1, 'F')

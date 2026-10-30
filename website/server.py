@@ -2545,10 +2545,89 @@ def hsc_analisa() -> dict:
     if kh["1D"]["naik"] is not None:
         ks.append({"nada": "netral", "teks": f"Hari terakhir: {kh['1D']['naik']}% saham HSC naik vs {kn['1D']['naik']}% saham non-HSC."})
 
+    # Estimasi IHSG tanpa HSC per periode: IHSG = (1 - w) x ex-HSC + w x HSC, dengan HSC diwakili median keranjang
+    # (proksi bobot sama karena kapitalisasi tiap saham tidak tersedia) -> ex-HSC = (IHSG - w x HSC) / (1 - w).
+    w = (an.get("bobotHsc") or 18) / 100
+    try:
+        cl = [b["c"] for b in ihsg_bars() if b.get("c")]
+    except Exception:
+        cl = []
+    tahun = None
+    try:
+        bars = ihsg_bars()
+        tahun = str(bars[-1]["d"])[:4] if bars else None
+        akhir_lalu = [b["c"] for b in bars if str(b["d"])[:4] < tahun] if tahun else []
+    except Exception:
+        akhir_lalu = []
+    ret_ihsg = {}
+    for lbl, n in (("1D", 1), ("1W", 5), ("1M", 21)):
+        if len(cl) > n and cl[-1 - n]:
+            ret_ihsg[lbl] = round((cl[-1] / cl[-1 - n] - 1) * 100, 2)
+    if cl and akhir_lalu:
+        ret_ihsg["YTD"] = round((cl[-1] / akhir_lalu[-1] - 1) * 100, 2)
+    exhsc = []
+    for lbl in ("1D", "1W", "1M", "YTD"):
+        ri, rh = ret_ihsg.get(lbl), kh[lbl]["median"]
+        if ri is None or rh is None:
+            continue
+        ex = round((ri - w * rh) / (1 - w), 2)
+        exhsc.append({"periode": lbl, "ihsg": ri, "hsc": rh, "ex": ex, "selisih": round(ex - ri, 2)})
+    if exhsc:
+        m1 = next((x for x in exhsc if x["periode"] == "1M"), exhsc[-1])
+        ks.append({"nada": "naik" if m1["selisih"] > 0 else "turun" if m1["selisih"] < 0 else "netral",
+                   "teks": f"Estimasi: tanpa HSC, IHSG {m1['periode']} bergerak {f(m1['ex'])}% dibanding aktual {f(m1['ihsg'])}% "
+                           f"(selisih {f(m1['selisih'])} poin persen)."})
+
+    # Sektor saham HSC (indeks sektoral IDX dari data Seasonality): jumlah emiten dan median kinerja 1M.
+    stock = season_data().get("stock") or {}
+    sek: dict[str, list] = {}
+    for t in hs:
+        ix = (stock.get(t) or {}).get("ix") or []
+        nm = SZ.SECTORS.get(ix[0], "") if ix else ""
+        sek.setdefault(nm or "Lainnya", []).append(t)
+    sektor = sorted(({"sektor": k, "n": len(v), "kode": sorted(v),
+                      "m": _median([hg[t]["m"] for t in v if t in hg and hg[t].get("m") is not None])} for k, v in sek.items()),
+                    key=lambda x: (-x["n"], x["sektor"]))
+
+    # Arus asing per saham HSC bulan terakhir: net beli & net jual terbesar.
+    ah = sorted(((t, arus[t]["asing"]) for t in hs if t in arus), key=lambda z: z[1])
+    asing_beli = [{"t": t, "asing": v} for t, v in ah[::-1][:5] if v > 0]
+    asing_jual = [{"t": t, "asing": v} for t, v in ah[:5] if v < 0]
+
+    # Sensitivitas: poin IHSG per 1% gerak tiap penggerak (bobot baru).
+    for x in pg:
+        x["sens"] = round(x["ke"] / 100 * ihsg / 100, 1) if ihsg else None
+
+    # Narasi per bagian (dari angka di atas).
+    narasi = []
+    narasi.append({"judul": "Apa yang berubah", "teks":
+                   f"Saham HSC berbobot sekitar {an.get('bobotHsc') or 18}% keluar dari IHSG; bobotnya terbagi ke saham lain sehingga "
+                   f"big-4 bank naik dari {str(b4.get('dari')).replace('.', ',')}% ke {str(b4.get('ke')).replace('.', ',')}%. Level indeks tidak "
+                   f"melompat karena divisor disesuaikan; yang berubah adalah siapa yang menggerakkan indeks."})
+    if ret4.get("1M") is not None and sens:
+        narasi.append({"judul": "Dampak ke pergerakan harian", "teks":
+                       f"Dengan bobot baru, setiap 1% gerak big-4 bank menggeser IHSG sekitar {str(sens).replace('.', ',')} poin. "
+                       f"Sebulan terakhir big-4 bank bergerak {f(ret4['1M'])}% (setara {f(round(ret4['1M'] * sens, 1))} poin). "
+                       f"Penggerak terbesar sepekan: " + ", ".join(f"{x['t']} {f(x['poin']['w'])} poin" for x in
+                                                                     sorted(pg, key=lambda x: -abs(x['poin']['w'] or 0))[:3]) + "."})
+    if a4:
+        narasi.append({"judul": "Arus dana", "teks":
+                       f"Asing net {'beli' if sum(a4) > 0 else 'jual'} big-4 bank Rp{abs(sum(a4)) / 1e12:.2f} T pada {BLN_ID[bulan_b - 1]}".replace(".", ",") +
+                       (f"; pada saham HSC asing net {'beli' if asing_hsc > 0 else 'jual'} Rp{abs(asing_hsc) / 1e9:,.1f} M".replace(",", "X").replace(".", ",").replace("X", ".") if arus else "") +
+                       ". Karena IHSG makin bergantung pada bank, arah asing di saham bank menjadi penentu utama."})
+    lv2 = lambda v: f"{round(v):,}".replace(",", ".")
+    pantau = [f"Big-4 bank turun 2% setara {f(round(-2 * sens, 1))} poin (IHSG sekitar {lv2(ihsg - 2 * sens)}); naik 2% setara "
+              f"{f(round(2 * sens, 1))} poin (sekitar {lv2(ihsg + 2 * sens)})." if sens else None,
+              "Rupiah dan arus asing di saham bank (BBCA, BBRI, BMRI, BBNI).",
+              "Publikasi bobot resmi BEI setelah 2 November untuk mengganti estimasi bobot.",
+              "Evaluasi HSC berikutnya (Januari 2027): saham yang keluar dari daftar akan kembali dihitung dalam IHSG."]
+    narasi.append({"judul": "Yang perlu dipantau", "poin": [p for p in pantau if p]})
+
     return {"ihsg": ihsg, "ihsgWaktu": lv.get("waktu"), "ihsgSumber": "Live" if lv.get("harga") else "basis sumber",
             "bobotHsc": an.get("bobotHsc"), "bank4": {**b4, "ret": ret4, "sens": sens}, "penggerak": pg, "skenario": skenario,
             "keranjang": {"hsc": kh, "non": kn}, "terburuk": gerak(hm[:5]), "terbaik": gerak(hm[-5:][::-1]),
             "sorot": gerak([t for t in ("BREN", "BYAN", "DSSA") if t in hg]),
+            "exHsc": exhsc, "retIhsg": ret_ihsg, "sektor": sektor, "asingBeli": asing_beli, "asingJual": asing_jual, "narasi": narasi,
             "asingHsc": asing_hsc if arus else None, "bulanBroker": BLN_ID[bulan_b - 1] if bulan_b else None, "kesimpulan": ks,
             "updated": next((v["tgl"] for v in hg.values() if v.get("tgl")), None)}
 

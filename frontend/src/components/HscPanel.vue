@@ -78,17 +78,44 @@ async function unduh() {
           <li v-for="k in a.kesimpulan" :key="k.teks"><span class="dot" :class="k.nada === 'naik' ? 'bg-good' : k.nada === 'turun' ? 'bg-strong' : 'bg-muted'"></span>{{ k.teks }}</li>
         </ul>
 
+        <!-- Narasi per bagian (dihitung dari angka analisa) -->
+        <div class="nar">
+          <div v-for="n in a.narasi" :key="n.judul" class="nb">
+            <h4>{{ n.judul }}</h4>
+            <p v-if="n.teks" class="small">{{ n.teks }}</p>
+            <ul v-if="n.poin" class="small"><li v-for="p in n.poin" :key="p">{{ p }}</li></ul>
+          </div>
+        </div>
+
+        <template v-if="a.exHsc?.length">
+          <h3>Estimasi IHSG tanpa HSC <span class="muted small">(ex-HSC = (IHSG − {{ a.bobotHsc }}% × median HSC) ÷ {{ 100 - a.bobotHsc }}%)</span></h3>
+          <div class="scroll">
+            <table class="ledger">
+              <thead><tr><th>Periode</th><th class="num">IHSG aktual</th><th class="num">Median HSC</th><th class="num">Estimasi ex-HSC</th><th class="num">Selisih</th></tr></thead>
+              <tbody><tr v-for="x in a.exHsc" :key="x.periode">
+                <td>{{ x.periode }}</td>
+                <td class="num" :class="nada(x.ihsg)">{{ pct(x.ihsg) }}</td>
+                <td class="num" :class="nada(x.hsc)">{{ pct(x.hsc) }}</td>
+                <td class="num" :class="nada(x.ex)"><b>{{ pct(x.ex) }}</b></td>
+                <td class="num" :class="nada(x.selisih)">{{ poin(x.selisih) }} pp</td>
+              </tr></tbody>
+            </table>
+          </div>
+          <p class="small muted">Median dipakai sebagai proksi kinerja HSC (bobot sama) karena kapitalisasi tiap saham belum tersedia; hasilnya perkiraan arah, bukan angka resmi.</p>
+        </template>
+
         <h3>Penggerak baru <span class="muted small">(bobot estimasi; poin = bobot × perubahan harga × IHSG)</span></h3>
         <div class="scroll">
           <table class="ledger">
             <thead><tr><th>Saham</th><th class="num">Harga</th><th class="num">Bobot</th>
-              <th v-for="[k, l] in PER" :key="k" class="num">{{ l }}</th><th class="num">Poin 1W</th><th class="num">Poin 1M</th><th class="num">Asing (bln {{ a.bulanBroker || '–' }})</th></tr></thead>
+              <th v-for="[k, l] in PER" :key="k" class="num">{{ l }}</th><th class="num" title="Poin IHSG per 1% gerak saham ini (bobot baru)">1% =</th><th class="num">Poin 1W</th><th class="num">Poin 1M</th><th class="num">Asing (bln {{ a.bulanBroker || '–' }})</th></tr></thead>
             <tbody>
               <tr v-for="x in a.penggerak" :key="x.t">
                 <td><b>{{ x.t }}</b><span v-if="x.turunan" class="muted" title="Bobot diturunkan dari total big-4 bank dikurangi tiga bank lain">*</span></td>
                 <td class="num"><HargaSaham :kode="x.t" /></td>
                 <td class="num">{{ id(x.dari) }}% → <b>{{ id(x.ke) }}%</b></td>
                 <td v-for="[k] in PER" :key="k" class="num" :class="nada(x.ret[k])">{{ pct(x.ret[k]) }}</td>
+                <td class="num muted">{{ id(x.sens, 1) }} poin</td>
                 <td class="num" :class="nada(x.poin.w)" :title="`Dengan bobot lama: ${poin(x.poinLama.w)}`">{{ poin(x.poin.w) }}</td>
                 <td class="num" :class="nada(x.poin.m)" :title="`Dengan bobot lama: ${poin(x.poinLama.m)}`">{{ poin(x.poin.m) }}</td>
                 <td class="num" :class="nada(x.arus?.asing)">{{ x.arus ? miliar(x.arus.asing) : '–' }}</td>
@@ -121,6 +148,25 @@ async function unduh() {
             <p class="small"><span class="muted">Paling turun 1M:</span> <span v-for="x in a.terburuk" :key="x.t" class="chip">{{ x.t }} <span :class="nada(x.m)">{{ pct(x.m) }}</span></span></p>
             <p class="small"><span class="muted">Paling naik 1M:</span> <span v-for="x in a.terbaik" :key="x.t" class="chip">{{ x.t }} <span :class="nada(x.m)">{{ pct(x.m) }}</span></span></p>
             <p v-if="a.sorot?.length" class="small"><span class="muted">Bobot besar:</span> <span v-for="x in a.sorot" :key="x.t" class="chip">{{ x.t }} <span :class="nada(x.m)">{{ pct(x.m) }}</span></span></p>
+          </div>
+        </div>
+
+        <div class="ag">
+          <div v-if="a.sektor?.length">
+            <h3>Sektor saham HSC</h3>
+            <table class="ledger">
+              <thead><tr><th>Sektor</th><th class="num">Emiten</th><th class="num">Median 1M</th></tr></thead>
+              <tbody><tr v-for="s in a.sektor" :key="s.sektor" :title="s.kode.join(', ')">
+                <td>{{ s.sektor }}</td><td class="num">{{ s.n }}</td><td class="num" :class="nada(s.m)">{{ pct(s.m) }}</td>
+              </tr></tbody>
+            </table>
+            <p class="small muted">Arahkan kursor ke baris untuk melihat kode saham.</p>
+          </div>
+          <div v-if="a.asingBeli?.length || a.asingJual?.length">
+            <h3>Asing di saham HSC <span class="muted small">({{ a.bulanBroker }})</span></h3>
+            <p class="small"><span class="muted">Net beli terbesar:</span> <span v-for="x in a.asingBeli" :key="x.t" class="chip">{{ x.t }} <span class="c-good">{{ miliar(x.asing) }}</span></span><span v-if="!a.asingBeli.length" class="muted">–</span></p>
+            <p class="small"><span class="muted">Net jual terbesar:</span> <span v-for="x in a.asingJual" :key="x.t" class="chip">{{ x.t }} <span class="c-strong">{{ miliar(x.asing) }}</span></span><span v-if="!a.asingJual.length" class="muted">–</span></p>
+            <p v-if="a.asingHsc != null" class="small">Total asing di saham HSC: <b :class="nada(a.asingHsc)">{{ miliar(a.asingHsc) }}</b></p>
           </div>
         </div>
       </template>
@@ -182,4 +228,6 @@ async function unduh() {
 .bg-good{background:var(--good)}.bg-strong{background:var(--strong)}.bg-muted{background:var(--ink-2)}
 .chip{display:inline-block;margin:2px 6px 2px 0;white-space:nowrap}
 .sumber{margin-top:12px}.sumber summary{cursor:pointer}
+.nar{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin:10px 0}
+.nb{border-left:3px solid var(--accent);padding:2px 0 2px 10px}.nb h4{margin:0 0 4px}.nb p{margin:0}
 </style>
