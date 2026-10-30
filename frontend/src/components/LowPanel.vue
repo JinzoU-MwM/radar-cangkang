@@ -23,15 +23,26 @@ const f = reactive({ hsc: '' })
 const KAT = [['dasar', 'Sudah di dasar'], ['low', 'Low per periode']]
 const kat = ref('dasar')
 const PER = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', '10Y']
-const dasar = computed(() => (data.value?.dasar || []).filter(x => lolosHsc(x.t, f.hsc)))
+// Potensi rebound (pantulan dari titik terendah) & recovery (momentum pulih) dari server; saringan dan urutan opsional.
+const g = reactive({ rebound: '', pulih: false, urut: '' })
+const URUT = [['', 'Low terdalam'], ['rebound', 'Potensi rebound'], ['pulih', 'Recovery']]
+const lolosPotensi = x => (!g.rebound || (g.rebound === 'Tinggi' ? x.potensi?.rebound.label === 'Tinggi' : x.potensi?.rebound.label !== 'Rendah')) &&
+  (!g.pulih || x.potensi?.pulih.label === 'Mulai pulih')
+const urutkan = (r, dasarFn) => g.urut === 'rebound' ? [...r].sort((a, b) => b.potensi.rebound.skor - a.potensi.rebound.skor || dasarFn(a, b))
+  : g.urut === 'pulih' ? [...r].sort((a, b) => b.potensi.pulih.skor - a.potensi.pulih.skor || (a.potensi.pulih.estimasiHari ?? 999) - (b.potensi.pulih.estimasiHari ?? 999))
+  : [...r].sort(dasarFn)
+const dasar = computed(() => urutkan((data.value?.dasar || []).filter(x => lolosHsc(x.t, f.hsc) && lolosPotensi(x)), (a, b) => b.tek.turun - a.tek.turun))
+const hari = n => n == null ? '' : n <= 5 ? `±${n} hari` : n <= 22 ? `±${Math.round(n / 5)} minggu` : `±${Math.round(n / 21)} bulan`
+const nadaR = l => l === 'Tinggi' ? 'c-good' : l === 'Sedang' ? 'c-warn' : 'muted'
+const nadaP = l => l === 'Mulai pulih' ? 'c-good' : l === 'Awal' ? 'c-warn' : 'muted'
 const fp = ref('1M'), batas = ref(0), lowN = ref(100)
 const BATAS = [0, 10, 25, 50, 75]
 const low = computed(() => {
   const p = fp.value
-  return (data.value?.low || []).filter(x => lolosHsc(x.t, f.hsc) && x.ret?.[p] != null && x.ret[p] < 0 && x.ret[p] <= -batas.value)
-    .sort((a, b) => a.ret[p] - b.ret[p])
+  return urutkan((data.value?.low || []).filter(x => lolosHsc(x.t, f.hsc) && lolosPotensi(x) && x.ret?.[p] != null && x.ret[p] < 0 && x.ret[p] <= -batas.value),
+    (a, b) => a.ret[p] - b.ret[p])
 })
-watch([fp, batas], () => { lowN.value = 100 })
+watch([fp, batas, () => g.rebound, () => g.pulih, () => g.urut], () => { lowN.value = 100 })
 const hitung = computed(() => ({ dasar: dasar.value.length, low: low.value.length }))
 const buka = ref('')
 const rp = v => v == null ? '–' : 'Rp' + Math.round(v).toLocaleString('id-ID')
@@ -45,6 +56,13 @@ const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + '%'
     <div class="kat" role="tablist" aria-label="Kategori Low">
       <button v-for="[k, l] in KAT" :key="k" type="button" role="tab" class="pill" :aria-selected="String(kat === k)" :aria-pressed="String(kat === k)" @click="kat = k; buka = ''">
         {{ l }} <span v-if="data" class="muted">{{ hitung[k] }}</span></button>
+    </div>
+    <div class="flt" role="group" aria-label="Saringan potensi">
+      <span class="small muted">Potensi rebound:</span>
+      <button v-for="[v, l] in [['', 'Semua'], ['Sedang', 'Sedang ke atas'], ['Tinggi', 'Tinggi']]" :key="v" type="button" class="pill sm" :aria-pressed="String(g.rebound === v)" @click="g.rebound = v">{{ l }}</button>
+      <button type="button" class="pill sm" :aria-pressed="String(g.pulih)" @click="g.pulih = !g.pulih">Recovery: mulai pulih</button>
+      <span class="small muted sep">Urutkan:</span>
+      <button v-for="[v, l] in URUT" :key="v" type="button" class="pill sm" :aria-pressed="String(g.urut === v)" @click="g.urut = v">{{ l }}</button>
     </div>
     <div class="flt" role="group" aria-label="Saham HSC" :title="hscInfo()">
       <span class="small muted">HSC:</span>
@@ -67,7 +85,7 @@ const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + '%'
       <div class="scroll">
         <table class="ledger">
           <thead><tr>
-            <th>Saham</th><th class="num">Harga</th><th class="num">Dari puncak 52 mgg</th><th class="num">Di atas terendah</th>
+            <th>Saham</th><th class="num">Harga</th><th class="num">Dari puncak 52 mgg</th><th class="num">Di atas terendah</th><th>Potensi rebound</th><th>Recovery</th>
             <th v-for="p in PER" :key="p" class="num sortable" :class="{ aktif: fp === p }" @click="fp = p">{{ p }}{{ fp === p ? ' ▴' : '' }}</th>
           </tr></thead>
           <tbody>
@@ -79,9 +97,13 @@ const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + '%'
                 <td class="num">{{ rp(x.harga) }}</td>
                 <td class="num">{{ x.turun != null ? '−' + fmt(x.turun, 0) + '%' : '–' }}</td>
                 <td class="num">{{ pct(x.dariRendah) }}</td>
+                <td class="small pot" :title="x.potensi?.rebound.alasan.join(' · ')"><b :class="nadaR(x.potensi?.rebound.label)">{{ x.potensi?.rebound.label || '–' }}</b>
+                  <span v-if="x.potensi?.rebound.naik != null" class="muted"> · TP1 {{ rp(x.potensi.rebound.tp1) }} ({{ pct(x.potensi.rebound.naik) }})</span></td>
+                <td class="small pot" :title="x.potensi?.pulih.sinyal.join(' · ')"><b :class="nadaP(x.potensi?.pulih.label)">{{ x.potensi?.pulih.label || '–' }}</b>
+                  <span v-if="x.potensi?.pulih.estimasiHari" class="muted"> · TP1 {{ hari(x.potensi.pulih.estimasiHari) }}</span></td>
                 <td v-for="p in PER" :key="p" class="num" :class="{ aktif: fp === p }"><span v-if="x.ret?.[p] != null" class="ret" :class="x.ret[p] >= 0 ? 'up' : 'dn'">{{ pct(x.ret[p]) }}</span><span v-else class="muted">–</span></td>
               </tr>
-              <tr v-if="buka === x.t" class="det"><td :colspan="4 + PER.length"><SahamRingkas :kode="x.t" :bulan="bulan" /></td></tr>
+              <tr v-if="buka === x.t" class="det"><td :colspan="6 + PER.length"><SahamRingkas :kode="x.t" :bulan="bulan" /></td></tr>
             </template>
           </tbody>
         </table>
@@ -89,6 +111,10 @@ const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + '%'
       <p v-if="low.length > lowN" class="small"><button type="button" class="pill sm" @click="lowN += 100">Tampilkan 100 lagi ({{ low.length - lowN }} tersisa)</button></p>
       <p class="small muted">Kinerja 1D–1Y dari harga penutupan harian; 3Y/5Y/10Y hanya tersedia untuk saham kategori Sudah di dasar (riwayat Stockbit maks. 5 tahun).
         Penurunan dalam belum tentu berbalik — cek kategori <b>Recovery tercepat</b> untuk konfirmasi pemulihan.</p>
+      <p class="small muted"><b>Potensi rebound</b> (0–100): RSI jenuh jual &lt;30 = 30 / &lt;40 = 20, menempel terendah (≤5%) 20 / dekat (≤15%) 10,
+        memantul sepekan 20, higher low 15, volume ≥ 1,5× 15 — Tinggi ≥ 60, Sedang ≥ 35. <b>Recovery</b>: sinyal pulih (EMA20, higher low,
+        naik 20 hari, volume, RSI 40–65) — Mulai pulih ≥ 50, Awal ≥ 25, beserta perkiraan waktu ke TP1 bila laju 10 hari positif.
+        Arahkan kursor ke kolom untuk melihat alasannya.</p>
     </template>
 
     <template v-else-if="data && kat === 'dasar'">
@@ -98,7 +124,7 @@ const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + '%'
       <div class="scroll">
         <table class="ledger">
           <thead><tr>
-            <th>Saham</th><th class="num">Harga</th><th class="num">Turun</th><th class="num">Di atas terendah</th>
+            <th>Saham</th><th class="num">Harga</th><th class="num">Turun</th><th class="num">Di atas terendah</th><th>Potensi rebound</th><th>Recovery</th>
             <th v-for="p in PER" :key="p" class="num">{{ p }}</th>
           </tr></thead>
           <tbody>
@@ -110,9 +136,13 @@ const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + '%'
                 <td class="num">{{ rp(x.tek.harga) }}</td>
                 <td class="num c-strong">−{{ fmt(x.tek.turun, 0) }}%</td>
                 <td class="num">{{ pct(x.tek.dariRendah) }}</td>
+                <td class="small pot" :title="x.potensi?.rebound.alasan.join(' · ')"><b :class="nadaR(x.potensi?.rebound.label)">{{ x.potensi?.rebound.label || '–' }}</b>
+                  <span v-if="x.potensi?.rebound.naik != null" class="muted"> · TP1 {{ rp(x.potensi.rebound.tp1) }} ({{ pct(x.potensi.rebound.naik) }})</span></td>
+                <td class="small pot" :title="x.potensi?.pulih.sinyal.join(' · ')"><b :class="nadaP(x.potensi?.pulih.label)">{{ x.potensi?.pulih.label || '–' }}</b>
+                  <span v-if="x.potensi?.pulih.estimasiHari" class="muted"> · TP1 {{ hari(x.potensi.pulih.estimasiHari) }}</span></td>
                 <td v-for="p in PER" :key="p" class="num"><span v-if="x.ret?.[p] != null" class="ret" :class="x.ret[p] >= 0 ? 'up' : 'dn'">{{ pct(x.ret[p]) }}</span><span v-else class="muted">–</span></td>
               </tr>
-              <tr v-if="buka === x.t" class="det"><td :colspan="4 + PER.length"><SahamRingkas :kode="x.t" :bulan="bulan" /></td></tr>
+              <tr v-if="buka === x.t" class="det"><td :colspan="6 + PER.length"><SahamRingkas :kode="x.t" :bulan="bulan" /></td></tr>
             </template>
           </tbody>
         </table>
@@ -138,4 +168,5 @@ const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + '%'
 .ret.up{color:var(--good,#1a8a4a);background:color-mix(in srgb,var(--good,#1a8a4a) 12%,transparent)}
 .ret.dn{color:var(--warn,#c77a1a);background:color-mix(in srgb,var(--warn,#c77a1a) 12%,transparent)}
 .sortable{cursor:pointer;user-select:none}.sortable:hover,.aktif{background:var(--accent-soft)}
+.pot{white-space:nowrap}.sep{margin-left:10px}.c-warn{color:var(--warn,#c79a1a)}
 </style>

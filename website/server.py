@@ -2361,11 +2361,11 @@ def recovery_api(month: int) -> dict:
             continue
         se = srow.get(t)
         dasar.append({"t": t, "nama": (se or {}).get("nama") or "", "sektorNama": (se or {}).get("sektorNama") or "", "radar": (se or {}).get("radar") or "",
-                      "tek": tek, "ret": {**(tek.get("ret") or {}), **pj.get(t, {})}, "broker": bro.get(t)})
+                      "tek": tek, "ret": {**(tek.get("ret") or {}), **pj.get(t, {})}, "broker": bro.get(t), "potensi": RC.potensi(tek)})
     dasar.sort(key=lambda r: -r["tek"]["turun"])
     # Tab "Low per periode": kinerja per periode semua saham terpantau (ringkas) untuk saringan low 1D..10Y di peramban.
     low = [{"t": t, "nama": (srow.get(t) or {}).get("nama") or "", "harga": tek.get("harga"), "turun": tek.get("turun"),
-            "dariRendah": tek.get("dariRendah"), "ret": {**(tek.get("ret") or {}), **pj.get(t, {})}}
+            "dariRendah": tek.get("dariRendah"), "ret": {**(tek.get("ret") or {}), **pj.get(t, {})}, "potensi": RC.potensi(tek)}
            for t, tek in rd["tek"].items() if tek.get("ret") and not tek.get("lompatan")]
     return {"updated": rd["updated"], "bulan": month, "bulanBroker": bulan_b, "minTurun": RC.MIN_TURUN, "maxDariDasar": RC.MAX_DARI_DASAR,
             "dasarTurun": RC.DASAR_TURUN, "dasarJarak": RC.DASAR_JARAK, "skemaLama": not any("ret" in x for x in list(rd["tek"].values())[:5]),
