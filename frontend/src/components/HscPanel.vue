@@ -179,7 +179,7 @@ async function unduh() {
 .kpi b{font-size:1.15rem}
 .ks{list-style:none;padding-left:0 !important}.ks li{display:flex;gap:8px;align-items:baseline;margin:4px 0}
 .dot{flex:0 0 8px;height:8px;border-radius:50%;transform:translateY(-1px)}
-.bg-good{background:var(--good, #2e8b57)}.bg-strong{background:var(--strong, #d9822b)}.bg-muted{background:var(--muted)}
+.bg-good{background:var(--good)}.bg-strong{background:var(--strong)}.bg-muted{background:var(--ink-2)}
 .chip{display:inline-block;margin:2px 6px 2px 0;white-space:nowrap}
 .sumber{margin-top:12px}.sumber summary{cursor:pointer}
 </style>
