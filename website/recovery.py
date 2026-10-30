@@ -181,6 +181,36 @@ def kecepatan(t: dict, pl: dict) -> dict:
     return {"skor": sk, "sinyal": sinyal, "estimasiHari": hari, "tp1": tp1}
 
 
+def potensi(t: dict) -> dict:
+    """Ringkasan untuk tab Low: potensi rebound (pantulan dari titik terendah) dan potensi recovery (momentum pulih).
+    Rebound 0-100: RSI jenuh jual (<30: 30, <40: 20), dekat terendah setahun (<=5%: 20, <=15%: 10), sudah memantul
+    seminggu terakhir (1W > 0: 20), higher low 15, volume >= 1,5x rata-rata 15. Recovery memakai kecepatan()."""
+    pl = plan(t, None)
+    sk, al = 0, []
+    rsi = t.get("rsi")
+    if rsi is not None and rsi < 30:
+        sk += 30; al.append(f"RSI jenuh jual {rsi:.0f}")
+    elif rsi is not None and rsi < 40:
+        sk += 20; al.append(f"RSI rendah {rsi:.0f}")
+    dr = t.get("dariRendah")
+    if dr is not None and dr <= 5:
+        sk += 20; al.append("menempel titik terendah")
+    elif dr is not None and dr <= 15:
+        sk += 10; al.append("dekat titik terendah")
+    if ((t.get("ret") or {}).get("1W") or 0) > 0:
+        sk += 20; al.append("mulai memantul sepekan")
+    if t.get("higherLow"):
+        sk += 15; al.append("higher low")
+    if (t.get("volRasio") or 0) >= 1.5:
+        sk += 15; al.append(f"volume {t['volRasio']:.1f}x".replace(".", ","))
+    p, tp1 = t.get("harga"), pl.get("tp1")
+    kc = kecepatan(t, pl)
+    return {"rebound": {"skor": sk, "label": "Tinggi" if sk >= 60 else "Sedang" if sk >= 35 else "Rendah", "alasan": al,
+                        "naik": round((tp1 / p - 1) * 100, 1) if p and tp1 else None, "tp1": tp1},
+            "pulih": {"skor": kc["skor"], "label": "Mulai pulih" if kc["skor"] >= 50 else "Awal" if kc["skor"] >= 25 else "Belum",
+                      "estimasiHari": kc["estimasiHari"], "sinyal": kc["sinyal"]}}
+
+
 def load(path) -> dict:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
