@@ -7,6 +7,7 @@ import { api } from '../api.js'
 import { fmt } from '../lib/domain.js'
 import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
 import SahamRingkas from './SahamRingkas.vue'
+import HargaSaham from './HargaSaham.vue'
 import { namaSaham } from '../lib/namaSaham.js'
 
 const bulan = ref(new Date().getMonth() + 1)
@@ -95,7 +96,7 @@ const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + '%'
                 <td><span class="car">{{ buka === x.t ? '▾' : '▸' }}</span> <b>{{ x.t }}</b>
                   <span v-if="isHsc(x.t)" class="tag t-warn" title="Saham HSC: dikeluarkan dari perhitungan IHSG">HSC</span>
                   <div v-if="x.nama || namaSaham(x.t)" class="small muted nm">{{ x.nama || namaSaham(x.t) }}</div></td>
-                <td class="num">{{ rp(x.harga) }}</td>
+                <td class="num"><HargaSaham :kode="x.t" /></td>
                 <td class="num">{{ x.turun != null ? '−' + fmt(x.turun, 0) + '%' : '–' }}</td>
                 <td class="num">{{ pct(x.dariRendah) }}</td>
                 <td class="small pot" :title="x.potensi?.rebound.alasan.join(' · ')"><b :class="nadaR(x.potensi?.rebound.label)">{{ x.potensi?.rebound.label || '–' }}</b>
@@ -134,7 +135,7 @@ const pct = v => v == null ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + '%'
                 <td><span class="car">{{ buka === x.t ? '▾' : '▸' }}</span> <b>{{ x.t }}</b>
                   <span v-if="isHsc(x.t)" class="tag t-warn" title="Saham HSC: dikeluarkan dari perhitungan IHSG">HSC</span>
                   <div v-if="x.nama || namaSaham(x.t)" class="small muted nm">{{ x.nama || namaSaham(x.t) }}</div></td>
-                <td class="num">{{ rp(x.tek.harga) }}</td>
+                <td class="num"><HargaSaham :kode="x.t" /></td>
                 <td class="num c-strong">−{{ fmt(x.tek.turun, 0) }}%</td>
                 <td class="num">{{ pct(x.tek.dariRendah) }}</td>
                 <td class="small pot" :title="x.potensi?.rebound.alasan.join(' · ')"><b :class="nadaR(x.potensi?.rebound.label)">{{ x.potensi?.rebound.label || '–' }}</b>

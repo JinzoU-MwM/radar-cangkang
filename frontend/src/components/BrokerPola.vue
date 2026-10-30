@@ -7,6 +7,7 @@ import { big, fmt } from '../lib/domain.js'
 import { h } from 'vue'
 import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
 import SahamRingkas from './SahamRingkas.vue'
+import HargaSaham from './HargaSaham.vue'
 import { namaSaham } from '../lib/namaSaham.js'
 
 const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
@@ -174,7 +175,7 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
           <section v-for="side in [['akumulasi', 'Akumulasi', 'c-good', 'akum', 'avgAkum'], ['distribusi', 'Distribusi', 'c-strong', 'dist', 'avgDist']]" :key="side[0]">
             <h3 :class="side[2]">{{ side[1] }} · {{ judul }}</h3>
             <table class="ledger cmp">
-              <thead><tr><th>Saham</th><th class="num">Net bandar</th><th class="num">Lot</th><th class="num">Avg broker</th><th>Broker utama</th><th class="num">Asing / Dom.</th></tr></thead>
+              <thead><tr><th>Saham</th><th class="num">Harga</th><th class="num">Net bandar</th><th class="num">Lot</th><th class="num">Avg broker</th><th>Broker utama</th><th class="num">Asing / Dom.</th></tr></thead>
               <tbody>
                 <template v-for="x in saham[side[0]].slice(0, 25)" :key="x.s">
                 <tr class="row" :class="{ open: bukaB === side[0] + x.s }" tabindex="0" @click="togel(side[0] + x.s)" @keydown.enter="togel(side[0] + x.s)">
@@ -182,13 +183,14 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
                     <span v-if="isHsc(x.s)" class="tag t-warn" title="Saham HSC: dikeluarkan dari perhitungan IHSG">HSC</span>
                     <span v-if="x.repo" class="tag repo" :class="x.repo.kuat ? 't-strong' : 't-warn'" :title="x.repo.alasan.join(' · ')">repo?</span>
                     <div v-if="namaSaham(x.s)" class="small muted nm">{{ namaSaham(x.s) }}</div></td>
+                  <td class="num"><HargaSaham :kode="x.s" :avg="x[side[4]] || null" /></td>
                   <td class="num" :class="side[2]">{{ rp(x.bandar) }}</td>
                   <td class="num">{{ lot(x.bandarLot) }}</td>
                   <td class="num"><b>{{ avg(x[side[4]]) }}</b></td>
                   <td class="small"><span v-for="z in x[side[3]]" :key="z.b" class="bk" :title="`${z.b}: ${rp(z.val)}, ${lot(z.lot)} lot @${avg(z.avg)}`">{{ z.b }}<sup>{{ avg(z.avg).replace('Rp', '') }}</sup></span></td>
                   <td class="num small"><span :class="x.asing >= 0 ? 'c-good' : 'c-strong'">{{ rp(x.asing) }}</span><br><span :class="x.domestik >= 0 ? 'c-good' : 'c-strong'">{{ rp(x.domestik) }}</span></td>
                 </tr>
-                <tr v-if="bukaB === side[0] + x.s" class="det"><td colspan="6"><SahamRingkas :kode="x.s" /></td></tr>
+                <tr v-if="bukaB === side[0] + x.s" class="det"><td colspan="7"><SahamRingkas :kode="x.s" /></td></tr>
                 </template>
               </tbody>
             </table>
@@ -206,19 +208,20 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
             <section v-for="side in [['beli', 'Akumulasi', 'c-good', 'avgB'], ['jual', 'Distribusi', 'c-strong', 'avgS']]" :key="side[0]">
               <h4 :class="side[2]">{{ side[1] }}</h4>
               <table class="ledger">
-                <thead><tr><th>Saham</th><th class="num">Net lot</th><th class="num">Net nominal</th><th class="num">Avg {{ side[0] }}</th><th>Potensi repo</th></tr></thead>
+                <thead><tr><th>Saham</th><th class="num">Harga</th><th class="num">Net lot</th><th class="num">Net nominal</th><th class="num">Avg {{ side[0] }}</th><th>Potensi repo</th></tr></thead>
                 <tbody>
                   <template v-for="r in x[side[0]].filter(r => lolosHsc(r.s, hsc)).slice(0, 15)" :key="r.s">
                   <tr class="row" :class="{ open: bukaB === x.m + side[0] + r.s }" tabindex="0" @click="togel(x.m + side[0] + r.s)" @keydown.enter="togel(x.m + side[0] + r.s)">
                     <td><span class="car">{{ bukaB === x.m + side[0] + r.s ? '▾' : '▸' }}</span> <b>{{ r.s }}</b>
                       <span v-if="isHsc(r.s)" class="tag t-warn" title="Saham HSC: dikeluarkan dari perhitungan IHSG">HSC</span>
                       <div v-if="namaSaham(r.s)" class="small muted nm">{{ namaSaham(r.s) }}</div></td>
+                    <td class="num"><HargaSaham :kode="r.s" :avg="r[side[3]] || null" /></td>
                     <td class="num">{{ lot(r.lot) }}</td>
                     <td class="num" :class="side[2]">{{ rp(r.val) }}</td>
                     <td class="num">{{ avg(r[side[3]]) }}</td>
                     <td class="small"><RepoTag :r="r.repo" /></td>
                   </tr>
-                  <tr v-if="bukaB === x.m + side[0] + r.s" class="det"><td colspan="5"><SahamRingkas :kode="r.s" /></td></tr>
+                  <tr v-if="bukaB === x.m + side[0] + r.s" class="det"><td colspan="6"><SahamRingkas :kode="r.s" /></td></tr>
                   </template>
                 </tbody>
               </table>
