@@ -3,6 +3,7 @@
 // urut alfabet. Saham HSC dikeluarkan dari perhitungan IHSG namun tetap diperdagangkan di BEI.
 import { computed, ref } from 'vue'
 import { store } from '../store.js'
+import HargaSaham from './HargaSaham.vue'
 
 const cari = ref('')
 const hsc = computed(() => store.hsc || { kode: [] })
@@ -30,15 +31,16 @@ const daftar = computed(() => {
     </div>
     <div class="scroll">
       <table class="ledger">
-        <thead><tr><th class="num">No</th><th>Kode</th><th>Nama perusahaan</th><th>Keterangan</th></tr></thead>
+        <thead><tr><th class="num">No</th><th>Kode</th><th>Nama perusahaan</th><th class="num">Harga</th><th>Keterangan</th></tr></thead>
         <tbody>
           <tr v-for="(x, i) in daftar" :key="x.t">
             <td class="num muted">{{ i + 1 }}</td>
             <td><RouterLink :to="{ path: '/emiten/' + x.t, query: { tab: 'analisa' } }"><b>{{ x.t }}</b></RouterLink></td>
             <td>{{ x.nama || '–' }}</td>
+            <td class="num"><HargaSaham :kode="x.t" /></td>
             <td class="small"><span v-if="x.baru" class="tag t-warn">Baru</span> <span class="muted">{{ x.baru }}</span></td>
           </tr>
-          <tr v-if="!daftar.length"><td colspan="4" class="muted">Tidak ada saham yang cocok.</td></tr>
+          <tr v-if="!daftar.length"><td colspan="5" class="muted">Tidak ada saham yang cocok.</td></tr>
         </tbody>
       </table>
     </div>

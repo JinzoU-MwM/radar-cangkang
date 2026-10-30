@@ -2438,6 +2438,27 @@ def nama_semua() -> dict:
     return out
 
 
+_harga_memo: tuple = (None, {})
+
+
+def harga_semua() -> dict:
+    """{kode: {h: harga penutupan, d: %1D, w: %1W, m: %1M, y: %YTD, tgl}} semua saham terpantau dari data Recovery,
+    satu sumber harga yang sama untuk tab HSC, Pola Broker, Recovery, dan Low; memo per versi berkas."""
+    global _harga_memo
+    try:
+        m = RECOVERY_PATH.stat().st_mtime
+    except OSError:
+        return {}
+    if _harga_memo[0] != m:
+        out = {}
+        for t, tek in (RC.load(RECOVERY_PATH).get("tek") or {}).items():
+            if tek.get("harga") and not tek.get("lompatan"):
+                r = tek.get("ret") or {}
+                out[t] = {"h": tek["harga"], "d": r.get("1D"), "w": r.get("1W"), "m": r.get("1M"), "y": r.get("YTD"), "tgl": tek.get("tanggal")}
+        _harga_memo = (m, out)
+    return _harga_memo[1]
+
+
 def recovery_api(month: int) -> dict:
     """Saham turun >= 30% dari puncak 52 minggu, diberi skor dukungan Seasonality (bulan terpilih) & Pola Broker."""
     rd = RC.load(RECOVERY_PATH)
@@ -3488,6 +3509,8 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json(runtun_api())
         elif path == "api/ihsg-astro":
             self.reply_json(astro_api())
+        elif path == "api/harga-saham":
+            self.reply_json(harga_semua())
         elif path == "api/nama-saham":
             self.reply_json(nama_semua())
         elif path == "api/ihsg-live":

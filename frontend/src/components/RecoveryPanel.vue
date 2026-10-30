@@ -8,6 +8,7 @@ import { fmt } from '../lib/domain.js'
 import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
 import RingPct from './RingPct.vue'
 import SahamRingkas from './SahamRingkas.vue'
+import HargaSaham from './HargaSaham.vue'
 import { namaSaham } from '../lib/namaSaham.js'
 
 const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
@@ -125,7 +126,7 @@ const cls = s => s === 'Siap rebound' ? 'c-good' : s === 'Mulai pulih' ? 'c-warn
       <div class="scroll">
         <table class="ledger">
           <thead><tr>
-            <th>Saham</th><th>Status</th><th class="num">Turun</th><th class="num">Dari dasar</th><th class="num">RSI</th>
+            <th>Saham</th><th class="num">Harga</th><th>Status</th><th class="num">Turun</th><th class="num">Dari dasar</th><th class="num">RSI</th>
             <th class="num">Seasonality {{ BLN[bulan - 1] }}</th><th class="num">Net bandar</th><th class="num">Avg broker</th><th class="num">R/R</th><th class="num">Skor</th>
           </tr></thead>
           <tbody>
@@ -135,6 +136,7 @@ const cls = s => s === 'Siap rebound' ? 'c-good' : s === 'Mulai pulih' ? 'c-warn
                   <span v-if="isHsc(x.t)" class="tag t-warn" title="Saham HSC: dikeluarkan dari perhitungan IHSG">HSC</span>
                   <span v-if="x.radar" class="tag t-calm">{{ x.radar }}</span>
                   <div v-if="namaSaham(x.t)" class="small muted nm">{{ namaSaham(x.t) }}</div></td>
+                <td class="num"><HargaSaham :kode="x.t" :avg="x.broker?.avg && !x.broker.dist ? x.broker.avg : null" /></td>
                 <td class="small" :class="cls(x.status)">{{ x.status }}</td>
                 <td class="num c-strong">−{{ fmt(x.tek.turun, 0) }}%</td>
                 <td class="num">{{ pct(x.tek.dariDasar) }}</td>
@@ -146,7 +148,7 @@ const cls = s => s === 'Siap rebound' ? 'c-good' : s === 'Mulai pulih' ? 'c-warn
                 <td class="num"><b>{{ x.skor }}</b></td>
               </tr>
               <tr v-if="buka === x.t" class="det">
-                <td colspan="10">
+                <td colspan="11">
                   <div class="dg">
                     <div>
                       <h4>Alasan</h4>
