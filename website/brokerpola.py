@@ -255,9 +255,17 @@ def series_harian(hd: dict, sym: str, brokers: dict, jenis: str = "") -> list[di
     return out
 
 
-def build_harian(fetch, old: dict, brokers: dict, dates: list[str], fresh_dates: set, pause: float = 0.25, log=print) -> dict:
+def _rapikan_harian(data: dict) -> dict:
+    """Salinan siap simpan: diag 30 terakhir, maks. 40 hari terbaru, stempel waktu."""
+    keep = sorted(data["hari"], reverse=True)[:40]
+    return {**data, "diag": data["diag"][-30:], "hari": {d: data["hari"][d] for d in keep}, "updated": time.strftime("%Y-%m-%d %H:%M")}
+
+
+def build_harian(fetch, old: dict, brokers: dict, dates: list[str], fresh_dates: set, pause: float = 0.25, log=print,
+                 simpan=None) -> dict:
     """Net beli/jual per broker per hari bursa: {"hari": {tanggal: {"broker": {kode: net_month(...)}} | {"libur": True}}}.
-    Tanggal yang sudah lengkap tidak diambil ulang; tanggal di fresh_dates (hari ini/kemarin) diperbarui."""
+    Tanggal yang sudah lengkap tidak diambil ulang; tanggal di fresh_dates (hari ini/kemarin) diperbarui.
+    simpan(data): dipanggil setiap satu hari selesai, agar kemajuan tidak hilang bila proses terhenti (mis. server restart)."""
     # Versi 2: data versi lama (hari gagal tercatat sebagai libur) dibuang dan diisi ulang.
     data = {"versi": 2, "hari": dict(old.get("hari") or {}) if old.get("versi") == 2 else {}, "diag": []}
     for d in dates:
@@ -289,13 +297,11 @@ def build_harian(fetch, old: dict, brokers: dict, dates: list[str], fresh_dates:
             data["hari"][d] = {"libur": True}   # semua broker kosong tanpa galat = hari libur bursa
         # Banyak galat tanpa data: tanggal tidak dicatat agar dicoba lagi di putaran berikutnya.
         log(f"[broker-harian] {d}: {len(rec)} broker, {kosong} kosong, {gagal} gagal")
+        if simpan and (rec or gagal == 0):
+            simpan(_rapikan_harian(data))
         if gagal > 10 and not rec:
             break
-    data["diag"] = data["diag"][-30:]
-    keep = sorted(data["hari"], reverse=True)[:40]
-    data["hari"] = {d: data["hari"][d] for d in keep}
-    data["updated"] = time.strftime("%Y-%m-%d %H:%M")
-    return data
+    return _rapikan_harian(data)
 
 
 def market_flow(data: dict) -> dict | None:

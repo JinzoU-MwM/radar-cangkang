@@ -330,6 +330,36 @@ class HscAnalisaTest(unittest.TestCase):
         self.assertTrue(any("sepekan" in k["teks"] for k in r["kesimpulan"]))
 
 
+class HarianSimpanTest(unittest.TestCase):
+    def test_simpan_tiap_hari_dan_hari_gagal_dilewati(self):
+        import brokerpola as BP
+        def fetch(p, f=False):
+            if "from=2026-10-29" in p:
+                raise RuntimeError("HTTP Error 401")
+            return {"data": {"broker_activity_transaction": {"brokers_buy": [{"stock_code": "BBCA", "value": "1000", "lot": "1", "avg_price": "10"}], "brokers_sell": []}}}
+        disimpan = []
+        d = BP.build_harian(fetch, {}, {"AA": {}, "BB": {}}, ["2026-10-30", "2026-10-29", "2026-10-28"], set(), pause=0,
+                            log=lambda m: None, simpan=lambda x: disimpan.append(sorted(x["hari"])))
+        self.assertEqual(disimpan, [["2026-10-30"], ["2026-10-28", "2026-10-30"]])
+        self.assertNotIn("2026-10-29", d["hari"])
+
+
+class LiveTertahanTest(unittest.TestCase):
+    def test_peringatan_token_ditolak(self):
+        lama = (dict(server.SB_LIVE), server.token_exp)
+        try:
+            server.token_exp = lambda: time.time() + 3600
+            server.SB_LIVE.update(ok=time.time() - 400, gagal=time.time() - 10, pesan="HTTP Error 401: Unauthorized")
+            self.assertEqual(server.live_tertahan(True)["alasan"], "token Stockbit ditolak")
+            self.assertIsNone(server.live_tertahan(False))
+            server.SB_LIVE.update(ok=time.time(), gagal=0)
+            self.assertIsNone(server.live_tertahan(True))
+            server.token_exp = lambda: time.time() - 10
+            self.assertEqual(server.live_tertahan(False)["alasan"], "token Stockbit kedaluwarsa")
+        finally:
+            server.SB_LIVE.clear(); server.SB_LIVE.update(lama[0]); server.token_exp = lama[1]
+
+
 class TsaSummaryTest(unittest.TestCase):
     """Data intel pasar tradersaham: helper tsa_summary (tanpa HTTP)."""
 

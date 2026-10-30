@@ -555,6 +555,8 @@ def cached_text(url: str, fetch, fresh: bool = False) -> str:
         _upstream_n += 1
         body = fetch()
     except Exception as e:
+        if LIVE_URL.search(url):
+            SB_LIVE.update(gagal=time.time(), pesan=str(e)[:120])
         _fail_until[url] = now + FAIL_BACKOFF
         # Galat terakhir (tanpa token/kueri) untuk /api/status: jalur URL, waktu, dan pesan singkat.
         _galat.append({"waktu": datetime.now(timezone(timedelta(hours=7))).strftime("%H:%M:%S"),
@@ -566,12 +568,16 @@ def cached_text(url: str, fetch, fresh: bool = False) -> str:
             return old
         raise
     _fail_until.pop(url, None)
+    if LIVE_URL.search(url):
+        SB_LIVE["ok"] = time.time()
     cache_write(url, body)
     return body
 
 # ------------------------------------------------------------- http util ----
 
 _galat: list[dict] = []
+# Panggilan data Live (grafik intraday & orderbook): waktu sukses/gagal terakhir untuk peringatan "data tertahan".
+SB_LIVE: dict = {"ok": 0.0, "gagal": 0.0, "pesan": ""}
 _inflight: dict[str, threading.Lock] = {}
 _inflight_lock = threading.Lock()
 
@@ -2271,11 +2277,13 @@ def broker_harian_build() -> None:
     # Saat jam bursa hanya 2 hari terakhir (±180 panggilan) agar tidak menahan data Live; 20 hari penuh setelah bursa tutup.
     if ihsg_jam_bursa():
         dates = dates[:2]
-    data = BP.build_harian(lambda p, f=False: sb_fetch(p, f), broker_harian_data(), brokers, dates, fresh,
-                           pause=1.0, log=lambda m: print(m, file=sys.stderr))
-    tmp = BROKER_HARIAN_PATH.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    tmp.replace(BROKER_HARIAN_PATH)
+    def simpan(data: dict) -> None:
+        tmp = BROKER_HARIAN_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(BROKER_HARIAN_PATH)
+    # Disimpan tiap hari selesai (bukan hanya di akhir): restart server saat deploy tidak menghapus kemajuan.
+    simpan(BP.build_harian(lambda p, f=False: sb_fetch(p, f), broker_harian_data(), brokers, dates, fresh,
+                           pause=1.0, log=lambda m: print(m, file=sys.stderr), simpan=simpan))
 
 
 def broker_harian_loop() -> None:
@@ -3125,10 +3133,31 @@ def live_loop() -> None:
         time.sleep(20 if ihsg_jam_bursa() else 1800)
 
 
+def live_tertahan(jam_bursa: bool) -> dict | None:
+    """Peringatan bila data Live tidak lagi diperbarui: token Stockbit kedaluwarsa/ditolak, atau saat jam bursa panggilan
+    terakhir gagal / sukses terakhir > 3 menit lalu. None = data berjalan normal."""
+    now = time.time()
+    exp = token_exp()
+    sejak = datetime.fromtimestamp(SB_LIVE["ok"], WIB).strftime("%H.%M") if SB_LIVE["ok"] else None
+    if exp and exp < now:
+        return {"alasan": "token Stockbit kedaluwarsa", "sejak": sejak,
+                "teks": "Data Live tertahan: token Stockbit kedaluwarsa. Angka di bawah adalah data terakhir yang berhasil diambil."}
+    if not jam_bursa:
+        return None
+    gagal_baru = SB_LIVE["gagal"] > SB_LIVE["ok"] and now - SB_LIVE["gagal"] < 300
+    basi = SB_LIVE["ok"] and now - SB_LIVE["ok"] > 180
+    if gagal_baru or basi:
+        alasan = "token Stockbit ditolak" if "401" in SB_LIVE["pesan"] else "Stockbit tidak merespons"
+        return {"alasan": alasan, "sejak": sejak,
+                "teks": f"Data Live tertahan{' sejak pukul ' + sejak if sejak else ''}: {alasan}. Angka di bawah belum tentu terbaru."}
+    return None
+
+
 def live_api() -> dict:
     h = LIVE.get("harga")
     if not h:
         return {"error": "Data Live IHSG sedang disiapkan (diperbarui tiap menit saat jam bursa). Coba lagi sebentar lagi."}
+    tertahan = live_tertahan(bool(h.get("jamBursa")))
     tek = IH_load().get("tek")
     trx = LIVE.get("trx")
     tm = live_trx_modul(trx)
@@ -3155,6 +3184,8 @@ def live_api() -> dict:
     pukul = f"pukul {jam_t.group(1)}.{jam_t.group(2)}" if jam_t and h.get("jamBursa") else ("saat ini" if h.get("jamBursa") else "pada penutupan terakhir")
     gerak = (f"{'naik' if ch > 0 else 'turun'} {_idn(abs(ch))} persen" if abs(ch) >= 0.01 else "tidak berubah") + " dari penutupan kemarin"
     narasi = [f"IHSG {pukul} di {_idn(h['harga'], 0)}, {gerak}."]
+    if tertahan:
+        narasi.insert(0, f"Perhatian, data Live tertahan{' sejak pukul ' + tertahan['sejak'] if tertahan['sejak'] else ''}.")
     if h.get("jamBursa") and len(vs) >= 6:
         m5 = (vs[-1] / vs[-6] - 1) * 100
         narasi.append("Beberapa menit terakhir " + ("sedang menguat." if m5 > 0.05 else "sedang melemah." if m5 < -0.05 else "bergerak datar."))
@@ -3172,7 +3203,7 @@ def live_api() -> dict:
     elif label == "Potensi lanjut naik" and res:
         narasi.append(f"Ruang naik menuju {_idn(res[0], 0)}.")
     return {**h, "skor": skor, "label": label, "nada": nada, "kondisi": kondisi, "modul": modul, "transaksi": trx, "arahTransaksi": arah_trx, 
-            "support": sup, "resistance": res, "narasi": narasi,
+            "support": sup, "resistance": res, "narasi": narasi, "tertahan": tertahan,
             "catatan": "Skor gabungan -100 sampai +100 dari bobot tiap modul. Analisa otomatis berbasis data historis dan harga berjalan, bukan rekomendasi beli/jual."}
 
 

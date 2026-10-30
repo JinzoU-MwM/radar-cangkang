@@ -101,6 +101,8 @@ watch(data, cekOtomatis)
     <p v-if="loading" class="muted">Memuat data Live…</p>
     <p v-else-if="err && !data" class="muted">{{ err }}</p>
     <template v-else-if="data">
+      <!-- Peringatan data tidak diperbarui (token ditolak / Stockbit tidak merespons). -->
+      <p v-if="data.tertahan" class="tahan" role="alert">⚠ {{ data.tertahan.teks }}</p>
       <div class="top">
         <div class="harga">
           <div class="small muted">IHSG · {{ data.jamBursa ? 'jam bursa' : 'pasar tutup' }} · {{ data.tanggal }}</div>
@@ -188,4 +190,5 @@ watch(data, cekOtomatis)
 .bar{position:relative;height:6px;background:var(--rule);margin-top:6px;border-radius:3px}
 .bar span{position:absolute;top:0;height:100%;border-radius:3px}.bar .pos{background:var(--good)}.bar .neg{background:var(--strong)}
 h2{margin:6px 0 8px}
+.tahan{margin:0 0 10px;padding:8px 12px;border-radius:8px;background:var(--warn-bg);color:var(--warn);font-weight:600}
 </style>
