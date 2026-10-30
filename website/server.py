@@ -2263,8 +2263,11 @@ def broker_harian_build() -> None:
             dates.append(d.isoformat())
         d -= timedelta(days=1)
     fresh = set(dates[:2])
+    # Saat jam bursa hanya 2 hari terakhir (±180 panggilan) agar tidak menahan data Live; 20 hari penuh setelah bursa tutup.
+    if ihsg_jam_bursa():
+        dates = dates[:2]
     data = BP.build_harian(lambda p, f=False: sb_fetch(p, f), broker_harian_data(), brokers, dates, fresh,
-                           log=lambda m: print(m, file=sys.stderr))
+                           pause=1.0, log=lambda m: print(m, file=sys.stderr))
     tmp = BROKER_HARIAN_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     tmp.replace(BROKER_HARIAN_PATH)
@@ -2282,8 +2285,12 @@ def broker_harian_loop() -> None:
                 kunci = now.strftime("%Y-%m-%d") + "b"
             elif now.weekday() < 5 and (now.hour, now.minute) >= (16, 45):
                 kunci = now.strftime("%Y-%m-%d") + "a"
-            awal = not BROKER_HARIAN_PATH.exists()
+            hd = broker_harian_data()
+            kurang = sum(1 for x in (hd.get("hari") or {}).values() if x.get("broker") or x.get("libur")) < BROKER_HARIAN_HARI
+            # Isi ulang bila data belum ada/versi lama/kurang dari 20 hari, paling sering tiap 2 jam.
+            awal = (not BROKER_HARIAN_PATH.exists() or hd.get("versi") != 2 or kurang) and time.time() - LIVE.get("harianIsiT", 0) > 7200
             if get_token() and broker_data() and (awal or (kunci and kunci not in selesai)):
+                LIVE["harianIsiT"] = time.time()
                 broker_harian_build()
                 if kunci:
                     selesai.add(kunci)
@@ -2645,6 +2652,25 @@ def live_harga() -> dict:
         tgl_sesi = str(bars[-1]["d"])[:10] if bars else today
         if bars and len(bars) > 1:
             prev = bars[-2]["c"]
+    # Harga realtime dari orderbook IHSG: grafik intraday Stockbit bisa tertinggal (mis. saat banyak panggilan lain),
+    # orderbook selalu memuat harga terakhir. Titik menit berjalan ditambahkan/diganti di ujung grafik.
+    if ihsg_jam_bursa():
+        try:
+            ob = _orderbook("IHSG")
+        except Exception as e:
+            ob = None
+            print(f"[live] orderbook IHSG gagal: {e}", file=sys.stderr)
+        if ob and ob["harga"]:
+            harga, prev = ob["harga"], ob.get("prev") or prev
+            if sesi and sesi[-1]["t"][:10] != today:
+                sesi = []
+            menit = datetime.now(WIB).strftime("%Y-%m-%d %H:%M:00")
+            if sesi and sesi[-1]["t"][:16] >= menit[:16]:
+                sesi = sesi[:-1] + [{"t": sesi[-1]["t"], "v": harga}]
+            else:
+                sesi = sesi + [{"t": menit, "v": harga}]
+            tgl_sesi = today
+            sumber = "orderbook realtime" + (f" + grafik intraday ({tf})" if tf else "")
     if harga is None:
         return {}
     vs = [p["v"] for p in sesi] or [harga]
@@ -2765,7 +2791,7 @@ def _orderbook(sym: str) -> dict | None:
     return {"s": sym, "harga": _f(d.get("lastprice")), "ubahPct": _f(d.get("percentage_change")),
             "fbuy": _f(d.get("fbuy")), "fsell": _f(d.get("fsell")), "asing": _f(d.get("fnet")) or _f(d.get("fbuy")) - _f(d.get("fsell")),
             "bid": bid, "offer": off, "tekanan": round(bid / (bid + off) * 100) if bid + off else None,
-            "porsiAsing": _f(d.get("foreign")) or None, "frekuensi": _f(d.get("frequency"))}
+            "porsiAsing": _f(d.get("foreign")) or None, "frekuensi": _f(d.get("frequency")), "prev": _f(d.get("previous")) or None}
 
 
 def live_transaksi() -> dict | None:
