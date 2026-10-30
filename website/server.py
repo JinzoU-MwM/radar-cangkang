@@ -2539,9 +2539,11 @@ def hsc_analisa() -> dict:
     if mh is not None and mn is not None:
         lebih = mh < mn
         ks.append({"nada": "naik" if lebih else "turun",
-                   "teks": f"Median saham HSC sebulan {f(mh)}% vs non-HSC {f(mn)}%. " +
-                           ("Saham HSC turun lebih dalam, sehingga keluarnya HSC mengurangi tekanan dari kelompok ini pada IHSG."
-                            if lebih else "Saham HSC lebih kuat dari non-HSC, sehingga IHSG kehilangan sebagian penopang setelah HSC keluar.")})
+                   "teks": f"Secara median (bobot sama), saham HSC sebulan {f(mh)}% vs non-HSC {f(mn)}%: " +
+                           ("saham HSC pada umumnya turun lebih dalam. Dampaknya ke IHSG tetap bergantung pada saham HSC berkapitalisasi besar "
+                            "(lihat estimasi IHSG tanpa HSC)." if lebih else
+                            "saham HSC pada umumnya lebih kuat. Dampaknya ke IHSG tetap bergantung pada saham HSC berkapitalisasi besar "
+                            "(lihat estimasi IHSG tanpa HSC).")})
     if kh["1D"]["naik"] is not None:
         ks.append({"nada": "netral", "teks": f"Hari terakhir: {kh['1D']['naik']}% saham HSC naik vs {kn['1D']['naik']}% saham non-HSC."})
 
