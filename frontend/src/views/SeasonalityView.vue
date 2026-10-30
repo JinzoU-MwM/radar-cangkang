@@ -24,6 +24,18 @@ const route = useRoute(), router = useRouter()
 // Tab halaman (urutan tampil): 'astro' (Astronacci), 'ts' (Time Series), 'season', 'broker' (Pola Broker), 'recovery', 'live',
 // tersimpan di URL (?tab=...); tanpa ?tab = Seasonality.
 const TABS = ['astro', 'ts', 'hsc', 'broker', 'recovery', 'low', 'live']
+// Urutan & keterangan tab: analisa IHSG dulu (Seasonality, Live, Astronacci, Time Series, HSC), lalu pilih saham.
+const TAB_INFO = [
+  { k: 'season', l: 'Seasonality', grup: 'Analisa IHSG', ket: 'pola bulanan berulang IHSG, sektor, dan saham (5/10 tahun) beserta trading plan.' },
+  { k: 'live', l: 'Live', grup: 'Analisa IHSG', ket: 'kondisi IHSG saat ini dan arah transaksi real time, gabungan semua analisa.' },
+  { k: 'astro', l: 'Astronacci', grup: 'Analisa IHSG', ket: 'siklus bulan dan Fibonacci untuk perkiraan waktu dan level IHSG.' },
+  { k: 'ts', l: 'Time Series', grup: 'Analisa IHSG', ket: 'proyeksi statistik IHSG dari model runtun waktu yang diuji mundur.' },
+  { k: 'hsc', l: 'HSC', grup: 'Analisa IHSG', ket: 'saham HSC yang keluar dari IHSG mulai 2 November dan dampaknya pada penggerak indeks.' },
+  { k: 'broker', l: 'Pola Broker', grup: 'Pilih saham', awalGrup: true, ket: 'akumulasi dan distribusi broker (asing/domestik) per bulan atau per hari.' },
+  { k: 'recovery', l: 'Recovery', grup: 'Pilih saham', ket: 'saham yang sudah turun dalam dan mulai pulih, dengan potensi rebound.' },
+  { k: 'low', l: 'Low', grup: 'Pilih saham', ket: 'saham di titik terendah dan daftar penurunan per periode 1D–10Y.' },
+]
+const tabAktif = computed(() => TAB_INFO.find(x => x.k === tab.value) || TAB_INFO[0])
 const tab = computed({ get: () => TABS.includes(route.query.tab) ? route.query.tab : 'season', set: v => router.replace({ query: { ...route.query, tab: TABS.includes(v) ? v : undefined } }) })
 const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 // Default bulan depan (Desember -> Januari).
@@ -92,15 +104,11 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
     <header>
       <h1>Seasonality</h1>
       <div class="tabs" role="tablist" aria-label="Bagian">
-        <button type="button" role="tab" class="tab" :aria-selected="tab === 'astro'" @click="tab = 'astro'">Astronacci</button>
-        <button type="button" role="tab" class="tab" :aria-selected="tab === 'ts'" @click="tab = 'ts'">Time Series</button>
-        <button type="button" role="tab" class="tab" :aria-selected="tab === 'season'" @click="tab = 'season'">Seasonality</button>
-        <button type="button" role="tab" class="tab" :aria-selected="tab === 'hsc'" @click="tab = 'hsc'">HSC</button>
-        <button type="button" role="tab" class="tab" :aria-selected="tab === 'broker'" @click="tab = 'broker'">Pola Broker</button>
-        <button type="button" role="tab" class="tab" :aria-selected="tab === 'recovery'" @click="tab = 'recovery'">Recovery</button>
-        <button type="button" role="tab" class="tab" :aria-selected="tab === 'low'" @click="tab = 'low'">Low</button>
-        <button type="button" role="tab" class="tab" :aria-selected="tab === 'live'" @click="tab = 'live'"><span class="dotlive" aria-hidden="true"></span>Live</button>
+        <button v-for="x in TAB_INFO" :key="x.k" type="button" role="tab" class="tab" :class="{ grup: x.awalGrup }" :aria-selected="tab === x.k"
+          :title="x.ket" @click="tab = x.k"><span v-if="x.k === 'live'" class="dotlive" aria-hidden="true"></span>{{ x.l }}</button>
       </div>
+      <!-- Keterangan tab aktif: kelompok (Analisa IHSG / Pilih saham) dan isi singkatnya. -->
+      <p class="small tabket"><b>{{ tabAktif.grup }}</b> · {{ tabAktif.l }}: {{ tabAktif.ket }}</p>
     </header>
     <AstronacciPanel v-if="tab === 'astro'" />
     <TimeSeriesPanel v-else-if="tab === 'ts'" />
@@ -311,6 +319,8 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
 <style scoped>
 .sz header{margin-bottom:8px}
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--rule);margin:4px 0 8px}
+.tab.grup{margin-left:2px;border-left:1px solid var(--rule)}
+.tabket{margin:0 0 10px;color:var(--ink-2)}
 .tab{background:none;border:0;border-bottom:3px solid transparent;padding:6px 12px;font:inherit;font-weight:600;cursor:pointer;color:var(--muted)}
 .tab[aria-selected=true]{border-bottom-color:var(--now-ink);color:inherit}
 .ctl{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;align-items:center}
