@@ -13,18 +13,30 @@ const bulan = ref(new Date().getMonth() + 1)
 const jenis = ref('')            // '' | 'asing' | 'domestik'
 const mode = ref('saham')        // 'saham' | 'broker'
 const broker = ref('')
+// Per saham: periode bulanan (tahun berjalan) atau harian (20 hari bursa terakhir, data setelah bursa tutup).
+const periode = ref('bulanan')   // 'bulanan' | 'harian'
+const tanggal = ref('')
+const harian = computed(() => mode.value === 'saham' && periode.value === 'harian')
+const HR = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
+const tgl = d => { const x = new Date(d + 'T00:00:00'); return `${HR[x.getDay()]} ${x.getDate()} ${BLN[x.getMonth()]}` }
 const data = ref(null), err = ref(''), loading = ref(false)
 async function load() {
   loading.value = true; err.value = ''
   try {
-    const r = await api.get('/api/broker-pola', { bulan: bulan.value, jenis: jenis.value, broker: mode.value === 'broker' ? broker.value : '' })
+    const r = await api.get('/api/broker-pola', harian.value ? { harian: 1, tanggal: tanggal.value, jenis: jenis.value }
+      : { bulan: bulan.value, jenis: jenis.value, broker: mode.value === 'broker' ? broker.value : '' })
     if (r.error) { err.value = r.error; data.value = null } else {
       data.value = r
+      if (r.harian && r.tanggal && tanggal.value !== r.tanggal) tanggal.value = r.tanggal
       if (!broker.value && r.brokers?.length) broker.value = r.brokers[0].kode
     }
   } catch (e) { err.value = e.message || String(e) } finally { loading.value = false }
 }
-watch([bulan, jenis, mode, broker], load, { immediate: true })
+watch([bulan, jenis, mode, broker, periode], load, { immediate: true })
+watch(tanggal, (v, old) => { if (old && harian.value) load() })
+// Judul periode untuk grafik & tabel.
+const judul = computed(() => harian.value ? (data.value?.tanggal ? tgl(data.value.tanggal) + ' ' + data.value.tanggal.slice(0, 4) : '') : `${BLN[bulan.value - 1]} ${data.value?.tahun || ''}`)
+const lblSeri = p => p.tanggal ? `${+p.tanggal.slice(8)}/${+p.tanggal.slice(5, 7)}` : BLN[p.bulan - 1]
 
 // Grafik: batang dua arah (akumulasi kanan, distribusi kiri) untuk bulan terpilih; klik saham -> grafik bulanan.
 const hsc = ref('')              // '' | 'tanpa' | 'hanya' (saham HSC, lib/hsc.js)
@@ -46,10 +58,10 @@ const bars = computed(() => {
   return { ak, di, w: v => Math.max(2, Math.abs(v) / max * 100) + '%' }
 })
 watch(saham, s => { if (s && !s.akumulasi.some(x => x.s === pilih.value) && !s.distribusi.some(x => x.s === pilih.value)) pilih.value = s.akumulasi[0]?.s || '' })
-watch([pilih, jenis], async ([t]) => {
+watch([pilih, jenis, harian], async ([t]) => {
   seri.value = null
   if (!t) return
-  try { seri.value = await api.get('/api/broker-pola', { saham: t, jenis: jenis.value }) } catch { /* abaikan */ }
+  try { seri.value = await api.get('/api/broker-pola', { saham: t, jenis: jenis.value, harian: harian.value ? 1 : '' }) } catch { /* abaikan */ }
 })
 const SW = 720, SH = 200, SP = 24
 const sChart = computed(() => {
@@ -83,7 +95,7 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
 
 <template>
   <div class="bp">
-    <p class="muted small">Akumulasi (net beli) dan distribusi (net jual) tiap broker per bulan tahun {{ data?.tahun || new Date().getFullYear() }}: saham, net lot, net nominal, dan harga rata-rata beli/jual. Sumber: broker activity Stockbit, pasar reguler. Diperbarui otomatis Senin–Sabtu pukul 00.01 WIB.</p>
+    <p class="muted small">Akumulasi (net beli) dan distribusi (net jual) tiap broker per bulan tahun {{ data?.tahun || new Date().getFullYear() }} atau per hari (20 hari bursa terakhir, diperbarui tiap hari bursa setelah 16.45 WIB): saham, net lot, net nominal, dan harga rata-rata beli/jual. Sumber: broker activity Stockbit, pasar reguler. Diperbarui otomatis Senin–Sabtu pukul 00.01 WIB.</p>
     <div class="ctl">
       <div role="group" aria-label="Tampilan">
         <button type="button" class="pill sm" :aria-pressed="String(mode === 'saham')" @click="mode = 'saham'">Per saham</button>
@@ -99,7 +111,14 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
         <button v-for="[v, l] in HSC_OPSI" :key="v" type="button" class="pill sm" :aria-pressed="String(hsc === v)" @click="hsc = v">{{ l }}</button>
       </div>
     </div>
-    <div v-if="mode === 'saham'" class="bln" role="group" aria-label="Bulan">
+    <div v-if="mode === 'saham'" class="bln" role="group" aria-label="Periode">
+      <button type="button" class="pill sm" :aria-pressed="String(periode === 'bulanan')" @click="periode = 'bulanan'">Bulanan</button>
+      <button type="button" class="pill sm" :aria-pressed="String(periode === 'harian')" @click="periode = 'harian'">Harian</button>
+    </div>
+    <div v-if="harian" class="bln" role="group" aria-label="Tanggal">
+      <button v-for="d in data?.tanggalAda || []" :key="d" type="button" class="pill sm" :aria-pressed="String(tanggal === d)" @click="tanggal = d">{{ tgl(d) }}</button>
+    </div>
+    <div v-else-if="mode === 'saham'" class="bln" role="group" aria-label="Bulan">
       <button v-for="(b, i) in BLN" :key="b" type="button" class="pill sm" :disabled="data && !data.bulanAda?.includes(i + 1)" :aria-pressed="String(bulan === i + 1)" @click="bulan = i + 1">{{ b }}</button>
     </div>
     <label v-else class="small">Broker
@@ -131,18 +150,18 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
           </div>
           <!-- Grafik bulanan saham terpilih: net bandar per bulan (batang) + avg broker (garis). -->
           <div v-if="pilih" class="mc">
-            <h4>{{ pilih }} · net bandar per bulan {{ data.tahun }} <span class="muted small">(klik batang saham di kiri untuk ganti)</span></h4>
+            <h4>{{ pilih }} · net bandar per {{ harian ? 'hari (20 hari bursa terakhir)' : 'bulan ' + data.tahun }} <span class="muted small">(klik batang saham di kiri untuk ganti)</span></h4>
             <p v-if="!sChart" class="small muted">Memuat…</p>
             <svg v-else :viewBox="`0 0 ${SW} ${SH}`" class="msvg" role="img" :aria-label="'Net bandar bulanan ' + pilih">
               <line :x1="SP" :x2="SW - SP" :y1="sChart.mid" :y2="sChart.mid" class="ax" />
-              <g v-for="p in sChart.pts" :key="p.bulan">
+              <g v-for="p in sChart.pts" :key="p.bulan || p.tanggal">
                 <rect :x="p.cx - sChart.bw * 0.32" :width="sChart.bw * 0.64" :y="p.bandar >= 0 ? sChart.mid - p.h : sChart.mid" :height="Math.max(1, p.h)" :class="p.bandar >= 0 ? 'up' : 'dn'">
-                  <title>{{ BLN[p.bulan - 1] }}: {{ rp(p.bandar) }} · avg {{ avg(p.a) }} · {{ (p.bandar >= 0 ? p.akum : p.dist).join(', ') }} · asing {{ rp(p.asing) }}, domestik {{ rp(p.domestik) }}</title>
+                  <title>{{ p.tanggal ? tgl(p.tanggal) : BLN[p.bulan - 1] }}: {{ rp(p.bandar) }} · avg {{ avg(p.a) }} · {{ (p.bandar >= 0 ? p.akum : p.dist).join(', ') }} · asing {{ rp(p.asing) }}, domestik {{ rp(p.domestik) }}</title>
                 </rect>
-                <text :x="p.cx" :y="SH - 2" text-anchor="middle" class="lb">{{ BLN[p.bulan - 1] }}</text>
+                <text :x="p.cx" :y="SH - 2" text-anchor="middle" class="lb">{{ lblSeri(p) }}</text>
               </g>
               <path :d="sChart.line" class="avl" />
-              <circle v-for="p in sChart.pts.filter(q => q.ay != null)" :key="'c' + p.bulan" :cx="p.cx" :cy="p.ay" r="3" class="avd"><title>avg broker {{ avg(p.a) }}</title></circle>
+              <circle v-for="p in sChart.pts.filter(q => q.ay != null)" :key="'c' + (p.bulan || p.tanggal)" :cx="p.cx" :cy="p.ay" r="3" class="avd"><title>avg broker {{ avg(p.a) }}</title></circle>
             </svg>
             <p class="small muted leg"><span class="k up" /> akumulasi <span class="k dn" /> distribusi <span class="k av" /> avg broker · arahkan kursor ke batang untuk rincian broker, avg, Asing/Domestik</p>
             <SahamRingkas :kode="pilih" />
@@ -152,7 +171,7 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
         <!-- Akumulasi (kiri) dan distribusi (kanan); peringkat = net 3 broker pembeli teratas + 3 penjual teratas. -->
         <div class="lr">
           <section v-for="side in [['akumulasi', 'Akumulasi', 'c-good', 'akum', 'avgAkum'], ['distribusi', 'Distribusi', 'c-strong', 'dist', 'avgDist']]" :key="side[0]">
-            <h3 :class="side[2]">{{ side[1] }} · {{ BLN[bulan - 1] }} {{ data.tahun }}</h3>
+            <h3 :class="side[2]">{{ side[1] }} · {{ judul }}</h3>
             <table class="ledger cmp">
               <thead><tr><th>Saham</th><th class="num">Net bandar</th><th class="num">Lot</th><th class="num">Avg broker</th><th>Broker utama</th><th class="num">Asing / Dom.</th></tr></thead>
               <tbody>
