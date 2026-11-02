@@ -1934,7 +1934,7 @@ def news_loop() -> None:
 # Disimpan terpisah dari updates (bukan hanya emiten di monitor) di .lk-laporan.json; tab IHSG -> LK Bagus.
 LK_PATH = ROOT / ".lk-laporan.json"
 LK_JUDUL_RX = re.compile(r"laporan keuangan", re.I)   # judul laporan keuangan (disaring dari feed berita radar)
-LK_HARI = 120             # simpan laporan 120 hari terakhir (satu musim laporan)
+LK_HARI = 400             # simpan laporan ±13 bulan (3M/1H/9M/FY) untuk menghitung kinerja per kuartal
 _LK_UNIT = {"triliun": 1e12, "miliar": 1e9, "juta": 1e6, "ribu": 1e3}
 
 
@@ -2059,7 +2059,9 @@ def sync_lk(days: int | None = None, pages: int | None = None) -> int:
         return 0
     data = lk_load()
     if days is None:
-        days, pages = (60, 60) if not data else (3, 8)
+        # Pertama kali: mundur ±7 bulan agar laporan 3M dan 1H tahun berjalan ikut (dasar hitung Q2/Q3 murni).
+        lama = not data or min(r.get("tgl", "9") for r in data.values()) > (datetime.now() - timedelta(days=150)).strftime("%Y-%m-%d")
+        days, pages = (220, 700) if lama else (3, 8)
     cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
     baru, cursor = 0, 0
     for _ in range(pages):
@@ -2080,14 +2082,72 @@ def sync_lk(days: int | None = None, pages: int | None = None) -> int:
     return baru
 
 
+def lk_bertanda(r: dict) -> tuple[float | None, float | None]:
+    """Laba bersih (periode lalu, periode ini) bertanda: rugi negatif. Ringkasan Stockbit menulis nilai rugi tanpa tanda."""
+    lb = r.get("laba") or {}
+    d, k = (lb.get("dari") or {}).get("v"), (lb.get("ke") or {}).get("v")
+    j = r.get("judul", "")
+    if re.search(r"berbalik (laba|untung)", j, re.I):
+        sd, sk = -1, 1
+    elif re.search(r"berbalik rugi", j, re.I):
+        sd, sk = 1, -1
+    elif lb.get("jenis") == "rugi":
+        sd = sk = -1
+    else:
+        sd = sk = 1
+    return (sd * abs(d) if d is not None else None, sk * abs(k) if k is not None else None)
+
+
+def lk_kuartal(r9: dict, r6: dict | None, r3: dict | None) -> dict | None:
+    """Kinerja kuartal III murni: Q3 = 9M - 1H (tahun ini dan tahun lalu, angka pembanding dari laporan yang sama),
+    Q2 = 1H - 3M untuk QoQ. Angka 9M kumulatif bisa tetap naik walau Q3 sendiri melemah; ini yang diungkap di sini."""
+    if not r6:
+        return None
+    mata = ((r9.get("laba") or {}).get("ke") or {}).get("mata")
+    if mata != ((r6.get("laba") or {}).get("ke") or {}).get("mata"):
+        return None
+    d9, k9 = lk_bertanda(r9)
+    d6, k6 = lk_bertanda(r6)
+    q3 = k9 - k6 if k9 is not None and k6 is not None else None
+    q3l = d9 - d6 if d9 is not None and d6 is not None else None
+    if q3 is None:
+        return None
+    yoy = round((q3 / q3l - 1) * 100, 1) if q3l and q3l > 0 else None
+    q2 = qoq = None
+    if r3 and ((r3.get("laba") or {}).get("ke") or {}).get("mata") == mata:
+        k3 = lk_bertanda(r3)[1]
+        if k3 is not None:
+            q2 = k6 - k3
+            qoq = round((q3 / q2 - 1) * 100, 1) if q2 > 0 else None
+
+    def pend(r):
+        p = r.get("pendapatan") or {}
+        ke = (p.get("ke") or {}).get("v")
+        return (ke / (1 + p["pct"] / 100), ke) if ke and p.get("pct") is not None and p["pct"] > -100 else (None, None)
+    (p9l, p9), (p6l, p6) = pend(r9), pend(r6)
+    pyoy = round(((p9 - p6) / (p9l - p6l) - 1) * 100, 1) if None not in (p9, p6, p9l, p6l) and p9l - p6l > 0 else None
+    status = ("rugi" if q3 <= 0 else "berbalik" if q3l is not None and q3l <= 0 else
+              "naik" if yoy is not None and yoy >= 0 else "turun" if yoy is not None else "")
+    return {"q3": q3, "q3Lalu": q3l, "yoy": yoy, "q2": q2, "qoq": qoq, "pendYoy": pyoy, "mata": mata, "status": status,
+            "melemah": r9.get("kategori") in ("bagus", "naik", "berbalik") and status in ("turun", "rugi")}
+
+
 def lk_api(data: dict | None = None) -> dict:
     """Daftar LK terbaru per emiten (satu laporan terakhir per kode) + ringkasan per kategori."""
     data = lk_load() if data is None else data
-    terakhir = {}
+    terakhir, per_periode = {}, {}
     for r in sorted(data.values(), key=lambda r: (r.get("tgl", ""), r["id"])):
         terakhir[r["t"]] = r
+        per_periode.setdefault(r["t"], {})[r.get("periode") or ""] = r
     radar = {it["ticker"] for it in items_all()}
-    rows = [{**r, "radar": r["t"] in radar} for r in terakhir.values()]
+    rows = []
+    for r in terakhir.values():
+        # Laporan 9M: hitung kinerja kuartal III murni dari laporan 1H (dan 3M untuk QoQ) tahun yang sama.
+        m = re.match(r"^9M(\d{2})$", r.get("periode") or "")
+        pp = per_periode[r["t"]]
+        kw = lk_kuartal(r, pp.get(f"1H{m.group(1)}") or pp.get(f"6M{m.group(1)}"),
+                        pp.get(f"3M{m.group(1)}") or pp.get(f"1Q{m.group(1)}")) if m else None
+        rows.append({**r, "radar": r["t"] in radar, "kuartal": kw})
     rows.sort(key=lambda r: (r.get("tgl", ""), (r.get("laba") or {}).get("pct") or 0), reverse=True)
     hit = {}
     for r in rows:
