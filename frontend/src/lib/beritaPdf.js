@@ -1,5 +1,6 @@
 // Analisa berita/laporan terbaru satu emiten (PDF, A4 tegak, maks. 3 halaman) dengan format riset Seasonality:
-// 1 sampul berpita; 2 kesimpulan, isi dokumen, dampak positif | negatif; 3 konteks, implikasi, tesis, pantauan, disclaimer.
+// 1 sampul berpita; 2 kesimpulan, tujuan, isi dokumen, dampak positif | negatif; 3 implikasi, cari tahu | selidiki,
+// konteks, tesis, pantauan, disclaimer.
 // Data dari analisaBerita() (lib/beritaTerbaru.js). Tanpa warna merah; faktor negatif memakai oranye.
 import { MUTED, GOOD, BAD, INK, PRIMER, GOLD, LINE, frame, heading, para, block } from './ihsgPdf.js'
 import { sampul } from './ihsgModelPdf.js'
@@ -46,7 +47,8 @@ export async function beritaPdf(a, jsPDF) {
   // ---- Halaman 2: ringkasan dokumen dan dampak dua sisi.
   doc.addPage(); frame(doc, 'Ringkasan dokumen', 2, seri); heading(doc, 'Ringkasan dokumen', 26)
   let y = block(doc, 'Kesimpulan', a.kesimpulan, 37) + 1
-  if (a.ringkas) y = block(doc, 'Isi dokumen', potong(a.ringkas, 600), y) + 1
+  y = sub(doc, 'Tujuannya apa?', 14, y + 1, 182); y = butir(doc, a.tujuan, 18, y, 178) + 1
+  if (a.ringkas) y = block(doc, 'Isi dokumen', potong(a.ringkas, 500), y + 2) + 1
   if (a.poin.length) { y = sub(doc, 'Poin kunci', 14, y + 2, 182); y = butir(doc, a.poin.slice(0, 6), 18, y, 178) + 2 }
 
   // Dampak dua kolom: positif (hijau) | negatif (oranye).
@@ -65,17 +67,23 @@ export async function beritaPdf(a, jsPDF) {
   doc.addPage(); frame(doc, 'Implikasi dan tesis', 3, seri); heading(doc, 'Implikasi dan tesis', 26)
   y = 37
   if (a.implikasi.length) { y = sub(doc, 'Implikasi', 14, y, 182); y = butir(doc, a.implikasi, 18, y, 178) + 2 }
+  {
+    const y0 = y + 1
+    const yl = butir(doc, a.cari, 14, sub(doc, 'Cari tahu', 14, y0, 88), 88, { size: 8.5, tanda: '?' })
+    const yr = butir(doc, a.selidiki, 108, sub(doc, 'Selidiki', 108, y0, 88, GOLD), 88, { size: 8.5, tanda: '>' })
+    y = Math.max(yl, yr) + 2
+  }
   if (a.riwayat.length) {
-    y = sub(doc, 'Rangkaian keterbukaan sebelumnya (90 hari)', 14, y + 1, 182)
-    y = butir(doc, a.riwayat.map(r => `${tgl(r.tanggal)}: ${r.judul}${r.inti ? ' - ' + potong(r.inti, 140) : ''}`), 18, y, 178, { size: 8.5 }) + 2
+    y = sub(doc, 'Rangkaian keterbukaan sebelumnya', 14, y + 1, 182)
+    y = butir(doc, a.riwayat.slice(0, 3).map(r => `${tgl(r.tanggal)}: ${r.judul}${r.inti ? ' - ' + potong(r.inti, 140) : ''}`), 18, y, 178, { size: 8.5 }) + 2
   }
   if (a.tesis) {
     y = block(doc, `Tesis analisa per ${tgl(a.tesis.asOf)} · ${a.tesis.sikap}`,
-      [potong(a.tesis.ringkas, 420), a.tesis.posisi, a.tesis.hargaAcuan != null ? `Harga acuan analisa ${rp(a.tesis.hargaAcuan)}.` : ''].filter(Boolean).join(' '), y + 3) + 1
+      [potong(a.tesis.ringkas, 360), a.tesis.posisi, a.tesis.hargaAcuan != null ? `Harga acuan analisa ${rp(a.tesis.hargaAcuan)}.` : ''].filter(Boolean).join(' '), y + 3) + 1
   } else y = block(doc, 'Tesis analisa', `${a.ticker} belum memiliki analisa kurasi; dampak dinilai hanya dari isi dokumen.`, y + 3) + 1
   // Pantauan dan tesis salah bila dua kolom.
   const y0 = y + 2
-  const yl = butir(doc, a.pantau.slice(0, 4).map(p => potong(p, 200)), 14, sub(doc, 'Yang dipantau', 14, y0, 88), 88, { size: 8.5 })
+  const yl = butir(doc, a.pantau.slice(0, 3).map(p => potong(p, 180)), 14, sub(doc, 'Yang dipantau', 14, y0, 88), 88, { size: 8.5 })
   const yr = butir(doc, (a.salahBila.length ? a.salahBila : ['Belum ada kriteria dari analisa kurasi.']).slice(0, 3).map(p => potong(p, 220)), 108, sub(doc, 'Tesis salah bila', 108, y0, 88, GOLD), 88, { size: 8.5 })
   y = Math.max(yl, yr) + 3
 
