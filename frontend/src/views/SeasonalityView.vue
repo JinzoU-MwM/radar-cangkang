@@ -11,6 +11,7 @@ import BrokerPola from '../components/BrokerPola.vue'
 import RecoveryPanel from '../components/RecoveryPanel.vue'
 import LivePanel from '../components/LivePanel.vue'
 import LowPanel from '../components/LowPanel.vue'
+import LkPanel from '../components/LkPanel.vue'
 import HscPanel from '../components/HscPanel.vue'
 import TimeSeriesPanel from '../components/TimeSeriesPanel.vue'
 import AstronacciPanel from '../components/AstronacciPanel.vue'
@@ -24,7 +25,7 @@ import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
 const route = useRoute(), router = useRouter()
 // Tab halaman (urutan tampil): 'astro' (Astronacci), 'ts' (Time Series), 'season', 'broker' (Pola Broker), 'recovery', 'live',
 // tersimpan di URL (?tab=...); tanpa ?tab = Seasonality.
-const TABS = ['astro', 'ts', 'hsc', 'broker', 'recovery', 'low', 'live']
+const TABS = ['astro', 'ts', 'hsc', 'broker', 'recovery', 'low', 'lk', 'live']
 // Urutan & keterangan tab: analisa IHSG dulu (Seasonality, Live, Astronacci, Time Series, HSC), lalu pilih saham.
 const TAB_INFO = [
   { k: 'season', l: 'Seasonality', grup: 'Analisa IHSG', ket: 'pola bulanan berulang IHSG, sektor, dan saham (5/10 tahun) beserta trading plan.' },
@@ -35,6 +36,7 @@ const TAB_INFO = [
   { k: 'broker', l: 'Pola Broker', grup: 'Pilih saham', awalGrup: true, ket: 'akumulasi dan distribusi broker (asing/domestik) per bulan atau per hari.' },
   { k: 'recovery', l: 'Recovery', grup: 'Pilih saham', ket: 'saham yang sudah turun dalam dan mulai pulih, dengan potensi rebound.' },
   { k: 'low', l: 'Low', grup: 'Pilih saham', ket: 'saham di titik terendah dan daftar penurunan per periode 1D–10Y.' },
+  { k: 'lk', l: 'LK Bagus', grup: 'Pilih saham', ket: 'laporan keuangan terbaru seluruh BEI dengan laba naik kuat atau berbalik laba.' },
 ]
 const tabAktif = computed(() => TAB_INFO.find(x => x.k === tab.value) || TAB_INFO[0])
 const tab = computed({ get: () => TABS.includes(route.query.tab) ? route.query.tab : 'season', set: v => router.replace({ query: { ...route.query, tab: TABS.includes(v) ? v : undefined } }) })
@@ -103,7 +105,7 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
 <template>
   <div class="sz">
     <header>
-      <h1>Seasonality</h1>
+      <h1>IHSG</h1>
       <div class="tabs" role="tablist" aria-label="Bagian">
         <button v-for="x in TAB_INFO" :key="x.k" type="button" role="tab" class="tab" :class="{ grup: x.awalGrup }" :aria-selected="tab === x.k"
           :title="x.ket" @click="tab = x.k"><span v-if="x.k === 'live'" class="dotlive" aria-hidden="true"></span>{{ x.l }}</button>
@@ -116,6 +118,7 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
     <BrokerPola v-else-if="tab === 'broker'" />
     <RecoveryPanel v-else-if="tab === 'recovery'" />
     <LowPanel v-else-if="tab === 'low'" />
+    <LkPanel v-else-if="tab === 'lk'" />
     <HscPanel v-else-if="tab === 'hsc'" />
     <LivePanel v-else-if="tab === 'live'" />
     <template v-else>

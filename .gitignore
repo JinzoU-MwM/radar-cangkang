@@ -52,3 +52,6 @@ website/tsa-*.json
 
 # riwayat ramalan Time Series & Astronacci (runtime)
 **/.ramalan-log.json
+
+# laporan keuangan seluruh BEI dari akun StockbitReports (runtime)
+**/.lk-laporan.json

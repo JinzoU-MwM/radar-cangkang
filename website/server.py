@@ -1928,6 +1928,193 @@ def news_loop() -> None:
                     print(f"[berita] sinkron cepat gagal: {e}", file=sys.stderr)
 
 
+# ------------------------------------------------------- LK Bagus (seluruh BEI) ----
+# Laporan keuangan (interim/tahunan) dari akun StockbitReports untuk SELURUH emiten BEI, diurai dari ringkasan AI
+# Stockbit: laba/rugi bersih (dari -> menjadi, % YoY), pendapatan, margin kotor, dan pendorong (key takeaway).
+# Disimpan terpisah dari updates (bukan hanya emiten di monitor) di .lk-laporan.json; tab IHSG -> LK Bagus.
+LK_PATH = ROOT / ".lk-laporan.json"
+LK_JUDUL_RX = re.compile(r"laporan keuangan", re.I)   # judul laporan keuangan (disaring dari feed berita radar)
+LK_HARI = 120             # simpan laporan 120 hari terakhir (satu musim laporan)
+_LK_UNIT = {"triliun": 1e12, "miliar": 1e9, "juta": 1e6, "ribu": 1e3}
+
+
+def _lk_angka(s: str) -> float | None:
+    """'3.408,3' -> 3408.3; '-34,45' -> -34.45."""
+    try:
+        return float(str(s).replace(".", "").replace(",", "."))
+    except ValueError:
+        return None
+
+
+def _lk_nilai(mata: str, angka: str, unit: str) -> dict | None:
+    v = _lk_angka(angka)
+    if v is None:
+        return None
+    return {"v": v * _LK_UNIT.get((unit or "").lower(), 1), "mata": "USD" if "US" in (mata or "") else "Rp"}
+
+
+def lk_parse(p: dict) -> dict | None:
+    """Satu posting StockbitReports berjudul 'Laporan Keuangan ...' -> ringkasan terstruktur; None bila bukan LK."""
+    title = str(p.get("title") or "")
+    if not re.search(r"laporan keuangan", title, re.I):
+        return None
+    topics = [t for t in (p.get("topics") or []) if TICKER_RE.match(t)]
+    s = p.get("summary") or {}
+    judul = str(s.get("title") or "")
+    if not topics or not re.search(r"(laba|rugi) bersih|berbalik (laba|untung|rugi)", judul, re.I):
+        return None
+    teks = str(s.get("summary") or "")
+    poin = [str(x) for x in (s.get("key_points") or []) if x]
+    semua = " ".join([judul, teks, *poin])
+    rec = {"id": f"lk-{p.get('stream_id')}", "t": topics[0], "tgl": str(p.get("created_at") or "")[:10],
+           "jenisLk": re.sub(r"\s*\[[A-Z0-9-]+\]\s*$", "", title).strip(), "judul": judul,
+           "nama": (re.match(r"^[A-Z0-9]{4}\s+\(([^)]+)\)", teks) or [None, ""])[1],
+           "ringkas": teks, "poin": poin, "pendorong": str(s.get("key_takeaway") or ""),
+           "url": f"https://stockbit.com/post/{p.get('stream_id')}"}
+    m = re.search(r"\b(\d?[QMH]\d{2}|FY\d{2}|\d{4})\s*$", judul)
+    rec["periode"] = m.group(1) if m else ""
+    # Laba/rugi bersih: jenis, arah, % dari judul; nilai dari -> menjadi dari poin pertama yang menyebutnya.
+    m = re.search(r"(Laba|Rugi) Bersih\s+(Naik|Turun|Tumbuh|Melonjak|Melesat|Melambung|Bertambah|Meningkat|Anjlok|Berkurang|Menurun|Merosot|Berbalik|Menyusut|Membengkak)?\s*([\d.,]+)?\s*%?", judul, re.I)
+    jenis = (m.group(1).lower() if m else "")
+    arah = (m.group(2) or "").lower() if m else ""
+    # "Rugi Bersih Berbalik Laba" = berbalik untung; "Laba Bersih Berbalik Rugi" = berbalik rugi.
+    berbalik = bool(re.search(r"berbalik (laba|untung)", judul, re.I))
+    if re.search(r"berbalik rugi", judul, re.I):
+        jenis = "rugi"
+    rec["laba"] = {"jenis": "laba" if berbalik else jenis, "arah": "naik" if arah in ("naik", "tumbuh", "melonjak", "melesat", "melambung", "bertambah", "meningkat", "membengkak") else
+                   "turun" if arah in ("turun", "anjlok", "berkurang", "menurun", "merosot", "menyusut") else arah,
+                   "pct": _lk_angka(m.group(3)) if m and m.group(3) else None, "dari": None, "ke": None}
+    for x in [*poin, teks]:
+        if re.search(r"(laba|rugi) bersih", x, re.I):
+            d = re.search(r"dari\s+(Rp|US\$)\s?(-?[\d.,]+)\s*(triliun|miliar|juta|ribu)?\s+menjadi\s+(Rp|US\$)\s?(-?[\d.,]+)\s*(triliun|miliar|juta|ribu)?", x, re.I)
+            if d:
+                rec["laba"]["dari"] = _lk_nilai(d.group(1), d.group(2), d.group(3))
+                rec["laba"]["ke"] = _lk_nilai(d.group(4), d.group(5), d.group(6))
+                break
+    if rec["laba"]["ke"] is None:
+        d = re.search(r"(laba|rugi) bersih[^.]*?menjadi\s+(Rp|US\$)\s?(-?[\d.,]+)\s*(triliun|miliar|juta|ribu)?", teks, re.I)
+        if d:
+            rec["laba"]["ke"] = _lk_nilai(d.group(2), d.group(3), d.group(4))
+    d = re.search(r"pendapatan\s+(meningkat|bertambah|naik|tumbuh|melonjak|turun|berkurang|menurun|merosot)\s+([\d.,]+)%(?:\s+menjadi\s+(Rp|US\$)\s?([\d.,]+)\s*(triliun|miliar|juta|ribu)?)?", teks, re.I)
+    rec["pendapatan"] = {"pct": (_lk_angka(d.group(2)) or 0) * (-1 if re.match(r"turun|berkurang|menurun|merosot", d.group(1), re.I) else 1),
+                         "ke": _lk_nilai(d.group(3), d.group(4), d.group(5)) if d.group(3) else None} if d else None
+    d = re.search(r"margin kotor[^.]*?dari\s+(-?[\d.,]+)%\s+menjadi\s+(-?[\d.,]+)%", semua, re.I)
+    rec["marginKotor"] = {"dari": _lk_angka(d.group(1)), "ke": _lk_angka(d.group(2))} if d else None
+    rec["kategori"] = lk_kategori(rec)
+    rec["catatan"] = lk_catatan(rec)
+    return rec
+
+
+def lk_kategori(r: dict) -> str:
+    """berbalik (rugi -> laba) / bagus (laba naik >= 20%) / naik / turun / rugi / lain."""
+    lb = r.get("laba") or {}
+    if lb.get("jenis") == "laba" and re.search(r"berbalik (laba|untung)", r.get("judul", ""), re.I):
+        return "berbalik"
+    if lb.get("jenis") == "rugi":
+        return "rugi"
+    if lb.get("jenis") == "laba" and lb.get("arah") == "naik":
+        return "bagus" if (lb.get("pct") or 0) >= 20 else "naik"
+    if lb.get("jenis") == "laba" and lb.get("arah") == "turun":
+        return "turun"
+    return "lain"
+
+
+def lk_catatan(r: dict) -> list[str]:
+    """Catatan kualitas laba yang terbaca dari angka (objektif, tanpa rekomendasi)."""
+    out, lb, pd, mk = [], r.get("laba") or {}, r.get("pendapatan"), r.get("marginKotor")
+    if r["kategori"] in ("bagus", "naik", "berbalik"):
+        if pd and pd["pct"] > 0:
+            out.append(f"Didukung pendapatan naik {pd['pct']:.2f}%".replace(".", ","))
+        elif pd and pd["pct"] < 0:
+            out.append("Laba naik meski pendapatan turun: cek efisiensi atau pos non-operasional")
+        if mk and mk["dari"] is not None and mk["ke"] is not None and mk["ke"] > mk["dari"]:
+            out.append(f"Margin kotor melebar {mk['dari']:g}% -> {mk['ke']:g}%".replace(".", ","))
+        d, k = (lb.get("dari") or {}).get("v"), (lb.get("ke") or {}).get("v")
+        if (lb.get("pct") or 0) >= 300 or (d and k and abs(d) * 4 < abs(k)):
+            out.append("Basis tahun lalu kecil: persentase besar dari angka awal rendah")
+    if (lb.get("ke") or {}).get("mata") == "USD":
+        out.append("Laporan dalam dolar AS")
+    return out
+
+
+def lk_load() -> dict:
+    try:
+        return json.loads(LK_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def lk_simpan(data: dict) -> None:
+    batas = (datetime.now() - timedelta(days=LK_HARI)).strftime("%Y-%m-%d")
+    data = {k: v for k, v in data.items() if v.get("tgl", "") >= batas}
+    tmp = LK_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(LK_PATH)
+
+
+def sync_lk(days: int | None = None, pages: int | None = None) -> int:
+    """Baca akun StockbitReports (seluruh BEI) dan simpan semua laporan keuangan berikut ringkasannya.
+    Pertama kali (berkas kosong) menyusul 60 hari; selanjutnya 3 hari terakhir. Mengembalikan jumlah LK baru."""
+    if not (get_token() and not token_expired()):
+        return 0
+    data = lk_load()
+    if days is None:
+        days, pages = (60, 60) if not data else (3, 8)
+    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    baru, cursor = 0, 0
+    for _ in range(pages):
+        j = stockbit_post_api("https://exodus.stockbit.com/stream/v3/user/StockbitReports",
+                              {"category": "STREAM_CATEGORY_MAIN_IDEAS", "last_stream_id": cursor, "limit": 100}, True)
+        d = j.get("data") or {}
+        page = d.get("stream") or []
+        for p in page:
+            r = lk_parse(p)
+            if r and data.get(r["id"]) != r:
+                baru += r["id"] not in data
+                data[r["id"]] = r
+        if not page or (d.get("pagination") or {}).get("is_last_page") or str(page[-1].get("created_at") or "")[:10] < cutoff:
+            break
+        cursor = (d.get("pagination") or {}).get("next_cursor") or page[-1].get("stream_id")
+        time.sleep(0.3)
+    lk_simpan(data)
+    return baru
+
+
+def lk_api(data: dict | None = None) -> dict:
+    """Daftar LK terbaru per emiten (satu laporan terakhir per kode) + ringkasan per kategori."""
+    data = lk_load() if data is None else data
+    terakhir = {}
+    for r in sorted(data.values(), key=lambda r: (r.get("tgl", ""), r["id"])):
+        terakhir[r["t"]] = r
+    radar = {it["ticker"] for it in items_all()}
+    rows = [{**r, "radar": r["t"] in radar} for r in terakhir.values()]
+    rows.sort(key=lambda r: (r.get("tgl", ""), (r.get("laba") or {}).get("pct") or 0), reverse=True)
+    hit = {}
+    for r in rows:
+        hit[r["kategori"]] = hit.get(r["kategori"], 0) + 1
+    periode = {}
+    for r in rows:
+        if r.get("periode"):
+            periode[r["periode"]] = periode.get(r["periode"], 0) + 1
+    return {"updated": max((r.get("tgl", "") for r in rows), default=""), "n": len(rows), "hitung": hit,
+            "periode": max(periode, key=periode.get) if periode else "", "rows": rows}
+
+
+def lk_loop() -> None:
+    """Sinkron LK tiap 30 menit pada jam aktif (06.00-22.00 WIB)."""
+    time.sleep(120)
+    while True:
+        jam = datetime.now(timezone(timedelta(hours=7))).hour
+        if 6 <= jam < 22 or not LK_PATH.exists():
+            try:
+                n = sync_lk()
+                if n:
+                    print(f"[lk] {n} laporan keuangan baru", file=sys.stderr)
+            except Exception as e:
+                print(f"[lk] gagal: {e}", file=sys.stderr)
+        time.sleep(1800)
+
+
 # ------------------------------------------------------------------- POV ----
 # Sudut pandang (POV) akun Stockbit yang diprioritaskan + akun trending: saham yang mereka incar, gaya analisa,
 # horizon, dan nada (bullish/bearish). Hanya posting ide publik yang dianalisis; tidak ada data pribadi.
@@ -3749,7 +3936,8 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "api/items":
             self.reply_json(items_all())
         elif path == "api/updates":
-            self.reply_json(updates_all())
+            # Laporan keuangan tidak tampil di feed radar backdoor; dianalisa di tab IHSG -> LK Bagus (/api/lk).
+            self.reply_json([u for u in updates_all() if not LK_JUDUL_RX.search(str(u.get("title") or ""))])
         elif path.startswith("api/layout/"):
             t = path.rsplit("/", 1)[1]
             if not TICKER_RE.match(t):
@@ -3848,6 +4036,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply_json(hsc_analisa())
             except Exception as e:
                 self.reply_json({"error": f"Analisa HSC belum bisa dihitung: {e}"})
+        elif path == "api/lk":
+            self.reply_json(lk_api())
         elif path == "api/harga-saham":
             self.reply_json(harga_semua())
         elif path == "api/nama-saham":
@@ -4206,6 +4396,7 @@ def main() -> int:
     threading.Thread(target=live_loop, daemon=True).start()
     threading.Thread(target=broker_harian_loop, daemon=True).start()
     threading.Thread(target=ramalan_loop, daemon=True).start()
+    threading.Thread(target=lk_loop, daemon=True).start()
     threading.Thread(target=snapshot_loop, daemon=True).start()
     threading.Thread(target=tsa_loop, daemon=True).start()
     print(f"Radar Backdoor berjalan di http://localhost:{args.port}")

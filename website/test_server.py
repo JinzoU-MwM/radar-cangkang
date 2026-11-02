@@ -7,6 +7,7 @@ import time
 import tempfile
 import threading
 import unittest
+import unittest.mock
 import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
@@ -358,6 +359,46 @@ class LiveTertahanTest(unittest.TestCase):
             self.assertEqual(server.live_tertahan(False)["alasan"], "token Stockbit kedaluwarsa")
         finally:
             server.SB_LIVE.clear(); server.SB_LIVE.update(lama[0]); server.token_exp = lama[1]
+
+
+class LkTest(unittest.TestCase):
+    """Laporan keuangan seluruh BEI dari akun StockbitReports: urai ringkasan AI menjadi angka dan kategori."""
+
+    def post(self, title, judul, summary, points, sid=1, topic="AKPI"):
+        return {"stream_id": sid, "title": f"{title} [{topic}]", "topics": [topic], "created_at": "2026-11-02 11:56:00",
+                "summary": {"title": judul, "summary": summary, "key_points": points, "key_takeaway": "Laba naik karena margin melebar"}}
+
+    def test_laba_naik(self):
+        r = server.lk_parse(self.post("Penyampaian Laporan Keuangan Interim Yang Tidak Diaudit", "Laba Bersih Naik 3.408,3% 9M26",
+            "AKPI (Argha Karya Prima Industry) membukukan laba bersih bertambah 3.408,3% menjadi Rp 110,75 miliar, dengan pendapatan meningkat 24,25% menjadi Rp 2,77 triliun.",
+            ["Laba bersih meningkat 3.408,3% YoY dari Rp 3,16 miliar menjadi Rp 110,75 miliar", "Margin kotor naik dari 10,44% menjadi 13,39%"]))
+        self.assertEqual((r["t"], r["periode"], r["kategori"], r["nama"]), ("AKPI", "9M26", "bagus", "Argha Karya Prima Industry"))
+        self.assertAlmostEqual(r["laba"]["pct"], 3408.3)
+        self.assertAlmostEqual(r["laba"]["dari"]["v"], 3.16e9)
+        self.assertAlmostEqual(r["laba"]["ke"]["v"], 110.75e9)
+        self.assertAlmostEqual(r["pendapatan"]["pct"], 24.25)
+        self.assertEqual(r["marginKotor"], {"dari": 10.44, "ke": 13.39})
+        self.assertTrue(any("Basis tahun lalu kecil" in c for c in r["catatan"]))
+
+    def test_kategori_lain(self):
+        base = ("Penyampaian Laporan Keuangan Interim", "", "XXXX (Contoh) membukukan.", [])
+        cek = lambda judul: server.lk_parse(self.post(base[0], judul, base[2], base[3], topic="XXXX"))["kategori"]
+        self.assertEqual(cek("Rugi Bersih Berbalik Laba 9M26"), "berbalik")
+        self.assertEqual(cek("Laba Bersih Berbalik Rugi 9M26"), "rugi")
+        self.assertEqual(cek("Laba Bersih Turun 22,15% 9M26"), "turun")
+        self.assertEqual(cek("Laba Bersih Bertambah 5% 9M26"), "naik")
+        self.assertIsNone(server.lk_parse(self.post("Bukti Iklan Laporan Keuangan", "Penyampaian Bukti Iklan Laporan Keuangan", "x", [])))
+        self.assertIsNone(server.lk_parse(self.post("Laporan Bulanan Registrasi", "Laba Bersih Naik 5%", "x", [])))
+
+    def test_api_satu_per_emiten(self):
+        a = server.lk_parse(self.post("Laporan Keuangan", "Laba Bersih Naik 30% 6M26", "AKPI (A) x.", [], sid=1))
+        b = server.lk_parse(self.post("Laporan Keuangan", "Laba Bersih Naik 40% 9M26", "AKPI (A) x.", [], sid=2))
+        a["tgl"] = "2026-08-01"
+        with unittest.mock.patch.object(server, "items_all", return_value=[]):
+            r = server.lk_api({a["id"]: a, b["id"]: b})
+        self.assertEqual(r["n"], 1)
+        self.assertEqual(r["rows"][0]["periode"], "9M26")
+        self.assertEqual(r["hitung"], {"bagus": 1})
 
 
 class RamalanBuktiTest(unittest.TestCase):
