@@ -22,7 +22,7 @@ const basis = computed(() => (data.value?.rows || []).filter(lolosPer))
 const hitung = computed(() => basis.value.reduce((h, x) => ({ ...h, [x.kategori]: (h[x.kategori] || 0) + 1 }), {}))
 const f = reactive({ cari: '', hsc: '', radar: false, sehat: false, urut: 'laba', q3: '' })
 // Kuartal III murni (server: 9M - 1H): saringan agar kenaikan 9M yang hanya ditopang Q1-Q2 terlihat.
-const Q3OPSI = [['', 'Semua'], ['naik', 'Q3 ikut naik'], ['melemah', 'Q3 melemah'], ['tanpa', 'Data 1H belum ada']]
+const Q3OPSI = [['', 'Semua'], ['naik', 'Q3 ikut naik'], ['melemah', 'Q3 melemah'], ['tanpa', 'Q3 belum terhitung']]
 const lolosQ3 = x => !f.q3 || (f.q3 === 'naik' ? ['naik', 'berbalik'].includes(x.kuartal?.status)
   : f.q3 === 'melemah' ? x.kuartal?.melemah : !x.kuartal)
 const URUT = [['laba', 'Kenaikan laba'], ['q3', 'Laba Q3 YoY'], ['nilai', 'Nilai laba'], ['pendapatan', 'Kenaikan pendapatan'], ['tgl', 'Terbaru']]
@@ -99,7 +99,7 @@ async function unduhPdf() {
         <button v-for="[v, l] in HSC_OPSI" :key="v" type="button" class="pill sm" :aria-pressed="String(f.hsc === v)" @click="f.hsc = v">{{ l }}</button>
       </div>
       <div class="flt" role="group" aria-label="Kuartal III murni">
-        <span class="small muted" title="Laba Q3 murni = laba 9M dikurangi laba 1H (tahun ini dan tahun lalu)">Q3 murni:</span>
+        <span class="small muted" title="Laba kuartal III saja (bukan kumulatif 9M)">Q3 murni:</span>
         <button v-for="[v, l] in Q3OPSI" :key="v" type="button" class="pill sm" :aria-pressed="String(f.q3 === v)" @click="f.q3 = v">{{ l }}</button>
         <span class="small muted">{{ hitQ3.ada }} emiten terhitung · {{ hitQ3.melemah }} naik di 9M tetapi Q3 melemah</span>
       </div>
@@ -138,11 +138,11 @@ async function unduhPdf() {
                 <p class="small"><b>{{ x.judul }}</b> · {{ x.jenisLk }}</p>
                 <p class="small">{{ x.ringkas }}</p>
                 <ul class="small"><li v-for="p in x.poin" :key="p">{{ p }}</li></ul>
-                <p v-if="x.kuartal" class="small"><b>Kuartal III murni</b> (9M − 1H): laba Q3 {{ uangQ(x.kuartal.q3, x.kuartal.mata) }}
+                <p v-if="x.kuartal" class="small"><b>Kuartal III murni</b> ({{ x.kuartal.sumber || '9M dikurangi 1H' }}): laba Q3 {{ uangQ(x.kuartal.q3, x.kuartal.mata) }}
                   vs Q3 tahun lalu {{ uangQ(x.kuartal.q3Lalu, x.kuartal.mata) }} ({{ q3Pct(x.kuartal) }})<template v-if="x.kuartal.q2 != null">;
                   Q2 {{ uangQ(x.kuartal.q2, x.kuartal.mata) }} → QoQ {{ pct(x.kuartal.qoq) }}</template><template v-if="x.kuartal.pendYoy != null">;
                   pendapatan Q3 YoY {{ pct(x.kuartal.pendYoy) }}</template>.</p>
-                <p v-else class="small muted">Laporan 1H tahun yang sama belum tersedia, sehingga laba Q3 murni belum bisa dihitung.</p>
+                <p v-else class="small muted">Laba Q3 murni belum bisa dihitung: laporan laba rugi kuartalan belum tersedia atau angkanya tidak cocok dengan ringkasan 9M.</p>
                 <p v-if="x.catatan.length" class="small muted">Catatan: {{ x.catatan.join(' · ') }}.</p>
               </td></tr>
             </template>
@@ -151,8 +151,8 @@ async function unduhPdf() {
       </div>
       <p v-if="rows.length > n" class="small"><button type="button" class="pill sm" @click="n += 100">Tampilkan 100 lagi ({{ rows.length - n }} tersisa)</button></p>
       <p class="small muted"><b>Laba naik ≥ 20%</b> = laba bersih YoY naik minimal 20%; <b>Berbalik laba</b> = periode lalu rugi, kini laba.
-        <b>Laba Q3 murni</b> = laba 9M dikurangi laba 1H (tahun ini dan tahun lalu dari laporan yang sama), sehingga terlihat bila kenaikan 9M
-        hanya ditopang Q1–Q2; <b>Q3 melemah</b> = laba 9M naik tetapi laba Q3 sendiri turun atau rugi. QoQ = Q3 dibanding Q2 (1H − 3M).
+        <b>Laba Q3 murni</b> = laba kuartal III saja, dari laporan laba rugi kuartalan Stockbit (atau laba 9M dikurangi Q1+Q2 bila Q3 belum tercatat, setelah dicek cocok dengan angka 9M tahun lalu), sehingga terlihat bila kenaikan 9M
+        hanya ditopang Q1–Q2; <b>Q3 melemah</b> = laba 9M naik tetapi laba Q3 sendiri turun atau rugi. QoQ = Q3 dibanding Q2.
         Saringan <b>Kualitas</b> menyisakan emiten yang pendapatannya ikut naik dan kenaikannya bukan dari basis tahun lalu yang kecil.
         Angka dari ringkasan AI Stockbit; verifikasi dengan dokumen sumber (klik tanggal).</p>
     </template>
