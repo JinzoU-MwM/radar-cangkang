@@ -390,6 +390,18 @@ class LkTest(unittest.TestCase):
         self.assertIsNone(server.lk_parse(self.post("Bukti Iklan Laporan Keuangan", "Penyampaian Bukti Iklan Laporan Keuangan", "x", [])))
         self.assertIsNone(server.lk_parse(self.post("Laporan Bulanan Registrasi", "Laba Bersih Naik 5%", "x", [])))
 
+    def test_periode_dan_format_nilai(self):
+        self.assertEqual([server.lk_periode(j) for j in ("Laba Bersih Naik 20% 9M26", "Rugi Bersih Turun 48,59% Q1 26",
+                                                          "Laba Bersih Naik 5% H1 2026", "Laba Bersih Naik 5% FY25")], ["9M26", "3M26", "1H26", "FY25"])
+        d, k = server.lk_nilai_laba(["Laba bersih naik 16,8% YoY menjadi Rp 84,53 miliar dari Rp 72,39 miliar"])
+        self.assertEqual((d["v"], k["v"]), (72.39e9, 84.53e9))
+        # Tanpa pembanding: angka sesudah "mencapai", bukan angka pendapatan; periode lalu diturunkan dari % YoY.
+        r = server.lk_parse(self.post("Laporan Keuangan", "Laba Neto Naik 25% 1H26",
+            "BSSR (Baramulti) membukukan laba bersih naik 25% mencapai US$ 62,5 juta, dengan pendapatan menjadi US$ 361 juta.", []))
+        self.assertEqual(r["periode"], "1H26")
+        self.assertAlmostEqual(r["laba"]["ke"]["v"], 62.5e6)
+        self.assertAlmostEqual(r["laba"]["dari"]["v"], 50e6)
+
     def test_q3_murni_melemah(self):
         # 9M naik 20% (100 -> 120) tetapi 1H naik lebih besar (60 -> 90): Q3 tahun lalu 40, Q3 kini 30 (turun 25%).
         r9 = server.lk_parse(self.post("Laporan Keuangan", "Laba Bersih Naik 20% 9M26", "AKPI (A) x.",

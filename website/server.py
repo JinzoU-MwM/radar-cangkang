@@ -1953,6 +1953,45 @@ def _lk_nilai(mata: str, angka: str, unit: str) -> dict | None:
     return {"v": v * _LK_UNIT.get((unit or "").lower(), 1), "mata": "USD" if "US" in (mata or "") else "Rp"}
 
 
+_LK_UANG = r"(Rp|US\$)\s?(-?[\d.,]*\d)\s*(triliun|miliar|juta|ribu)?"
+
+
+def lk_periode(judul: str) -> str:
+    """Periode di akhir judul ringkasan, dinormalkan: 9M26, 1H26, 3M26, FY25. 'Q1 26' -> 3M26, 'H1 26' -> 1H26."""
+    m = re.search(r"\b(?:(\d)\s?([MHQ])|([QH])\s?(\d)|(FY))\s?(\d{2}|\d{4})\s*$", judul.strip(), re.I)
+    if not m:
+        m2 = re.search(r"\b(\d{4})\s*$", judul.strip())
+        return m2.group(1) if m2 else ""
+    yy = m.group(6)[-2:]
+    if m.group(5):
+        return f"FY{yy}"
+    if m.group(1):
+        n, u = m.group(1), m.group(2).upper()
+        return f"{n}{'H' if u == 'H' else 'M' if u == 'M' else 'Q'}{yy}"
+    u, n = m.group(3).upper(), m.group(4)
+    if u == "H":
+        return f"{n}H{yy}"
+    return {"1": f"3M{yy}"}.get(n, f"Q{n}{yy}")      # Q1 = 3M (kumulatif sama); Q2/Q3/Q4 kuartalan dibiarkan apa adanya
+
+
+def lk_nilai_laba(teks: list[str]) -> tuple[dict | None, dict | None]:
+    """(periode lalu, periode ini) laba/rugi bersih dari kalimat yang menyebutnya. Pola: 'dari A menjadi B',
+    'menjadi B dari A', atau 'mencapai/sebesar/menjadi B' (tanpa pembanding). Berhenti sebelum kata 'pendapatan'."""
+    for x in teks:
+        for m in re.finditer(r"(laba|rugi) (bersih|neto)((?:(?!pendapatan|beban|margin).)*)", x, re.I):
+            k = m.group(3)
+            d = re.search(r"dari\s+" + _LK_UANG + r"\s+menjadi\s+" + _LK_UANG, k, re.I)
+            if d:
+                return _lk_nilai(*d.group(1, 2, 3)), _lk_nilai(*d.group(4, 5, 6))
+            d = re.search(r"menjadi\s+" + _LK_UANG + r"\s+dari\s+" + _LK_UANG, k, re.I)
+            if d:
+                return _lk_nilai(*d.group(4, 5, 6)), _lk_nilai(*d.group(1, 2, 3))
+            d = re.search(r"(?:mencapai|sebesar|menjadi)\s+" + _LK_UANG, k, re.I)
+            if d:
+                return None, _lk_nilai(*d.group(1, 2, 3))
+    return None, None
+
+
 def lk_parse(p: dict) -> dict | None:
     """Satu posting StockbitReports berjudul 'Laporan Keuangan ...' -> ringkasan terstruktur; None bila bukan LK."""
     title = str(p.get("title") or "")
@@ -1961,6 +2000,8 @@ def lk_parse(p: dict) -> dict | None:
     topics = [t for t in (p.get("topics") or []) if TICKER_RE.match(t)]
     s = p.get("summary") or {}
     judul = str(s.get("title") or "")
+    # "Laba Neto" dipakai sebagian ringkasan; disamakan dengan "Laba Bersih".
+    judul = re.sub(r"\b(Laba|Rugi) Neto\b", r"\1 Bersih", judul)
     if not topics or not re.search(r"(laba|rugi) bersih|berbalik (laba|untung|rugi)", judul, re.I):
         return None
     teks = str(s.get("summary") or "")
@@ -1971,8 +2012,7 @@ def lk_parse(p: dict) -> dict | None:
            "nama": (re.match(r"^[A-Z0-9]{4}\s+\(([^)]+)\)", teks) or [None, ""])[1],
            "ringkas": teks, "poin": poin, "pendorong": str(s.get("key_takeaway") or ""),
            "url": f"https://stockbit.com/post/{p.get('stream_id')}"}
-    m = re.search(r"\b(\d?[QMH]\d{2}|FY\d{2}|\d{4})\s*$", judul)
-    rec["periode"] = m.group(1) if m else ""
+    rec["periode"] = lk_periode(judul)
     # Laba/rugi bersih: jenis, arah, % dari judul; nilai dari -> menjadi dari poin pertama yang menyebutnya.
     m = re.search(r"(Laba|Rugi) Bersih\s+(Naik|Turun|Tumbuh|Melonjak|Melesat|Melambung|Bertambah|Meningkat|Anjlok|Berkurang|Menurun|Merosot|Berbalik|Menyusut|Membengkak)?\s*([\d.,]+)?\s*%?", judul, re.I)
     jenis = (m.group(1).lower() if m else "")
@@ -1984,17 +2024,13 @@ def lk_parse(p: dict) -> dict | None:
     rec["laba"] = {"jenis": "laba" if berbalik else jenis, "arah": "naik" if arah in ("naik", "tumbuh", "melonjak", "melesat", "melambung", "bertambah", "meningkat", "membengkak") else
                    "turun" if arah in ("turun", "anjlok", "berkurang", "menurun", "merosot", "menyusut") else arah,
                    "pct": _lk_angka(m.group(3)) if m and m.group(3) else None, "dari": None, "ke": None}
-    for x in [*poin, teks]:
-        if re.search(r"(laba|rugi) bersih", x, re.I):
-            d = re.search(r"dari\s+(Rp|US\$)\s?(-?[\d.,]+)\s*(triliun|miliar|juta|ribu)?\s+menjadi\s+(Rp|US\$)\s?(-?[\d.,]+)\s*(triliun|miliar|juta|ribu)?", x, re.I)
-            if d:
-                rec["laba"]["dari"] = _lk_nilai(d.group(1), d.group(2), d.group(3))
-                rec["laba"]["ke"] = _lk_nilai(d.group(4), d.group(5), d.group(6))
-                break
-    if rec["laba"]["ke"] is None:
-        d = re.search(r"(laba|rugi) bersih[^.]*?menjadi\s+(Rp|US\$)\s?(-?[\d.,]+)\s*(triliun|miliar|juta|ribu)?", teks, re.I)
-        if d:
-            rec["laba"]["ke"] = _lk_nilai(d.group(2), d.group(3), d.group(4))
+    rec["laba"]["dari"], rec["laba"]["ke"] = lk_nilai_laba([*poin, teks])
+    # Tanpa angka pembanding: turunkan dari persentase YoY (naik: ke/(1+p); turun: ke/(1-p)).
+    lb = rec["laba"]
+    if lb["dari"] is None and lb["ke"] and lb["pct"] is not None and not berbalik and not re.search(r"berbalik", judul, re.I):
+        f = 1 + lb["pct"] / 100 if lb["arah"] == "naik" else 1 - lb["pct"] / 100 if lb["arah"] == "turun" and lb["pct"] < 100 else None
+        if f:
+            lb["dari"] = {"v": lb["ke"]["v"] / f, "mata": lb["ke"]["mata"], "turunan": True}
     d = re.search(r"pendapatan\s+(meningkat|bertambah|naik|tumbuh|melonjak|turun|berkurang|menurun|merosot)\s+([\d.,]+)%(?:\s+menjadi\s+(Rp|US\$)\s?([\d.,]+)\s*(triliun|miliar|juta|ribu)?)?", teks, re.I)
     rec["pendapatan"] = {"pct": (_lk_angka(d.group(2)) or 0) * (-1 if re.match(r"turun|berkurang|menurun|merosot", d.group(1), re.I) else 1),
                          "ke": _lk_nilai(d.group(3), d.group(4), d.group(5)) if d.group(3) else None} if d else None
@@ -2044,9 +2080,18 @@ def lk_load() -> dict:
         return {}
 
 
+_LK_KUNCI = threading.Lock()
+
+
 def lk_simpan(data: dict) -> None:
+    """Gabungkan dengan isi berkas saat ini (sinkron rutin dan penarikan ulang bisa berjalan bersamaan) lalu simpan."""
     batas = (datetime.now() - timedelta(days=LK_HARI)).strftime("%Y-%m-%d")
-    data = {k: v for k, v in data.items() if v.get("tgl", "") >= batas}
+    with _LK_KUNCI:
+        data = {k: v for k, v in {**lk_load(), **data}.items() if v.get("tgl", "") >= batas}
+        _lk_tulis(data)
+
+
+def _lk_tulis(data: dict) -> None:
     tmp = LK_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     tmp.replace(LK_PATH)
@@ -2064,7 +2109,7 @@ def sync_lk(days: int | None = None, pages: int | None = None) -> int:
         days, pages = (220, 700) if lama else (3, 8)
     cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
     baru, cursor = 0, 0
-    for _ in range(pages):
+    for hal in range(pages):
         j = stockbit_post_api("https://exodus.stockbit.com/stream/v3/user/StockbitReports",
                               {"category": "STREAM_CATEGORY_MAIN_IDEAS", "last_stream_id": cursor, "limit": 100}, True)
         d = j.get("data") or {}
@@ -2076,7 +2121,11 @@ def sync_lk(days: int | None = None, pages: int | None = None) -> int:
                 data[r["id"]] = r
         if not page or (d.get("pagination") or {}).get("is_last_page") or str(page[-1].get("created_at") or "")[:10] < cutoff:
             break
-        cursor = (d.get("pagination") or {}).get("next_cursor") or page[-1].get("stream_id")
+        # Kursor = ID posting terakhir halaman ini (next_cursor sempat melompati berbulan-bulan saat penarikan panjang).
+        cursor = page[-1].get("stream_id") or (d.get("pagination") or {}).get("next_cursor")
+        if hal % 25 == 24:
+            print(f"[lk] halaman {hal + 1}: sampai {str(page[-1].get('created_at'))[:10]}, {len(data)} laporan", file=sys.stderr)
+            lk_simpan(data)          # simpan berkala agar penarikan panjang tidak hilang bila terputus
         time.sleep(0.3)
     lk_simpan(data)
     return baru
