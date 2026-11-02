@@ -2111,12 +2111,18 @@ def sync_lk(days: int | None = None, pages: int | None = None) -> int:
         days, pages = (220, 700) if lama else (3, 8)
     cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
     baru, cursor = 0, 0
+    # Semua kode emiten yang muncul di stream (laporan bulanan registrasi membuat hampir semua emiten BEI tercatat):
+    # daftar seluruh kode BEI untuk Saham 50.
+    kode = bei_kode_load()
     for hal in range(pages):
         j = stockbit_post_api("https://exodus.stockbit.com/stream/v3/user/StockbitReports",
                               {"category": "STREAM_CATEGORY_MAIN_IDEAS", "last_stream_id": cursor, "limit": 100}, True)
         d = j.get("data") or {}
         page = d.get("stream") or []
         for p in page:
+            for t in p.get("topics") or []:
+                if TICKER_RE.match(t):
+                    kode[t] = max(kode.get(t, ""), str(p.get("created_at") or "")[:10])
             r = lk_parse(p)
             if r and data.get(r["id"]) != r:
                 baru += r["id"] not in data
@@ -2130,7 +2136,25 @@ def sync_lk(days: int | None = None, pages: int | None = None) -> int:
             lk_simpan(data)          # simpan berkala agar penarikan panjang tidak hilang bila terputus
         time.sleep(0.3)
     lk_simpan(data)
+    _bei_kode_tulis(kode)
     return baru
+
+
+BEI_KODE_PATH = ROOT / ".bei-kode.json"
+
+
+def bei_kode_load() -> dict:
+    """{kode: tanggal terakhir muncul di akun StockbitReports}."""
+    try:
+        return json.loads(BEI_KODE_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def _bei_kode_tulis(kode: dict) -> None:
+    tmp = BEI_KODE_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(kode, ensure_ascii=False, sort_keys=True), encoding="utf-8")
+    tmp.replace(BEI_KODE_PATH)
 
 
 def lk_bertanda(r: dict) -> tuple[float | None, float | None]:
@@ -2418,8 +2442,9 @@ def lks_load() -> dict:
         return {}
 
 
-def sync_lk_keystats(batas: int | None = None) -> int:
-    """Ambil Key Stats untuk emiten yang laporan terakhirnya 3M/1H/9M/FY dan belum mutakhir (sama aturan dengan findata)."""
+def sync_lk_keystats(batas: int | None = None, target: list[str] | None = None) -> int:
+    """Ambil Key Stats untuk emiten yang laporan terakhirnya 3M/1H/9M/FY dan belum mutakhir (sama aturan dengan findata),
+    atau untuk daftar `target` tertentu (mis. universe Saham 50)."""
     if not (get_token() and not token_expired()):
         return 0
     data, ks = lk_load(), lks_load()
@@ -2431,9 +2456,10 @@ def sync_lk_keystats(batas: int | None = None) -> int:
     def kode_q(r):
         pk = lk_periode_kuartal(r.get("periode") or "")
         return f"Q{pk[0]}{pk[1]}" if pk else ""
-    target = [t for t, r in terakhir.items() if kode_q(r)
-              and (t not in ks or ks[t].get("at", "") < r.get("tgl", "")
-                   or (ks[t].get("terbaru") != kode_q(r) and ks[t].get("at", "") < hari_ini))]
+    if target is None:
+        target = [t for t, r in terakhir.items() if kode_q(r)
+                  and (t not in ks or ks[t].get("at", "") < r.get("tgl", "")
+                       or (ks[t].get("terbaru") != kode_q(r) and ks[t].get("at", "") < hari_ini))]
     tok = get_token()
 
     def ambil(t):
@@ -2626,6 +2652,14 @@ def s50_teknikal(px: list[dict]) -> dict | None:
 
 
 def s50_kandidat_universe(ks: dict) -> set[str]:
+    """Kode yang perkiraan harganya (Key Stats: kapitalisasi / jumlah saham) <= 1,3 x batas, ditambah data harga dan radar.
+    Seluruh kode BEI (.bei-kode.json) yang belum punya Key Stats atau Key Stats-nya lebih dari 7 hari diambil dulu
+    (perkiraan harga ikut mutakhir mingguan)."""
+    seminggu = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+    kurang = [t for t in bei_kode_load() if t not in ks or ks[t].get("at", "") < seminggu]
+    if kurang:
+        sync_lk_keystats(target=kurang)
+        ks.update(lks_load())
     out = {t for t, v in ks.items() if v.get("hargaKira") and v["hargaKira"] <= S50_BATAS * 1.3}
     try:
         out |= {t for t, v in harga_semua().items() if v.get("h") and v["h"] <= S50_BATAS}
