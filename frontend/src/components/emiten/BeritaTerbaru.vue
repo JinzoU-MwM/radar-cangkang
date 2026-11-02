@@ -7,7 +7,7 @@ import { fmtDate } from '../../lib/domain.js'
 import { beritaTerakhir, analisaBerita } from '../../lib/beritaTerbaru.js'
 
 const props = defineProps({ ticker: { type: String, required: true } })
-const a = computed(() => analisaBerita(beritaTerakhir(store.updates, props.ticker), { items: store.items, pandangan: store.pandangan }))
+const a = computed(() => analisaBerita(beritaTerakhir(store.updates, props.ticker), { items: store.items, pandangan: store.pandangan, updates: store.updates }))
 const busy = ref(false), err = ref('')
 async function unduh() {
   busy.value = true; err.value = ''
@@ -22,8 +22,6 @@ async function unduh() {
 }
 // Kelas tag global: t-good / t-warn / t-calm / t-strong (tidak ada t-bad).
 const tag = c => 't-' + (c === 'bad' ? 'strong' : c)
-const nadaCls = n => n > 0 ? 'c-good' : n < 0 ? 'c-strong' : 'muted'
-const nadaTanda = n => n > 0 ? '▲' : n < 0 ? '▼' : '●'
 </script>
 
 <template>
@@ -53,10 +51,19 @@ const nadaTanda = n => n > 0 ? '▲' : n < 0 ? '▼' : '●'
       <div class="card">
         <h3>Dampak bagi pemegang saham publik</h3>
         <p class="small muted">{{ a.sinyal.why }}</p>
-        <ul class="nd"><li v-for="x in a.dampak.alasan" :key="x.teks"><span :class="nadaCls(x.nada)">{{ nadaTanda(x.nada) }}</span> {{ x.teks }}</li></ul>
+        <p v-if="a.dampak.catatan" class="small muted">{{ a.dampak.catatan }}</p>
+        <template v-else>
+          <h3 class="sub c-good">Dampak positif</h3>
+          <ul class="nd"><li v-for="x in a.dampak.positif" :key="x"><span class="c-good">▲</span> {{ x }}</li>
+            <li v-if="!a.dampak.positif.length" class="muted">Tidak teridentifikasi dari isi dokumen.</li></ul>
+          <h3 class="sub c-strong">Dampak negatif / risiko</h3>
+          <ul class="nd"><li v-for="x in a.dampak.negatif" :key="x"><span class="c-strong">▼</span> {{ x }}</li>
+            <li v-if="!a.dampak.negatif.length" class="muted">Tidak teridentifikasi dari isi dokumen.</li></ul>
+        </template>
       </div>
       <div class="card">
-        <h3>Kaitan dengan tesis</h3>
+        <template v-if="a.implikasi.length"><h3>Implikasi</h3><ul><li v-for="x in a.implikasi" :key="x">{{ x }}</li></ul></template>
+        <h3 class="sub">Kaitan dengan tesis</h3>
         <template v-if="a.tesis">
           <p class="small"><b>{{ a.tesis.sikap }}</b> · analisa per {{ fmtDate(a.tesis.asOf) }}</p>
           <p class="small">{{ a.tesis.ringkas }}</p>
@@ -69,10 +76,12 @@ const nadaTanda = n => n > 0 ? '▲' : n < 0 ? '▼' : '●'
         <h3>Yang dipantau</h3>
         <ul v-if="a.pantau.length"><li v-for="p in a.pantau" :key="p">{{ p }}</li></ul>
         <p v-else class="small muted">Keterbukaan berikutnya dari emiten.</p>
+        <template v-if="a.riwayat.length"><h3 class="sub">Keterbukaan sebelumnya (90 hari)</h3>
+          <ul class="small"><li v-for="x in a.riwayat" :key="x.tanggal + x.judul">{{ fmtDate(x.tanggal) }}: {{ x.judul }}</li></ul></template>
         <template v-if="a.salahBila.length"><h3 class="sub">Tesis salah bila</h3><ul><li v-for="p in a.salahBila" :key="p">{{ p }}</li></ul></template>
       </div>
     </div>
-    <p class="small muted">Dibaca otomatis dari judul, ringkasan, dan poin kunci dokumen terakhir; diperbarui setiap sinkron berita. ▲ positif bagi pemegang saham publik, ▼ negatif atau risiko, ● perlu dicermati.</p>
+    <p class="small muted">Dibaca otomatis dari judul, ringkasan, dan poin kunci dokumen terakhir; diperbarui setiap sinkron berita. ▲ positif bagi pemegang saham publik, ▼ negatif atau risiko.</p>
   </section>
 </template>
 
