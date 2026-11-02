@@ -4,6 +4,7 @@
 // yang dihitung server (/api/ihsg-runtun), digabung dengan bobot 1/galat uji mundur, lalu ditambah faktor
 // sentimen berita, flow asing, dan musiman bulan kalender. Perkiraan statistik, bukan kepastian.
 import { computed, ref } from 'vue'
+import RamalanRiwayat from './RamalanRiwayat.vue'
 import { api } from '../api.js'
 import { fmt, fmtDate } from '../lib/domain.js'
 
@@ -123,6 +124,7 @@ const chart = computed(() => {
       </ul>
       <p class="small muted">Data per {{ fmtDate(d.tanggal) }} ({{ d.n }} hari bursa) · diperbarui otomatis bersama kartu IHSG. Proyeksi statistik dari pola harga masa lalu; peristiwa baru di luar data (kebijakan, geopolitik) tidak tertangkap model.</p>
     </template>
+    <RamalanRiwayat jenis="ts" />
   </section>
 </template>
 

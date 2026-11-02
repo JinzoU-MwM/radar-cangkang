@@ -16,6 +16,7 @@ import TimeSeriesPanel from '../components/TimeSeriesPanel.vue'
 import AstronacciPanel from '../components/AstronacciPanel.vue'
 import SahamRingkas from '../components/SahamRingkas.vue'
 import IhsgOutlook from '../components/IhsgOutlook.vue'
+import SeasonBukti from '../components/SeasonBukti.vue'
 import { namaSaham } from '../lib/namaSaham.js'
 import RingPct from '../components/RingPct.vue'
 import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
@@ -207,6 +208,8 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
           </div>
         </details>
       </section>
+
+      <SeasonBukti />
 
       <!-- Sektor: klik untuk menyaring tabel saham. -->
       <section class="rule-top">

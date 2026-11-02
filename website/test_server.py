@@ -360,6 +360,25 @@ class LiveTertahanTest(unittest.TestCase):
             server.SB_LIVE.clear(); server.SB_LIVE.update(lama[0]); server.token_exp = lama[1]
 
 
+class RamalanBuktiTest(unittest.TestCase):
+    def test_ramalan_jatuh_tempo_dan_arah(self):
+        bars = [{"d": f"2026-10-{i:02d}", "c": 5000 + i * 10} for i in range(1, 31)]
+        log = {"2026-10-01": {"tanggal": "2026-10-01", "harga": 5010, "ts": {"1": 5030, "5": 4990, "21": 5200}, "astro": {"bias": "naik"}}}
+        r = server.ramalan_api(log, bars)
+        self.assertEqual(r["ts"]["ringkas"]["1"]["arahTepat"], 100)   # ramalan naik, aktual naik
+        self.assertEqual(r["ts"]["ringkas"]["5"]["arahTepat"], 0)     # ramalan turun, aktual naik
+        self.assertTrue(r["astro"]["baris"][0]["arahTepat"])
+
+    def test_bukti_tanpa_melihat_tahun_berjalan(self):
+        from datetime import date
+        naik10 = {str(y): {"10": 1.0} for y in range(2016, 2026)}
+        data = {"stock": {"BBBB": {"s": {**naik10, "2026": {"10": -3.0}}}}, "index": {}}
+        r = server.season_bukti(None, data, date(2026, 11, 2))
+        self.assertEqual((r["bulan"], r["tahun"]), (10, 2026))
+        self.assertEqual(r["pilihan"][0]["prob"], 100)                # dihitung dari 2016-2025 saja
+        self.assertFalse(r["pilihan"][0]["terbukti"])
+
+
 class TsaSummaryTest(unittest.TestCase):
     """Data intel pasar tradersaham: helper tsa_summary (tanpa HTTP)."""
 
