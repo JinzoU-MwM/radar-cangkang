@@ -12,6 +12,7 @@ import RecoveryPanel from '../components/RecoveryPanel.vue'
 import LivePanel from '../components/LivePanel.vue'
 import LowPanel from '../components/LowPanel.vue'
 import LkPanel from '../components/LkPanel.vue'
+import Saham50Panel from '../components/Saham50Panel.vue'
 import { musimLk } from '../lib/musimLk.js'
 import HscPanel from '../components/HscPanel.vue'
 import TimeSeriesPanel from '../components/TimeSeriesPanel.vue'
@@ -26,7 +27,7 @@ import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
 const route = useRoute(), router = useRouter()
 // Tab halaman (urutan tampil): 'astro' (Astronacci), 'ts' (Time Series), 'season', 'broker' (Pola Broker), 'recovery', 'live',
 // tersimpan di URL (?tab=...); tanpa ?tab = Seasonality.
-const TABS = ['astro', 'ts', 'hsc', 'broker', 'recovery', 'low', 'lk', 'live']
+const TABS = ['astro', 'ts', 'hsc', 'lk', 's50', 'broker', 'recovery', 'low', 'live']
 // Urutan & keterangan tab: analisa IHSG dulu (Seasonality, Live, Astronacci, Time Series, HSC), lalu pilih saham.
 const TAB_INFO = [
   { k: 'season', l: 'Seasonality', grup: 'Analisa IHSG', ket: 'pola bulanan berulang IHSG, sektor, dan saham (5/10 tahun) beserta trading plan.' },
@@ -34,11 +35,12 @@ const TAB_INFO = [
   { k: 'astro', l: 'Astronacci', grup: 'Analisa IHSG', ket: 'siklus bulan dan Fibonacci untuk perkiraan waktu dan level IHSG.' },
   { k: 'ts', l: 'Time Series', grup: 'Analisa IHSG', ket: 'proyeksi statistik IHSG dari model runtun waktu yang diuji mundur.' },
   { k: 'hsc', l: 'HSC', grup: 'Analisa IHSG', ket: 'saham HSC yang keluar dari IHSG mulai 2 November dan dampaknya pada penggerak indeks.' },
-  { k: 'broker', l: 'Pola Broker', grup: 'Pilih saham', awalGrup: true, ket: 'akumulasi dan distribusi broker (asing/domestik) per bulan atau per hari.' },
+  // Nama tab mengikuti musim laporan (Kinerja Q1/Q2/Q3/Q4), berganti otomatis.
+  { k: 'lk', l: musimLk().label, grup: 'Pilih saham', awalGrup: true, ket: `laporan keuangan ${musimLk().judul} seluruh BEI: laba naik kuat, berbalik laba, dan laba kuartal murni.` },
+  { k: 's50', l: 'Saham 50', grup: 'Pilih saham', ket: 'saham Rp50 ke bawah seluruh BEI: backdoor dan calon cangkang, aksi korporasi, kinerja, valuasi, dan teknikal beserta potensinya.' },
+  { k: 'broker', l: 'Pola Broker', grup: 'Pilih saham', ket: 'akumulasi dan distribusi broker (asing/domestik) per bulan atau per hari.' },
   { k: 'recovery', l: 'Recovery', grup: 'Pilih saham', ket: 'saham yang sudah turun dalam dan mulai pulih, dengan potensi rebound.' },
   { k: 'low', l: 'Low', grup: 'Pilih saham', ket: 'saham di titik terendah dan daftar penurunan per periode 1D–10Y.' },
-  // Nama tab mengikuti musim laporan (Kinerja Q1/Q2/Q3/Q4), berganti otomatis.
-  { k: 'lk', l: musimLk().label, grup: 'Pilih saham', ket: `laporan keuangan ${musimLk().judul} seluruh BEI: laba naik kuat, berbalik laba, dan laba kuartal murni.` },
 ]
 const tabAktif = computed(() => TAB_INFO.find(x => x.k === tab.value) || TAB_INFO[0])
 const tab = computed({ get: () => TABS.includes(route.query.tab) ? route.query.tab : 'season', set: v => router.replace({ query: { ...route.query, tab: TABS.includes(v) ? v : undefined } }) })
@@ -121,6 +123,7 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
     <RecoveryPanel v-else-if="tab === 'recovery'" />
     <LowPanel v-else-if="tab === 'low'" />
     <LkPanel v-else-if="tab === 'lk'" />
+    <Saham50Panel v-else-if="tab === 's50'" />
     <HscPanel v-else-if="tab === 'hsc'" />
     <LivePanel v-else-if="tab === 'live'" />
     <template v-else>
