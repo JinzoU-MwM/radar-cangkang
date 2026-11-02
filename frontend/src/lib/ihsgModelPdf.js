@@ -13,7 +13,7 @@ const yunani = s => String(s || '').replace(/φ/g, 'phi').replace(/Φ/g, 'Phi').
 const arahWarna = a => /naik|positif|support/i.test(a || '') ? GOOD : /turun|negatif|resistance/i.test(a || '') ? BAD : MUTED
 
 // Sampul seragam dengan riset IHSG: pita vertikal, judul besar, subjudul, ornamen garis harga, kotak ringkasan.
-export function sampul(doc, { judul, sub, label, updated, seri, box, catatan }) {
+export function sampul(doc, { judul, sub, label, updated, seri, box, catatan, besar = 'IHSG' }) {
   const terbit = tgl(new Date())
   doc.setFillColor(PAPER); doc.rect(0, 0, 210, 297, 'F')
   doc.setFillColor(PRIMER); doc.rect(0, 0, 16, 297, 'F')
@@ -21,7 +21,7 @@ export function sampul(doc, { judul, sub, label, updated, seri, box, catatan }) 
   doc.setFont('times', 'bold'); doc.setFontSize(12); doc.setTextColor(PRIMER); doc.text('RADAR BACKDOOR RESEARCH', 28, 26)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(MUTED); doc.text(pdfText(`Edisi ${terbit} · data per ${updated || '-'} WIB`), 196, 26, { align: 'right' })
   doc.setDrawColor(GOLD); doc.setLineWidth(0.4); doc.line(28, 30, 196, 30)
-  doc.setFont('times', 'bold'); doc.setFontSize(96); doc.setTextColor(PRIMER); doc.text('IHSG', 26, 92)
+  doc.setFont('times', 'bold'); doc.setFontSize(96); doc.setTextColor(PRIMER); doc.text(besar, 26, 92)
   doc.setFont('times', 'italic'); doc.setFontSize(22); doc.setTextColor(INK); doc.text(pdfText(judul), 28, 108)
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(GOLD); doc.text(pdfText(label), 28, 118)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(MUTED); doc.text(doc.splitTextToSize(pdfText(sub), 168), 28, 127)

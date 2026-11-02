@@ -2,6 +2,7 @@
 // Penanda laporan baru: laporan Stockbit material yang terbit setelah tanggal analisa/riset kurasi emiten ini.
 // Data dari sinkron server tiap 2 jam (store.updates), sehingga setiap laporan baru langsung terlihat di semua tab.
 import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { store } from '../../store.js'
 import { fmtDate } from '../../lib/domain.js'
 import { laporanBaru } from '../../lib/pembaruan.js'
@@ -9,6 +10,7 @@ import { laporanBaru } from '../../lib/pembaruan.js'
 const props = defineProps({ ticker: { type: String, required: true } })
 const lb = computed(() => laporanBaru(store.updates, props.ticker, { pandangan: store.pandangan, riset: store.riset }))
 const buka = ref(false)
+const route = useRoute()
 </script>
 
 <template>
@@ -24,7 +26,8 @@ const buka = ref(false)
           <ul v-if="x.points.length" class="small"><li v-for="p in x.points" :key="p">{{ p }}</li></ul>
           <p v-else class="small muted">{{ x.summary }}</p></div></li>
     </ol>
-    <p v-if="buka" class="small muted nt">Angka dan fakta aset dari laporan ini otomatis tampil di tab Aset; narasi analisa diperbarui pada kurasi berikutnya.</p>
+    <p v-if="buka" class="small muted nt">Angka dan fakta aset dari laporan ini otomatis tampil di tab Aset; narasi analisa diperbarui pada kurasi berikutnya.
+      <RouterLink :to="{ query: { ...route.query, tab: 'berita' } }">Analisa berita terbaru + unduh PDF →</RouterLink></p>
   </aside>
 </template>
 
