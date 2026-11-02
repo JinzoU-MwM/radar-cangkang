@@ -4,6 +4,7 @@
 import { UTYPES } from './domain.js'
 import { newsTake, maxAmountRp } from './news.js'
 import { faktaAset, laporanMaterial, RUTIN_RX } from './pembaruan.js'
+import { selidikBerita } from './selidikBerita.js'
 
 const day = u => String(u.date || '').slice(0, 10)
 const isReport = u => /^sb-report-/.test(String(u.id || ''))
@@ -54,76 +55,9 @@ export function duaSisi(u, { tesis = null, rutin = false } = {}) {
   return { positif: uniq(pos), negatif: uniq(neg), catatan: '' }
 }
 
-// Tujuan, hal yang perlu dicari tahu, dan yang perlu diselidiki per jenis aksi: [pola, tujuan, cari tahu[], selidiki[]].
-// {bidang} diisi dari "bergerak di bidang ..." bila ada. Afiliasi diselidiki secara netral (bukan otomatis negatif).
-const AKSI = [
-  [/permintaan penjelasan bursa|\buma\b|volatilitas/i,
-    'Menanggapi pertanyaan bursa atas pergerakan harga atau aksi korporasi.',
-    ['Pertanyaan bursa mana yang belum dijawab lengkap?'],
-    ['Pola transaksi broker di sekitar tanggal pertanyaan bursa (tab Insider Activity).']],
-  [/pendirian anak usaha|mendirikan anak usaha|anak usaha baru/i,
-    'Menyiapkan wadah usaha baru{bidang} yang terpisah dari usaha lama, sehingga kegiatan baru bisa dijalankan dan dikonsolidasikan tanpa mengubah badan hukum perseroan.',
-    ['Berapa modal disetor dan sumber dananya?', 'Apa rencana usaha, target pendapatan, dan jadwal operasi anak usaha?', 'Apakah bidang usahanya sejalan dengan rencana bisnis pengendali?'],
-    ['Akta dan data anak usaha di AHU Kemenkumham dan OSS (alamat, KBLI, pengurus).', 'Laporan keuangan berikutnya: apakah anak usaha sudah dikonsolidasikan dan beroperasi.']],
-  [/(akuisisi|mengakuisisi|pengambilalihan|inbreng|pengalihan saham|caplok)/i,
-    'Memasukkan aset atau usaha ke dalam perseroan; pada emiten backdoor, ini jalur pengendali menyuntikkan usahanya ke perusahaan tercatat.',
-    ['Berapa harga transaksi dan apa dasar valuasinya (KJPP independen)?', 'Bagaimana pembayarannya: tunai, inbreng, atau saham baru?', 'Berapa pendapatan dan laba aset yang masuk?'],
-    ['Laporan keuangan audit target dan laporan KJPP.', 'Hubungan penjual dengan pengendali (transaksi afiliasi wajib memenuhi POJK 42/2020).']],
-  [/hmetd|pmthmetd|private placement|rights issue|penambahan modal/i,
-    'Menghimpun dana atau menyetorkan aset melalui penerbitan saham baru.',
-    ['Harga pelaksanaan, rasio, dan jumlah saham baru?', 'Siapa pembeli siaga dan apa rencana penggunaan dana?', 'Berapa dilusi bagi publik yang tidak menebus?'],
-    ['Prospektus atau keterbukaan rencana penggunaan dana.', 'Kesanggupan pembeli siaga (bukti dana).']],
-  [/penawaran tender|tender offer/i,
-    'Memenuhi kewajiban penawaran tender setelah pengambilalihan dan memberi publik pilihan keluar.',
-    ['Harga dan periode penawaran tender?', 'Berapa porsi publik yang ikut dijual?'],
-    ['Hasil penawaran tender dan sisa porsi publik (free float).']],
-  [/pinjaman|kredit|utang|fasilitas pembiayaan/i,
-    'Mendanai modal kerja atau ekspansi tanpa menerbitkan saham baru.',
-    ['Berapa bunga, tenor, dan jaminannya?', 'Untuk apa dana dipakai?'],
-    ['Identitas pemberi pinjaman dan hubungannya dengan pengendali.', 'Rasio utang terhadap ekuitas setelah pinjaman.']],
-  [/kontrak|proyek|kantongi|pesanan/i,
-    'Menambah pendapatan dari pekerjaan atau pelanggan baru.',
-    ['Berapa nilai kontrak dibanding pendapatan tahunan?', 'Berapa jangka waktu dan margin proyek?'],
-    ['Pemberi kerja dan rekam jejak pelaksanaan proyek serupa.']],
-  [/rups|rapat umum/i,
-    'Meminta atau melaporkan persetujuan pemegang saham atas agenda perseroan.',
-    ['Agenda apa saja yang disetujui atau ditolak?', 'Berapa kuorum dan suara pemegang saham independen?'],
-    ['Risalah RUPS lengkap dan tindak lanjut agenda.']],
-  [/direksi|komisaris|pengurus/i,
-    'Menyelaraskan susunan pengurus dengan arah perseroan atau pengendali baru.',
-    ['Siapa pengurus baru dan latar belakangnya?'],
-    ['Rekam jejak pengurus baru di perusahaan lain.']],
-  [/laporan keuangan|kinerja|laba|pendapatan/i,
-    'Memenuhi kewajiban pelaporan berkala atas kinerja keuangan.',
-    ['Apa penyebab perubahan laba atau pendapatan?'],
-    ['Arus kas operasi dan pos luar biasa di laporan keuangan.']],
-]
-const ORANG = /\b((?:PT|Pte|CV)\.?\s+(?:[A-Z][\w&.-]*\s?){1,5}|[A-Z][a-z]+\s+[A-Z][a-z]{3,}(?:\s+[A-Z][a-z]+)?)(?=\s+(?:memiliki|menguasai|selaku|sebagai)\b)/g
-const BUKAN_NAMA = /^(Menteri|Hukum|Bursa|Efek|Indonesia|Total|Porsi|Pengesahan|Inti|Rencana|Nilai)/
-
-export function tujuanSelidik(u, { pa = null } = {}) {
-  const text = `${u.title || ''} ${u.summary || ''} ${u.points || ''}`
-  const bidang = (text.match(/bergerak di bidang\s+([^.;·]+?)(?:\s*[.;·]|$)/i) || [])[1]
-  const kena = AKSI.filter(([rx]) => rx.test(text))
-  const tujuan = kena.length ? kena.slice(0, 2).map(k => k[1].replace('{bidang}', bidang ? ` di bidang ${bidang}` : ''))
-    : ['Tujuan tidak dinyatakan eksplisit dalam dokumen.']
-  if (isReport(u) && pa && /pengendali|backdoor|inbreng|ptw/i.test(`${pa.ringkas} ${pa.tesis || ''}`) && kena.length)
-    tujuan.push('Dalam konteks emiten ini (pergantian pengendali), aksi ini perlu dibaca sebagai bagian dari rencana pengendali, bukan aksi yang berdiri sendiri.')
-  const cari = [...new Set(kena.flatMap(k => k[2]))].slice(0, 4)
-  if (!cari.length) cari.push('Apakah ada keterbukaan lanjutan yang menjelaskan tujuan dan nilai aksi ini?')
-  // Pihak yang disebut dalam dokumen: diselidiki hubungannya dengan pengendali (netral).
-  // Hanya dari ringkasan dan poin (bukan judul media), dan bukan entitas yang justru menjadi objek aksi (anak usaha baru).
-  const isi = `${u.summary || ''} · ${u.points || ''}`
-  const objek = (isi.match(/anak usaha (PT\s+(?:[A-Z][\w&.-]*\s?){1,5})/) || [])[1]?.trim()
-  const pihak = [...new Set([...isi.matchAll(ORANG)].map(m => m[1].trim()).filter(n => !BUKAN_NAMA.test(n) && n !== objek))].slice(0, 3)
-  const selidiki = [...pihak.map(n => `Siapa ${n} dan apa hubungannya dengan pengendali atau perseroan?`), ...kena.flatMap(k => k[3])]
-  selidiki.push('Transaksi broker dan perubahan kepemilikan di sekitar tanggal keterbukaan.')
-  return { tujuan, cari, selidiki: [...new Set(selidiki)].slice(0, 4) }
-}
-
 const DAMPAK = { 1: ['Positif', 'good'], 0: ['Netral', 'calm'], [-1]: ['Negatif', 'bad'] }
 
-export function analisaBerita(u, { items = [], pandangan = {}, updates = [] } = {}) {
+export function analisaBerita(u, { items = [], pandangan = {}, updates = [], pengendali = {}, relasi = {}, verified = {} } = {}) {
   if (!u) return null
   const t = u.ticker
   const take = newsTake(u, { items, pandangan })
@@ -176,7 +110,8 @@ export function analisaBerita(u, { items = [], pandangan = {}, updates = [] } = 
     : 'Dokumen tidak menyentuh variabel kunci analisa, sehingga tesis tetap bergantung pada katalis yang sudah dipantau.')
   if (take.level >= 3) implikasi.push('Sinyal tinggi: dokumen menyangkut kendali, tender, injeksi aset, atau saham baru yang langsung memengaruhi nilai saham.')
 
-  const ts = tujuanSelidik(u, { pa })
+  // Tujuannya apa? / Cari tahu / Selidiki: penyelidikan tujuan dari dokumen + data kurasi emiten.
+  const ts = selidikBerita(u, { pa, pengendali: pengendali[t], relasi: relasi[t], story: verified[t], riwayat, nama: it?.name || '' })
   const pantau = [take.detail.watch, ...(pa?.variabelKunci || []).slice(0, 3)].filter(Boolean)
   const fakta = faktaAset([u], { n: 6 }).map(f => `${f.l}: ${f.t}`)
 

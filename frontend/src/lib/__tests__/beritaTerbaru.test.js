@@ -15,6 +15,24 @@ const pandangan = { NAYZ: { sikap: 'Spekulatif tinggi', ringkas: 'Ringkas tesis.
   nilaiWajar: { bawah: 58, atas: 75 }, variabelKunci: ['KJPP independen'], tesisSalahBila: ['Valuasi terkonfirmasi'] } }
 const items = [{ ticker: 'NAYZ', price: 76, mcap: 190 }]
 
+// Data kurasi untuk penyelidikan tujuan.
+const pengendali = { NAYZ: { siapa: 'Saiko Consultancy Pte. Ltd. membeli 29,41% saham. UBO Sawin Laosethakul.', rencana: 'Mengubah NAYZ dari makanan bayi menjadi perusahaan telekomunikasi; bisnis makanan bayi dialihkan ke pihak lain.' } }
+const relasi = { NAYZ: { nodes: [{ t: 'Sawin Laosethakul', s: 'UBO Saiko · Komisaris NAYZ' }] } }
+const verified = { NAYZ: { baru: 'Telekomunikasi dan teknologi' } }
+
+describe('selidik tujuan', () => {
+  it('menghimpun temuan dari relasi dan menguji dugaan tujuan', () => {
+    const u = { ...updates[1], summary: 'NAYZ mendirikan anak usaha PT Integrasi Sistem Digital yang bergerak di bidang perdagangan peralatan listrik.', points: 'Sawin Laosethakul memiliki 10 lembar saham · Total modal ditempatkan 2.500 lembar saham' }
+    const a = analisaBerita(u, { items, pandangan, updates, pengendali, relasi, verified })
+    expect(a.cari.some(x => x.sumber === 'Peta relasi' && /Sawin Laosethakul/.test(x.teks))).toBe(true)
+    expect(a.cari.find(x => x.sumber === 'Profil pengendali').teks).toMatch(/Pte\. Ltd\. membeli/)
+    const div = a.selidiki.find(d => /diversifikasi/.test(d.dugaan))
+    expect(div.nilai).toBe('Belum didukung')
+    expect(a.tujuan.keyakinan).not.toBe('Rendah')
+    expect(a.selidiki.find(d => /tahap awal/.test(d.dugaan)).bukti[0].teks).toMatch(/2\.500 lembar/)
+  })
+})
+
 describe('analisa berita terbaru', () => {
   it('memilih dokumen terbaru emiten, keterbukaan resmi didahulukan pada tanggal sama', () => {
     expect(beritaTerakhir(updates, 'NAYZ').id).toBe('sb-report-2')
@@ -27,9 +45,9 @@ describe('analisa berita terbaru', () => {
     expect(a.dampak.negatif.some(x => /belum diungkap/.test(x))).toBe(true)
     expect(a.riwayat.map(r => r.judul)).toEqual(['Laporan lama'])
     expect(a.implikasi[0]).toMatch(/-1,3%/)
-    expect(a.tujuan[0]).toMatch(/wadah usaha baru/)
-    expect(a.cari.length).toBeGreaterThan(0)
-    expect(a.selidiki.length).toBeGreaterThan(0)
+    expect(a.tujuan.utama).toBeTruthy()
+    expect(['Tinggi', 'Sedang', 'Rendah']).toContain(a.tujuan.keyakinan)
+    expect(a.cari[0].sumber).toBe('Dokumen')
     expect(a.ringkas).toBe('NAYZ mendirikan anak usaha PT Integrasi Sistem Digital.')
     expect(a.poin).toHaveLength(2)
     expect(['Positif', 'Netral', 'Negatif']).toContain(a.dampak.label)
