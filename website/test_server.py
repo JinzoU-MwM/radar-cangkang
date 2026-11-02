@@ -417,7 +417,7 @@ class LkTest(unittest.TestCase):
         self.assertAlmostEqual(k["labaSebelum"], 46e9)
         r6["tgl"], r3["tgl"] = "2026-07-30", "2026-04-30"
         with unittest.mock.patch.object(server, "items_all", return_value=[]):
-            row = server.lk_api({x["id"]: x for x in (r9, r6, r3)})["rows"][0]
+            row = server.lk_api({x["id"]: x for x in (r9, r6, r3)}, kuartalan={}, keystats={})["rows"][0]
         self.assertEqual(row["periode"], "9M26")
         self.assertTrue(row["kuartal"]["melemah"])
 
@@ -460,7 +460,7 @@ class LkTest(unittest.TestCase):
         b = server.lk_parse(self.post("Laporan Keuangan", "Laba Bersih Naik 40% 9M26", "AKPI (A) x.", [], sid=2))
         a["tgl"] = "2026-08-01"
         with unittest.mock.patch.object(server, "items_all", return_value=[]):
-            r = server.lk_api({a["id"]: a, b["id"]: b})
+            r = server.lk_api({a["id"]: a, b["id"]: b}, kuartalan={}, keystats={})
         self.assertEqual(r["n"], 1)
         self.assertEqual(r["rows"][0]["periode"], "9M26")
         self.assertEqual(r["hitung"], {"bagus": 1})

@@ -2588,11 +2588,11 @@ def lk_teratas(rows: list[dict], harga: dict, n: int = 5) -> list[dict]:
     return top
 
 
-def lk_api(data: dict | None = None, kuartalan: dict | None = None) -> dict:
+def lk_api(data: dict | None = None, kuartalan: dict | None = None, keystats: dict | None = None) -> dict:
     """Daftar LK terbaru per emiten (satu laporan terakhir per kode) + ringkasan per kategori."""
     data = lk_load() if data is None else data
     kuartalan = lkq_load() if kuartalan is None else kuartalan
-    keystats = lks_load()
+    keystats = lks_load() if keystats is None else keystats
     terakhir, per_periode = {}, {}
     for r in sorted(data.values(), key=lambda r: (r.get("tgl", ""), r["id"])):
         terakhir[r["t"]] = r
