@@ -2644,6 +2644,216 @@ def lk_loop() -> None:
         time.sleep(1800)
 
 
+# ------------------------------------------------------------- Saham 50 ----
+# Saham berharga <= Rp50 di seluruh BEI dan analisa potensinya: radar backdoor & calon cangkang, aksi korporasi
+# (keterbukaan 180 hari), kinerja laporan keuangan & kuartal murni, valuasi (PBV/PE Key Stats), dan teknikal harga.
+# Universe: Key Stats (kapitalisasi / jumlah saham) + data harga Recovery + radar; harga pasti dari grafik Stockbit.
+# Dibangun di latar (harian) ke .saham50.json; /api/saham50 membaca berkas itu.
+S50_PATH = ROOT / ".saham50.json"
+S50_BATAS = 50
+RUTIN_LK_RX = re.compile(r"registrasi pemegang|bukti iklan|laporan bulanan|penggunaan dana hasil|pemanggilan rapat|jadwal", re.I)
+
+
+def _json_berkas(nama: str) -> dict:
+    try:
+        return json.loads((ROOT / nama).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+S50_AKSI = {"akuisisi": "Perubahan pengendali / akuisisi", "rights": "Penambahan modal (HMETD / private placement / inbreng)",
+            "kbli": "Perubahan kegiatan usaha / nama", "direksi": "Perubahan pengurus", "uma": "UMA / suspensi bursa"}
+
+
+def _ema(vals: list[float], n: int) -> float | None:
+    if len(vals) < n:
+        return None
+    k, e = 2 / (n + 1), sum(vals[:n]) / n
+    for v in vals[n:]:
+        e = v * k + e * (1 - k)
+    return e
+
+
+def _rsi(vals: list[float], n: int = 14) -> float | None:
+    if len(vals) <= n:
+        return None
+    naik = turun = 0.0
+    for a, b in zip(vals[-n - 1:-1], vals[-n:]):
+        naik += max(b - a, 0)
+        turun += max(a - b, 0)
+    return 100.0 if turun == 0 else round(100 - 100 / (1 + naik / turun), 1)
+
+
+def s50_teknikal(px: list[dict]) -> dict | None:
+    """Harga penutupan harian -> harga, kinerja 1W/1M/3M/YTD, jarak dari tertinggi/terendah 52 minggu, EMA20, RSI,
+    dan resistance terdekat (tertinggi 60 hari) sebagai target teknikal."""
+    c = [p["v"] for p in px if p.get("v")]
+    if len(c) < 30:
+        return None
+    h = c[-1]
+    ret = lambda n: round((h / c[-1 - n] - 1) * 100, 1) if len(c) > n and c[-1 - n] else None
+    th = str(px[-1]["d"])[:4]
+    awal = next((p["v"] for p in px if str(p["d"])[:4] == th), None)
+    y = c[-250:]
+    e20 = _ema(c[-120:], 20)
+    res = max(c[-60:])
+    return {"harga": h, "tgl": str(px[-1]["d"])[:10], "ret": {"1W": ret(5), "1M": ret(21), "3M": ret(63),
+            "YTD": round((h / awal - 1) * 100, 1) if awal else None},
+            "tinggi52": max(y), "rendah52": min(y), "dariTinggi": round((h / max(y) - 1) * 100, 1),
+            "dariRendah": round((h / min(y) - 1) * 100, 1), "ema20": round(e20, 1) if e20 else None,
+            "diAtasEma20": bool(e20 and h > e20), "rsi": _rsi(c), "resistance": res,
+            "potensiTeknikal": round((res / h - 1) * 100, 1) if res > h else 0.0,
+            "datar": len(set(c[-20:])) <= 2}
+
+
+def s50_kandidat_universe(ks: dict) -> set[str]:
+    out = {t for t, v in ks.items() if v.get("hargaKira") and v["hargaKira"] <= S50_BATAS * 1.3}
+    try:
+        out |= {t for t, v in harga_semua().items() if v.get("h") and v["h"] <= S50_BATAS}
+    except Exception:
+        pass
+    out |= {it["ticker"] for it in items_all() if (to_num(it.get("price")) or 9e9) <= S50_BATAS * 1.3 and TICKER_RE.match(it["ticker"])}
+    return out
+
+
+def saham50_build() -> dict:
+    """Bangun daftar Saham 50 (dipanggil di latar). Butuh token Stockbit untuk harga dan keterbukaan."""
+    cfg = load_config() or {}
+    ks = lks_load()
+    lk = {r["t"]: r for r in lk_api().get("rows") or []}
+    items = {it["ticker"]: it for it in items_all()}
+    pandangan = _json_berkas("pandangan-analis.json")
+    try:
+        kand = {x["ticker"]: x for x in (get_kandidat(cfg).get("items") or [])}
+    except Exception:
+        kand = {}
+    hari_ini = datetime.now()
+    batas90 = (hari_ini - timedelta(days=90)).strftime("%Y-%m-%d")
+
+    def satu(t):
+        try:
+            tek = s50_teknikal(chart_prices(t))
+        except Exception:
+            return None
+        if not tek or tek["harga"] > S50_BATAS:
+            return None
+        try:
+            laporan = get_reports(cfg.get("reports") or {}, t, max_pages=1) if cfg.get("reports") else []
+        except Exception:
+            laporan = []
+        time.sleep(0.4)
+        return t, tek, laporan
+
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        hasil = [x for x in ex.map(satu, sorted(s50_kandidat_universe(ks))) if x]
+
+    rows = []
+    for t, tek, laporan in hasil:
+        k, it, pa, kd, r = ks.get(t) or {}, items.get(t), pandangan.get(t), kand.get(t), lk.get(t)
+        rs = k.get("rasio") or {}
+        aksi = []
+        for u in laporan:
+            sig = kandidat_sigs(u.get("title", ""))
+            if sig and not RUTIN_LK_RX.search(u.get("title", "")):
+                aksi.append({"tgl": u["date"], "judul": u["title"], "jenis": sig, "url": u.get("url"),
+                             "inti": (re.search(r"Inti:\s*(.+?)\s*(\(Ringkasan AI Stockbit\))?$", u.get("summary") or "") or [None, ""])[1]})
+        aksi.sort(key=lambda a: a["tgl"], reverse=True)
+        jenis90 = {j for a in aksi if a["tgl"] >= batas90 for j in a["jenis"]}
+        # Skor potensi 0-100 dan narasi.
+        skor, potensi, risiko = 0, [], []
+        hindari = bool(pa and re.search(r"hindari", pa.get("sikap") or "", re.I))
+        if it:
+            # Sikap analisa radar "Hindari" tidak menambah skor; dicatat sebagai risiko.
+            skor += 5 if hindari else 25
+            potensi.append(f"Masuk radar backdoor (tahap {it.get('stage') or '-'})" + (f"; sikap analisa {pa['sikap']}" if pa and pa.get("sikap") else ""))
+            if hindari:
+                risiko.append(f"Sikap analisa radar: {pa['sikap']} ({(pa.get('ringkas') or '')[:140]})")
+        elif kd:
+            skor += 20
+            sig = ", ".join(S50_AKSI.get(s, s).lower() for s, v in (kd.get("signals") or {}).items() if (v or {}).get("st") == "on")
+            potensi.append(f"Calon cangkang (Kandidat): sinyal {sig or 'awal'}")
+        if "akuisisi" in jenis90 and not it:
+            skor += 15
+        if jenis90 & {"rights", "kbli"}:
+            skor += 10
+        for a in aksi[:3]:
+            if a["tgl"] >= batas90 and set(a["jenis"]) - {"uma"}:
+                potensi.append(f"{a['tgl']}: {a['judul'][:110]}")
+        kw = (r or {}).get("kuartal") or {}
+        if kw.get("status") in ("naik", "berbalik"):
+            skor += 15
+            potensi.append(f"Laba Q{kw['q']} murni " + ("berbalik menjadi laba" if kw["status"] == "berbalik" else f"naik {kw['yoy']:.1f}% YoY".replace(".", ",")))
+        elif r and r.get("kategori") in ("bagus", "berbalik"):
+            skor += 8
+            potensi.append(f"Laporan {r.get('periode')}: {r.get('judul', '')}")
+        elif r and r.get("kategori") == "rugi":
+            risiko.append(f"Masih rugi ({r.get('judul', '')})")
+        pbv = rs.get("Current Price to Book Value")
+        if pbv is not None and 0 < pbv < 0.5:
+            skor += 10
+            potensi.append(f"PBV {pbv:.2f}x: harga jauh di bawah nilai buku".replace(".", ","))
+        elif pbv is not None and 0 < pbv < 1:
+            skor += 5
+            potensi.append(f"PBV {pbv:.2f}x (di bawah nilai buku)".replace(".", ","))
+        elif pbv is not None and pbv < 0:
+            risiko.append("Ekuitas negatif (PBV negatif)")
+        if tek["diAtasEma20"] and (tek["rsi"] or 0) >= 45 and (tek["ret"]["1M"] or 0) > 0:
+            skor += 10
+            potensi.append("Teknikal mulai naik: di atas EMA20 dan kinerja 1 bulan positif")
+        elif tek["dariRendah"] <= 10 and not tek["datar"]:
+            skor += 5
+            potensi.append(f"Dekat titik terendah 52 minggu (+{tek['dariRendah']:.1f}% dari dasar)".replace(".", ","))
+        if "uma" in jenis90:
+            risiko.append("Peringatan UMA / suspensi dalam 90 hari terakhir")
+        if tek["datar"]:
+            risiko.append("Harga hampir tidak bergerak 20 hari: likuiditas sangat tipis")
+        if tek["harga"] < S50_BATAS:
+            risiko.append("Harga di bawah Rp50: umumnya berada di Papan Pemantauan Khusus (full call auction)")
+        if k.get("freeFloat") is not None and k["freeFloat"] < 7.5:
+            risiko.append(f"Free float {k['freeFloat']:.1f}% (rendah)".replace(".", ","))
+        target = None
+        nw = (pa or {}).get("nilaiWajar") or {}
+        if nw.get("atas") and nw["atas"] > tek["harga"]:
+            target = {"harga": nw["atas"], "dasar": "batas atas nilai wajar analisa radar"}
+        elif nw.get("atas"):
+            risiko.append(f"Harga di atas nilai wajar analisa radar (Rp{nw.get('bawah', '-')}–{nw['atas']})")
+        elif tek["potensiTeknikal"] > 0:
+            target = {"harga": tek["resistance"], "dasar": "resistance terdekat (tertinggi 60 hari)"}
+        if target:
+            target["potensi"] = round((target["harga"] / tek["harga"] - 1) * 100, 1)
+        rows.append({"t": t, "nama": (r or {}).get("nama") or (it or {}).get("name") or "", "skor": min(skor, 100),
+                     "harga": tek["harga"], "tek": tek, "radar": bool(it), "kandidat": bool(kd), "tahap": (it or {}).get("stage"),
+                     "aksi": aksi[:8], "jenisAksi": sorted(jenis90), "kinerja": {"periode": (r or {}).get("periode"), "judul": (r or {}).get("judul"),
+                     "kategori": (r or {}).get("kategori"), "kuartal": kw or None},
+                     "valuasi": {"pbv": pbv, "pe": rs.get("Current PE Ratio (TTM)"), "mcap": k.get("mcap"), "freeFloat": k.get("freeFloat")},
+                     "potensi": potensi, "risiko": risiko, "target": target})
+    rows.sort(key=lambda x: (-x["skor"], x["t"]))
+    return {"updated": hari_ini.strftime("%Y-%m-%d %H:%M"), "batas": S50_BATAS, "n": len(rows), "rows": rows}
+
+
+def saham50_api() -> dict:
+    try:
+        return json.loads(S50_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"error": "Daftar Saham 50 sedang disusun server; muat ulang beberapa menit lagi.", "rows": []}
+
+
+def saham50_loop() -> None:
+    """Susun ulang daftar Saham 50 sekali sehari (setelah bursa tutup, >= 17.00 WIB) atau bila berkas belum ada."""
+    time.sleep(240)
+    while True:
+        try:
+            jam = datetime.now(timezone(timedelta(hours=7)))
+            lama = not S50_PATH.exists() or datetime.fromtimestamp(S50_PATH.stat().st_mtime).date() < jam.date()
+            if get_token() and not token_expired() and (not S50_PATH.exists() or (lama and jam.hour >= 17)):
+                d = saham50_build()
+                tmp = S50_PATH.with_suffix(".tmp")
+                tmp.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+                tmp.replace(S50_PATH)
+                print(f"[saham50] {d['n']} saham <= Rp{S50_BATAS}", file=sys.stderr)
+        except Exception as e:
+            print(f"[saham50] gagal: {e}", file=sys.stderr)
+        time.sleep(1800)
+
+
 # ------------------------------------------------------------------- POV ----
 # Sudut pandang (POV) akun Stockbit yang diprioritaskan + akun trending: saham yang mereka incar, gaya analisa,
 # horizon, dan nada (bullish/bearish). Hanya posting ide publik yang dianalisis; tidak ada data pribadi.
@@ -4565,6 +4775,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply_json(hsc_analisa())
             except Exception as e:
                 self.reply_json({"error": f"Analisa HSC belum bisa dihitung: {e}"})
+        elif path == "api/saham50":
+            self.reply_json(saham50_api())
         elif path == "api/lk":
             self.reply_json(lk_api())
         elif path == "api/harga-saham":
@@ -4926,6 +5138,7 @@ def main() -> int:
     threading.Thread(target=broker_harian_loop, daemon=True).start()
     threading.Thread(target=ramalan_loop, daemon=True).start()
     threading.Thread(target=lk_loop, daemon=True).start()
+    threading.Thread(target=saham50_loop, daemon=True).start()
     threading.Thread(target=snapshot_loop, daemon=True).start()
     threading.Thread(target=tsa_loop, daemon=True).start()
     print(f"Radar Backdoor berjalan di http://localhost:{args.port}")

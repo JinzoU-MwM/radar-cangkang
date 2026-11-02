@@ -466,6 +466,20 @@ class LkTest(unittest.TestCase):
         self.assertEqual(r["hitung"], {"bagus": 1})
 
 
+class Saham50Test(unittest.TestCase):
+    def test_teknikal(self):
+        # 80 hari turun dari 60 ke 41, lalu naik ke 45: di atas EMA20, resistance 60 hari di atas harga.
+        px = [{"d": f"2026-{1 + i // 28:02d}-{1 + i % 28:02d}", "v": 60 - i * 0.25} for i in range(77)]
+        px += [{"d": "2026-03-25", "v": 43}, {"d": "2026-03-26", "v": 44}, {"d": "2026-03-27", "v": 45}]
+        t = server.s50_teknikal(px)
+        self.assertEqual(t["harga"], 45)
+        self.assertEqual(t["rendah52"], 41.0)
+        self.assertGreater(t["resistance"], 45)
+        self.assertGreater(t["potensiTeknikal"], 0)
+        self.assertFalse(t["datar"])
+        self.assertIsNone(server.s50_teknikal(px[:10]))
+
+
 class RamalanBuktiTest(unittest.TestCase):
     def test_ramalan_jatuh_tempo_dan_arah(self):
         bars = [{"d": f"2026-10-{i:02d}", "c": 5000 + i * 10} for i in range(1, 31)]
