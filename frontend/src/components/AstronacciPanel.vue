@@ -3,6 +3,7 @@
 // Level harga Fibonacci (retracement/ekstensi), hitungan waktu Fibonacci dari titik balik utama, fase bulan
 // berikutnya (dihitung astronomis), jendela waktu bila keduanya berdekatan, dan uji historis keandalannya.
 import { computed, ref } from 'vue'
+import RamalanRiwayat from './RamalanRiwayat.vue'
 import { api } from '../api.js'
 import { fmt, fmtDate } from '../lib/domain.js'
 
@@ -203,6 +204,7 @@ const chart = computed(() => {
       <p class="verdict">{{ d.kesimpulan }}</p>
       <p class="small muted">{{ d.catatan }}</p>
     </template>
+    <RamalanRiwayat jenis="astro" />
   </section>
 </template>
 

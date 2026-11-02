@@ -49,3 +49,6 @@ website/tsa-*.json
 **/.ihsg.tmp
 **/.recovery.json
 **/.recovery.tmp
+
+# riwayat ramalan Time Series & Astronacci (runtime)
+**/.ramalan-log.json

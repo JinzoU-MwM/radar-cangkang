@@ -30,7 +30,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -3258,6 +3258,126 @@ def runtun_api() -> dict:
     return out
 
 
+# ------------------------------------------------- riwayat ramalan vs kenyataan ----
+RAMALAN_PATH = ROOT / ".ramalan-log.json"
+RAMALAN_H = (1, 5, 21)      # horizon Time Series (hari bursa): esok, 1 minggu, 1 bulan
+
+
+def ramalan_load() -> dict:
+    try:
+        return json.loads(RAMALAN_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def ramalan_catat() -> bool:
+    """Catat ramalan Time Series & Astronacci untuk tanggal bursa terakhir (satu entri per tanggal, ditimpa yang terbaru
+    sehingga yang tersimpan adalah ramalan setelah bursa tutup). True bila ada yang dicatat."""
+    ts, ast = runtun_api(), astro_api()
+    if ts.get("error") or not ts.get("riwayat"):
+        return False
+    tgl = ts["riwayat"][-1]["d"]
+    log = ramalan_load()
+    e = {"tanggal": tgl, "harga": ts.get("harga"),
+         "ts": {str(p["h"]): p.get("sentimen") for p in ts.get("proyeksi") or [] if p.get("h") in RAMALAN_H}}
+    pr = (ast or {}).get("proyeksi") or {}
+    if pr.get("bias"):
+        e["astro"] = {"bias": pr["bias"], "target": pr.get("target"), "sampai": pr.get("sampai"),
+                      "tindakan": ((ast.get("rekomendasi") or {}).get("tindakan"))}
+    log[tgl] = e
+    keep = sorted(log)[-250:]
+    tmp = RAMALAN_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps({d: log[d] for d in keep}, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(RAMALAN_PATH)
+    return True
+
+
+def ramalan_loop() -> None:
+    """Catat ramalan tiap 30 menit (cukup murah: hasil runtun/astro di-memo per versi data IHSG)."""
+    time.sleep(300)
+    while True:
+        try:
+            ramalan_catat()
+        except Exception as e:
+            print(f"[ramalan] gagal: {e}", file=sys.stderr)
+        time.sleep(1800)
+
+
+def ramalan_api(log: dict | None = None, bars: list[dict] | None = None) -> dict:
+    """Ramalan yang sudah jatuh tempo dibandingkan dengan penutupan IHSG sebenarnya: selisih (%) dan ketepatan arah.
+    Time Series per horizon 1/5/21 hari bursa; Astronacci = arah bias vs perubahan 21 hari bursa."""
+    log = ramalan_load() if log is None else log
+    bars = ihsg_bars() if bars is None else bars
+    idx = {str(b["d"])[:10]: i for i, b in enumerate(bars)}
+    rows_ts, rows_as = [], []
+    for tgl in sorted(log, reverse=True):
+        e = log[tgl]
+        i, p0 = idx.get(tgl), e.get("harga")
+        if i is None or not p0:
+            continue
+        for h in RAMALAN_H:
+            ram = (e.get("ts") or {}).get(str(h))
+            if ram is None:
+                continue
+            akt = bars[i + h]["c"] if i + h < len(bars) else None
+            rows_ts.append({"tanggal": tgl, "h": h, "harga": p0, "ramalan": ram, "aktual": akt,
+                            "tglAktual": str(bars[i + h]["d"])[:10] if akt else None,
+                            "selisih": round((ram / akt - 1) * 100, 2) if akt else None,
+                            "arahTepat": ((ram - p0) * (akt - p0) > 0) if akt and ram != p0 and akt != p0 else None})
+        a = e.get("astro")
+        if a:
+            akt = bars[i + 21]["c"] if i + 21 < len(bars) else None
+            rows_as.append({"tanggal": tgl, "harga": p0, "bias": a["bias"], "target": a.get("target"), "tindakan": a.get("tindakan"),
+                            "aktual": akt, "ubah": round((akt / p0 - 1) * 100, 2) if akt else None,
+                            "arahTepat": ((akt > p0) == (a["bias"] == "naik")) if akt and akt != p0 and a["bias"] in ("naik", "turun") else None})
+
+    def ringkas(rows):
+        ok = [r for r in rows if r["arahTepat"] is not None]
+        sel = [abs(r["selisih"]) for r in rows if r.get("selisih") is not None]
+        return {"n": len(ok), "arahTepat": round(sum(1 for r in ok if r["arahTepat"]) / len(ok) * 100) if ok else None,
+                "galat": round(sum(sel) / len(sel), 2) if sel else None}
+    return {"mulai": min(log) if log else None, "tercatat": len(log),
+            "ts": {"baris": rows_ts[:90], "ringkas": {str(h): ringkas([r for r in rows_ts if r["h"] == h]) for h in RAMALAN_H}},
+            "astro": {"baris": rows_as[:40], "ringkas": ringkas(rows_as)}}
+
+
+# ------------------------------------------------ Seasonality: terbukti bulan lalu ----
+def season_bukti(month: int | None = None, data: dict | None = None, today=None) -> dict:
+    """Uji pola Seasonality bulan lalu tanpa melihat hasilnya: peluang naik dihitung dari 10 tahun SEBELUM tahun berjalan,
+    lalu dibandingkan dengan return bulan itu tahun ini (data Seasonality per tahun/bulan)."""
+    data = season_data() if data is None else data
+    today = today or datetime.now(WIB).date()
+    if month is None:
+        month = 12 if today.month == 1 else today.month - 1
+    th = today.year if month < today.month else today.year - 1
+    sebelum = date(th - 1, 12, 31)
+    stock = data.get("stock") or {}
+    rows = []
+    for t, rec in stock.items():
+        s = rec.get("s") or {}
+        akt = (s.get(str(th)) or {}).get(str(month))
+        if akt is None:
+            continue
+        st = SZ.month_stats({y: v for y, v in s.items() if int(y) < th}, month, 9, sebelum)
+        if not st or st["n"] < 6:
+            continue
+        rows.append({"t": t, "nama": rec.get("name") or "", "prob": st["prob"], "n": st["n"], "up": st["up"], "median": st["median"],
+                     "wl": st["wl"], "aktual": round(akt, 2), "terbukti": akt > 0})
+    pilihan = sorted((r for r in rows if r["prob"] >= 70), key=lambda r: (-r["wl"], -r["median"]))[:25]
+    semua_naik = round(sum(1 for r in rows if r["aktual"] > 0) / len(rows) * 100) if rows else None
+    kuat = [r for r in rows if r["prob"] >= 70]
+    ih = (data.get("index") or {}).get("IHSG") or {}
+    ih_akt = (ih.get(str(th)) or {}).get(str(month))
+    ih_st = SZ.month_stats({y: v for y, v in ih.items() if int(y) < th}, month, 9, sebelum) if ih else None
+    return {"bulan": month, "tahun": th, "pilihan": pilihan,
+            "ringkas": {"pilihanNaik": sum(1 for r in pilihan if r["terbukti"]), "pilihanN": len(pilihan),
+                        "pilihanMedian": SZ.statistics.median([r["aktual"] for r in pilihan]) if pilihan else None,
+                        "polaKuatNaik": round(sum(1 for r in kuat if r["terbukti"]) / len(kuat) * 100) if kuat else None, "polaKuatN": len(kuat),
+                        "semuaNaik": semua_naik, "semuaN": len(rows)},
+            "ihsg": {"prob": (ih_st or {}).get("prob"), "median": (ih_st or {}).get("median"), "aktual": ih_akt,
+                     "terbukti": (ih_akt > 0) == ((ih_st or {}).get("prob", 50) >= 50) if ih_akt is not None and ih_st else None}}
+
+
 def astro_api() -> dict:
     """Astronacci: fase bulan + Fibonacci harga & waktu IHSG."""
     d = IH_load()
@@ -3715,6 +3835,14 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json(runtun_api())
         elif path == "api/ihsg-astro":
             self.reply_json(astro_api())
+        elif path == "api/ramalan":
+            self.reply_json(ramalan_api())
+        elif path == "api/season-bukti":
+            try:
+                b = int(self.qs("bulan") or 0)
+                self.reply_json(season_bukti(b if 1 <= b <= 12 else None))
+            except Exception as e:
+                self.reply_json({"error": f"Uji bulan lalu belum bisa dihitung: {e}"})
         elif path == "api/hsc-analisa":
             try:
                 self.reply_json(hsc_analisa())
@@ -4077,6 +4205,7 @@ def main() -> int:
     threading.Thread(target=ihsg_loop, daemon=True).start()
     threading.Thread(target=live_loop, daemon=True).start()
     threading.Thread(target=broker_harian_loop, daemon=True).start()
+    threading.Thread(target=ramalan_loop, daemon=True).start()
     threading.Thread(target=snapshot_loop, daemon=True).start()
     threading.Thread(target=tsa_loop, daemon=True).start()
     print(f"Radar Backdoor berjalan di http://localhost:{args.port}")
