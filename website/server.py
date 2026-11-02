@@ -26,6 +26,7 @@ import sqlite3
 import subprocess
 import sys
 import threading
+from concurrent.futures import ThreadPoolExecutor
 import time
 import urllib.error
 import urllib.parse
@@ -2157,6 +2158,9 @@ def lk_kuartal(r9: dict, r6: dict | None, r3: dict | None) -> dict | None:
         return None
     d9, k9 = lk_bertanda(r9)
     d6, k6 = lk_bertanda(r6)
+    # Ringkasan 1H kadang memuat angka lain (mis. laba komprehensif): laba 1H jauh di atas laba 9M dianggap tidak konsisten.
+    if k9 is not None and k6 is not None and abs(k6) > abs(k9) * 1.5:
+        return None
     q3 = k9 - k6 if k9 is not None and k6 is not None else None
     q3l = d9 - d6 if d9 is not None and d6 is not None else None
     if q3 is None:
@@ -2181,9 +2185,142 @@ def lk_kuartal(r9: dict, r6: dict | None, r3: dict | None) -> dict | None:
             "melemah": r9.get("kategori") in ("bagus", "naik", "berbalik") and status in ("turun", "rugi")}
 
 
-def lk_api(data: dict | None = None) -> dict:
+# Laporan laba rugi PER KUARTAL dari Stockbit (findata, report_type=1): sumber utama Q3 murni, karena ringkasan AI
+# laporan 1H/3M banyak yang tidak tersedia. Disimpan ringkas per emiten di .lk-kuartal.json (bukan cache mentah).
+LKQ_PATH = ROOT / ".lk-kuartal.json"
+_LKQ_LABA = ("Laba Bersih Yang Dapat Diatribu", "Total Laba Bersih Yang Dapat", "Laba Bersih Tahun Berjalan", "Laba Bersih Periode Berjalan")
+_LKQ_PEND = ("Total Pendapatan", "Pendapatan", "Penjualan", "Total Penjualan")
+
+
+def lkq_load() -> dict:
+    try:
+        return json.loads(LKQ_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def lkq_parse(html_report: str) -> dict:
+    """Tabel HTML findata -> {"mata", "laba": {nama baris: {Q326: nilai}}, "pend": {Q326: nilai}} (hanya 8 kuartal terakhir)."""
+    # Label periode muncul di dua kepala tabel; ambil urutan unik.
+    labels = list(dict.fromkeys(re.findall(r'data-label="([^"]+)"', html_report)))
+    mata = (re.search(r'selected_currency"\s+value="(\w+)"', html_report) or [None, "idr"])[1]
+    laba, pend = {}, None
+    for row in re.findall(r"<tr[^>]*>(.*?)</tr>", html_report, re.S):
+        cells = [html_mod.unescape(re.sub(r"<[^>]+>", "", c)).strip() for c in re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)]
+        if len(cells) != len(labels) + 1:
+            continue
+        nama = cells[0].rstrip(". ")
+        nilai = {}
+        for lb, v in list(zip(labels, cells[1:]))[-8:]:
+            try:
+                nilai[lb] = float(v.replace(",", ""))
+            except ValueError:
+                pass
+        if any(nama.startswith(k.rstrip(". ")) for k in _LKQ_LABA) and nama not in laba:
+            laba[nama] = nilai
+        if pend is None and nama in _LKQ_PEND:
+            pend = nilai
+    return {"mata": "USD" if mata.lower() == "usd" else "Rp", "laba": laba, "pend": pend or {}}
+
+
+def sync_lk_kuartal(batas: int | None = None) -> int:
+    """Ambil laba rugi kuartalan untuk emiten yang laporan terakhirnya 9M dan belum punya data kuartal yang mutakhir."""
+    if not (get_token() and not token_expired()):
+        return 0
+    data, kw = lk_load(), lkq_load()
+    terakhir = {}
+    for r in sorted(data.values(), key=lambda r: r.get("tgl", "")):
+        terakhir[r["t"]] = r
+    hari_ini = datetime.now().strftime("%Y-%m-%d")
+    target = [t for t, r in terakhir.items() if re.match(r"^9M\d{2}$", r.get("periode") or "")
+              and (t not in kw or kw[t].get("at", "") < r.get("tgl", "")
+                   or (f"Q3{r['periode'][2:]}" not in json.dumps(kw[t]) and kw[t].get("at", "") < hari_ini))]
+    tok = get_token()
+
+    def ambil(t):
+        for coba in range(4):
+            try:
+                h = http_get_api(SB + f"/findata-view/company/financial?symbol={t}&data_type=1&report_type=1&statement_type=1", tok)
+                time.sleep(0.5)
+                return t, {**lkq_parse(json.loads(h)["data"]["html_report"]), "at": hari_ini}
+            except urllib.error.HTTPError as e:
+                if e.code != 429 or coba == 3:
+                    print(f"[lk] kuartal {t} gagal: {e}", file=sys.stderr)
+                    return t, None
+                time.sleep(10 * (coba + 1))     # dibatasi Stockbit: tunggu lalu coba lagi
+            except Exception as e:
+                print(f"[lk] kuartal {t} gagal: {e}", file=sys.stderr)
+                return t, None
+        return t, None
+    n = 0
+    # 2 permintaan bersamaan dengan jeda; Stockbit membalas 429 bila terlalu rapat.
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        for t, v in ex.map(ambil, target[:batas] if batas else target):
+            if v:
+                kw[t] = v
+                n += 1
+                if n % 50 == 0:
+                    _lkq_tulis(kw)
+    if n:
+        _lkq_tulis(kw)
+    return n
+
+
+def _lkq_tulis(kw: dict) -> None:
+    tmp = LKQ_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(kw, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(LKQ_PATH)
+
+
+def lk_kuartal_fd(r9: dict, fd: dict | None) -> dict | None:
+    """Q3 murni dari laba rugi kuartalan. Bila Q3 tahun ini belum ada di tabel, Q3 = laba 9M (ringkasan) - (Q1 + Q2),
+    hanya bila tabel konsisten dengan ringkasan (jumlah Q1-Q3 tahun lalu ~ laba 9M tahun lalu, selisih <= 5%)."""
+    if not fd or not fd.get("laba"):
+        return None
+    yy = (r9.get("periode") or "")[2:]
+    if not yy.isdigit():
+        return None
+    py = f"{int(yy) - 1:02d}"
+    d9, k9 = lk_bertanda(r9)
+    # Tabel memakai mata uang laporan (label idr pada tabel tidak selalu benar); kecocokan angka menjadi penentu.
+    mata_r = ((r9.get("laba") or {}).get("ke") or {}).get("mata")
+
+    def selisih(row):
+        s = [row.get(f"Q{i}{py}") for i in (1, 2, 3)]
+        if None in s or d9 is None:
+            return None
+        return abs(sum(s) - d9) / max(abs(d9), 1)
+    # Baris laba yang paling cocok dengan angka 9M tahun lalu di ringkasan (pemilik entitas induk vs total).
+    cocok = sorted(((selisih(row), nama, row) for nama, row in fd["laba"].items()), key=lambda x: (x[0] is None, x[0] or 0))
+    sel, nama, row = cocok[0]
+    konsisten = sel is not None and sel <= 0.05
+    q3, sumber = row.get(f"Q3{yy}"), "laporan kuartalan"
+    if q3 is None:
+        q1, q2_ = row.get(f"Q1{yy}"), row.get(f"Q2{yy}")
+        if not (konsisten and k9 is not None and q1 is not None and q2_ is not None):
+            return None
+        q3, sumber = k9 - q1 - q2_, "9M dikurangi Q1+Q2"
+    q3l, q2 = row.get(f"Q3{py}"), row.get(f"Q2{yy}")
+    yoy = round((q3 / q3l - 1) * 100, 1) if q3l and q3l > 0 else None
+    qoq = round((q3 / q2 - 1) * 100, 1) if q2 and q2 > 0 else None
+    # Pendapatan Q3: dari tabel, atau 9M (ringkasan) - (Q1+Q2) bila mata uang sama.
+    pd_, pyoy = fd.get("pend") or {}, None
+    p3, p3l = pd_.get(f"Q3{yy}"), pd_.get(f"Q3{py}")
+    if p3 is None and konsisten and (r9.get("pendapatan") or {}).get("ke") and None not in (pd_.get(f"Q1{yy}"), pd_.get(f"Q2{yy}")):
+        p3 = r9["pendapatan"]["ke"]["v"] - pd_[f"Q1{yy}"] - pd_[f"Q2{yy}"]
+    if p3 is not None and p3l and p3l > 0:
+        pyoy = round((p3 / p3l - 1) * 100, 1)
+    status = ("rugi" if q3 <= 0 else "berbalik" if q3l is not None and q3l <= 0 else
+              "naik" if yoy is not None and yoy >= 0 else "turun" if yoy is not None else "")
+    return {"q3": q3, "q3Lalu": q3l, "yoy": yoy, "q2": q2, "qoq": qoq, "pendYoy": pyoy, "mata": mata_r if konsisten else fd.get("mata"),
+            "status": status, "sumber": sumber, "baris": nama,
+            "melemah": r9.get("kategori") in ("bagus", "naik", "berbalik") and status in ("turun", "rugi")}
+
+
+def lk_api(data: dict | None = None, kuartalan: dict | None = None) -> dict:
     """Daftar LK terbaru per emiten (satu laporan terakhir per kode) + ringkasan per kategori."""
     data = lk_load() if data is None else data
+    kuartalan = lkq_load() if kuartalan is None else kuartalan
     terakhir, per_periode = {}, {}
     for r in sorted(data.values(), key=lambda r: (r.get("tgl", ""), r["id"])):
         terakhir[r["t"]] = r
@@ -2194,8 +2331,9 @@ def lk_api(data: dict | None = None) -> dict:
         # Laporan 9M: hitung kinerja kuartal III murni dari laporan 1H (dan 3M untuk QoQ) tahun yang sama.
         m = re.match(r"^9M(\d{2})$", r.get("periode") or "")
         pp = per_periode[r["t"]]
-        kw = lk_kuartal(r, pp.get(f"1H{m.group(1)}") or pp.get(f"6M{m.group(1)}"),
-                        pp.get(f"3M{m.group(1)}") or pp.get(f"1Q{m.group(1)}")) if m else None
+        # Utama: laba rugi kuartalan Stockbit; cadangan: selisih ringkasan 9M - 1H.
+        kw = (lk_kuartal_fd(r, kuartalan.get(r["t"])) or lk_kuartal(r, pp.get(f"1H{m.group(1)}") or pp.get(f"6M{m.group(1)}"),
+                                                                     pp.get(f"3M{m.group(1)}") or pp.get(f"1Q{m.group(1)}"))) if m else None
         rows.append({**r, "radar": r["t"] in radar, "kuartal": kw})
     rows.sort(key=lambda r: (r.get("tgl", ""), (r.get("laba") or {}).get("pct") or 0), reverse=True)
     hit = {}
@@ -2219,6 +2357,9 @@ def lk_loop() -> None:
                 n = sync_lk()
                 if n:
                     print(f"[lk] {n} laporan keuangan baru", file=sys.stderr)
+                n = sync_lk_kuartal()
+                if n:
+                    print(f"[lk] laba rugi kuartalan diperbarui untuk {n} emiten", file=sys.stderr)
             except Exception as e:
                 print(f"[lk] gagal: {e}", file=sys.stderr)
         time.sleep(1800)
