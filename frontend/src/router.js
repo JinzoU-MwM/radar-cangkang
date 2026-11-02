@@ -6,7 +6,8 @@ export const router = createRouter({
     { path: '/', name: 'monitor', component: () => import('./views/MonitorView.vue') },
     { path: '/kandidat', name: 'kandidat', component: () => import('./views/KandidatView.vue') },
     { path: '/berita', name: 'berita', component: () => import('./views/BeritaView.vue') },
-    { path: '/intel', name: 'intel', component: () => import('./views/IntelView.vue') },
+    // Intel Pasar dihapus (sumber tradersaham tidak tersedia); tautan lama diarahkan ke Monitor.
+    { path: '/intel', redirect: '/' },
     { path: '/pov', name: 'pov', component: () => import('./views/PovView.vue') },
     { path: '/seasonality', name: 'seasonality', component: () => import('./views/SeasonalityView.vue') },
     { path: '/bandingkan', name: 'bandingkan', component: () => import('./views/CompareView.vue') },
