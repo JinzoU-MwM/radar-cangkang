@@ -2181,7 +2181,8 @@ def lk_kuartal(r9: dict, r6: dict | None, r3: dict | None) -> dict | None:
     pyoy = round(((p9 - p6) / (p9l - p6l) - 1) * 100, 1) if None not in (p9, p6, p9l, p6l) and p9l - p6l > 0 else None
     status = ("rugi" if q3 <= 0 else "berbalik" if q3l is not None and q3l <= 0 else
               "naik" if yoy is not None and yoy >= 0 else "turun" if yoy is not None else "")
-    return {"q3": q3, "q3Lalu": q3l, "yoy": yoy, "q2": q2, "qoq": qoq, "pendYoy": pyoy, "mata": mata, "status": status,
+    return {"q": 3, "laba": q3, "labaLalu": q3l, "yoy": yoy, "labaSebelum": q2, "qoq": qoq, "pendYoy": pyoy, "mata": mata, "status": status,
+            "sumber": "9M dikurangi 1H (ringkasan)",
             "melemah": r9.get("kategori") in ("bagus", "naik", "berbalik") and status in ("turun", "rugi")}
 
 
@@ -2224,7 +2225,7 @@ def lkq_parse(html_report: str) -> dict:
 
 
 def sync_lk_kuartal(batas: int | None = None) -> int:
-    """Ambil laba rugi kuartalan untuk emiten yang laporan terakhirnya 9M dan belum punya data kuartal yang mutakhir."""
+    """Ambil laba rugi kuartalan untuk emiten yang laporan terakhirnya 3M/1H/9M/FY dan belum punya data kuartal mutakhir."""
     if not (get_token() and not token_expired()):
         return 0
     data, kw = lk_load(), lkq_load()
@@ -2232,9 +2233,12 @@ def sync_lk_kuartal(batas: int | None = None) -> int:
     for r in sorted(data.values(), key=lambda r: r.get("tgl", "")):
         terakhir[r["t"]] = r
     hari_ini = datetime.now().strftime("%Y-%m-%d")
-    target = [t for t, r in terakhir.items() if re.match(r"^9M\d{2}$", r.get("periode") or "")
+    def kode_q(r):
+        pk = lk_periode_kuartal(r.get("periode") or "")
+        return f"Q{pk[0]}{pk[1]}" if pk else ""
+    target = [t for t, r in terakhir.items() if kode_q(r)
               and (t not in kw or kw[t].get("at", "") < r.get("tgl", "")
-                   or (f"Q3{r['periode'][2:]}" not in json.dumps(kw[t]) and kw[t].get("at", "") < hari_ini))]
+                   or (kode_q(r) not in json.dumps(kw[t]) and kw[t].get("at", "") < hari_ini))]
     tok = get_token()
 
     def ambil(t):
@@ -2272,49 +2276,62 @@ def _lkq_tulis(kw: dict) -> None:
     tmp.replace(LKQ_PATH)
 
 
-def lk_kuartal_fd(r9: dict, fd: dict | None) -> dict | None:
-    """Q3 murni dari laba rugi kuartalan. Bila Q3 tahun ini belum ada di tabel, Q3 = laba 9M (ringkasan) - (Q1 + Q2),
-    hanya bila tabel konsisten dengan ringkasan (jumlah Q1-Q3 tahun lalu ~ laba 9M tahun lalu, selisih <= 5%)."""
-    if not fd or not fd.get("laba"):
+LK_KUARTAL = {"3M": 1, "1Q": 1, "1H": 2, "6M": 2, "9M": 3, "FY": 4}   # periode kumulatif -> kuartal terakhirnya
+
+
+def lk_periode_kuartal(periode: str) -> tuple[int, str] | None:
+    """'9M26' -> (3, '26'); 'FY25' -> (4, '25'); selain itu None."""
+    m = re.match(r"^(3M|1Q|1H|6M|9M|FY)(\d{2})$", periode or "")
+    return (LK_KUARTAL[m.group(1)], m.group(2)) if m else None
+
+
+def lk_kuartal_fd(r: dict, fd: dict | None) -> dict | None:
+    """Laba kuartal terakhir MURNI (bukan kumulatif) dari laba rugi kuartalan: Q1 = 3M, Q2 = 1H - Q1, Q3 = 9M - (Q1+Q2),
+    Q4 = FY - (Q1+Q2+Q3). Bila kuartal itu sudah ada di tabel dipakai langsung; bila belum, dihitung dari laba kumulatif
+    ringkasan dikurangi kuartal sebelumnya, hanya bila tabel cocok dengan ringkasan (jumlah kuartal tahun lalu ~ laba
+    kumulatif tahun lalu, selisih <= 5%). Dibandingkan dengan kuartal yang sama tahun lalu (YoY) dan kuartal sebelumnya (QoQ)."""
+    pk = lk_periode_kuartal(r.get("periode") or "")
+    if not fd or not fd.get("laba") or not pk:
         return None
-    yy = (r9.get("periode") or "")[2:]
-    if not yy.isdigit():
-        return None
+    q, yy = pk
     py = f"{int(yy) - 1:02d}"
-    d9, k9 = lk_bertanda(r9)
+    d_cum, k_cum = lk_bertanda(r)
     # Tabel memakai mata uang laporan (label idr pada tabel tidak selalu benar); kecocokan angka menjadi penentu.
-    mata_r = ((r9.get("laba") or {}).get("ke") or {}).get("mata")
+    mata_r = ((r.get("laba") or {}).get("ke") or {}).get("mata")
 
     def selisih(row):
-        s = [row.get(f"Q{i}{py}") for i in (1, 2, 3)]
-        if None in s or d9 is None:
+        s = [row.get(f"Q{i}{py}") for i in range(1, q + 1)]
+        if None in s or d_cum is None:
             return None
-        return abs(sum(s) - d9) / max(abs(d9), 1)
-    # Baris laba yang paling cocok dengan angka 9M tahun lalu di ringkasan (pemilik entitas induk vs total).
+        return abs(sum(s) - d_cum) / max(abs(d_cum), 1)
+    # Baris laba yang paling cocok dengan laba kumulatif tahun lalu di ringkasan (pemilik entitas induk vs total).
     cocok = sorted(((selisih(row), nama, row) for nama, row in fd["laba"].items()), key=lambda x: (x[0] is None, x[0] or 0))
     sel, nama, row = cocok[0]
     konsisten = sel is not None and sel <= 0.05
-    q3, sumber = row.get(f"Q3{yy}"), "laporan kuartalan"
-    if q3 is None:
-        q1, q2_ = row.get(f"Q1{yy}"), row.get(f"Q2{yy}")
-        if not (konsisten and k9 is not None and q1 is not None and q2_ is not None):
+    sebelumnya = [row.get(f"Q{i}{yy}") for i in range(1, q)]
+    nilai, sumber = row.get(f"Q{q}{yy}"), "laporan kuartalan"
+    if nilai is None:
+        if not (konsisten and k_cum is not None and None not in sebelumnya):
             return None
-        q3, sumber = k9 - q1 - q2_, "9M dikurangi Q1+Q2"
-    q3l, q2 = row.get(f"Q3{py}"), row.get(f"Q2{yy}")
-    yoy = round((q3 / q3l - 1) * 100, 1) if q3l and q3l > 0 else None
-    qoq = round((q3 / q2 - 1) * 100, 1) if q2 and q2 > 0 else None
-    # Pendapatan Q3: dari tabel, atau 9M (ringkasan) - (Q1+Q2) bila mata uang sama.
+        nilai = k_cum - sum(sebelumnya)
+        sumber = f"{r['periode'][:2]} dikurangi " + "+".join(f"Q{i}" for i in range(1, q)) if q > 1 else "laporan 3M"
+    lalu = row.get(f"Q{q}{py}")
+    sblm = row.get(f"Q{q - 1}{yy}") if q > 1 else row.get(f"Q4{py}")
+    yoy = round((nilai / lalu - 1) * 100, 1) if lalu and lalu > 0 else None
+    qoq = round((nilai / sblm - 1) * 100, 1) if sblm and sblm > 0 else None
+    # Pendapatan kuartal: dari tabel, atau kumulatif ringkasan dikurangi kuartal sebelumnya (bila konsisten).
     pd_, pyoy = fd.get("pend") or {}, None
-    p3, p3l = pd_.get(f"Q3{yy}"), pd_.get(f"Q3{py}")
-    if p3 is None and konsisten and (r9.get("pendapatan") or {}).get("ke") and None not in (pd_.get(f"Q1{yy}"), pd_.get(f"Q2{yy}")):
-        p3 = r9["pendapatan"]["ke"]["v"] - pd_[f"Q1{yy}"] - pd_[f"Q2{yy}"]
-    if p3 is not None and p3l and p3l > 0:
-        pyoy = round((p3 / p3l - 1) * 100, 1)
-    status = ("rugi" if q3 <= 0 else "berbalik" if q3l is not None and q3l <= 0 else
+    p, pl = pd_.get(f"Q{q}{yy}"), pd_.get(f"Q{q}{py}")
+    psb = [pd_.get(f"Q{i}{yy}") for i in range(1, q)]
+    if p is None and konsisten and (r.get("pendapatan") or {}).get("ke") and None not in psb:
+        p = r["pendapatan"]["ke"]["v"] - sum(psb)
+    if p is not None and pl and pl > 0:
+        pyoy = round((p / pl - 1) * 100, 1)
+    status = ("rugi" if nilai <= 0 else "berbalik" if lalu is not None and lalu <= 0 else
               "naik" if yoy is not None and yoy >= 0 else "turun" if yoy is not None else "")
-    return {"q3": q3, "q3Lalu": q3l, "yoy": yoy, "q2": q2, "qoq": qoq, "pendYoy": pyoy, "mata": mata_r if konsisten else fd.get("mata"),
-            "status": status, "sumber": sumber, "baris": nama,
-            "melemah": r9.get("kategori") in ("bagus", "naik", "berbalik") and status in ("turun", "rugi")}
+    return {"q": q, "laba": nilai, "labaLalu": lalu, "yoy": yoy, "labaSebelum": sblm, "qoq": qoq, "pendYoy": pyoy,
+            "mata": mata_r if konsisten else fd.get("mata"), "status": status, "sumber": sumber, "baris": nama,
+            "melemah": r.get("kategori") in ("bagus", "naik", "berbalik") and status in ("turun", "rugi")}
 
 
 def lk_api(data: dict | None = None, kuartalan: dict | None = None) -> dict:
@@ -2328,12 +2345,12 @@ def lk_api(data: dict | None = None, kuartalan: dict | None = None) -> dict:
     radar = {it["ticker"] for it in items_all()}
     rows = []
     for r in terakhir.values():
-        # Laporan 9M: hitung kinerja kuartal III murni dari laporan 1H (dan 3M untuk QoQ) tahun yang sama.
+        # Kuartal terakhir murni (Q1/Q2/Q3/Q4) dari laba rugi kuartalan Stockbit; cadangan khusus 9M: ringkasan 9M - 1H.
+        kw = lk_kuartal_fd(r, kuartalan.get(r["t"]))
         m = re.match(r"^9M(\d{2})$", r.get("periode") or "")
-        pp = per_periode[r["t"]]
-        # Utama: laba rugi kuartalan Stockbit; cadangan: selisih ringkasan 9M - 1H.
-        kw = (lk_kuartal_fd(r, kuartalan.get(r["t"])) or lk_kuartal(r, pp.get(f"1H{m.group(1)}") or pp.get(f"6M{m.group(1)}"),
-                                                                     pp.get(f"3M{m.group(1)}") or pp.get(f"1Q{m.group(1)}"))) if m else None
+        if kw is None and m:
+            pp = per_periode[r["t"]]
+            kw = lk_kuartal(r, pp.get(f"1H{m.group(1)}") or pp.get(f"6M{m.group(1)}"), pp.get(f"3M{m.group(1)}") or pp.get(f"1Q{m.group(1)}"))
         rows.append({**r, "radar": r["t"] in radar, "kuartal": kw})
     rows.sort(key=lambda r: (r.get("tgl", ""), (r.get("laba") or {}).get("pct") or 0), reverse=True)
     hit = {}

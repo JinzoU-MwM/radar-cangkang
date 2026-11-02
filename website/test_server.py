@@ -411,10 +411,10 @@ class LkTest(unittest.TestCase):
         r3 = server.lk_parse(self.post("Laporan Keuangan", "Laba Bersih Naik 10% 3M26", "AKPI (A) x.",
                                        ["Laba bersih naik 10% YoY dari Rp 40 miliar menjadi Rp 44 miliar"], sid=3))
         k = server.lk_kuartal(r9, r6, r3)
-        self.assertAlmostEqual(k["q3"], 30e9)
-        self.assertAlmostEqual(k["q3Lalu"], 40e9)
+        self.assertAlmostEqual(k["laba"], 30e9)
+        self.assertAlmostEqual(k["labaLalu"], 40e9)
         self.assertEqual((k["yoy"], k["status"], k["melemah"]), (-25.0, "turun", True))
-        self.assertAlmostEqual(k["q2"], 46e9)
+        self.assertAlmostEqual(k["labaSebelum"], 46e9)
         r6["tgl"], r3["tgl"] = "2026-07-30", "2026-04-30"
         with unittest.mock.patch.object(server, "items_all", return_value=[]):
             row = server.lk_api({x["id"]: x for x in (r9, r6, r3)})["rows"][0]
@@ -428,8 +428,8 @@ class LkTest(unittest.TestCase):
         r6 = server.lk_parse(self.post("Laporan Keuangan", "Rugi Bersih Turun 50% 1H26", "AKPI (A) x.",
                                        ["Rugi bersih turun 50% YoY dari Rp 8 miliar menjadi Rp 4 miliar"], sid=16))
         k = server.lk_kuartal(r9, r6, None)
-        self.assertAlmostEqual(k["q3"], 9e9)          # 5 - (-4)
-        self.assertAlmostEqual(k["q3Lalu"], -2e9)     # -10 - (-8)
+        self.assertAlmostEqual(k["laba"], 9e9)          # 5 - (-4)
+        self.assertAlmostEqual(k["labaLalu"], -2e9)     # -10 - (-8)
         self.assertEqual(k["status"], "berbalik")
 
     def test_api_satu_per_emiten(self):
