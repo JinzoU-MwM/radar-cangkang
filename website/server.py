@@ -3074,8 +3074,14 @@ def season_data() -> dict:
 
 
 def season_universe() -> list[str]:
-    """Saham yang dihitung: semua saham di data tradersaham (likuid) + radar + kandidat."""
+    """Saham yang dihitung: data tradersaham (likuid) + radar + kandidat, ditambah saham Pola Broker (akumulasi/
+    distribusi) dan saham berkapitalisasi >= Rp1 T dari Key Stats agar tetap lengkap tanpa token tradersaham."""
     t = set(tsa_load("signals").keys()) | radar_tickers()
+    for b in (broker_data().get("broker") or {}).values():
+        for x in (b.get("bulan") or {}).values():
+            t |= {r["s"] for r in (x.get("beli") or []) + (x.get("jual") or [])}
+    besar = sorted(((v.get("mcap") or 0, k) for k, v in lks_load().items() if (v.get("mcap") or 0) >= 1e12), reverse=True)
+    t |= {k for _, k in besar[:400]}
     return sorted(x for x in t if re.match(r"^[A-Z]{4}$", x))
 
 
