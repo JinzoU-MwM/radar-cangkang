@@ -432,6 +432,16 @@ class LkTest(unittest.TestCase):
         self.assertAlmostEqual(k["labaLalu"], -2e9)     # -10 - (-8)
         self.assertEqual(k["status"], "berbalik")
 
+    def test_teratas_dan_potensi(self):
+        k = {"q": 3, "laba": 30e9, "labaLalu": 20e9, "yoy": 50.0, "qoq": 10.0, "pendYoy": 20.0, "mata": "Rp", "status": "naik", "potensi": 20.0}
+        bagus = {"t": "AAAA", "nama": "A", "kategori": "bagus", "kuartal": k, "catatan": [], "marginKotor": {"dari": 10, "ke": 12}}
+        lemah = {**bagus, "t": "BBBB", "kuartal": {**k, "status": "turun", "yoy": -5.0}}
+        kecil = {**bagus, "t": "CCCC", "kuartal": {**k, "laba": 1e9}}
+        top = server.lk_teratas([bagus, lemah, kecil], {"AAAA": {"h": 1000}})
+        self.assertEqual([x["t"] for x in top], ["AAAA"])
+        self.assertEqual((top[0]["target"], top[0]["potensi"]), (1200, 20.0))
+        self.assertTrue(any("Margin kotor melebar" in a for a in top[0]["alasan"]))
+
     def test_api_satu_per_emiten(self):
         a = server.lk_parse(self.post("Laporan Keuangan", "Laba Bersih Naik 30% 6M26", "AKPI (A) x.", [], sid=1))
         b = server.lk_parse(self.post("Laporan Keuangan", "Laba Bersih Naik 40% 9M26", "AKPI (A) x.", [], sid=2))

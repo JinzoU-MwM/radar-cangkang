@@ -63,7 +63,12 @@ async function unduhPdf() {
     const spec = { seri: 'Riset LK', judul: per.value === 'musim' ? `${M.label}: Laporan Keuangan ${Q} ${M.tahun}` : `${M.label}: Laporan Keuangan Terbaru`, label: `${label.toUpperCase()} · ${PERIODE.find(p => p[0] === per.value)[1].toUpperCase()}`,
       sub: 'Laporan keuangan terbaru seluruh emiten BEI dari ringkasan Stockbit Reports, satu laporan terakhir per emiten.',
       updated: data.value.updated, box: [['Laba naik >= 20%', String(hitung.value.bagus || 0)], ['Berbalik laba', String(hitung.value.berbalik || 0)], ['Laba turun', String(hitung.value.turun || 0)], ['Rugi', String(hitung.value.rugi || 0)]],
-      bagian: [{ judul: label, ket: `Laba bersih ${KUM} (kumulatif) dan laba ${Q} murni (kuartal itu saja) YoY, pendapatan, serta pendorong menurut ringkasan laporan. ${Q} melemah = ${KUM} naik tetapi ${Q} sendiri turun/rugi.`,
+      bagian: [...(data.value.teratas?.length ? [{ judul: `5 Teratas ${M.label}`,
+        ket: 'Penyaringan objektif dari angka laporan (bukan ajakan membeli). Potensi = laba run-rate (kuartal ini x 4) dibanding laba 12 bulan terakhir; target = harga x (1 + potensi), bila valuasi tetap.',
+        cols: [{ t: 'Saham', w: 15 }, { t: 'Skor', w: 11, align: 'right' }, { t: 'Harga', w: 16, align: 'right' }, { t: 'Potensi', w: 16, align: 'right' }, { t: 'Target', w: 16, align: 'right' }, { t: 'Alasan / risiko', w: 108 }],
+        rows: data.value.teratas.map(x => [{ t: x.t, bold: true }, String(x.skor), P.n0(x.harga), { t: pct(x.potensi), color: P.warna(x.potensi) }, P.n0(x.target),
+          [...x.alasan, ...x.risiko.map(r => 'Risiko: ' + r)].join('. ')]) }] : []),
+      { judul: label, ket: `Laba bersih ${KUM} (kumulatif) dan laba ${Q} murni (kuartal itu saja) YoY, pendapatan, serta pendorong menurut ringkasan laporan. ${Q} melemah = ${KUM} naik tetapi ${Q} sendiri turun/rugi.`,
         cols: [{ t: 'Saham', w: 15 }, { t: `Laba ${KUM}`, w: 26, align: 'right' }, { t: `${KUM} YoY`, w: 17, align: 'right' }, { t: `${Q} YoY`, w: 22, align: 'right' }, { t: 'Pendapatan', w: 16, align: 'right' }, { t: 'Pendorong / catatan', w: 86 }],
         rows: rows.value.slice(0, 200).map(x => [{ t: x.t, bold: true }, uang(x.laba?.ke), { t: labaPct(x), color: P.warna(x.kategori === 'turun' || x.kategori === 'rugi' ? -1 : 1) },
           { t: q3Pct(x.kuartal) + (x.kuartal?.melemah ? ' (melemah)' : ''), color: x.kuartal ? P.warna(['naik', 'berbalik'].includes(x.kuartal.status) ? 1 : -1) : undefined },
@@ -88,6 +93,30 @@ async function unduhPdf() {
         <span class="small muted">Periode:</span>
         <button v-for="[v, l] in PERIODE" :key="v" type="button" class="pill sm" :aria-pressed="String(per === v)" @click="per = v; n = 100">{{ l }}</button>
       </div>
+      <!-- 5 teratas: penyaringan objektif dari angka laporan, dengan potensi dari laba run-rate. -->
+      <section v-if="per === 'musim' && data.teratas?.length" class="top5">
+        <div class="mh"><h2>5 Teratas {{ M.label }}</h2>
+          <span class="small muted">skor dari laba {{ Q }} murni, momentum QoQ, pendapatan, margin, dan potensi · bukan ajakan membeli</span></div>
+        <div class="kartu">
+          <article v-for="(x, i) in data.teratas" :key="x.t" class="k5">
+            <div class="kh"><span class="no">{{ i + 1 }}</span>
+              <RouterLink :to="{ path: '/emiten/' + x.t, query: { tab: 'analisa' } }"><b>{{ x.t }}</b></RouterLink>
+              <span class="tag t-good" title="Skor 0-100">skor {{ x.skor }}</span></div>
+            <div v-if="x.nama" class="small muted nm">{{ x.nama }}</div>
+            <div class="angka">
+              <div><span class="small muted">Harga</span><b>{{ x.harga ? 'Rp' + fmt(x.harga, 0) : '–' }}</b></div>
+              <div><span class="small muted">Potensi</span><b :class="(x.potensi ?? 0) > 0 ? 'c-good' : 'muted'">{{ pct(x.potensi) }}</b></div>
+              <div><span class="small muted">Target</span><b>{{ x.target ? 'Rp' + fmt(x.target, 0) : '–' }}</b></div>
+            </div>
+            <ul class="small al"><li v-for="a in x.alasan" :key="a">▲ {{ a }}</li></ul>
+            <ul v-if="x.risiko.length" class="small rs"><li v-for="r in x.risiko" :key="r">● {{ r }}</li></ul>
+          </article>
+        </div>
+        <p class="small muted">Syarat: laba {{ Q }} murni naik YoY atau berbalik laba, pendapatan {{ Q }} naik, laba {{ KUM }} naik, laba {{ Q }} ≥ Rp5 M.
+          Skor: {{ Q }} YoY 35, QoQ 20, pendapatan 20, margin kotor melebar 10, potensi 15; basis tahun lalu kecil −10.
+          <b>Potensi</b> = laba run-rate ({{ Q }} × 4) dibanding laba 12 bulan terakhir; <b>target</b> = harga × (1 + potensi), dengan asumsi valuasi (PE) tetap
+          dan laba bertahan di level {{ Q }}. Laba musiman atau satu kali membuat potensi berlebihan.</p>
+      </section>
       <div class="kat" role="tablist" aria-label="Kategori LK">
         <button v-for="[k, l] in KAT" :key="k" type="button" role="tab" class="pill" :aria-selected="String(kat === k)" :aria-pressed="String(kat === k)" @click="kat = k; buka = ''; n = 100">
           {{ l }} <span class="muted">{{ k === 'semua' ? basis.length : (hitung[k] || 0) }}</span></button>
@@ -162,6 +191,11 @@ async function unduhPdf() {
 </template>
 
 <style scoped>
+.top5{margin:6px 0 12px}.kartu{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.k5{border:1px solid var(--rule);border-left:4px solid var(--good);background:var(--sheet);padding:10px 12px}
+.kh{display:flex;align-items:center;gap:8px}.no{font:700 18px var(--f-display);color:var(--ink-2)}
+.angka{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}.angka div{display:flex;flex-direction:column}
+.al,.rs{list-style:none;margin:4px 0 0;padding:0}.al li{color:var(--ink)}.rs li{color:var(--ink-2)}
 .intro{margin:0 0 6px}.unduh{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin:0 0 8px}
 .kat,.flt{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}.sep{margin-left:8px}
 .cari{padding:5px 8px;border:1px solid var(--rule);border-radius:6px;background:var(--sheet);color:inherit;min-width:180px}
