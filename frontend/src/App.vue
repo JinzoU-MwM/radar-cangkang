@@ -87,7 +87,7 @@ function onKey(e) {
   if (e.ctrlKey || e.metaKey || e.altKey) return
   if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName) || document.querySelector('[role="dialog"]')) return
   if (e.key === 'f' || e.key === 'F') { e.preventDefault(); togglePenuh(); return }
-  const to = { 1: '/', 2: '/kandidat', 3: '/berita' }[e.key]
+  const to = { 1: '/berita', 2: '/', 3: '/kandidat' }[e.key]   // mengikuti urutan menu
   if (to) { router.push(to); return }
   if (e.key === '/') {
     e.preventDefault()
@@ -116,11 +116,11 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
         <span>Pengambilalihan emiten · BEI</span>
       </div>
       <button type="button" class="jump" aria-label="Buka emiten (Ctrl K)" @click="jump = true"><span class="jl">Buka emiten</span><svg class="ji" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="m10.5 10.5 3.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg><kbd>Ctrl K</kbd></button>
+      <RouterLink class="nav" to="/berita" active-class="on">Berita <span class="cnt">{{ nBaru || '' }}</span></RouterLink>
       <RouterLink class="nav" to="/" :class="{ on: $route.name === 'monitor' || $route.name === 'emiten' }">Monitor <span class="cnt">{{ nMonitor }}</span></RouterLink>
       <RouterLink class="nav" to="/kandidat" active-class="on">Kandidat <span class="cnt">{{ nKandidat }}</span></RouterLink>
-      <RouterLink class="nav" to="/berita" active-class="on">Berita <span class="cnt">{{ nBaru || '' }}</span></RouterLink>
-      <RouterLink class="nav" to="/pov" active-class="on">POV <span class="cnt"></span></RouterLink>
       <RouterLink class="nav" to="/seasonality" active-class="on">IHSG <span class="cnt"></span></RouterLink>
+      <RouterLink class="nav" to="/pov" active-class="on">POV <span class="cnt"></span></RouterLink>
       <div class="foot">
         <ChangelogPanel />
         <span v-if="store.status?.readOnly" class="tok">Versi publik · hanya baca</span>
