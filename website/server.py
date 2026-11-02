@@ -2513,81 +2513,6 @@ def lk_kuartal_ks(r: dict, ks: dict | None) -> dict | None:
             "melemah": r.get("kategori") in ("bagus", "naik", "berbalik") and status in ("turun", "rugi")}
 
 
-def lk_teratas(rows: list[dict], harga: dict, n: int = 5) -> list[dict]:
-    """5 teratas kinerja kuartal terakhir (penyaringan objektif dari angka laporan, bukan ajakan membeli).
-    Syarat: kuartal murni naik YoY / berbalik laba, pendapatan kuartal naik, laba kumulatif naik, laba kuartal >= Rp5 M.
-    Skor 0-100: YoY 35, QoQ 20, pendapatan 20, margin kotor melebar 10, potensi run-rate 15; basis kecil -10."""
-    out = []
-    for r in rows:
-        k = r.get("kuartal") or {}
-        rp_ = (k.get("laba") or 0) * (16500 if k.get("mata") == "USD" else 1)
-        # Alasan tidak lolos dicatat di baris (r["seleksi"]) agar setiap emiten bisa dicek di tabel.
-        qn = f"Q{k.get('q', '')}"
-        gagal = ("laba kuartal murni belum terhitung" if not k
-                 else f"laba {qn} murni {'turun' if k.get('status') == 'turun' else 'rugi'} YoY" if k.get("status") not in ("naik", "berbalik")
-                 else f"pendapatan {qn} " + (f"turun {abs(k['pendYoy']):.1f}% YoY".replace(".", ",") if k.get("pendYoy") is not None else "belum terhitung")
-                 if (k.get("pendYoy") or 0) <= 0
-                 else "laba kumulatif tidak naik" if r.get("kategori") not in ("bagus", "naik", "berbalik")
-                 else f"laba {qn} di bawah Rp5 M" if rp_ < 5e9 else "")
-        if gagal:
-            r["seleksi"] = {"lolos": False, "alasan": f"Tidak masuk seleksi: {gagal}."}
-            continue
-        yoy = 200 if k["status"] == "berbalik" else min(k.get("yoy") or 0, 200)
-        mk = r.get("marginKotor") or {}
-        melebar = mk.get("ke") is not None and mk.get("dari") is not None and mk["ke"] > mk["dari"]
-        basis = any("Basis tahun lalu kecil" in c for c in r.get("catatan") or [])
-        skor = (yoy / 200 * 35 + max(0, min(k.get("qoq") or 0, 100)) / 100 * 20 + min(k["pendYoy"], 100) / 100 * 20
-                + (10 if melebar else 0) + max(0, min(k.get("potensi") or 0, 100)) / 100 * 15 - (10 if basis else 0))
-        h = (harga.get(r["t"]) or {}).get("h")
-        pot = k.get("potensi")
-        q = k["q"]
-        alasan = [(f"Laba Q{q} murni berbalik dari rugi menjadi laba" if k["status"] == "berbalik"
-                   else f"Laba Q{q} murni naik {k['yoy']:.1f}% YoY").replace(".", ","),
-                  f"Pendapatan Q{q} naik {k['pendYoy']:.1f}% YoY".replace(".", ",")]
-        if k.get("qoq") is not None:
-            alasan.append(f"Dibanding kuartal sebelumnya {'+' if k['qoq'] >= 0 else ''}{k['qoq']:.1f}% (QoQ)".replace(".", ","))
-        if k.get("pe") and k.get("peMedian"):
-            alasan.append(f"PE TTM {k['pe']:.2f}x vs median IHSG {k['peMedian']:.2f}x".replace(".", ",")
-                          + (" (lebih murah)" if k["pe"] < k["peMedian"] else ""))
-        if melebar:
-            alasan.append(f"Margin kotor melebar {mk['dari']:g}% ke {mk['ke']:g}%".replace(".", ","))
-        risiko = []
-        if basis:
-            risiko.append("Basis laba tahun lalu kecil; persentase kenaikan dapat berlebihan")
-        if (k.get("qoq") or 0) < 0:
-            risiko.append("Laba turun dibanding kuartal sebelumnya")
-        if pot is not None and pot > 60:
-            risiko.append("Potensi dari run-rate tinggi; cek apakah laba kuartal ini musiman atau satu kali")
-        if k.get("pe") and k.get("peMedian") and k["pe"] > 2 * k["peMedian"]:
-            risiko.append("Valuasi PE TTM lebih dari 2x median IHSG")
-        if not h:
-            risiko.append("Harga belum tersedia di data radar; target harga tidak dihitung")
-        out.append({"t": r["t"], "nama": r.get("nama", ""), "skor": round(max(skor, 0)), "harga": h, "potensi": pot,
-                    "target": round(h * (1 + pot / 100)) if h and pot is not None and pot > 0 else None,
-                    "kuartal": k, "laba": r.get("laba"), "alasan": alasan, "risiko": risiko,
-                    "url": r.get("url"), "periode": r.get("periode")})
-    out.sort(key=lambda x: -x["skor"])
-    by = {r["t"]: r for r in rows}
-    for i, x in enumerate(out, 1):
-        by[x["t"]]["seleksi"] = {"lolos": True, "skor": x["skor"], "peringkat": i, "dari": len(out),
-                                 "alasan": f"Lolos seleksi: skor {x['skor']}, peringkat {i} dari {len(out)}."}
-    top = out[:n]
-    # Harga untuk emiten di luar data radar: penutupan terakhir dari grafik Stockbit (cache 6 jam).
-    for x in top:
-        if x["harga"]:
-            continue
-        try:
-            px = chart_prices(x["t"])
-            x["harga"] = px[-1]["v"] if px else None
-        except Exception:
-            x["harga"] = None
-        if x["harga"]:
-            x["risiko"] = [c for c in x["risiko"] if not c.startswith("Harga belum tersedia")]
-            if x["potensi"] is not None and x["potensi"] > 0:
-                x["target"] = round(x["harga"] * (1 + x["potensi"] / 100))
-    return top
-
-
 def lk_api(data: dict | None = None, kuartalan: dict | None = None, keystats: dict | None = None) -> dict:
     """Daftar LK terbaru per emiten (satu laporan terakhir per kode) + ringkasan per kategori."""
     data = lk_load() if data is None else data
@@ -2615,11 +2540,7 @@ def lk_api(data: dict | None = None, kuartalan: dict | None = None, keystats: di
     for r in rows:
         if r.get("periode"):
             periode[r["periode"]] = periode.get(r["periode"], 0) + 1
-    try:
-        harga = harga_semua()
-    except Exception:
-        harga = {}
-    return {"updated": max((r.get("tgl", "") for r in rows), default=""), "n": len(rows), "hitung": hit, "teratas": lk_teratas(rows, harga),
+    return {"updated": max((r.get("tgl", "") for r in rows), default=""), "n": len(rows), "hitung": hit,
             "periode": max(periode, key=periode.get) if periode else "", "rows": rows}
 
 
