@@ -1980,7 +1980,8 @@ def lk_nilai_laba(teks: list[str]) -> tuple[dict | None, dict | None]:
     'menjadi B dari A', atau 'mencapai/sebesar/menjadi B' (tanpa pembanding). Berhenti sebelum kata 'pendapatan'."""
     for x in teks:
         for m in re.finditer(r"(laba|rugi) (bersih|neto)((?:(?!pendapatan|beban|margin).)*)", x, re.I):
-            k = m.group(3)
+            # "menjadi laba US$871 juta dari rugi US$178 juta": buang kata laba/rugi di depan angka.
+            k = re.sub(r"\b(dari|menjadi|mencapai|sebesar)\s+(?:laba|rugi)\s+(?=Rp|US\$)", r"\1 ", m.group(3), flags=re.I)
             d = re.search(r"dari\s+" + _LK_UANG + r"\s+menjadi\s+" + _LK_UANG, k, re.I)
             if d:
                 return _lk_nilai(*d.group(1, 2, 3)), _lk_nilai(*d.group(4, 5, 6))
@@ -2189,7 +2190,7 @@ def lk_kuartal(r9: dict, r6: dict | None, r3: dict | None) -> dict | None:
 # Laporan laba rugi PER KUARTAL dari Stockbit (findata, report_type=1): sumber utama Q3 murni, karena ringkasan AI
 # laporan 1H/3M banyak yang tidak tersedia. Disimpan ringkas per emiten di .lk-kuartal.json (bukan cache mentah).
 LKQ_PATH = ROOT / ".lk-kuartal.json"
-_LKQ_LABA = ("Laba Bersih Yang Dapat Diatribu", "Total Laba Bersih Yang Dapat", "Laba Bersih Tahun Berjalan", "Laba Bersih Periode Berjalan")
+_LKQ_LABA = ("Laba Pemilik Entitas Induk", "Laba Bersih Yang Dapat Diatribu", "Total Laba Bersih Yang Dapat", "Laba Bersih Tahun Berjalan", "Laba Bersih Periode Berjalan")
 _LKQ_PEND = ("Total Pendapatan", "Pendapatan", "Penjualan", "Total Penjualan")
 
 
@@ -2205,12 +2206,21 @@ def lkq_parse(html_report: str) -> dict:
     # Label periode muncul di dua kepala tabel; ambil urutan unik.
     labels = list(dict.fromkeys(re.findall(r'data-label="([^"]+)"', html_report)))
     mata = (re.search(r'selected_currency"\s+value="(\w+)"', html_report) or [None, "idr"])[1]
-    laba, pend = {}, None
+    laba, pend, grup = {}, None, ""
     for row in re.findall(r"<tr[^>]*>(.*?)</tr>", html_report, re.S):
         cells = [html_mod.unescape(re.sub(r"<[^>]+>", "", c)).strip() for c in re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)]
         if len(cells) != len(labels) + 1:
             continue
         nama = cells[0].rstrip(". ")
+        # "Pemilik Entitas Induk" di bawah "Laba Bersih Yang Dapat Diatribusikan..." = laba bagian pemilik (angka yang
+        # dipakai ringkasan Stockbit); yang di bawah "Laba Komprehensif ..." diabaikan.
+        if nama.startswith(("Laba Bersih Yang Dapat Diatribu", "Laba Komprehensif", "Jumlah Laba Komprehensif")):
+            grup = "laba" if nama.startswith("Laba Bersih") else "kompre"
+        if nama == "Pemilik Entitas Induk":
+            if grup == "laba" and "Laba Pemilik Entitas Induk" not in laba:
+                nama = "Laba Pemilik Entitas Induk"
+            else:
+                continue
         nilai = {}
         for lb, v in list(zip(labels, cells[1:]))[-8:]:
             try:
@@ -2303,7 +2313,9 @@ def lk_kuartal_fd(r: dict, fd: dict | None) -> dict | None:
         s = [row.get(f"Q{i}{py}") for i in range(1, q + 1)]
         if None in s or d_cum is None:
             return None
-        return abs(sum(s) - d_cum) / max(abs(d_cum), 1)
+        # Dibagi angka terbesar (tahun lalu / tahun ini): basis tahun lalu yang sangat kecil (mis. US$0,29 juta)
+        # tidak membuat selisih kecil dianggap tidak cocok.
+        return abs(sum(s) - d_cum) / max(abs(d_cum), abs(k_cum or 0), 1)
     # Baris laba yang paling cocok dengan laba kumulatif tahun lalu di ringkasan (pemilik entitas induk vs total).
     cocok = sorted(((selisih(row), nama, row) for nama, row in fd["laba"].items()), key=lambda x: (x[0] is None, x[0] or 0))
     sel, nama, row = cocok[0]
@@ -2323,8 +2335,13 @@ def lk_kuartal_fd(r: dict, fd: dict | None) -> dict | None:
     pd_, pyoy = fd.get("pend") or {}, None
     p, pl = pd_.get(f"Q{q}{yy}"), pd_.get(f"Q{q}{py}")
     psb = [pd_.get(f"Q{i}{yy}") for i in range(1, q)]
-    if p is None and konsisten and (r.get("pendapatan") or {}).get("ke") and None not in psb:
-        p = r["pendapatan"]["ke"]["v"] - sum(psb)
+    rp = r.get("pendapatan") or {}
+    if p is None and (rp.get("ke") or {}).get("v") and rp.get("pct") is not None and rp["pct"] > -100 and None not in psb:
+        # Cocokkan dulu: jumlah kuartal tahun lalu di tabel ~ pendapatan kumulatif tahun lalu (tersirat dari % YoY ringkasan).
+        kum_lalu = rp["ke"]["v"] / (1 + rp["pct"] / 100)
+        tabel_lalu = [pd_.get(f"Q{i}{py}") for i in range(1, q + 1)]
+        if None not in tabel_lalu and abs(sum(tabel_lalu) - kum_lalu) <= 0.05 * max(kum_lalu, rp["ke"]["v"]):
+            p = rp["ke"]["v"] - sum(psb)
     if p is not None and pl and pl > 0:
         pyoy = round((p / pl - 1) * 100, 1)
     status = ("rugi" if nilai <= 0 else "berbalik" if lalu is not None and lalu <= 0 else
@@ -2343,6 +2360,159 @@ def lk_kuartal_fd(r: dict, fd: dict | None) -> dict | None:
             "melemah": r.get("kategori") in ("bagus", "naik", "berbalik") and status in ("turun", "rugi")}
 
 
+# Key Stats Stockbit (/keystats/ratio/v1): laba, EPS, dan pendapatan PER KUARTAL (termasuk kuartal terbaru),
+# pertumbuhan kuartal YoY resmi, serta valuasi (PE TTM/annualised, median PE IHSG, PBV). Sumber utama kuartal murni;
+# tabel findata menjadi cadangan. Disimpan ringkas di .lk-keystats.json.
+LKS_PATH = ROOT / ".lk-keystats.json"
+_LKS_UNIT = {"T": 1e12, "B": 1e9, "M": 1e6, "K": 1e3}
+
+
+def _lks_angka(s) -> float | None:
+    """'45 B' -> 45e9; '(9 B)' -> -9e9; '1,016 B' -> 1016e9; '72.70' -> 72.7; '309%' -> 309; '-' -> None."""
+    t = str(s or "").strip().replace(",", "")
+    neg = t.startswith("(") and t.endswith(")")
+    t = t.strip("()").replace("%", "").strip()
+    m = re.match(r"^(-?[\d.]+)\s*([TBMK])?$", t)
+    if not m:
+        return None
+    v = float(m.group(1)) * _LKS_UNIT.get(m.group(2) or "", 1)
+    return -v if neg else v
+
+
+def lks_parse(k: dict) -> dict:
+    """JSON keystats -> {"kuartal": {"Net Income"|"EPS"|"Revenue": {"Q326": nilai}}, "terbaru": "Q326", "rasio": {...}, "mata"}."""
+    out, terbaru = {}, ""
+    for g in (k.get("financial_year_parent") or {}).get("financial_year_groups") or []:
+        nama = g.get("fitem_name")
+        mr = g.get("most_recent_quarter") or {}
+        vals = {}
+        for y in g.get("financial_year_values") or []:
+            for pv in y.get("period_values") or []:
+                v = _lks_angka(pv.get("quarter_value"))
+                if v is not None and pv.get("period") and pv.get("year"):
+                    vals[f"{pv['period']}{str(pv['year'])[-2:]}"] = v
+        out[nama] = vals
+        if mr.get("quarter") and mr.get("date"):
+            terbaru = f"{mr['quarter']}{mr['date'][-2:]}"
+    rasio = {}
+    for grp in k.get("closure_fin_items_results") or []:
+        for f in grp.get("fin_name_results") or []:
+            fi = f.get("fitem") or {}
+            if fi.get("name") in ("Current PE Ratio (TTM)", "Current PE Ratio (Annualised)", "IHSG PE Ratio TTM (Median)",
+                                  "Current Price to Book Value", "Current EPS (TTM)", "Current EPS (Annualised)",
+                                  "Net Income (Quarter YoY Growth)", "Revenue (Quarter YoY Growth)", "Net Profit Margin (Quarter)"):
+                rasio[fi["name"]] = _lks_angka(fi.get("value"))
+    cur = k.get("financial_report_currency") or []
+    st = k.get("stats") or {}
+    mcap, saham = _lks_angka(st.get("market_cap")), _lks_angka(st.get("current_share_outstanding"))
+    # Grup financial_year_groups selalu dalam Rupiah (versi USD ada di financial_year_groups_usd).
+    return {"kuartal": out, "terbaru": terbaru, "rasio": rasio, "mata": "Rp", "mataLaporan": "USD" if "USD" in cur else "Rp",
+            "mcap": mcap, "saham": saham, "freeFloat": _lks_angka(st.get("free_float")),
+            "hargaKira": round(mcap / saham, 1) if mcap and saham else None}
+
+
+def lks_load() -> dict:
+    try:
+        return json.loads(LKS_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def sync_lk_keystats(batas: int | None = None) -> int:
+    """Ambil Key Stats untuk emiten yang laporan terakhirnya 3M/1H/9M/FY dan belum mutakhir (sama aturan dengan findata)."""
+    if not (get_token() and not token_expired()):
+        return 0
+    data, ks = lk_load(), lks_load()
+    terakhir = {}
+    for r in sorted(data.values(), key=lambda r: r.get("tgl", "")):
+        terakhir[r["t"]] = r
+    hari_ini = datetime.now().strftime("%Y-%m-%d")
+
+    def kode_q(r):
+        pk = lk_periode_kuartal(r.get("periode") or "")
+        return f"Q{pk[0]}{pk[1]}" if pk else ""
+    target = [t for t, r in terakhir.items() if kode_q(r)
+              and (t not in ks or ks[t].get("at", "") < r.get("tgl", "")
+                   or (ks[t].get("terbaru") != kode_q(r) and ks[t].get("at", "") < hari_ini))]
+    tok = get_token()
+
+    def ambil(t):
+        for coba in range(4):
+            try:
+                j = json.loads(http_get_api(SB + f"/keystats/ratio/v1/{t}?year_limit=3", tok))
+                time.sleep(0.5)
+                return t, {**lks_parse(j.get("data") or {}), "at": hari_ini}
+            except urllib.error.HTTPError as e:
+                if e.code != 429 or coba == 3:
+                    print(f"[lk] keystats {t} gagal: {e}", file=sys.stderr)
+                    return t, None
+                time.sleep(10 * (coba + 1))
+            except Exception as e:
+                print(f"[lk] keystats {t} gagal: {e}", file=sys.stderr)
+                return t, None
+        return t, None
+    n = 0
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        for t, v in ex.map(ambil, target[:batas] if batas else target):
+            if v:
+                ks[t] = v
+                n += 1
+                if n % 50 == 0:
+                    _lks_tulis(ks)
+    if n:
+        _lks_tulis(ks)
+    return n
+
+
+def _lks_tulis(ks: dict) -> None:
+    tmp = LKS_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(ks, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(LKS_PATH)
+
+
+def lk_kuartal_ks(r: dict, ks: dict | None) -> dict | None:
+    """Kuartal murni dari Key Stats: laba kuartal (dibulatkan Stockbit), pertumbuhan YoY resmi, QoQ dan potensi dari EPS
+    (presisi 2 desimal), pendapatan YoY resmi. Hanya bila kuartal terbaru Key Stats = kuartal laporan ringkasan."""
+    pk = lk_periode_kuartal(r.get("periode") or "")
+    if not ks or not pk:
+        return None
+    q, yy = pk
+    kode = f"Q{q}{yy}"
+    if ks.get("terbaru") != kode:
+        return None
+    ni, eps = (ks.get("kuartal") or {}).get("Net Income") or {}, (ks.get("kuartal") or {}).get("EPS") or {}
+    py = f"{int(yy) - 1:02d}"
+    sb = f"Q{q - 1}{yy}" if q > 1 else f"Q4{py}"
+    e, el, es = eps.get(kode), eps.get(f"Q{q}{py}"), eps.get(sb)
+    laba = ni.get(kode)
+    if laba is None and e is None:
+        return None
+    rs = ks.get("rasio") or {}
+    yoy = rs.get("Net Income (Quarter YoY Growth)")
+    if yoy is None and e is not None and el and el > 0:
+        yoy = round((e / el - 1) * 100, 1)
+    nilai = e if e is not None else laba
+    lalu = el if e is not None else ni.get(f"Q{q}{py}")
+    sblm = es if e is not None else ni.get(sb)
+    qoq = round((nilai / sblm - 1) * 100, 1) if sblm and sblm > 0 and nilai is not None else None
+    # TTM dan run-rate dari EPS: kuartal ini + 3 kuartal sebelumnya.
+    lalu3, (qq, yr) = [], (q, int(yy))
+    for _ in range(3):
+        qq, yr = (qq - 1, yr) if qq > 1 else (4, yr - 1)
+        lalu3.append((eps if e is not None else ni).get(f"Q{qq}{yr % 100:02d}"))
+    ttm = nilai + sum(lalu3) if nilai is not None and None not in lalu3 else None
+    potensi = round((nilai * 4 / ttm - 1) * 100, 1) if ttm and ttm > 0 and nilai and nilai > 0 else None
+    status = ("rugi" if nilai is not None and nilai <= 0 else "berbalik" if lalu is not None and lalu <= 0 else
+              "naik" if yoy is not None and yoy >= 0 else "turun" if yoy is not None else "")
+    return {"q": q, "laba": laba, "labaLalu": ni.get(f"Q{q}{py}"), "yoy": yoy, "labaSebelum": ni.get(sb), "qoq": qoq,
+            "pendYoy": rs.get("Revenue (Quarter YoY Growth)"), "ttm": ttm, "potensi": potensi, "mata": ks.get("mata"),
+            "status": status, "sumber": "Key Stats Stockbit", "baris": "Net Income",
+            "pe": rs.get("Current PE Ratio (TTM)"), "peAnn": rs.get("Current PE Ratio (Annualised)"),
+            "peMedian": rs.get("IHSG PE Ratio TTM (Median)"), "pbv": rs.get("Current Price to Book Value"),
+            "npm": rs.get("Net Profit Margin (Quarter)"),
+            "melemah": r.get("kategori") in ("bagus", "naik", "berbalik") and status in ("turun", "rugi")}
+
+
 def lk_teratas(rows: list[dict], harga: dict, n: int = 5) -> list[dict]:
     """5 teratas kinerja kuartal terakhir (penyaringan objektif dari angka laporan, bukan ajakan membeli).
     Syarat: kuartal murni naik YoY / berbalik laba, pendapatan kuartal naik, laba kumulatif naik, laba kuartal >= Rp5 M.
@@ -2351,8 +2521,16 @@ def lk_teratas(rows: list[dict], harga: dict, n: int = 5) -> list[dict]:
     for r in rows:
         k = r.get("kuartal") or {}
         rp_ = (k.get("laba") or 0) * (16500 if k.get("mata") == "USD" else 1)
-        if not (k.get("status") in ("naik", "berbalik") and (k.get("pendYoy") or 0) > 0
-                and r.get("kategori") in ("bagus", "naik", "berbalik") and rp_ >= 5e9):
+        # Alasan tidak lolos dicatat di baris (r["seleksi"]) agar setiap emiten bisa dicek di tabel.
+        qn = f"Q{k.get('q', '')}"
+        gagal = ("laba kuartal murni belum terhitung" if not k
+                 else f"laba {qn} murni {'turun' if k.get('status') == 'turun' else 'rugi'} YoY" if k.get("status") not in ("naik", "berbalik")
+                 else f"pendapatan {qn} " + (f"turun {abs(k['pendYoy']):.1f}% YoY".replace(".", ",") if k.get("pendYoy") is not None else "belum terhitung")
+                 if (k.get("pendYoy") or 0) <= 0
+                 else "laba kumulatif tidak naik" if r.get("kategori") not in ("bagus", "naik", "berbalik")
+                 else f"laba {qn} di bawah Rp5 M" if rp_ < 5e9 else "")
+        if gagal:
+            r["seleksi"] = {"lolos": False, "alasan": f"Tidak masuk seleksi: {gagal}."}
             continue
         yoy = 200 if k["status"] == "berbalik" else min(k.get("yoy") or 0, 200)
         mk = r.get("marginKotor") or {}
@@ -2368,6 +2546,9 @@ def lk_teratas(rows: list[dict], harga: dict, n: int = 5) -> list[dict]:
                   f"Pendapatan Q{q} naik {k['pendYoy']:.1f}% YoY".replace(".", ",")]
         if k.get("qoq") is not None:
             alasan.append(f"Dibanding kuartal sebelumnya {'+' if k['qoq'] >= 0 else ''}{k['qoq']:.1f}% (QoQ)".replace(".", ","))
+        if k.get("pe") and k.get("peMedian"):
+            alasan.append(f"PE TTM {k['pe']:.2f}x vs median IHSG {k['peMedian']:.2f}x".replace(".", ",")
+                          + (" (lebih murah)" if k["pe"] < k["peMedian"] else ""))
         if melebar:
             alasan.append(f"Margin kotor melebar {mk['dari']:g}% ke {mk['ke']:g}%".replace(".", ","))
         risiko = []
@@ -2377,6 +2558,8 @@ def lk_teratas(rows: list[dict], harga: dict, n: int = 5) -> list[dict]:
             risiko.append("Laba turun dibanding kuartal sebelumnya")
         if pot is not None and pot > 60:
             risiko.append("Potensi dari run-rate tinggi; cek apakah laba kuartal ini musiman atau satu kali")
+        if k.get("pe") and k.get("peMedian") and k["pe"] > 2 * k["peMedian"]:
+            risiko.append("Valuasi PE TTM lebih dari 2x median IHSG")
         if not h:
             risiko.append("Harga belum tersedia di data radar; target harga tidak dihitung")
         out.append({"t": r["t"], "nama": r.get("nama", ""), "skor": round(max(skor, 0)), "harga": h, "potensi": pot,
@@ -2384,6 +2567,10 @@ def lk_teratas(rows: list[dict], harga: dict, n: int = 5) -> list[dict]:
                     "kuartal": k, "laba": r.get("laba"), "alasan": alasan, "risiko": risiko,
                     "url": r.get("url"), "periode": r.get("periode")})
     out.sort(key=lambda x: -x["skor"])
+    by = {r["t"]: r for r in rows}
+    for i, x in enumerate(out, 1):
+        by[x["t"]]["seleksi"] = {"lolos": True, "skor": x["skor"], "peringkat": i, "dari": len(out),
+                                 "alasan": f"Lolos seleksi: skor {x['skor']}, peringkat {i} dari {len(out)}."}
     top = out[:n]
     # Harga untuk emiten di luar data radar: penutupan terakhir dari grafik Stockbit (cache 6 jam).
     for x in top:
@@ -2401,10 +2588,11 @@ def lk_teratas(rows: list[dict], harga: dict, n: int = 5) -> list[dict]:
     return top
 
 
-def lk_api(data: dict | None = None, kuartalan: dict | None = None) -> dict:
+def lk_api(data: dict | None = None, kuartalan: dict | None = None, keystats: dict | None = None) -> dict:
     """Daftar LK terbaru per emiten (satu laporan terakhir per kode) + ringkasan per kategori."""
     data = lk_load() if data is None else data
     kuartalan = lkq_load() if kuartalan is None else kuartalan
+    keystats = lks_load() if keystats is None else keystats
     terakhir, per_periode = {}, {}
     for r in sorted(data.values(), key=lambda r: (r.get("tgl", ""), r["id"])):
         terakhir[r["t"]] = r
@@ -2413,7 +2601,7 @@ def lk_api(data: dict | None = None, kuartalan: dict | None = None) -> dict:
     rows = []
     for r in terakhir.values():
         # Kuartal terakhir murni (Q1/Q2/Q3/Q4) dari laba rugi kuartalan Stockbit; cadangan khusus 9M: ringkasan 9M - 1H.
-        kw = lk_kuartal_fd(r, kuartalan.get(r["t"]))
+        kw = lk_kuartal_ks(r, keystats.get(r["t"])) or lk_kuartal_fd(r, kuartalan.get(r["t"]))
         m = re.match(r"^9M(\d{2})$", r.get("periode") or "")
         if kw is None and m:
             pp = per_periode[r["t"]]
@@ -2445,6 +2633,9 @@ def lk_loop() -> None:
                 n = sync_lk()
                 if n:
                     print(f"[lk] {n} laporan keuangan baru", file=sys.stderr)
+                n = sync_lk_keystats()
+                if n:
+                    print(f"[lk] Key Stats diperbarui untuk {n} emiten", file=sys.stderr)
                 n = sync_lk_kuartal()
                 if n:
                     print(f"[lk] laba rugi kuartalan diperbarui untuk {n} emiten", file=sys.stderr)
