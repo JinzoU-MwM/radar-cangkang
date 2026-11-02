@@ -26,7 +26,7 @@ const f = reactive({ cari: '', hsc: '', radar: false, sehat: false, urut: 'laba'
 const Q3OPSI = [['', 'Semua'], ['naik', `${Q} ikut naik`], ['melemah', `${Q} melemah`], ['tanpa', `${Q} belum terhitung`]]
 const lolosQ3 = x => !f.q3 || (f.q3 === 'naik' ? ['naik', 'berbalik'].includes(x.kuartal?.status)
   : f.q3 === 'melemah' ? x.kuartal?.melemah : !x.kuartal)
-const URUT = [['laba', 'Kenaikan laba'], ['q3', `Laba ${Q} YoY`], ['nilai', 'Nilai laba'], ['pendapatan', 'Kenaikan pendapatan'], ['tgl', 'Terbaru']]
+const URUT = [['skor', 'Skor seleksi'], ['laba', 'Kenaikan laba'], ['q3', `Laba ${Q} YoY`], ['nilai', 'Nilai laba'], ['pendapatan', 'Kenaikan pendapatan'], ['tgl', 'Terbaru']]
 // Rupiah-setara untuk mengurutkan nilai laba (USD dikali kurs kasar agar urutan masuk akal).
 const rpSetara = n => n ? n.v * (n.mata === 'USD' ? 16500 : 1) : 0
 const rows = computed(() => {
@@ -35,7 +35,7 @@ const rows = computed(() => {
     && lolosHsc(x.t, f.hsc) && (!f.radar || x.radar) && lolosQ3(x)
     && (!f.sehat || ((x.pendapatan?.pct ?? -1) > 0 && !x.catatan.some(c => /basis tahun lalu kecil|pendapatan turun/i.test(c))))
     && (!q || x.t.includes(q) || (x.nama || '').toUpperCase().includes(q)))
-  const k = { laba: x => x.laba?.pct ?? -1e9, q3: x => x.kuartal?.yoy ?? (x.kuartal?.status === 'berbalik' ? 1e9 : -1e9), nilai: x => rpSetara(x.laba?.ke), pendapatan: x => x.pendapatan?.pct ?? -1e9, tgl: x => x.tgl }[f.urut]
+  const k = { skor: x => x.seleksi?.skor ?? -1, laba: x => x.laba?.pct ?? -1e9, q3: x => x.kuartal?.yoy ?? (x.kuartal?.status === 'berbalik' ? 1e9 : -1e9), nilai: x => rpSetara(x.laba?.ke), pendapatan: x => x.pendapatan?.pct ?? -1e9, tgl: x => x.tgl }[f.urut]
   return [...r].sort((a, b) => (k(b) > k(a) ? 1 : k(b) < k(a) ? -1 : 0))
 })
 const n = ref(100)
@@ -141,7 +141,7 @@ async function unduhPdf() {
         <span class="small muted">{{ rows.length }} emiten · {{ PERIODE.find(p => p[0] === per)[1] }} · laporan terakhir {{ data.updated ? fmtDate(data.updated) : '–' }}</span></div>
       <div class="scroll">
         <table class="ledger">
-          <thead><tr><th>Saham</th><th>Periode</th><th class="num">Harga</th><th class="num">Laba bersih {{ KUM }}</th><th class="num">Laba {{ KUM }} YoY</th><th class="num">Laba {{ Q }} murni</th><th class="num">{{ Q }} YoY</th><th class="num">{{ Q }} QoQ</th>
+          <thead><tr><th>Saham</th><th class="num" title="Skor seleksi 5 teratas (0-100) dan peringkat">Skor</th><th>Periode</th><th class="num">Harga</th><th class="num">Laba bersih {{ KUM }}</th><th class="num">Laba {{ KUM }} YoY</th><th class="num">Laba {{ Q }} murni</th><th class="num">{{ Q }} YoY</th><th class="num">{{ Q }} QoQ</th>
             <th class="num">Pendapatan YoY</th><th class="num">Margin kotor</th><th>Pendorong</th><th>Tanggal</th></tr></thead>
           <tbody>
             <template v-for="x in rows.slice(0, n)" :key="x.id">
@@ -151,6 +151,7 @@ async function unduhPdf() {
                   <span v-if="isHsc(x.t)" class="tag t-warn" title="Saham HSC">HSC</span>
                   <span v-if="x.radar" class="tag t-calm" title="Ada di radar backdoor">radar</span>
                   <div v-if="x.nama" class="small muted nm">{{ x.nama }}</div></td>
+                <td class="num small" :title="x.seleksi?.alasan"><b v-if="x.seleksi?.lolos">{{ x.seleksi.skor }}</b><span v-if="x.seleksi?.lolos" class="muted"> #{{ x.seleksi.peringkat }}</span><span v-else class="muted">–</span></td>
                 <td class="small">{{ x.periode || '–' }}</td>
                 <td class="num"><HargaSaham :kode="x.t" /></td>
                 <td class="num small">{{ uang(x.laba?.dari) }} → <b>{{ uang(x.laba?.ke) }}</b></td>
@@ -164,8 +165,9 @@ async function unduhPdf() {
                 <td class="small dr">{{ x.pendorong || '–' }}</td>
                 <td class="small"><a :href="x.url" target="_blank" rel="noopener" @click.stop>{{ fmtDate(x.tgl) }}</a></td>
               </tr>
-              <tr v-if="buka === x.id" class="det"><td colspan="12">
+              <tr v-if="buka === x.id" class="det"><td colspan="13">
                 <p class="small"><b>{{ x.judul }}</b> · {{ x.jenisLk }}</p>
+                <p v-if="x.seleksi" class="small" :class="x.seleksi.lolos ? 'c-good' : 'muted'"><b>{{ x.seleksi.alasan }}</b></p>
                 <p class="small">{{ x.ringkas }}</p>
                 <ul class="small"><li v-for="p in x.poin" :key="p">{{ p }}</li></ul>
                 <p v-if="x.kuartal" class="small"><b>Q{{ x.kuartal.q }} murni</b> ({{ x.kuartal.sumber }}): laba Q{{ x.kuartal.q }} {{ uangQ(x.kuartal.laba, x.kuartal.mata) }}

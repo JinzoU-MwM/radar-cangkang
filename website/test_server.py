@@ -432,6 +432,19 @@ class LkTest(unittest.TestCase):
         self.assertAlmostEqual(k["labaLalu"], -2e9)     # -10 - (-8)
         self.assertEqual(k["status"], "berbalik")
 
+    def test_berbalik_dan_basis_kecil(self):
+        # AMMN: "berbalik menjadi laba US$871,47 juta dari rugi US$178,54 juta".
+        d, k = server.lk_nilai_laba(["Rugi bersih berbalik menjadi laba US$ 871,47 juta dari rugi US$ 178,54 juta"])
+        self.assertEqual((d["v"], k["v"]), (178.54e6, 871.47e6))
+        # ARII: basis tahun lalu sangat kecil (0,29 jt) vs tabel (0,66 jt) tetap dianggap cocok terhadap laba 9M (16,24 jt).
+        r = server.lk_parse(self.post("Laporan Keuangan", "Laba Bersih Bertambah 5.537,85% 9M26", "ARII (A) x.",
+                                      ["Laba bersih naik 5.537,85% YoY dari US$ 288.000 menjadi US$ 16,24 juta"], topic="ARII"))
+        fd = {"mata": "Rp", "pend": {}, "laba": {"Laba Bersih": {"Q125": 11.35e6, "Q225": -7.92e6, "Q325": -2.77e6, "Q425": 1.71e6,
+                                                                   "Q126": 9.7e6, "Q226": 2.17e6}}}
+        q = server.lk_kuartal_fd(r, fd)
+        self.assertEqual(q["status"], "berbalik")
+        self.assertAlmostEqual(q["laba"], 4.37e6)
+
     def test_teratas_dan_potensi(self):
         k = {"q": 3, "laba": 30e9, "labaLalu": 20e9, "yoy": 50.0, "qoq": 10.0, "pendYoy": 20.0, "mata": "Rp", "status": "naik", "potensi": 20.0}
         bagus = {"t": "AAAA", "nama": "A", "kategori": "bagus", "kuartal": k, "catatan": [], "marginKotor": {"dari": 10, "ke": 12}}

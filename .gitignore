@@ -56,3 +56,4 @@ website/tsa-*.json
 # laporan keuangan seluruh BEI dari akun StockbitReports (runtime)
 **/.lk-laporan.json
 **/.lk-kuartal.json
+**/.lk-keystats.json
