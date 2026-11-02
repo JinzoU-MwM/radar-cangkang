@@ -12,6 +12,7 @@ import RecoveryPanel from '../components/RecoveryPanel.vue'
 import LivePanel from '../components/LivePanel.vue'
 import LowPanel from '../components/LowPanel.vue'
 import LkPanel from '../components/LkPanel.vue'
+import { musimLk } from '../lib/musimLk.js'
 import HscPanel from '../components/HscPanel.vue'
 import TimeSeriesPanel from '../components/TimeSeriesPanel.vue'
 import AstronacciPanel from '../components/AstronacciPanel.vue'
@@ -36,7 +37,8 @@ const TAB_INFO = [
   { k: 'broker', l: 'Pola Broker', grup: 'Pilih saham', awalGrup: true, ket: 'akumulasi dan distribusi broker (asing/domestik) per bulan atau per hari.' },
   { k: 'recovery', l: 'Recovery', grup: 'Pilih saham', ket: 'saham yang sudah turun dalam dan mulai pulih, dengan potensi rebound.' },
   { k: 'low', l: 'Low', grup: 'Pilih saham', ket: 'saham di titik terendah dan daftar penurunan per periode 1D–10Y.' },
-  { k: 'lk', l: 'LK Bagus', grup: 'Pilih saham', ket: 'laporan keuangan terbaru seluruh BEI dengan laba naik kuat atau berbalik laba.' },
+  // Nama tab mengikuti musim laporan (Kinerja Q1/Q2/Q3/Q4), berganti otomatis.
+  { k: 'lk', l: musimLk().label, grup: 'Pilih saham', ket: `laporan keuangan ${musimLk().judul} seluruh BEI: laba naik kuat, berbalik laba, dan laba kuartal murni.` },
 ]
 const tabAktif = computed(() => TAB_INFO.find(x => x.k === tab.value) || TAB_INFO[0])
 const tab = computed({ get: () => TABS.includes(route.query.tab) ? route.query.tab : 'season', set: v => router.replace({ query: { ...route.query, tab: TABS.includes(v) ? v : undefined } }) })
