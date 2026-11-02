@@ -42,6 +42,12 @@ const tag = c => 't-' + (c === 'bad' ? 'strong' : c)
       <p class="small">{{ a.kesimpulan }}</p>
     </div>
 
+    <div class="grid tri">
+      <div class="card"><h3>Tujuannya apa?</h3><ul><li v-for="x in a.tujuan" :key="x">{{ x }}</li></ul></div>
+      <div class="card"><h3>Cari tahu</h3><ul><li v-for="x in a.cari" :key="x">{{ x }}</li></ul></div>
+      <div class="card"><h3>Selidiki</h3><ul><li v-for="x in a.selidiki" :key="x">{{ x }}</li></ul></div>
+    </div>
+
     <div class="grid">
       <div class="card">
         <h3>Isi dokumen</h3>
@@ -91,6 +97,7 @@ const tag = c => 't-' + (c === 'bad' ? 'strong' : c)
 .top.k-good{border-left-color:var(--good)}.top.k-bad{border-left-color:var(--strong)}.top.k-calm{border-left-color:var(--ink-2)}
 .row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}.ttl{font-size:15px}.top p{margin:6px 0 0}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+.grid.tri{margin-bottom:10px}
 .card{border:1px solid var(--rule);padding:10px 12px;background:var(--sheet)}
 .card h3{font-size:12px;letter-spacing:.04em;text-transform:uppercase;margin:0 0 6px}.card h3.sub{margin-top:10px}
 .card ul{margin:0;padding-left:18px}.card li{margin:2px 0}.nd{list-style:none;padding-left:0 !important}
