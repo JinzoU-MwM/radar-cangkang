@@ -7,7 +7,9 @@ import { fmtDate } from '../../lib/domain.js'
 import { beritaTerakhir, analisaBerita } from '../../lib/beritaTerbaru.js'
 
 const props = defineProps({ ticker: { type: String, required: true } })
-const a = computed(() => analisaBerita(beritaTerakhir(store.updates, props.ticker), { items: store.items, pandangan: store.pandangan, updates: store.updates }))
+const a = computed(() => analisaBerita(beritaTerakhir(store.updates, props.ticker), {
+  items: store.items, pandangan: store.pandangan, updates: store.updates, pengendali: store.pengendali, relasi: store.relasi, verified: store.verified,
+}))
 const busy = ref(false), err = ref('')
 async function unduh() {
   busy.value = true; err.value = ''
@@ -22,6 +24,8 @@ async function unduh() {
 }
 // Kelas tag global: t-good / t-warn / t-calm / t-strong (tidak ada t-bad).
 const tag = c => 't-' + (c === 'bad' ? 'strong' : c)
+const KYK = { Tinggi: 't-good', Sedang: 't-warn', Rendah: 't-calm' }
+const NILAI = { Didukung: 't-good', 'Sebagian didukung': 't-warn', 'Belum didukung': 't-calm' }
 </script>
 
 <template>
@@ -42,10 +46,26 @@ const tag = c => 't-' + (c === 'bad' ? 'strong' : c)
       <p class="small">{{ a.kesimpulan }}</p>
     </div>
 
+    <!-- Penyelidikan tujuan: kesimpulan dulu, lalu temuan (Cari tahu) dan uji dugaan (Selidiki) yang mendasarinya. -->
+    <div class="card tj">
+      <h3>Tujuannya apa? <span class="tag" :class="KYK[a.tujuan.keyakinan]">Keyakinan {{ a.tujuan.keyakinan.toLowerCase() }}</span></h3>
+      <p class="utama">{{ a.tujuan.utama }}</p>
+      <p v-if="a.tujuan.alasan" class="small">{{ a.tujuan.alasan }}</p>
+      <p v-if="a.tujuan.alternatif.length" class="small muted">Kemungkinan lain: {{ a.tujuan.alternatif.join('; ') }}.</p>
+    </div>
     <div class="grid tri">
-      <div class="card"><h3>Tujuannya apa?</h3><ul><li v-for="x in a.tujuan" :key="x">{{ x }}</li></ul></div>
-      <div class="card"><h3>Cari tahu</h3><ul><li v-for="x in a.cari" :key="x">{{ x }}</li></ul></div>
-      <div class="card"><h3>Selidiki</h3><ul><li v-for="x in a.selidiki" :key="x">{{ x }}</li></ul></div>
+      <div class="card">
+        <h3>Cari tahu: temuan</h3>
+        <ul class="nd"><li v-for="x in a.cari" :key="x.sumber + x.teks"><span class="src">{{ x.sumber }}</span> {{ x.teks }}</li></ul>
+      </div>
+      <div class="card">
+        <h3>Selidiki: uji dugaan tujuan</h3>
+        <div v-for="d in a.selidiki" :key="d.dugaan" class="dg">
+          <p class="small"><b>{{ d.dugaan }}</b> <span class="tag" :class="NILAI[d.nilai]">{{ d.nilai }}</span></p>
+          <ul class="nd small"><li v-for="b in d.bukti" :key="b.teks"><span :class="b.arah > 0 ? 'c-good' : b.arah < 0 ? 'c-strong' : 'muted'">{{ b.arah > 0 ? '▲' : b.arah < 0 ? '▼' : '●' }}</span> {{ b.teks }}</li></ul>
+        </div>
+        <p v-if="!a.selidiki.length" class="small muted">Belum ada bukti yang cukup untuk menguji dugaan tujuan.</p>
+      </div>
     </div>
 
     <div class="grid">
@@ -98,6 +118,9 @@ const tag = c => 't-' + (c === 'bad' ? 'strong' : c)
 .row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}.ttl{font-size:15px}.top p{margin:6px 0 0}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
 .grid.tri{margin-bottom:10px}
+.tj{margin-bottom:10px;border-left:4px solid var(--now-ink)}.tj .utama{font-weight:600;margin:4px 0}.tj p{margin:4px 0}
+.src{display:inline-block;font-size:11px;padding:0 6px;border:1px solid var(--rule);border-radius:9px;color:var(--ink-2);margin-right:4px}
+.dg{padding:4px 0;border-top:1px solid var(--rule)}.dg:first-of-type{border-top:0}.dg p{margin:2px 0}
 .card{border:1px solid var(--rule);padding:10px 12px;background:var(--sheet)}
 .card h3{font-size:12px;letter-spacing:.04em;text-transform:uppercase;margin:0 0 6px}.card h3.sub{margin-top:10px}
 .card ul{margin:0;padding-left:18px}.card li{margin:2px 0}.nd{list-style:none;padding-left:0 !important}

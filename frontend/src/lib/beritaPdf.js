@@ -1,6 +1,6 @@
 // Analisa berita/laporan terbaru satu emiten (PDF, A4 tegak, maks. 3 halaman) dengan format riset Seasonality:
-// 1 sampul berpita; 2 kesimpulan, tujuan, isi dokumen, dampak positif | negatif; 3 implikasi, cari tahu | selidiki,
-// konteks, tesis, pantauan, disclaimer.
+// 1 sampul berpita; 2 kesimpulan, Tujuannya apa?, Cari tahu (temuan), Selidiki (uji dugaan); 3 isi dokumen,
+// dampak positif | negatif, implikasi, tesis, pantauan, disclaimer ringkas.
 // Data dari analisaBerita() (lib/beritaTerbaru.js). Tanpa warna merah; faktor negatif memakai oranye.
 import { MUTED, GOOD, BAD, INK, PRIMER, GOLD, LINE, frame, heading, para, block } from './ihsgPdf.js'
 import { sampul } from './ihsgModelPdf.js'
@@ -8,7 +8,6 @@ import { pdfText } from './deckPdf.js'
 
 const BLN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 const tgl = d => { const x = new Date(d); return isNaN(x) ? String(d || '-') : `${x.getDate()} ${BLN[x.getMonth()]} ${x.getFullYear()}` }
-const rp = v => v == null ? '-' : 'Rp' + Math.round(v).toLocaleString('id-ID')
 const warna = cls => cls === 'good' ? GOOD : cls === 'bad' ? BAD : MUTED
 const potong = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n).replace(/\s+\S*$/, '') + '…' : s }
 const BAWAH = 270   // batas isi halaman (di atas garis kaki)
@@ -44,48 +43,48 @@ export async function beritaPdf(a, jsPDF) {
     catatan: `Disusun otomatis dari ${a.laporan ? 'keterbukaan informasi' : 'berita'} ${a.sumber} dan analisa kurasi Radar Backdoor. Bukan ajakan membeli atau menjual efek.`,
   })
 
-  // ---- Halaman 2: ringkasan dokumen dan dampak dua sisi.
-  doc.addPage(); frame(doc, 'Ringkasan dokumen', 2, seri); heading(doc, 'Ringkasan dokumen', 26)
+  // ---- Halaman 2: tujuan dan penyelidikannya (Tujuannya apa? -> Cari tahu -> Selidiki).
+  doc.addPage(); frame(doc, 'Tujuan dan penyelidikan', 2, seri); heading(doc, 'Tujuan dan penyelidikan', 26)
   let y = block(doc, 'Kesimpulan', a.kesimpulan, 37) + 1
-  y = sub(doc, 'Tujuannya apa?', 14, y + 1, 182); y = butir(doc, a.tujuan, 18, y, 178) + 1
-  if (a.ringkas) y = block(doc, 'Isi dokumen', potong(a.ringkas, 500), y + 2) + 1
-  if (a.poin.length) { y = sub(doc, 'Poin kunci', 14, y + 2, 182); y = butir(doc, a.poin.slice(0, 6), 18, y, 178) + 2 }
+  const t = a.tujuan
+  y = sub(doc, `Tujuannya apa?  (keyakinan ${t.keyakinan.toLowerCase()})`, 14, y + 2, 182, PRIMER)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(INK)
+  const ut = doc.splitTextToSize(pdfText(t.utama), 178); doc.text(ut, 18, y, { lineHeightFactor: 1.35 }); y += ut.length * 4.9 + 1
+  if (t.alasan) y = para(doc, t.alasan, 18, y, 178, 9)
+  if (t.alternatif.length) y = para(doc, `Kemungkinan lain: ${t.alternatif.join('; ')}.`, 18, y, 178, 8.5, MUTED)
+  y = sub(doc, 'Cari tahu: temuan dari dokumen dan data kurasi', 14, y + 2, 182)
+  y = butir(doc, a.cari.map(x => `[${x.sumber}] ${potong(x.teks, 260)}`), 18, y, 178, { size: 8.5 }) + 1
+  y = sub(doc, 'Selidiki: uji dugaan tujuan', 14, y + 2, 182, GOLD)
+  for (const g of a.selidiki) {
+    if (y > BAWAH - 12) break
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(g.skor >= 2 ? GOOD : g.skor === 1 ? GOLD : MUTED)
+    const h = doc.splitTextToSize(pdfText(`${g.dugaan} - ${g.nilai}`), 178); doc.text(h, 18, y, { lineHeightFactor: 1.3 }); y += h.length * 4.4 + 0.6
+    y = butir(doc, g.bukti.map(b => b.teks), 22, y, 174, { size: 8.5, tanda: '›' }) + 1.5
+  }
+  if (!a.selidiki.length) y = para(doc, 'Belum ada bukti yang cukup untuk menguji dugaan tujuan.', 18, y, 178, 9, MUTED)
 
-  // Dampak dua kolom: positif (hijau) | negatif (oranye).
-  y = sub(doc, `Dampak bagi pemegang saham publik: ${d.label}`, 14, y + 2, 182, warna(d.cls))
+  // ---- Halaman 3: isi dokumen, dampak dua sisi, implikasi, tesis, pantauan, disclaimer ringkas.
+  doc.addPage(); frame(doc, 'Dampak dan tesis', 3, seri); heading(doc, 'Dampak dan tesis', 26)
+  y = 37
+  if (a.ringkas) y = block(doc, 'Isi dokumen', potong(a.ringkas, 360), y) + 1
+  if (a.poin.length) y = butir(doc, a.poin.slice(0, 5), 18, y, 178, { size: 8.5 }) + 1
+  y = sub(doc, `Dampak bagi pemegang saham publik: ${d.label} (${a.sinyal.label.toLowerCase()})`, 14, y + 2, 182, warna(d.cls))
   if (d.catatan) y = para(doc, d.catatan, 14, y, 182, 9, MUTED)
   else {
     const y0 = y
-    const yl = butir(doc, d.positif.length ? d.positif : ['Tidak teridentifikasi dari isi dokumen.'], 14, sub(doc, 'Dampak positif', 14, y0, 88, GOOD), 88, { color: INK, tanda: '+' })
-    const yr = butir(doc, d.negatif.length ? d.negatif : ['Tidak teridentifikasi dari isi dokumen.'], 108, sub(doc, 'Dampak negatif / risiko', 108, y0, 88, BAD), 88, { color: INK, tanda: '-' })
-    y = Math.max(yl, yr) + 2
+    const yl = butir(doc, d.positif.length ? d.positif : ['Tidak teridentifikasi dari isi dokumen.'], 14, sub(doc, 'Dampak positif', 14, y0, 88, GOOD), 88, { size: 8.5, tanda: '+' })
+    const yr = butir(doc, d.negatif.length ? d.negatif : ['Tidak teridentifikasi dari isi dokumen.'], 108, sub(doc, 'Dampak negatif / risiko', 108, y0, 88, BAD), 88, { size: 8.5, tanda: '-' })
+    y = Math.max(yl, yr) + 1
   }
-  if (y < BAWAH - 14) y = para(doc, `Tingkat sinyal ${a.sinyal.label.toLowerCase()}: ${a.sinyal.why}`, 14, y + 1, 182, 8.5, MUTED)
-  if (a.fakta.length && y < BAWAH - 20) { y = sub(doc, 'Fakta aset dan transaksi', 14, y + 2, 182); butir(doc, a.fakta.slice(0, 4), 18, y, 178, { size: 8.5 }) }
-
-  // ---- Halaman 3: konteks, implikasi, tesis, pantauan, disclaimer ringkas.
-  doc.addPage(); frame(doc, 'Implikasi dan tesis', 3, seri); heading(doc, 'Implikasi dan tesis', 26)
-  y = 37
-  if (a.implikasi.length) { y = sub(doc, 'Implikasi', 14, y, 182); y = butir(doc, a.implikasi, 18, y, 178) + 2 }
-  {
-    const y0 = y + 1
-    const yl = butir(doc, a.cari, 14, sub(doc, 'Cari tahu', 14, y0, 88), 88, { size: 8.5, tanda: '?' })
-    const yr = butir(doc, a.selidiki, 108, sub(doc, 'Selidiki', 108, y0, 88, GOLD), 88, { size: 8.5, tanda: '>' })
-    y = Math.max(yl, yr) + 2
-  }
-  if (a.riwayat.length) {
-    y = sub(doc, 'Rangkaian keterbukaan sebelumnya', 14, y + 1, 182)
-    y = butir(doc, a.riwayat.slice(0, 3).map(r => `${tgl(r.tanggal)}: ${r.judul}${r.inti ? ' - ' + potong(r.inti, 140) : ''}`), 18, y, 178, { size: 8.5 }) + 2
-  }
-  if (a.tesis) {
-    y = block(doc, `Tesis analisa per ${tgl(a.tesis.asOf)} · ${a.tesis.sikap}`,
-      [potong(a.tesis.ringkas, 360), a.tesis.posisi, a.tesis.hargaAcuan != null ? `Harga acuan analisa ${rp(a.tesis.hargaAcuan)}.` : ''].filter(Boolean).join(' '), y + 3) + 1
-  } else y = block(doc, 'Tesis analisa', `${a.ticker} belum memiliki analisa kurasi; dampak dinilai hanya dari isi dokumen.`, y + 3) + 1
+  if (a.implikasi.length) { y = sub(doc, 'Implikasi', 14, y + 2, 182); y = butir(doc, a.implikasi, 18, y, 178, { size: 8.5 }) + 1 }
+  if (a.tesis) y = block(doc, `Tesis analisa per ${tgl(a.tesis.asOf)} · ${a.tesis.sikap}`, [potong(a.tesis.ringkas, 280), a.tesis.posisi].filter(Boolean).join(' '), y + 3) + 1
   // Pantauan dan tesis salah bila dua kolom.
-  const y0 = y + 2
-  const yl = butir(doc, a.pantau.slice(0, 3).map(p => potong(p, 180)), 14, sub(doc, 'Yang dipantau', 14, y0, 88), 88, { size: 8.5 })
-  const yr = butir(doc, (a.salahBila.length ? a.salahBila : ['Belum ada kriteria dari analisa kurasi.']).slice(0, 3).map(p => potong(p, 220)), 108, sub(doc, 'Tesis salah bila', 108, y0, 88, GOLD), 88, { size: 8.5 })
-  y = Math.max(yl, yr) + 3
+  if (y < BAWAH - 30) {
+    const y0 = y + 1
+    const yl = butir(doc, a.pantau.slice(0, 3).map(p => potong(p, 160)), 14, sub(doc, 'Yang dipantau', 14, y0, 88), 88, { size: 8 })
+    const yr = butir(doc, (a.salahBila.length ? a.salahBila : ['Belum ada kriteria dari analisa kurasi.']).slice(0, 2).map(p => potong(p, 180)), 108, sub(doc, 'Tesis salah bila', 108, y0, 88, GOLD), 88, { size: 8 })
+    y = Math.max(yl, yr) + 3
+  }
 
   // Disclaimer ringkas di bawah halaman terakhir.
   const dis = `Sumber: ${a.sumber}, ${tgl(a.tanggal)}${a.url ? ' (' + a.url + ')' : ''}. Tingkat sinyal, arah dampak, dan faktor positif/negatif dibaca otomatis dari judul, ringkasan, dan poin kunci dokumen; kaitan tesis dari analisa kurasi terakhir. `
