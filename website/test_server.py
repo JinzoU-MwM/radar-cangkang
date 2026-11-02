@@ -390,6 +390,36 @@ class LkTest(unittest.TestCase):
         self.assertIsNone(server.lk_parse(self.post("Bukti Iklan Laporan Keuangan", "Penyampaian Bukti Iklan Laporan Keuangan", "x", [])))
         self.assertIsNone(server.lk_parse(self.post("Laporan Bulanan Registrasi", "Laba Bersih Naik 5%", "x", [])))
 
+    def test_q3_murni_melemah(self):
+        # 9M naik 20% (100 -> 120) tetapi 1H naik lebih besar (60 -> 90): Q3 tahun lalu 40, Q3 kini 30 (turun 25%).
+        r9 = server.lk_parse(self.post("Laporan Keuangan", "Laba Bersih Naik 20% 9M26", "AKPI (A) x.",
+                                       ["Laba bersih naik 20% YoY dari Rp 100 miliar menjadi Rp 120 miliar"], sid=9))
+        r6 = server.lk_parse(self.post("Laporan Keuangan", "Laba Bersih Naik 50% 1H26", "AKPI (A) x.",
+                                       ["Laba bersih naik 50% YoY dari Rp 60 miliar menjadi Rp 90 miliar"], sid=6))
+        r3 = server.lk_parse(self.post("Laporan Keuangan", "Laba Bersih Naik 10% 3M26", "AKPI (A) x.",
+                                       ["Laba bersih naik 10% YoY dari Rp 40 miliar menjadi Rp 44 miliar"], sid=3))
+        k = server.lk_kuartal(r9, r6, r3)
+        self.assertAlmostEqual(k["q3"], 30e9)
+        self.assertAlmostEqual(k["q3Lalu"], 40e9)
+        self.assertEqual((k["yoy"], k["status"], k["melemah"]), (-25.0, "turun", True))
+        self.assertAlmostEqual(k["q2"], 46e9)
+        r6["tgl"], r3["tgl"] = "2026-07-30", "2026-04-30"
+        with unittest.mock.patch.object(server, "items_all", return_value=[]):
+            row = server.lk_api({x["id"]: x for x in (r9, r6, r3)})["rows"][0]
+        self.assertEqual(row["periode"], "9M26")
+        self.assertTrue(row["kuartal"]["melemah"])
+
+    def test_q3_berbalik_rugi(self):
+        r9 = server.lk_parse(self.post("Laporan Keuangan", "Rugi Bersih Berbalik Laba 9M26", "AKPI (A) x.",
+                                       ["Laba bersih berbalik dari rugi Rp 10 miliar menjadi laba Rp 5 miliar"], sid=19))
+        r9["laba"]["dari"], r9["laba"]["ke"] = {"v": 10e9, "mata": "Rp"}, {"v": 5e9, "mata": "Rp"}
+        r6 = server.lk_parse(self.post("Laporan Keuangan", "Rugi Bersih Turun 50% 1H26", "AKPI (A) x.",
+                                       ["Rugi bersih turun 50% YoY dari Rp 8 miliar menjadi Rp 4 miliar"], sid=16))
+        k = server.lk_kuartal(r9, r6, None)
+        self.assertAlmostEqual(k["q3"], 9e9)          # 5 - (-4)
+        self.assertAlmostEqual(k["q3Lalu"], -2e9)     # -10 - (-8)
+        self.assertEqual(k["status"], "berbalik")
+
     def test_api_satu_per_emiten(self):
         a = server.lk_parse(self.post("Laporan Keuangan", "Laba Bersih Naik 30% 6M26", "AKPI (A) x.", [], sid=1))
         b = server.lk_parse(self.post("Laporan Keuangan", "Laba Bersih Naik 40% 9M26", "AKPI (A) x.", [], sid=2))
