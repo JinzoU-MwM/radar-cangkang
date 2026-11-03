@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bankAsuransi, grupKonglo, terbaikPerKelompok } from './kelompokLk.js'
+import { bankAsuransi, grupKonglo, komoditas, terbaikPerKelompok } from './kelompokLk.js'
 
 const r = (t, pe, extra = {}) => ({ t, nama: '', kuartal: { pe }, ...extra })
 const semua = () => true
@@ -17,12 +17,27 @@ describe('kelompokLk', () => {
       r('SIMP', 3.1, { kelas: { ind: 'Plantations & Crops' } }),
       r('LSIP', 4.1, { kelas: { ind: 'Plantations & Crops' } }),
       r('MBAP', 5, { kelas: { sub: 'Coal' } }),
-      r('NAYZ', 9, { radar: true }),
+      r('NAYZ', 9, { radar: true, backdoor: true }),
+      r('KOTA', 6, { radar: true }),   // baru bersinyal di radar: bukan backdoor
       r('TLKM', 12, { kelas: { sub: 'Telecommunication' } }),
       r('BBRI', 2, { nama: 'Bank Rakyat Indonesia', kelas: { sub: 'Banks' } }),
     ]
     const h = Object.fromEntries(terbaikPerKelompok(rows, semua).map(g => [g.k, g.x?.t || null]))
-    expect(h).toEqual({ konglo: 'SIMP', cpo: 'LSIP', backdoor: 'NAYZ', tambang: 'MBAP', telko: 'TLKM', migas: null, properti: null, konsumen: null })
+    expect(h).toEqual({ konglo: 'SIMP', cpo: 'LSIP', backdoor: 'NAYZ', tambang: 'MBAP', telko: 'TLKM', konsumen: null })
+  })
+
+  it('SMAR masuk CPO walau profilnya produk makanan', () => {
+    // SIMP mengisi Konglo lebih dulu, sehingga SMAR (Sinar Mas) tersedia untuk CPO; bukan Konsumen.
+    const g = terbaikPerKelompok([r('SIMP', 3.1), r('SMAR', 3.87, { kelas: { ind: 'Food Products' } }), r('CSRA', 3.89)], semua)
+    expect(g.find(x => x.k === 'cpo').x.t).toBe('SMAR')
+    expect(g.find(x => x.k === 'konsumen').x).toBe(null)
+  })
+
+  it('tambang mencakup emas, nikel, batu bara', () => {
+    const g = terbaikPerKelompok([r('MDKA', 9), r('INCO', 8), r('PTBA', 7)], semua).find(x => x.k === 'tambang')
+    expect(g.x.t).toBe('PTBA')
+    expect(komoditas('MDKA')).toBe('Emas')
+    expect(komoditas('INCO')).toBe('Nikel')
   })
 
   it('telekomunikasi termasuk produsen kabel', () => {
