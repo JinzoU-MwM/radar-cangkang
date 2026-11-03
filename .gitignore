@@ -60,6 +60,9 @@ website/tsa-*.json
 # hasil POV terakhir (runtime)
 **/.pov.json
 **/.pov.tmp
+# klasifikasi sektor emiten (runtime)
+**/.sektor.json
+**/.sektor.tmp
 **/.lk-kuartal.json
 **/.lk-keystats.json
 **/.saham50.json
