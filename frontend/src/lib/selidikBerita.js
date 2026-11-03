@@ -131,7 +131,10 @@ export function selidikBerita(u, ctx = {}) {
   const c = konteks(u, ctx)
   // Jenis aksi dibaca dari isi (ringkasan + poin) lebih dulu; judul media sering memakai kata dramatis.
   const isi = `${u.summary || ''} ${u.points || ''}`
-  const jenis = (JENIS.find(([, rx]) => rx.test(isi)) || JENIS.find(([, rx]) => rx.test(c.text)) || ['lainnya'])[0]
+  // Transaksi saham orang dalam dikenali dari seluruh teks (judul media sering memuat pelakunya, ringkasan memuat aksinya).
+  const cocok = JENIS[0][1].test(c.text) ? JENIS[0]
+    : JENIS.find(([, rx]) => rx.test(isi)) || JENIS.find(([, rx]) => rx.test(c.text)) || ['lainnya']
+  const jenis = cocok[0]
 
   // Cari tahu: temuan dari setiap sumber.
   const cari = []
