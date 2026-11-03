@@ -3150,6 +3150,14 @@ def pd_kumpul(t: str, job: dict) -> dict:
     pmg = [s for s in (prof.get("shareholders") or []) + (prof.get("holders1") or [])
            if s.get("name") and not PD.PUBLIK_RX.search(s["name"])]
     nama_pmg = list(dict.fromkeys(s["name"] for s in sorted(pmg, key=lambda s: -PD._pct(s.get("pct")))))[:10]
+    # Orang dalam yang aktif bertransaksi 180 hari (mis. penjual bertahap) ikut ditelusuri jaringannya.
+    batas180 = (datetime.now() - timedelta(days=180)).strftime("%Y-%m-%d")
+    aktif: dict[str, float] = {}
+    for r in insider:
+        if r["date"] >= batas180:
+            aktif[r["name"]] = aktif.get(r["name"], 0) + abs(r.get("chg") or 0)
+    sudah = {PD._kunci(n) for n in nama_pmg}
+    nama_pmg += [n for n, v in sorted(aktif.items(), key=lambda kv: -kv[1]) if v >= 0.3 and PD._kunci(n) not in sudah][:4]
     # Perkiraan waktu setelah jumlah pemegang diketahui (disampaikan ke pengunjung).
     job["estimasi"] = int(min(PD_BATAS_DETIK, 60 + 25 * len(nama_pmg) + 120))
     tahap(3, f"Menelusuri jaringan {len(nama_pmg)} pemegang saham di emiten lain")
@@ -3217,6 +3225,7 @@ def pd_kumpul(t: str, job: dict) -> dict:
     hasil["grup"] = list(grup.values())
     hasil["radar"] = t in radar_tickers()
     hasil["durasi"] = int(time.time() - mulai)
+    hasil["versi"] = PD.VERSI
     return hasil
 
 
@@ -3241,7 +3250,7 @@ def pov_dalam_api(t: str, mulai: bool) -> dict:
                     "berjalan": int(time.time() - job["mulai"])}
         if job and job["status"] == "gagal" and not mulai:
             return {"status": "gagal", "galat": job.get("galat")}
-        if simpan and time.time() - simpan["at"] < PD_TTL:
+        if simpan and time.time() - simpan["at"] < PD_TTL and simpan["hasil"].get("versi") == PD.VERSI:
             return {"status": "selesai", "hasil": simpan["hasil"], "umur": int(time.time() - simpan["at"])}
         if not mulai:
             return {"status": "kosong"}

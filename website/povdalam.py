@@ -9,6 +9,8 @@ from __future__ import annotations
 import re
 from datetime import datetime, timedelta
 
+# Naikkan bila isi analisa berubah: hasil tersimpan versi lama ditarik ulang saat dibuka.
+VERSI = 2
 PUBLIK_RX = re.compile(r"MASYARAKAT|PUBLIK|PUBLIC|SCRIPLESS|SCRIP\b", re.I)
 # Kata kunci posting yang membahas struktur kepemilikan/aksi korporasi (dipakai mengurutkan relevansi).
 TOPIK_RX = re.compile(r"pengendali|akuisisi|diakuisisi|pemilik|grup|group|konsorsium|backdoor|inbreng|rights|hmetd|tender|"
@@ -110,33 +112,119 @@ def _riwayat(insider: list[dict], kini: datetime) -> list[dict]:
 
 
 def _insider180(insider: list[dict], kini: datetime) -> list[dict]:
+    """Transaksi 180 hari per pihak: perubahan persen, lembar, nilai, harga rata-rata, sisa saham, laju per bulan,
+    dan perkiraan berapa bulan lagi kepemilikan habis bila laju jual sama (seperti hitungan komunitas)."""
     batas = (kini - timedelta(days=180)).strftime("%Y-%m-%d")
     agg: dict = {}
-    for r in insider:
+    for r in sorted(insider, key=lambda r: r["date"]):
         if r["date"] < batas:
             continue
-        a = agg.setdefault(r["name"], {"nama": r["name"], "chg": 0.0, "n": 0, "role": r.get("role") or "", "nilai": 0.0, "akhir": r["date"]})
+        a = agg.setdefault(r["name"], {"nama": r["name"], "chg": 0.0, "n": 0, "role": r.get("role") or "", "nilai": 0.0,
+                                       "lembar": 0.0, "awal": r["date"], "akhir": r["date"], "sisa": None, "sisaPct": None, "tujuan": ""})
         a["chg"] += r.get("chg") or 0
         a["n"] += 1
-        a["nilai"] += (r.get("value") or 0) * (1 if (r.get("chg") or 0) > 0 else -1)
+        a["lembar"] += r.get("chgShares") or 0
+        a["nilai"] += abs(r.get("value") or 0)
         a["akhir"] = max(a["akhir"], r["date"])
-    return sorted((a for a in agg.values() if abs(a["chg"]) >= 0.01), key=lambda a: -abs(a["chg"]))[:10]
+        a["sisa"], a["sisaPct"] = r.get("curShares"), r.get("cur")
+        a["tujuan"] = r.get("purpose") or a["tujuan"]
+    out = []
+    for a in agg.values():
+        if abs(a["chg"]) < 0.01:
+            continue
+        bulan = max(1.0, (datetime.strptime(a["akhir"], "%Y-%m-%d") - datetime.strptime(a["awal"], "%Y-%m-%d")).days / 30.4)
+        a["laju"] = round(a["lembar"] / bulan) if a["lembar"] else None
+        a["harga"] = round(a["nilai"] / abs(a["lembar"])) if a["lembar"] and a["nilai"] else None
+        a["habisBulan"] = round(a["sisa"] / -a["laju"], 1) if a["laju"] and a["laju"] < 0 and a["sisa"] else None
+        out.append(a)
+    return sorted(out, key=lambda a: -abs(a["chg"]))[:10]
+
+
+RELASI_RX = re.compile(r"(?:pak|bu|bapak|ibu)?\s*([a-z][a-z'.-]+(?:\s+[a-z][a-z'.-]+){0,2})\s+(?:lewat|melalui|via|memiliki|punya|mengendalikan)\s+"
+                       r"(?:anak usaha(?:nya)?\s+)?((?:pt\.?\s+)?[a-z][a-z.&]+(?:\s+[a-z][a-z.&]+){0,3})", re.I)
+ANGKA_RX = re.compile(r"[^.!?]*\b(ipo|nilai buku|book value|bv|ekuitas|nominal|free ?float|harga (?:tender|pelaksanaan|wajar)|"
+                      r"tersisa|sisa|lembar|miliar|triliun|juta)\b[^.!?]*\d[^.!?]*[.!?]?", re.I)
+
+
+HUBUNG_RX = re.compile(r"\b(lewat|melalui|via|mengendalikan)\b", re.I)
+BATAS_KATA = NAMA_STOP | {"masih", "sebesar", "sekitar", "sedangkan", "serta", "bersama", "kemudian", "lalu", "ada", "saat", "ini",
+                          "itu", "tersebut", "sendiri", "anak", "usahanya", "usaha", "dimiliki", "milik", "nya", "ternyata", "namun", "tetapi",
+                          "hanya", "tidak", "bahkan", "kini", "menurut", "konon", "katanya"}
+
+
+def relasi_kalimat(teks: str, t: str = "") -> list[tuple[str, str]]:
+    """Pasangan (orang, badan usaha) per kalimat: "Henry Liem ... melalui PT Gitanirwana Mandrasakti, ...".
+    Orang = 2-3 kata tepat sebelum kata penghubung (tanpa kata umum/kode saham); badan = maks. 4 kata sesudahnya."""
+    out = []
+    for kal in re.split(r"[.!?;\n]+", teks):
+        for m in HUBUNG_RX.finditer(kal):
+            kiri = re.findall(r"[A-Za-z']+", kal[:m.start()])
+            org = []
+            for w in reversed(kiri):
+                if w.lower() in BATAS_KATA or w.upper() == t or len(w) < 2:
+                    break
+                org.insert(0, w.capitalize())
+                if len(org) == 3:
+                    break
+            if len(org) < 2:
+                # Subjek jauh sebelum kata penghubung ("Henry Liem tidak hanya menjual ..., tetapi juga melalui PT ...").
+                cand = re.findall(r"\b([A-Z][a-z']+(?:\s+[A-Z][a-z']+){1,3})\b", kal[:m.start()])
+                org = [w for w in (cand[-1].split() if cand else []) if w.lower() not in BATAS_KATA and w.upper() != t][-3:]
+            org = [w for w in org if w.lower() not in ("pak", "bu", "bapak", "ibu")]
+            kanan = re.findall(r"[A-Za-z.&']+|,", kal[m.end():])
+            bdn = []
+            for w in kanan:
+                if w == "," or (w.lower() in BATAS_KATA and w.lower() != "pt") or w.upper() == t:
+                    break
+                bdn.append(w.upper())
+                if len(bdn) == 5:
+                    break
+            if len(org) >= 2 and len([w for w in bdn if w != "PT"]) >= 1 and len(" ".join(bdn)) >= 5:
+                out.append((" ".join(org), " ".join(bdn)))
+    return out
+
+
+def tentang(p: dict, t: str) -> bool:
+    """Posting membahas saham ini secara khusus, bukan sekadar menyebut di antara banyak kode."""
+    kode = re.findall(r"\$([A-Z]{4})\b", p["txt"])
+    lain = {k for k in kode if k != t}
+    return (p["txt"][:80].find("$" + t) >= 0 or kode.count(t) >= 2) and len(lain) <= 4
 
 
 def _komunitas(posts: list[dict], pemegang: list[dict], pengurus: list[str], jaringan_nama: list[str], t: str) -> dict:
     def skor(p):
-        return len(p["txt"]) / 300 + (p.get("likes") or 0) / 15 + 2 * len(TOPIK_RX.findall(p["txt"]))
-    pilih = sorted((p for p in posts if len(p["txt"]) >= 120), key=lambda p: -skor(p))[:8]
+        return len(p["txt"]) / 300 + (p.get("likes") or 0) / 15 + 2 * len(TOPIK_RX.findall(p["txt"])) + (5 if tentang(p, t) else 0)
+    # Akun bot/rekap otomatis (banyak posting berformat sama) tidak dihitung sebagai analisa komunitas.
+    per_akun: dict = {}
+    for p in posts:
+        per_akun[p.get("user")] = per_akun.get(p.get("user"), 0) + 1
+    posts = [p for p in posts if not re.search(r"STOCKBOT|ANALYTICS|MARKET PULSE|SIGNAL BOT", p["txt"][:120])]
+    fokus = [p for p in posts if tentang(p, t)]
+    pilih = sorted((p for p in fokus if len(p["txt"]) >= 120), key=lambda p: -skor(p))[:8]
     nama: dict = {}
     terkait: dict = {}
     dikenal = [p["name"] for p in pemegang] + pengurus + jaringan_nama
-    for p in posts:
+    for p in fokus:
         for n in nama_disebut(p["txt"]):
+            if " " not in n:
+                continue   # satu kata (mis. "Henry") terlalu umum untuk dicocokkan
             e = nama.setdefault(n, {"nama": n, "n": 0, "terverifikasi": any(_cocok_nama(n, k) for k in dikenal)})
             e["n"] += 1
         for s in set(re.findall(r"\$([A-Z]{4})\b", p["txt"])) - {t}:
             terkait[s] = terkait.get(s, 0) + 1
-    return {"posts": [{**p, "txt": p["txt"][:700]} for p in pilih],
+    # Rantai orang -> badan usaha yang disebut komunitas ("Henry Liem melalui PT Gitanirwana Mandrasakti").
+    relasi, klaim = [], []
+    for p in fokus:
+        for org, bdn in relasi_kalimat(p["txt"], t):
+            ok = any(_cocok_nama(bdn, k) for k in dikenal) or any(_cocok_nama(org, k) for k in dikenal)
+            if not any(r["orang"] == org and r["badan"] == bdn for r in relasi):
+                relasi.append({"orang": org, "badan": bdn, "terverifikasi": ok, "user": p.get("user"), "url": p.get("url")})
+        for m in ANGKA_RX.finditer(p["txt"]):
+            k = re.sub(r"\s+", " ", m.group(0)).strip()
+            if 25 <= len(k) <= 260 and not any(k == c["teks"] for c in klaim):
+                klaim.append({"teks": k, "user": p.get("user"), "d": p.get("d"), "url": p.get("url"), "likes": p.get("likes") or 0})
+    klaim.sort(key=lambda c: -c["likes"])
+    return {"posts": [{**p, "txt": p["txt"][:900]} for p in pilih], "relasi": relasi[:12], "klaim": klaim[:10], "fokus": len(fokus),
             "nama": sorted(nama.values(), key=lambda e: (-e["terverifikasi"], -e["n"]))[:12],
             "terkait": [{"t": s, "n": n} for s, n in sorted(terkait.items(), key=lambda z: -z[1])[:10]],
             "jumlah": len(posts)}
@@ -166,7 +254,10 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
     # Terafiliasi (bukan free float menurut BEI): >= 5%, pengendali, pengurus, dan anggota keluarga pemegang tersebut.
     total_np = round(sum(p["pct"] for p in non_publik if p["pct"] >= 5 or p["pengendali"] or p["pengurus"] or p["keluarga"]), 2)
     ff_efektif = round(max(0.0, 100 - total_np), 2)
-    jar_rows, bersama = _jaringan(t, non_publik[:6], d.get("jaringan") or {})
+    # Jaringan: pemegang saham + orang dalam aktif yang ikut ditelusuri server (nama ada di data jaringan).
+    sasaran = non_publik[:10] + [{"name": n, "pct": 0.0} for n in (d.get("jaringan") or {})
+                                 if not any(_kunci(n) == _kunci(p["name"]) for p in non_publik[:10])]
+    jar_rows, bersama = _jaringan(t, sasaran, d.get("jaringan") or {})
     riwayat = _riwayat(d.get("insider") or [], kini)
     ins = _insider180(d.get("insider") or [], kini)
     batas180 = (kini - timedelta(days=180)).strftime("%Y-%m-%d")
@@ -204,8 +295,18 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
         tambah("Orang dalam / pemegang utama menambah kepemilikan (keyakinan terhadap prospek)",
                [f"{a['nama']}{' (' + a['role'] + ')' if a['role'] else ''} +{a['chg']:.2f} poin dalam {a['n']} transaksi (terakhir {a['akhir']})" for a in beli[:4]], 1)
     if jual:
-        tambah("Pemegang utama mengurangi kepemilikan (perlu dicek alasannya)",
-               [f"{a['nama']} {a['chg']:.2f} poin dalam {a['n']} transaksi (terakhir {a['akhir']})" for a in jual[:4]], 0)
+        bk = []
+        for a in jual[:4]:
+            x = f"{a['nama']} {a['chg']:.2f} poin dalam {a['n']} transaksi (terakhir {a['akhir']})"
+            if a.get("laju"):
+                x += f"; rata-rata {abs(a['laju']) / 1e6:.1f} juta lembar/bulan"
+            if a.get("sisa"):
+                x += f"; sisa {a['sisa'] / 1e6:.1f} juta lembar ({(a['sisaPct'] or 0):.2f}%)"
+            if a.get("habisBulan"):
+                x += f"; habis dalam ± {a['habisBulan']:.0f} bulan bila laju sama"
+            bk.append(x)
+        bk += [f"Komunitas: {r['orang']} melalui {r['badan']} (@{r['user']})" for r in kom["relasi"] if any(_cocok_nama(r["orang"], a["nama"]) for a in jual)][:2]
+        tambah("Pemegang utama melepas saham bertahap (perlu dicek alasannya: kebutuhan dana, pemenuhan free float, atau keluar)", bk, 0)
     if jenis180 & {"rights", "kbli"}:
         tambah("Aksi korporasi lanjutan: penambahan modal, injeksi aset, atau usaha baru",
                [f"{a['date']}: {a['judul']}" + (f" ({a['inti'][:140]})" if a["inti"] else "") for a in aksi if set(a["jenis"]) & {"rights", "kbli"}][:4], 1)

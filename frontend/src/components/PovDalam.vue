@@ -10,6 +10,17 @@ const props = defineProps({ ticker: { type: String, required: true } })
 const st = ref(null), err = ref(''), busyPdf = ref(false)
 let timer = null
 const hasil = computed(() => st.value?.status === 'selesai' ? st.value.hasil : null)
+// Informasi publik: yang cocok dengan data kepemilikan dulu, lalu rumor/klaim beserta sumbernya.
+const verif = computed(() => {
+  const k = hasil.value?.komunitas || {}
+  return [...(k.relasi || []).filter(r => r.terverifikasi).map(r => ({ k: r.orang + r.badan, teks: `${r.orang} melalui ${r.badan} (@${r.user})`, url: r.url })),
+    ...(k.nama || []).filter(e => e.terverifikasi).map(e => ({ k: e.nama, teks: `${e.nama}: tercatat di data pemegang saham/pengurus (disebut ${e.n}x)` }))]
+})
+const rumor = computed(() => {
+  const k = hasil.value?.komunitas || {}
+  return [...(k.relasi || []).filter(r => !r.terverifikasi).map(r => ({ k: r.orang + r.badan, teks: `${r.orang} melalui ${r.badan} (@${r.user})`, url: r.url })),
+    ...(k.klaim || []).slice(0, 8).map(c => ({ k: c.teks, teks: `${c.teks} (@${c.user}, ${fmtDate(c.d)})`, url: c.url }))]
+})
 const p2 = v => v == null ? '–' : fmt(v, 2) + '%'
 const menit = s => s >= 90 ? `± ${Math.round(s / 60)} menit` : `± ${Math.max(10, Math.round(s / 10) * 10)} detik`
 
@@ -98,7 +109,8 @@ async function unduh() {
       <p v-if="!hasil.riwayat.length" class="small muted">Tidak ada perubahan kepemilikan besar.</p>
       <ul class="small"><li v-for="r in hasil.riwayat" :key="r.date + r.nama">{{ fmtDate(r.date) }} · {{ r.teks }}</li></ul>
       <ul v-if="hasil.insider.length" class="small"><li v-for="x in hasil.insider" :key="x.nama">{{ x.nama }}<span v-if="x.role"> ({{ x.role }})</span>:
-        <b :class="x.chg > 0 ? 'c-good' : 'c-strong'">{{ x.chg > 0 ? '+' : '' }}{{ fmt(x.chg, 2) }} poin</b>, {{ x.n }} transaksi, terakhir {{ fmtDate(x.akhir) }}</li></ul>
+        <b :class="x.chg > 0 ? 'c-good' : 'c-strong'">{{ x.chg > 0 ? '+' : '' }}{{ fmt(x.chg, 2) }} poin</b>, {{ x.n }} transaksi, terakhir {{ fmtDate(x.akhir) }}<template v-if="x.lembar">; {{ fmt(x.lembar / 1e6, 1) }} juta lembar<template v-if="x.harga"> @ ±Rp{{ fmt(x.harga, 0) }}</template></template><template v-if="x.sisa">;
+          sisa {{ fmt(x.sisa / 1e6, 1) }} juta lembar ({{ p2(x.sisaPct) }})</template><b v-if="x.habisBulan">; habis ± {{ Math.round(x.habisBulan) }} bulan lagi bila laju sama</b></li></ul>
 
       <template v-if="hasil.kronologi?.length">
         <h3>Kronologi</h3>
@@ -109,17 +121,22 @@ async function unduh() {
       <p v-if="!hasil.aksi.length" class="small muted">Tidak ada keterbukaan aksi korporasi yang terbaca.</p>
       <ul class="small"><li v-for="x in hasil.aksi" :key="x.url + x.judul">{{ fmtDate(x.date) }} · <a :href="x.url" target="_blank" rel="noopener">{{ x.judul }}</a><span v-if="x.inti" class="muted"> — {{ x.inti }}</span></li></ul>
 
-      <h3>Diskusi komunitas Stockbit ({{ hasil.komunitas.jumlah }} posting publik)</h3>
-      <p v-if="hasil.komunitas.nama.length" class="small">Tokoh disebut:
-        <span v-for="e in hasil.komunitas.nama" :key="e.nama" class="tag" :class="e.terverifikasi ? 't-good' : 't-calm'" :title="e.terverifikasi ? 'Cocok dengan data pemegang saham/pengurus' : 'Belum terkonfirmasi data'">{{ e.nama }} ×{{ e.n }}</span></p>
-      <p v-if="hasil.komunitas.terkait.length" class="small">Saham disebut bersamaan:
-        <span v-for="x in hasil.komunitas.terkait" :key="x.t" class="tag t-calm">{{ x.t }} ×{{ x.n }}</span></p>
-      <ul class="small"><li v-for="p in hasil.komunitas.posts" :key="p.url"><a :href="p.url" target="_blank" rel="noopener">@{{ p.user || '–' }} · {{ fmtDate(p.d) }}</a> · {{ p.likes }} suka — {{ p.txt }}</li></ul>
+      <h3>Informasi dari sumber publik</h3>
+      <template v-if="verif.length || rumor.length">
+        <p class="small"><b class="c-good">Terverifikasi</b> (cocok dengan data pemegang saham/pengurus):</p>
+        <ul class="small"><li v-for="v in verif" :key="v.k">{{ v.teks }} <a v-if="v.url" :href="v.url" target="_blank" rel="noopener">sumber</a></li>
+          <li v-if="!verif.length" class="muted">Belum ada informasi publik yang cocok dengan data kepemilikan.</li></ul>
+        <template v-if="rumor.length">
+          <p class="small"><b>Rumor / klaim belum terverifikasi</b> (cek di dokumen sumber):</p>
+          <ul class="small muted"><li v-for="v in rumor" :key="v.k">{{ v.teks }} <a :href="v.url" target="_blank" rel="noopener">sumber</a></li></ul>
+        </template>
+      </template>
+      <p v-else class="small muted">Belum ada informasi publik yang bisa diambil untuk saham ini.</p>
 
       <h3>Yang perlu diselidiki</h3>
       <ol class="small"><li v-for="s in hasil.selidiki" :key="s">{{ s }}</li></ol>
       <p v-if="hasil.catatan?.length" class="small muted">Catatan: {{ hasil.catatan.join(' · ') }}</p>
-      <p class="small muted">Disusun otomatis dari data Stockbit; klaim komunitas yang belum terkonfirmasi perlu diverifikasi di dokumen sumber. Bukan rekomendasi beli/jual.</p>
+      <p class="small muted">Disusun otomatis dari data Stockbit; rumor dan klaim yang belum terverifikasi perlu dicek di dokumen sumber. Bukan rekomendasi beli/jual.</p>
     </template>
   </div>
 </template>

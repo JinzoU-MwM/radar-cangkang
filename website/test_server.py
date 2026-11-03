@@ -576,8 +576,9 @@ class PovDalamTest(unittest.TestCase):
                          "PT Tiara Intimahkota": [{"symbol": "LSIP", "pct": 1.2}]},
             "laporan": [{"date": "2026-10-20", "title": "Rencana penambahan modal HMETD", "jenis": ["rights"], "inti": "", "url": "u"}],
             "posts": [{"user": "athira", "d": "2026-10-22", "likes": 40, "url": "p",
-                       "txt": "Saat ini pak henry pribadi, pak risjad dan pak henry liem ada di akpi lewat napan (nawa panduta). "
-                              "Pak henry pribadi bersama pak risjad dulu akuisisi $LSIP. Pendiri dan keluarga 95,72% free float."}],
+                       "txt": "$AKPI Saat ini pak henry pribadi, pak risjad dan pak henry liem ada di akpi lewat napan (nawa panduta). "
+                              "Pak henry pribadi bersama pak risjad dulu akuisisi $LSIP. Pendiri dan keluarga 95,72% free float. "
+                              "Henry Liem melalui PT Gitanirwana Mandrasakti masih menjual, tersisa 26 juta lembar."}],
             "lk": {"kuartal": {"tumbuh": True, "q": 3}}}, datetime(2026, 11, 3)
 
     def test_analisa(self):
@@ -594,6 +595,9 @@ class PovDalamTest(unittest.TestCase):
         nama = {e["nama"]: e["terverifikasi"] for e in r["komunitas"]["nama"]}
         self.assertIn("Henry Pribadi", nama)
         self.assertEqual(r["komunitas"]["terkait"][0]["t"], "LSIP")
+        rel = r["komunitas"]["relasi"]
+        self.assertTrue(any(x["orang"] == "Henry Liem" and "GITANIRWANA" in x["badan"] and x["terverifikasi"] for x in rel), rel)
+        self.assertTrue(any("26 juta lembar" in c["teks"] for c in r["komunitas"]["klaim"]))
 
     def test_keluarga(self):
         import povdalam
