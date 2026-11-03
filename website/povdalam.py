@@ -9,8 +9,10 @@ from __future__ import annotations
 import re
 from datetime import datetime, timedelta
 
+import povarah as PA
+
 # Naikkan bila isi analisa berubah: hasil tersimpan versi lama ditarik ulang saat dibuka.
-VERSI = 5
+VERSI = 6
 PUBLIK_RX = re.compile(r"MASYARAKAT|PUBLIK|PUBLIC|SCRIPLESS|SCRIP\b", re.I)
 # Kata kunci posting yang membahas struktur kepemilikan/aksi korporasi (dipakai mengurutkan relevansi).
 TOPIK_RX = re.compile(r"pengendali|akuisisi|diakuisisi|pemilik|grup|group|konsorsium|backdoor|inbreng|rights|hmetd|tender|"
@@ -513,6 +515,48 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
     kron = [{"date": r["date"], "jenis": "kepemilikan", "teks": r["teks"]} for r in riwayat]
     kron += [{"date": a["date"], "jenis": "aksi", "teks": a["judul"] + (f" — {a['inti'][:160]}" if a["inti"] else "")} for a in aksi]
     kron = sorted((k for k in kron if k["date"]), key=lambda k: k["date"], reverse=True)[:25]
+
+    # ---- Membaca arah pengendali: bandarmologi, jejak volume, preseden grup, sudut yang terlewat, skenario & target.
+    bars = d.get("bars") or []
+    bandar = PA.bandarmologi(d.get("brokers") or {}, bars, harga)
+    volume = PA.jejak_volume(bars, kron)
+    pres = PA.preseden(d.get("grupAksi") or [])
+    p0 = non_publik[0] if non_publik else None
+    konglo = [n for n in nama_terkait if PA.KONGLO_NAMA.search(n)]
+    pengendali_teks = ""
+    if p0:
+        pengendali_teks = (f"Siapa pengendalinya: {p0['name']} ({p0['pct']:.2f}%)"
+                           + (f", pemilik manfaat akhir {', '.join(prof.get('beneficiary') or [])}" if prof.get("beneficiary") else "")
+                           + "".join(f"; keluarga {k['nama']} {k['pct']:.2f}% ({len(k['anggota'])} orang)" for k in kel)
+                           + f". Pihak terafiliasi {total_np:.2f}%, free float efektif {ff_efektif:.2f}%"
+                           + (f"; nama grup besar di struktur: {', '.join(dict.fromkeys(konglo))[:160]}" if konglo else "") + ".")
+    jar_teks = "; ".join(f"{r['nama']} juga di {', '.join(e['t'] + ' ' + format(e['pct'], '.1f') + '%' for e in r['emiten'][:5])}"
+                         for r in jar_rows if r["emiten"])
+    akt = [f"{a['nama']} {'menambah' if a['chg'] > 0 else 'melepas'} {abs(a['chg']):.2f} poin" for a in ins[:3]]
+    akt += [f"{a['date']}: {a['judul'][:80]}" for a in aksi[:2]]
+    vol_teks = ""
+    if volume:
+        v = volume[0]
+        vol_teks = (f"Jejak volume: {len(volume)} hari lonjakan >= 3x rata-rata dalam setahun; terbesar {v['kali']}x pada {v['d']}"
+                    + (f", sebelum: {v['sebelum']}" if v["sebelum"] else "") + ".")
+    terv = [r for r in kom.get("relasi") or [] if r["terverifikasi"]]
+    didukung = [k for k in klaim if k["status"] == "didukung data"]
+    publik_teks = ""
+    if terv or didukung:
+        publik_teks = "Info publik yang terbukti: " + "; ".join(
+            [f"{r['orang']} melalui {r['badan']}" for r in terv[:3]] + [f"“{k['klaim'][:90]}” (@{k['user']})" for k in didukung[:3]]) + "."
+    c = {"ff": ff, "ffEfektif": ff_efektif, "afiliasi": total_np, "bandar": bandar, "preseden": pres, "ambil": ambil, "lepas": lepas,
+         "rights": "rights" in jenis180, "kbli": "kbli" in jenis180, "mcap": stats.get("marketCap"), "pbv": pbv, "tumbuh": kw.get("tumbuh"),
+         "insiderBeli": [a for a in ins if a["chg"] > 0], "insiderJual": [a for a in ins if a["chg"] < 0],
+         "habisBulan": any(a.get("habisBulan") for a in ins), "bersama": bersama, "grupN": sum(1 for r in jar_rows if len(r["emiten"]) >= 1),
+         "konglo": konglo, "pengendaliTeks": pengendali_teks, "jaringanTeks": ("Jejak di emiten lain: " + jar_teks + ".") if jar_teks else "",
+         "aktivitasTeks": ("Yang sedang dilakukan: " + "; ".join(akt) + ".") if akt else "", "volumeTeks": vol_teks, "publikTeks": publik_teks,
+         "harga": harga, "insider": ins, "ekuitas": met.get("equity"), "insiderRaw": d.get("insider") or [], "bvps": bvps, "high52": hi,
+         "aksi": aksi, "pengurusBaru": next((a["date"] for a in aksi if "direksi" in a["jenis"]), ""),
+         "pemainBaru": [f"{r['nama']} masuk {r['cur']:.2f}% ({r['date']})" for r in riwayat if r["prev"] == 0 and r["cur"] >= 5]}
+    arah_ = PA.arah(c)
+    sudut = PA.sudut_lain(c)
+    target = PA.target_harga(c)
     ringkas = [f"{t} · {d.get('nama') or ''}".strip(" ·"),
                " / ".join(x for x in (prof.get("sector"), prof.get("industry")) if x)]
     if non_publik:
@@ -532,6 +576,7 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
         "kinerja": {"periode": lk.get("periode"), "judul": lk.get("judul"), "kuartal": kw or None, "pbv": pbv, "per": met.get("per"),
                     "laba": met.get("netIncomeTtm"), "pendapatan": met.get("revenueTtm"), "ekuitas": met.get("equity"), "bvps": met.get("bvps")},
         "komunitas": kom, "dugaan": dugaan, "selidiki": selidiki, "skenario": skenario, "kronologi": kron, "broker": bk, "klaim": klaim, "beritaLuar": (d.get("beritaLuar") or [])[:25],
+        "arah": arah_, "bandarmologi": bandar, "volume": volume, "preseden": pres, "sudut": sudut, "target": target,
         "radarSikap": {"sikap": pa.get("sikap"), "ringkas": (pa.get("ringkas") or "")[:400], "nilaiWajar": pa.get("nilaiWajar")} if pa.get("sikap") else None,
         "sumber": {"pemegang": len(semua), "jaringan": sum(len(r["emiten"]) for r in jar_rows), "keterbukaan": len(d.get("laporan") or []),
                    "berita": len(d.get("berita") or []), "posting": kom["jumlah"], "insider": len(d.get("insider") or [])},

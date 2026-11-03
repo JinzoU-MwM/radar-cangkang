@@ -37,6 +37,7 @@ from pathlib import Path
 
 import brokerpola as BP
 import povdalam as PD
+import povarah as PA
 import beritapasar as BN
 import ihsg as IH
 import astro as AS
@@ -3247,20 +3248,42 @@ def pd_kumpul(t: str, job: dict) -> dict:
     relevan = re.compile(r"\b(" + "|".join([t] + [re.escape(w) for w in kunci]) + r")\b|saham|tbk|emiten|bursa|bisnis|grup|group|"
                          r"perusahaan|investasi|akuisisi|direksi|komisaris|kontrak|tambang|batu ?bara|pengendali|konglomerat|taipan", re.I)
     berita_luar = [b for b in berita_luar if relevan.search(b["judul"])]
-    tahap(9, "Pola broker 30 hari")
-    bk = None
+    tahap(9, "Bandarmologi (broker 5/30/90 hari), jejak volume, dan preseden grup")
+    bk, brokers = None, {}
+    for hari in (5, 30, 90):
+        try:
+            dari = (datetime.now() - timedelta(days=hari * 7 // 5 + 2)).strftime("%Y-%m-%d")
+            resp = sb_fetch(f"/marketdetectors/{t}?from={dari}&to={datetime.now().strftime('%Y-%m-%d')}"
+                            "&transaction_type=TRANSACTION_TYPE_NET&market_board=MARKET_BOARD_REGULER"
+                            "&investor_type=INVESTOR_TYPE_ALL&limit=25")
+            brokers[hari] = PA.broker_parse(resp)
+            if hari == 30:
+                bk = s50_broker_parse(resp)
+        except Exception as e:
+            catatan.append(f"Broker {hari} hari gagal: {e}"[:160])
     try:
-        dari = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
-        bk = s50_broker_parse(sb_fetch(f"/marketdetectors/{t}?from={dari}&to={datetime.now().strftime('%Y-%m-%d')}"
-                                       "&transaction_type=TRANSACTION_TYPE_NET&market_board=MARKET_BOARD_REGULER"
-                                       "&investor_type=INVESTOR_TYPE_ALL&limit=10"))
+        bars = get_ohlc(t, "1y")
     except Exception as e:
-        catatan.append(f"Pola broker gagal: {e}"[:160])
+        bars = []
+        catatan.append(f"Harga & volume harian gagal: {e}"[:160])
+    # Preseden: aksi korporasi 2 tahun di emiten lain milik pemegang yang sama (pola yang mungkin diulang).
+    grup_aksi = []
+    for s in list(grup)[:4]:
+        if sisa() < 60 or not cfg.get("url"):
+            break
+        try:
+            for u in get_reports({**cfg, "days": 730}, s, max_pages=3):
+                j = kandidat_sigs(u.get("title", ""))
+                if j:
+                    grup_aksi.append({"t": s, "date": u.get("date"), "judul": u.get("title"), "jenis": j})
+        except Exception as e:
+            catatan.append(f"Preseden {s} gagal: {e}"[:120])
     tahap(10, "Menyusun analisa")
     lk = next((r for r in lk_api_cache().get("rows") or [] if r["t"] == t), {})
     hasil = PD.analyze({"t": t, "nama": nama_semua().get(t, ""), "profil": prof, "insider": insider, "jaringan": jaringan,
                         "laporan": laporan, "berita": berita, "posts": posts, "lk": lk, "catatan": catatan, "broker": bk,
-                        "pandangan": _json_berkas("pandangan-analis.json").get(t), "beritaLuar": berita_luar})
+                        "pandangan": _json_berkas("pandangan-analis.json").get(t), "beritaLuar": berita_luar,
+                        "brokers": {k: v for k, v in brokers.items() if v}, "bars": bars, "grupAksi": grup_aksi})
     hasil["grup"] = list(grup.values())
     hasil["radar"] = t in radar_tickers()
     hasil["durasi"] = int(time.time() - mulai)
