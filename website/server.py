@@ -2742,6 +2742,8 @@ def lk_loop() -> None:
 # Universe: Key Stats (kapitalisasi / jumlah saham) + data harga Recovery + radar; harga pasti dari grafik Stockbit.
 # Dibangun di latar (harian) ke .saham50.json; /api/saham50 membaca berkas itu.
 S50_PATH = ROOT / ".saham50.json"
+# Naikkan bila cara penyusunan berubah: daftar tersimpan versi lama disusun ulang otomatis setelah deploy.
+S50_VERSI = 2
 # Riwayat skor harian Saham 50 ({tanggal: {kode: skor}}, 60 hari) untuk perubahan skor dibanding minggu lalu.
 S50_RIWAYAT_PATH = ROOT / ".saham50-riwayat.json"
 S50_BATAS = 50
@@ -3011,7 +3013,7 @@ def saham50_build() -> dict:
         s50_riwayat(rows, hari_ini.date())
     except OSError as e:
         print(f"[saham50] riwayat gagal: {e}", file=sys.stderr)
-    return {"updated": hari_ini.strftime("%Y-%m-%d %H:%M"), "batas": S50_BATAS, "n": len(rows), "rows": rows}
+    return {"updated": hari_ini.strftime("%Y-%m-%d %H:%M"), "batas": S50_BATAS, "n": len(rows), "rows": rows, "versi": S50_VERSI}
 
 
 def saham50_api() -> dict:
@@ -3038,6 +3040,11 @@ def s50_data_kosong() -> bool:
     """Daftar tersimpan disusun saat Key Stats belum tersedia (valuasi kosong hampir semua) padahal kini sudah ada."""
     try:
         rows = json.loads(S50_PATH.read_text(encoding="utf-8")).get("rows") or []
+    except (OSError, ValueError):
+        return False
+    try:
+        if json.loads(S50_PATH.read_text(encoding="utf-8")).get("versi") != S50_VERSI:
+            return True
     except (OSError, ValueError):
         return False
     if not rows or sum(1 for x in rows if (x.get("valuasi") or {}).get("pbv") is not None) >= len(rows) * 0.2:
