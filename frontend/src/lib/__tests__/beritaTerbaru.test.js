@@ -75,6 +75,11 @@ describe('transaksi saham orang dalam', () => {
     expect(a.dampak.negatif).toEqual([])
     expect(a.tujuan.utama).toMatch(/menambah kepemilikan/)
   })
+  it('teks asli RELF: "aksi pembelian saham" oleh Komisaris Utama', () => {
+    const a = analisaBerita({ ...u, summary: 'EmitenNews.com - Komisaris Utama PT Graha Mitra Asia Tbk. (RELF), Achmad Machlus Sadat terpantau melakukan aksi pembelian saham pertama kalinya di saham milik perseroan.' }, {})
+    expect(a.jenisAksi).toBe('insider')
+    expect(a.tujuan.utama).toMatch(/menambah kepemilikan/)
+  })
   it('penjualan oleh direktur netral', () => {
     const a = analisaBerita({ ...u, title: 'Direktur ABCD menjual 2 persen saham', summary: 'Direktur ABCD melepas 2% saham.' }, {})
     expect(a.dampak.label).toBe('Netral')
