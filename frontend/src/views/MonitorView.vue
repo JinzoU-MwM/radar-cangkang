@@ -329,9 +329,9 @@ onMounted(() => autoRefresh('stockbit'))
     </header>
 
     <div v-if="luarRadar.length" class="luar" role="region" aria-label="Saham di luar radar">
-      <span class="small muted">Di luar radar — lihat berita terakhir & analisa:</span>
-      <RouterLink v-for="k in luarRadar" :key="k.t" class="pill sm" :to="{ path: '/emiten/' + k.t, query: { tab: 'berita' } }" :title="k.nama">
-        <b>{{ k.t }}</b><span v-if="k.nama" class="muted"> {{ k.nama.replace(/ Tbk\.?$/i, '') }}</span></RouterLink>
+      <span class="lbl">Di luar radar — lihat berita terakhir & analisa:</span>
+      <RouterLink v-for="k in luarRadar" :key="k.t" class="sar" :to="{ path: '/emiten/' + k.t, query: { tab: 'berita' } }" :title="k.nama">
+        <b>{{ k.t }}</b><span v-if="k.nama">{{ k.nama.replace(/ Tbk\.?$/i, '') }}</span></RouterLink>
     </div>
 
     <AgendaBlock v-if="set !== 'hari'" :note="agendaNote" :can-mark="nNew > 0" @seen="markSeen" />
@@ -488,7 +488,13 @@ onMounted(() => autoRefresh('stockbit'))
 </template>
 
 <style scoped>
-.luar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 10px}
+.luar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 12px}
+.luar .lbl{font-size:14px;color:var(--ink-2);width:100%}
+/* Saran pencarian dibuat besar dan kontras agar mudah dibaca dan diklik. */
+.sar{display:inline-flex;align-items:baseline;gap:8px;padding:8px 14px;border:1px solid var(--rule);border-left:4px solid var(--now-ink);
+  border-radius:8px;background:var(--sheet);color:var(--ink);text-decoration:none;font-size:15px}
+.sar b{font-size:16px;letter-spacing:.02em}.sar span{color:var(--ink-2);font-size:14px}
+.sar:hover,.sar:focus-visible{border-color:var(--now-ink);background:var(--paper, var(--sheet))}
 .mon{display:flex;flex-direction:column;gap:14px}
 .near{margin:-6px 0 0;padding:6px 10px;border-left:3px solid var(--warn);background:var(--warn-bg);line-height:1.7}
 .near summary{cursor:pointer}
