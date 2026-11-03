@@ -54,10 +54,12 @@ const nada = x => ['bagus', 'berbalik', 'naik'].includes(x.kategori) ? 'c-good' 
 const buka = ref('')
 
 // 3 terbaik dari daftar yang sedang tampil, hanya dengan syarat yang bisa dicek di laporan (tanpa target harga):
-// laba kuartal murni naik/berbalik YoY, tidak turun QoQ, pendapatan naik, bukan dari basis tahun lalu yang kecil,
-// dan PE TTM positif. Diurutkan dari PE TTM terendah (paling murah terhadap laba yang sudah terbukti).
-const SYARAT = x => ['naik', 'berbalik'].includes(x.kuartal?.status) && (x.kuartal?.qoq ?? -1) >= 0
-  && (x.pendapatan?.pct ?? -1) > 0 && !x.catatan.some(c => /basis tahun lalu kecil/i.test(c)) && x.kuartal?.pe > 0
+// laba kuartal murni lebih besar dari kuartal yang sama tahun lalu (naik/berbalik YoY) DAN dari kuartal sebelumnya
+// (QoQ > 0), pendapatan naik, PE TTM positif. Basis dinilai dari laba kuartal itu sendiri, bukan kumulatif, sehingga
+// kenaikan kumulatif persentase besar dari basis kecil tetap bisa masuk bila kuartal terakhirnya memang tumbuh.
+// Diurutkan dari PE TTM terendah (paling murah terhadap laba yang sudah terbukti).
+const SYARAT = x => ['naik', 'berbalik'].includes(x.kuartal?.status) && (x.kuartal?.qoq ?? 0) > 0
+  && (x.pendapatan?.pct ?? -1) > 0 && x.kuartal?.pe > 0
 const terbaik = computed(() => rows.value.filter(SYARAT).sort((a, b) => a.kuartal.pe - b.kuartal.pe).slice(0, 3))
 const alasan = x => [
   `Laba ${Q} murni ${x.kuartal.status === 'berbalik' ? 'berbalik dari rugi' : pct(x.kuartal.yoy) + ' YoY'}, QoQ ${pct(x.kuartal.qoq)}`,
@@ -121,7 +123,7 @@ async function unduhPdf() {
       </div>
       <div v-if="terbaik.length" class="tiga" aria-label="3 terbaik">
         <div class="th"><h2>{{ terbaik.length }} terbaik</h2>
-          <span class="small muted">dari daftar di bawah · syarat: laba {{ Q }} murni naik YoY & tidak turun QoQ, pendapatan naik, bukan basis kecil · urut PE TTM terendah · bukan rekomendasi beli/jual</span></div>
+          <span class="small muted">dari daftar di bawah · syarat: laba {{ Q }} murni lebih besar dari {{ Q }} tahun lalu dan dari kuartal sebelumnya, pendapatan naik · urut PE TTM terendah · bukan rekomendasi beli/jual</span></div>
         <div class="kartu">
           <div v-for="(x, i) in terbaik" :key="x.id" class="k">
             <div class="kh"><span class="no">{{ i + 1 }}</span>
