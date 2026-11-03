@@ -92,6 +92,12 @@ export function kpi(doc, x, y, w, label, value, color) {
   fitText(doc, value, x + 5, y + 14.5, w - 7, 14, { min: 8.5, color })
 }
 
+// Keterangan relatif bulan terpilih agar "Desember" saat masih November tidak membingungkan.
+export const relBulan = (b, now = new Date()) => {
+  const ini = now.getMonth() + 1
+  return b === ini ? ' (BULAN INI)' : b === ini % 12 + 1 ? ' (BULAN DEPAN)' : ''
+}
+
 export async function ihsgPdf(d, jsPDF) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
   const bln = BLN[(d.bulan || 1) - 1], terbit = tgl(new Date()), r = d.riset || {}, t = d.tek, lv = r.level || {}
@@ -105,7 +111,7 @@ export async function ihsgPdf(d, jsPDF) {
   doc.setDrawColor(GOLD); doc.setLineWidth(0.4); doc.line(28, 30, 196, 30)
   doc.setFont('times', 'bold'); doc.setFontSize(96); doc.setTextColor(PRIMER); doc.text('IHSG', 26, 92)
   doc.setFont('times', 'italic'); doc.setFontSize(22); doc.setTextColor(INK); doc.text(pdfText('Analisa Teknikal & Flow'), 28, 108)
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(GOLD); doc.text(pdfText(`SEASONALITY ${bln.toUpperCase()}`), 28, 118)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(GOLD); doc.text(pdfText(`SEASONALITY ${bln.toUpperCase()}${relBulan(d.bulan)}`), 28, 118)
   // Ornamen: garis harga IHSG 1 tahun.
   const s = t.seri || []
   if (s.length > 2) {
