@@ -500,6 +500,17 @@ class CekPascaDeployTest(unittest.TestCase):
         self.assertIn("Pola Broker", r["peringatan"][1] + r["peringatan"][0])
 
 
+class LkTumbuhTest(unittest.TestCase):
+    def test_definisi(self):
+        t = server.lk_tumbuh
+        self.assertTrue(t({"status": "naik", "laba": 9, "labaSebelum": 9, "qoq": 1.4})["tumbuh"])      # EPS lebih presisi
+        self.assertFalse(t({"status": "naik", "laba": 45, "labaSebelum": 46, "qoq": -3.1})["tumbuh"])  # AKPI: Q3 < Q2
+        k = t({"status": "berbalik", "laba": 20, "labaSebelum": -2, "qoq": None})                       # FITT
+        self.assertTrue(k["tumbuh"] and k["berbalikQoq"])
+        self.assertFalse(t({"status": "turun", "laba": 5, "labaSebelum": 1, "qoq": 400})["tumbuh"])    # turun YoY
+        self.assertIsNone(t(None))
+
+
 class PovDiskTest(unittest.TestCase):
     def test_pulih_dari_disk_setelah_restart(self):
         with tempfile.TemporaryDirectory() as d:

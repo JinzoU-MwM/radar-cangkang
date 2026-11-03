@@ -17,7 +17,8 @@ const KRIT = {
   semua: () => true,
   backdoor: x => x.radar || x.kandidat,
   aksi: x => x.jenisAksi.some(j => j !== 'uma'),
-  kinerja: x => ['naik', 'berbalik'].includes(x.kinerja?.kuartal?.status) || ['bagus', 'berbalik'].includes(x.kinerja?.kategori),
+  // Kuartal murni naik dari tahun lalu dan dari kuartal sebelumnya (server lk_tumbuh), atau laporan kumulatif bagus.
+  kinerja: x => !!x.kinerja?.kuartal?.tumbuh || ['bagus', 'berbalik'].includes(x.kinerja?.kategori),
   murah: x => x.valuasi?.pbv > 0 && x.valuasi.pbv < 1,
 }
 const rows = computed(() => {

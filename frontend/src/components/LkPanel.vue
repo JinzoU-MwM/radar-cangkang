@@ -24,8 +24,9 @@ const basis = computed(() => (data.value?.rows || []).filter(lolosPer))
 const hitung = computed(() => basis.value.reduce((h, x) => ({ ...h, [x.kategori]: (h[x.kategori] || 0) + 1 }), {}))
 const f = reactive({ cari: '', hsc: '', radar: false, sehat: false, urut: 'laba', q3: '' })
 // Kuartal III murni (server: 9M - 1H): saringan agar kenaikan 9M yang hanya ditopang Q1-Q2 terlihat.
-const Q3OPSI = [['', 'Semua'], ['naik', `${Q} ikut naik`], ['melemah', `${Q} melemah`], ['tanpa', `${Q} belum terhitung`]]
-const lolosQ3 = x => !f.q3 || (f.q3 === 'naik' ? ['naik', 'berbalik'].includes(x.kuartal?.status)
+const KUARTAL_SBLM = M.q > 1 ? `Q${M.q - 1}` : 'Q4'
+const Q3OPSI = [['', 'Semua'], ['naik', `${Q} naik dari tahun lalu & ${KUARTAL_SBLM}`], ['melemah', `${Q} melemah`], ['tanpa', `${Q} belum terhitung`]]
+const lolosQ3 = x => !f.q3 || (f.q3 === 'naik' ? !!x.kuartal?.tumbuh
   : f.q3 === 'melemah' ? x.kuartal?.melemah : !x.kuartal)
 const URUT = [['laba', 'Kenaikan laba'], ['q3', `Laba ${Q} YoY`], ['nilai', 'Nilai laba'], ['pendapatan', 'Kenaikan pendapatan'], ['tgl', 'Terbaru']]
 // Rupiah-setara untuk mengurutkan nilai laba (USD dikali kurs kasar agar urutan masuk akal).
@@ -60,12 +61,10 @@ const buka = ref('')
 // (QoQ > 0), pendapatan naik, PE TTM positif. Basis dinilai dari laba kuartal itu sendiri, bukan kumulatif, sehingga
 // kenaikan kumulatif persentase besar dari basis kecil tetap bisa masuk bila kuartal terakhirnya memang tumbuh.
 // Diurutkan dari PE TTM terendah (paling murah terhadap laba yang sudah terbukti).
-// Kuartal sebelumnya rugi -> QoQ (%) tidak terdefinisi; laba kini > rugi kuartal lalu = berbalik laba QoQ.
-const qoqBerbalik = k => k?.qoq == null && k?.labaSebelum != null && k.labaSebelum < 0 && k.laba > 0
-const naikQoq = k => (k?.qoq ?? 0) > 0 || qoqBerbalik(k)
-const qoqTeks = k => qoqBerbalik(k) ? 'berbalik dari rugi' : pct(k?.qoq)
-const SYARAT = x => ['naik', 'berbalik'].includes(x.kuartal?.status) && naikQoq(x.kuartal)
-  && (x.pendapatan?.pct ?? -1) > 0 && x.kuartal?.pe > 0
+// Server (lk_tumbuh): tumbuh = laba kuartal murni > kuartal sama tahun lalu DAN > kuartal sebelumnya (termasuk
+// berbalik dari rugi); dipakai juga saringan "ikut naik" dan skor Saham 50.
+const qoqTeks = k => k?.berbalikQoq ? 'berbalik dari rugi' : pct(k?.qoq)
+const SYARAT = x => !!x.kuartal?.tumbuh && (x.pendapatan?.pct ?? -1) > 0 && x.kuartal?.pe > 0
 const kelompok = computed(() => terbaikPerKelompok(basis.value, SYARAT))
 const alasan = x => [
   `Laba ${Q} murni ${x.kuartal.status === 'berbalik' ? 'berbalik dari rugi' : pct(x.kuartal.yoy) + ' YoY'}, QoQ ${qoqTeks(x.kuartal)}`,
