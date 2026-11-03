@@ -6,7 +6,7 @@ import { store } from '../store.js'
 import { UTYPES, isNewSince, SIKAP_CLS, fmtDate } from '../lib/domain.js'
 import { newsTake } from '../lib/news.js'
 
-const props = defineProps({ u: { type: Object, required: true }, showTicker: { type: Boolean, default: true } })
+const props = defineProps({ u: { type: Object, required: true }, showTicker: { type: Boolean, default: true }, daftar: { type: Array, default: null } })
 
 const TAG = { good: 't-good', warn: 't-warn', bad: 't-strong', calm: 't-calm' }
 // Arah dampak tiap poin terhadap pemegang saham publik; bentuk SVG: segitiga naik, segitiga turun, bulat.
@@ -20,6 +20,20 @@ const typeName = id => (UTYPES.find(t => t.id === id) || UTYPES[UTYPES.length - 
 const take = computed(() => newsTake(props.u, { items: store.items, pandangan: store.pandangan }))
 const points = computed(() => take.value.points.map((text, i) => ({ text, tone: TONE[take.value.tones[i]] })))
 const fresh = computed(() => isNewSince(props.u, store.seenAt))
+
+// Unduh analisa berita ini (PDF format riset: tujuan, temuan, uji dugaan, dampak dua sisi, tesis). daftar = feed tempat
+// berita ini berada (saham di luar radar memakai daftar hasil pencarian) untuk konteks keterbukaan sebelumnya.
+const unduhBusy = ref(false), unduhErr = ref('')
+async function unduhAnalisa() {
+  unduhBusy.value = true; unduhErr.value = ''
+  try {
+    const [{ jsPDF }, B, P] = await Promise.all([import('jspdf'), import('../lib/beritaTerbaru.js'), import('../lib/beritaPdf.js')])
+    const daftar = props.daftar || store.updates
+    const a = B.analisaBerita(props.u, { items: store.items, pandangan: store.pandangan, updates: daftar,
+      pengendali: store.pengendali, relasi: store.relasi, verified: store.verified })
+    ;(await P.beritaPdf(a, jsPDF)).save(P.beritaPdfName(a))
+  } catch (e) { unduhErr.value = 'PDF gagal: ' + (e.message || e) } finally { unduhBusy.value = false }
+}
 const url = computed(() => /^https?:\/\//.test(props.u.url || '') ? props.u.url : '')
 const inItems = computed(() => store.items.some(i => i.ticker === props.u.ticker))
 // Klik berita = buka/tutup penjelasan lengkap (kecuali klik pada tautan).
@@ -52,6 +66,8 @@ const source = computed(() => props.u.source || (/^sb-report-/.test(props.u.id) 
           <span class="tag" :class="TAG[take.arah.cls]" :title="`${take.arah.pos} poin positif, ${take.arah.neg} poin negatif`">{{ take.arah.label }}</span>
           <button type="button" class="more" :aria-expanded="String(open)" @click.stop="open = !open">{{ open ? 'Tutup penjelasan' : 'Penjelasan lengkap' }}</button>
           <RouterLink v-if="showTicker && take.canAnalyze" class="an" :to="{ path: '/emiten/' + u.ticker, query: { tab: 'analisa' } }">Analisa {{ u.ticker }}</RouterLink>
+          <button v-if="u.ticker" type="button" class="more" :disabled="unduhBusy" title="Unduh analisa berita ini (PDF)" @click.stop="unduhAnalisa">{{ unduhBusy ? 'Menyiapkan PDF…' : '⬇ Unduh analisa' }}</button>
+          <span v-if="unduhErr" class="small c-strong">{{ unduhErr }}</span>
         </div>
         <ul v-if="!open" class="pts">
           <li v-for="(p, i) in points" :key="i" :title="p.tone.name">

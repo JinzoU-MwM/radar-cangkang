@@ -1,10 +1,12 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { store, autoRefresh, userRefresh, markSeen } from '../store.js'
 import { UTYPES, fmtDate, isNewSince } from '../lib/domain.js'
 import { isBackdoorNews } from '../lib/news.js'
 import Modal from '../components/emiten/Modal.vue'
 import NewsItem from '../components/NewsItem.vue'
+import TabBerita from '../components/emiten/TabBerita.vue'
+import { api } from '../api.js'
 
 const typeName = id => (UTYPES.find(t => t.id === id) || UTYPES[UTYPES.length - 1]).name
 // Sumber dari prefiks id: "sb-report-" = Stockbit Reports, "sb-news-" = StockbitNews, "news-" = media.
@@ -13,6 +15,23 @@ const srcOf = u => /^sb-report-/.test(u.id) ? 'stockbit' : /^(news-|sb-news-)/.t
 const type = ref('')
 const src = ref('')
 const q = ref('')
+// Saham di luar radar (seluruh kode BEI, /api/kode-bei): dipilih dari saran pencarian lalu ditampilkan di halaman ini
+// dengan format yang sama seperti tab Berita emiten (analisa berita terbaru + PDF + daftar berita). Tidak masuk radar.
+const kodeBei = ref(null), pilih = ref('')
+watch(q, v => {
+  if (v.trim() && kodeBei.value === null) {
+    kodeBei.value = []
+    api.get('/api/kode-bei').then(r => { kodeBei.value = r.kode || [] }, () => { kodeBei.value = [] })
+  }
+})
+const luarRadar = computed(() => {
+  const s = q.value.trim().toLowerCase()
+  if (s.length < 2 || !kodeBei.value) return []
+  const radar = new Set(store.items.map(i => i.ticker))
+  const cocok = kodeBei.value.filter(k => !radar.has(k.t) && (k.t.toLowerCase().startsWith(s) || (s.length >= 3 && (k.nama || '').toLowerCase().includes(s))))
+  return cocok.sort((a, b) => (b.t.toLowerCase() === s) - (a.t.toLowerCase() === s) || a.t.localeCompare(b.t)).slice(0, 8)
+})
+const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.value)?.nama || '')
 
 const feed = computed(() => store.updates.filter(u => isBackdoorNews(u, store.items)))
 // Angka jenis mengikuti saringan sumber yang aktif (dan sebaliknya di srcs).
@@ -68,13 +87,25 @@ onMounted(() => autoRefresh('reports'))
       </div>
       <div class="tools">
         <label for="nq" class="sr-only">Cari berita</label>
-        <input id="nq" v-model="q" data-search type="search" class="field" placeholder="Cari kode, nama, atau judul">
+        <input id="nq" v-model="q" data-search type="search" class="field" placeholder="Cari kode, nama, atau judul (termasuk saham di luar radar)">
         <button v-if="!store.status?.readOnly" type="button" class="btn primary" :disabled="store.busy.reports || !canRefresh"
           :title="canRefresh ? 'Tarik laporan dan berita terbaru' : 'Sumber laporan dan berita belum aktif di server'" @click="userRefresh('reports')">
           {{ store.busy.reports ? 'Memperbarui…' : 'Perbarui berita' }}
         </button>
       </div>
     </header>
+
+    <div v-if="luarRadar.length" class="luar" role="region" aria-label="Saham di luar radar">
+      <span class="lbl">Di luar radar — lihat berita terakhir & analisa:</span>
+      <button v-for="k in luarRadar" :key="k.t" type="button" class="sar" :class="{ on: pilih === k.t }" :title="k.nama" @click="pilih = k.t">
+        <b>{{ k.t }}</b><span v-if="k.nama">{{ k.nama.replace(/ Tbk\.?$/i, '') }}</span></button>
+    </div>
+
+    <section v-if="pilih" class="luarpanel">
+      <div class="lh"><h2>{{ pilih }}<span v-if="namaPilih" class="muted"> · {{ namaPilih }}</span></h2>
+        <button type="button" class="btn" @click="pilih = ''">Tutup</button></div>
+      <TabBerita :key="pilih" :ticker="pilih" />
+    </section>
 
     <div class="bar-row">
       <div class="fbar">
@@ -121,6 +152,15 @@ onMounted(() => autoRefresh('reports'))
 </template>
 
 <style scoped>
+.luar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 12px}
+.luar .lbl{font-size:14px;color:var(--ink-2);width:100%}
+/* Saran pencarian dibuat besar dan kontras agar mudah dibaca dan diklik. */
+.sar{display:inline-flex;align-items:baseline;gap:8px;padding:8px 14px;border:1px solid var(--rule);border-left:4px solid var(--now-ink);
+  border-radius:8px;background:var(--sheet);color:var(--ink);font:inherit;font-size:15px;cursor:pointer}
+.sar b{font-size:16px;letter-spacing:.02em}.sar span{color:var(--ink-2);font-size:14px}
+.sar:hover,.sar:focus-visible,.sar.on{border-color:var(--now-ink)}
+.luarpanel{border:1px solid var(--rule);border-left:4px solid var(--now-ink);background:var(--sheet);padding:10px 14px;margin:0 0 14px}
+.lh{display:flex;justify-content:space-between;align-items:center;gap:10px}.lh h2{margin:4px 0}
 .ber{display:flex;flex-direction:column;gap:14px}
 .head{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
 .sub{margin:2px 0 0}

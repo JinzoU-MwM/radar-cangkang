@@ -13,7 +13,6 @@ import AgendaBlock from '../components/monitor/AgendaBlock.vue'
 import ProgressCells from '../components/monitor/ProgressCells.vue'
 import TodayCards from '../components/monitor/TodayCards.vue'
 import Modal from '../components/emiten/Modal.vue'
-import { api } from '../api.js'
 import PotensiCells from '../components/monitor/PotensiCells.vue'
 import StoryCells from '../components/monitor/StoryCells.vue'
 import NetworkMap from '../components/NetworkMap.vue'
@@ -139,23 +138,6 @@ const all = computed(() => store.items.filter(i => stageOf(i) !== 'radar').map(i
     score, status: statusOf(score), pot: { ...pp, ...potensiOf(pp) },
     isNew: isNewSince(rep?.upd, store.seenAt) }
 }))
-
-// Pencarian saham di luar radar: seluruh kode BEI (/api/kode-bei, dimuat sekali saat mulai mencari). Hasilnya membuka
-// halaman emiten yang hanya berisi berita terakhir dan analisanya; saham itu tidak ditambahkan ke radar.
-const kodeBei = ref(null)
-watch(q, v => {
-  if (v.trim() && kodeBei.value === null) {
-    kodeBei.value = []
-    api.get('/api/kode-bei').then(r => { kodeBei.value = r.kode || [] }, () => { kodeBei.value = [] })
-  }
-})
-const luarRadar = computed(() => {
-  const s = q.value.trim().toLowerCase()
-  if (s.length < 2 || !kodeBei.value) return []
-  const radar = new Set(store.items.map(i => i.ticker))
-  const cocok = kodeBei.value.filter(k => !radar.has(k.t) && (k.t.toLowerCase().startsWith(s) || (s.length >= 3 && (k.nama || '').toLowerCase().includes(s))))
-  return cocok.sort((a, b) => (b.t.toLowerCase() === s) - (a.t.toLowerCase() === s) || a.t.localeCompare(b.t)).slice(0, 8)
-})
 
 // Pencarian juga mencakup isi story (bisnis lama/baru, pengendali lama, injeksi).
 const searched = computed(() => {
@@ -328,12 +310,6 @@ onMounted(() => autoRefresh('stockbit'))
       </div>
     </header>
 
-    <div v-if="luarRadar.length" class="luar" role="region" aria-label="Saham di luar radar">
-      <span class="lbl">Di luar radar — lihat berita terakhir & analisa:</span>
-      <RouterLink v-for="k in luarRadar" :key="k.t" class="sar" :to="{ path: '/emiten/' + k.t, query: { tab: 'berita' } }" :title="k.nama">
-        <b>{{ k.t }}</b><span v-if="k.nama">{{ k.nama.replace(/ Tbk\.?$/i, '') }}</span></RouterLink>
-    </div>
-
     <AgendaBlock v-if="set !== 'hari'" :note="agendaNote" :can-mark="nNew > 0" @seen="markSeen" />
 
     <div class="bar-row">
@@ -488,13 +464,6 @@ onMounted(() => autoRefresh('stockbit'))
 </template>
 
 <style scoped>
-.luar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 12px}
-.luar .lbl{font-size:14px;color:var(--ink-2);width:100%}
-/* Saran pencarian dibuat besar dan kontras agar mudah dibaca dan diklik. */
-.sar{display:inline-flex;align-items:baseline;gap:8px;padding:8px 14px;border:1px solid var(--rule);border-left:4px solid var(--now-ink);
-  border-radius:8px;background:var(--sheet);color:var(--ink);text-decoration:none;font-size:15px}
-.sar b{font-size:16px;letter-spacing:.02em}.sar span{color:var(--ink-2);font-size:14px}
-.sar:hover,.sar:focus-visible{border-color:var(--now-ink);background:var(--paper, var(--sheet))}
 .mon{display:flex;flex-direction:column;gap:14px}
 .near{margin:-6px 0 0;padding:6px 10px;border-left:3px solid var(--warn);background:var(--warn-bg);line-height:1.7}
 .near summary{cursor:pointer}
