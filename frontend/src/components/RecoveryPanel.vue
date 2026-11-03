@@ -12,7 +12,7 @@ import HargaSaham from './HargaSaham.vue'
 import { namaSaham } from '../lib/namaSaham.js'
 
 const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
-const bulan = ref((new Date().getMonth() + 1) % 12 + 1)
+const bulan = ref(new Date().getMonth() + 1)   // bulan berjalan
 const data = ref(null), err = ref(''), loading = ref(false)
 async function load() {
   loading.value = true; err.value = ''

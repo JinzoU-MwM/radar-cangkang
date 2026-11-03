@@ -4894,10 +4894,10 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json(get_diff(days))
         elif path == "api/seasonality":
             try:
-                month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month % 12 + 1))
+                month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month))
                 years = 5 if self.qs("tahun") == "5" else 10
             except ValueError:
-                month, years = datetime.now().month % 12 + 1, 10
+                month, years = datetime.now().month, 10
             self.reply_json(season_api(month, years))
         elif path == "api/ihsg-runtun":
             self.reply_json(runtun_api())
@@ -4937,27 +4937,27 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json(live_api())
         elif path == "api/ihsg-outlook":
             try:
-                month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month % 12 + 1))
+                month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month))
             except ValueError:
-                month = datetime.now().month % 12 + 1
+                month = datetime.now().month
             if self.qs("segar") == "1":
                 ihsg_segarkan(public=_req.public)
             self.reply_json(ihsg_api(month))
         elif path == "api/saham-detail":
             kode = (self.qs("kode") or "").upper()
             try:
-                month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month % 12 + 1))
+                month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month))
             except ValueError:
-                month = datetime.now().month % 12 + 1
+                month = datetime.now().month
             if not re.match(r"^[A-Z]{4}$", kode):
                 self.reply_json({"error": "Kode saham tidak valid."}, 400)
             else:
                 self.reply_json(saham_detail(kode, month))
         elif path == "api/recovery":
             try:
-                month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month % 12 + 1))
+                month = min(12, max(1, int(self.qs("bulan") or 0) or datetime.now().month))
             except ValueError:
-                month = datetime.now().month % 12 + 1
+                month = datetime.now().month
             self.reply_json(recovery_api(month))
         elif path == "api/broker-pola":
             d = broker_data()

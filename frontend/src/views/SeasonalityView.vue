@@ -45,10 +45,10 @@ const TAB_INFO = [
 const tabAktif = computed(() => TAB_INFO.find(x => x.k === tab.value) || TAB_INFO[0])
 const tab = computed({ get: () => TABS.includes(route.query.tab) ? route.query.tab : 'season', set: v => router.replace({ query: { ...route.query, tab: TABS.includes(v) ? v : undefined } }) })
 const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
-// Default bulan depan (Desember -> Januari).
-const bulan = ref((new Date().getMonth() + 1) % 12 + 1)
+// Default bulan berjalan (otomatis mengikuti kalender); bulan lain dipilih lewat tombol bulan.
+const bulan = ref(new Date().getMonth() + 1)
 const tahun = ref(10)
-// Keterangan bulan terpilih terhadap bulan berjalan (bawaan halaman = bulan depan).
+// Keterangan bulan terpilih terhadap bulan berjalan (bawaan halaman = bulan ini).
 const relBulanTeks = computed(() => {
   const ini = new Date().getMonth() + 1
   return bulan.value === ini ? 'bulan ini' : bulan.value === ini % 12 + 1 ? 'bulan depan' : ''
