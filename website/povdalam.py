@@ -10,7 +10,7 @@ import re
 from datetime import datetime, timedelta
 
 # Naikkan bila isi analisa berubah: hasil tersimpan versi lama ditarik ulang saat dibuka.
-VERSI = 3
+VERSI = 5
 PUBLIK_RX = re.compile(r"MASYARAKAT|PUBLIK|PUBLIC|SCRIPLESS|SCRIP\b", re.I)
 # Kata kunci posting yang membahas struktur kepemilikan/aksi korporasi (dipakai mengurutkan relevansi).
 TOPIK_RX = re.compile(r"pengendali|akuisisi|diakuisisi|pemilik|grup|group|konsorsium|backdoor|inbreng|rights|hmetd|tender|"
@@ -192,6 +192,9 @@ KONGLO_RX = re.compile(r"\b(salim|anthoni|sudono|widjaja|sinar ?mas|hartono|djar
                        r"henry pribadi|napan|sugianto|agung sedayu|arsjad|rasjid|bosowa|aksa mahmud|wings|katuari|tirtadjaja|"
                        r"gunawan|tjokrosaputro|rajawali|peter sondakh|cendana|humpuss|bimantara|chairul tanjung|ct corp)\b", re.I)
 KLAIM = [
+    ("pemilik", re.compile(r"owned by|dimiliki (oleh)?|(?:^|\s)milik\s|punya(nya)? (grup|group|keluarga|pak|bu)|pemilik(nya)? (adalah|itu)?|dibelakangnya|di belakangnya|bekingan|backing", re.I)),
+    ("relasi", re.compile(r"kerja(nya)? (untuk|buat|sama)|klien(nya)?|pelanggan(nya)?|customer|kontrak(nya)? (dengan|dari|sama)|"
+                          r"garap(an)? (proyek )?(milik|punya)|vendor|kontraktor (untuk|buat)|mitra(nya)?", re.I)),
     ("konglo", re.compile(r"konglo|taipan|\bnaga\b|grup besar|group besar|tier ?1|crazy rich", re.I)),
     ("murah", re.compile(r"murah|undervalue|valuasi|\b\d+(?:[.,]\d+)? ?x harga|nilai wajar|valuasi wajar|di bawah (nilai )?buku|\bpbv\b", re.I)),
     ("likuid", re.compile(r"(gak|tidak|kurang|belum) ?liquid|(gak|tidak|kurang) ?likuid|gorengan|sepi|tipis", re.I)),
@@ -212,15 +215,73 @@ def cek_klaim(posts: list[dict], data: dict) -> list[dict]:
             for jenis, rx in KLAIM:
                 if (jenis, p.get("user")) in ada or not rx.search(kal):
                     continue
-                status, bukti = data_klaim(jenis, data)
+                status, bukti = data_klaim(jenis, data, kal)
                 ada.add((jenis, p.get("user")))
                 out.append({"jenis": jenis, "klaim": kal, "user": p.get("user"), "d": p.get("d"), "url": p.get("url"),
                             "status": status, "bukti": bukti})
-    urut = {"didukung data": 0, "tidak didukung": 1, "belum bisa dicek": 2}
+    urut = {"didukung data": 0, "sebagian didukung": 1, "tidak didukung": 2, "belum bisa dicek": 3}
     return sorted(out, key=lambda c: urut[c["status"]])[:14]
 
 
-def data_klaim(jenis: str, d: dict) -> tuple[str, list[str]]:
+def nama_klaim(kal: str, rx: re.Pattern) -> list[str]:
+    """Nama pihak yang disebut setelah kata kunci klaim: "Owned by Sinar Mas, Indra Widjaja, kerjanya untuk LTK dan Haji Isam"."""
+    out = []
+    for m in rx.finditer(kal):
+        ekor = re.split(r"[.;:!?()]|\b(?:kerja\w*|yang|yg|karena|jadi|sehingga|tapi|namun|so|and so|klien\w*|pelanggan\w*)\b",
+                        kal[m.end():], flags=re.I)[0]
+        for bagian in re.split(r",|\bdan\b|\band\b|&|/", ekor, flags=re.I):
+            n = re.sub(r"^(oleh|pak|bu|bapak|ibu|grup|group|keluarga|the)\s+", "", bagian.strip(), flags=re.I).strip(" -")
+            if 2 <= len(n) <= 40 and len(n.split()) <= 4:
+                out.append(n)
+    return list(dict.fromkeys(out))[:5]
+
+
+def nama_dari_posts(posts: list[dict], t: str) -> list[str]:
+    """Nama pihak dalam klaim pemilik/hubungan usaha di posting yang membahas saham ini (untuk dicari di berita luar)."""
+    out = []
+    for p in posts:
+        if not tentang(p, t):
+            continue
+        for kal in re.split(r"(?<=[.!?\n])\s+|\n", p["txt"]):
+            for j, rx in KLAIM[:2]:
+                if rx.search(kal):
+                    out += nama_klaim(kal, rx)
+    return list(dict.fromkeys(out))[:6]
+
+
+def _ada_di(nama: str, teks: list[str]) -> str:
+    """Teks pertama yang memuat semua kata penting nama (singkatan 2-4 huruf dicocokkan sebagai kata utuh)."""
+    kata = [w for w in re.findall(r"[A-Za-z]+", nama) if len(w) >= 4 or (w.isupper() and len(w) >= 2)]
+    if not kata:
+        return ""
+    for x in teks:
+        if all(re.search(rf"\b{re.escape(w)}", x, re.I) for w in kata):
+            return x
+    return ""
+
+
+def data_klaim(jenis: str, d: dict, kal: str = "") -> tuple[str, list[str]]:
+    if jenis in ("pemilik", "relasi"):
+        rx = next(r for j, r in KLAIM if j == jenis)
+        nama = nama_klaim(kal, rx)
+        if not nama:
+            return "belum bisa dicek", ["Nama pihak tidak terbaca dari kalimat klaim."]
+        b, cocok = [], 0
+        for n in nama:
+            h1 = _ada_di(n, d["nama_terkait"])
+            h2 = _ada_di(n, d["dokumen"])
+            if h1:
+                cocok += 1
+                b.append(f"{n}: tercatat di data kepemilikan/pengurus/jaringan ({h1[:80]})")
+            elif h2:
+                cocok += 1
+                b.append(f"{n}: disebut di keterbukaan/berita ({h2[:120]})")
+            else:
+                b.append(f"{n}: tidak ditemukan di data kepemilikan langsung maupun keterbukaan/berita 1 tahun"
+                         + (" (kepemilikan bisa lewat badan usaha perantara; cek UBO)" if jenis == "pemilik" else ""))
+        if jenis == "pemilik" and not cocok:
+            b.append("Pemegang saham tercatat: " + ", ".join(d["nama_terkait"][:4]))
+        return ("didukung data" if cocok == len(nama) else "sebagian didukung" if cocok else "belum bisa dicek"), b
     if jenis == "konglo":
         hit = [n for n in d["nama_terkait"] if KONGLO_RX.search(n)]
         luas = [r for r in d["jaringan"] if len(r["emiten"]) >= 3]
@@ -443,7 +504,10 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
         "bvps": bvps, "harga": harga, "ff": ff, "ffEfektif": ff_efektif, "broker": (bk or {}).get("bandar"), "kuartal": kw,
         "ambil": [f"{r['date']}: {r['teks']}" for r in ambil],
         "aksi_akuisisi": [f"{a['date']}: {a['judul']}" for a in aksi if "akuisisi" in a["jenis"]],
-        "aksi_aset": [f"{a['date']}: {a['judul']}" for a in aksi if set(a["jenis"]) & {"rights", "kbli"}]})
+        "aksi_aset": [f"{a['date']}: {a['judul']}" for a in aksi if set(a["jenis"]) & {"rights", "kbli"}],
+        "dokumen": [f"{u.get('date')}: {u.get('title')} {u.get('summary') or ''}" for u in d.get("laporan") or []]
+                   + [f"{u.get('date')}: {u.get('title')} {u.get('summary') or ''}" for u in d.get("berita") or []]
+                   + [f"{u.get('date')}: {u.get('judul')} ({u.get('sumber')})" for u in d.get("beritaLuar") or []]})
     kom.pop("fokusPosts", None)   # hanya untuk cek klaim; posting tidak ditampilkan
     # Kronologi gabungan: perubahan kepemilikan dan aksi korporasi (terbaru dulu).
     kron = [{"date": r["date"], "jenis": "kepemilikan", "teks": r["teks"]} for r in riwayat]
@@ -467,7 +531,7 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
         "berita": [{"date": u.get("date"), "judul": u.get("title"), "url": u.get("url")} for u in (d.get("berita") or [])[:10]],
         "kinerja": {"periode": lk.get("periode"), "judul": lk.get("judul"), "kuartal": kw or None, "pbv": pbv, "per": met.get("per"),
                     "laba": met.get("netIncomeTtm"), "pendapatan": met.get("revenueTtm"), "ekuitas": met.get("equity"), "bvps": met.get("bvps")},
-        "komunitas": kom, "dugaan": dugaan, "selidiki": selidiki, "skenario": skenario, "kronologi": kron, "broker": bk, "klaim": klaim,
+        "komunitas": kom, "dugaan": dugaan, "selidiki": selidiki, "skenario": skenario, "kronologi": kron, "broker": bk, "klaim": klaim, "beritaLuar": (d.get("beritaLuar") or [])[:25],
         "radarSikap": {"sikap": pa.get("sikap"), "ringkas": (pa.get("ringkas") or "")[:400], "nilaiWajar": pa.get("nilaiWajar")} if pa.get("sikap") else None,
         "sumber": {"pemegang": len(semua), "jaringan": sum(len(r["emiten"]) for r in jar_rows), "keterbukaan": len(d.get("laporan") or []),
                    "berita": len(d.get("berita") or []), "posting": kom["jumlah"], "insider": len(d.get("insider") or [])},

@@ -130,6 +130,12 @@ async function unduh() {
       <p v-if="!hasil.aksi.length" class="small muted">Tidak ada keterbukaan aksi korporasi yang terbaca.</p>
       <ul class="small"><li v-for="x in hasil.aksi" :key="x.url + x.judul">{{ fmtDate(x.date) }} · <a :href="x.url" target="_blank" rel="noopener">{{ x.judul }}</a><span v-if="x.inti" class="muted"> — {{ x.inti }}</span></li></ul>
 
+      <template v-if="hasil.beritaLuar?.length">
+        <h3>Berita di luar Stockbit ({{ hasil.beritaLuar.length }})</h3>
+        <ul class="small"><li v-for="b in hasil.beritaLuar" :key="b.url">{{ b.date ? fmtDate(b.date) : '–' }} · <a :href="b.url" target="_blank" rel="noopener">{{ b.judul }}</a>
+          <span class="muted"> — {{ b.sumber }}</span></li></ul>
+      </template>
+
       <h3>Informasi dari sumber publik</h3>
       <template v-if="verif.length || rumor.length">
         <p class="small"><b class="c-good">Terverifikasi</b> (cocok dengan data pemegang saham/pengurus):</p>

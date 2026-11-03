@@ -3129,6 +3129,31 @@ def pd_posts(t: str, halaman: int = 10) -> tuple[list[dict], str]:
     return [], ""
 
 
+def pd_berita_luar(kueri: list[str]) -> list[dict]:
+    """Berita di luar Stockbit dari Google News RSS (sumber publik): judul, tanggal, media, tautan, kueri pencarinya."""
+    out, ada = [], set()
+    for q in kueri:
+        url = "https://news.google.com/rss/search?" + urllib.parse.urlencode({"q": q, "hl": "id", "gl": "ID", "ceid": "ID:id"})
+        try:
+            xml = cached_text(url, lambda: http_get(url, {"User-Agent": UA_BROWSER}, 20))
+        except Exception as e:
+            print(f"[pov-dalam] berita luar {q}: {e}", file=sys.stderr)
+            continue
+        for it in re.findall(r"<item>(.*?)</item>", xml, re.S)[:12]:
+            g = lambda tag: html_mod.unescape(re.sub(r"<!\[CDATA\[|\]\]>", "", (re.search(rf"<{tag}[^>]*>(.*?)</{tag}>", it, re.S) or [None, ""])[1])).strip()
+            judul, link = g("title"), g("link")
+            if not judul or judul in ada:
+                continue
+            ada.add(judul)
+            try:
+                tg = datetime.strptime(g("pubDate")[:16], "%a, %d %b %Y").strftime("%Y-%m-%d")
+            except ValueError:
+                tg = ""
+            out.append({"judul": re.sub(r"\s+-\s+[^-]+$", "", judul), "sumber": g("source"), "date": tg, "url": link, "kueri": q})
+        time.sleep(0.4)
+    return sorted(out, key=lambda x: x["date"], reverse=True)
+
+
 def pd_kumpul(t: str, job: dict) -> dict:
     mulai = time.time()
     catatan: list[str] = []
@@ -3208,7 +3233,21 @@ def pd_kumpul(t: str, job: dict) -> dict:
     posts, kat = pd_posts(t, 10 if sisa() > 120 else 3)
     if not posts:
         catatan.append("Posting publik tidak ditemukan atau tidak dapat diambil.")
-    tahap(8, "Pola broker 30 hari")
+    tahap(8, "Berita di luar Stockbit (Google News)")
+    nama_e = re.sub(r"\s*Tbk\.?$", "", nama_semua().get(t, ""), flags=re.I).strip()
+    kueri = [f'"{nama_e}"' if nama_e else t, f"saham {t}"]
+    bersih = [re.sub(r"^PT\s+|\s+(PT|TBK)$", "", n, flags=re.I).strip() for n in nama_pmg[:3]]
+    kueri += [f'"{n}"' for n in bersih if n]
+    # Nama dari klaim publik dicari bersama nama emiten agar tidak tercampur orang/berita lain bernama sama.
+    jangkar = f'"{nama_e}"' if nama_e else t
+    kueri += [f'"{n}" {jangkar}' for n in PD.nama_dari_posts(posts, t)]
+    berita_luar = pd_berita_luar(list(dict.fromkeys(kueri))[:10]) if sisa() > 60 else []
+    # Hanya berita bisnis/pasar modal yang relevan dengan emiten atau pihak terkait.
+    kunci = [w for w in re.findall(r"[A-Za-z]{4,}", nama_e) if w.lower() not in ("indonesia", "internasional", "nusantara")][:2]
+    relevan = re.compile(r"\b(" + "|".join([t] + [re.escape(w) for w in kunci]) + r")\b|saham|tbk|emiten|bursa|bisnis|grup|group|"
+                         r"perusahaan|investasi|akuisisi|direksi|komisaris|kontrak|tambang|batu ?bara|pengendali|konglomerat|taipan", re.I)
+    berita_luar = [b for b in berita_luar if relevan.search(b["judul"])]
+    tahap(9, "Pola broker 30 hari")
     bk = None
     try:
         dari = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
@@ -3217,11 +3256,11 @@ def pd_kumpul(t: str, job: dict) -> dict:
                                        "&investor_type=INVESTOR_TYPE_ALL&limit=10"))
     except Exception as e:
         catatan.append(f"Pola broker gagal: {e}"[:160])
-    tahap(9, "Menyusun analisa")
+    tahap(10, "Menyusun analisa")
     lk = next((r for r in lk_api_cache().get("rows") or [] if r["t"] == t), {})
     hasil = PD.analyze({"t": t, "nama": nama_semua().get(t, ""), "profil": prof, "insider": insider, "jaringan": jaringan,
                         "laporan": laporan, "berita": berita, "posts": posts, "lk": lk, "catatan": catatan, "broker": bk,
-                        "pandangan": _json_berkas("pandangan-analis.json").get(t)})
+                        "pandangan": _json_berkas("pandangan-analis.json").get(t), "beritaLuar": berita_luar})
     hasil["grup"] = list(grup.values())
     hasil["radar"] = t in radar_tickers()
     hasil["durasi"] = int(time.time() - mulai)
@@ -3261,9 +3300,9 @@ def pov_dalam_api(t: str, mulai: bool) -> dict:
         if sum(1 for j in _pd_jobs.values() if j["status"] == "jalan") >= PD_MAKS_JALAN or len(_pd_mulai) >= PD_MAKS_JAM:
             return {"status": "antre", "galat": "Sedang ada analisa lain berjalan; coba lagi beberapa menit lagi."}
         _pd_mulai.append(now)
-        _pd_jobs[t] = {"status": "jalan", "mulai": now, "langkah": 0, "total": 9, "label": "Memulai", "estimasi": 180}
+        _pd_jobs[t] = {"status": "jalan", "mulai": now, "langkah": 0, "total": 10, "label": "Memulai", "estimasi": 180}
     threading.Thread(target=_pd_jalan, args=(t,), daemon=True, name=f"pov-dalam-{t}").start()
-    return {"status": "jalan", "langkah": 0, "total": 9, "label": "Memulai", "estimasi": 180, "berjalan": 0}
+    return {"status": "jalan", "langkah": 0, "total": 10, "label": "Memulai", "estimasi": 180, "berjalan": 0}
 
 
 # ------------------------------------------------------------------- POV ----

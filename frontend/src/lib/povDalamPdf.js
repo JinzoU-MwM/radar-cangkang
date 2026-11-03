@@ -93,7 +93,8 @@ export async function povDalamPdf(a, jsPDF) {
   butir([kn.judul ? `Laporan ${kn.periode}: ${kn.judul}` : 'Laporan keuangan terbaru belum terbaca.',
     kw ? `Laba Q${kw.q} murni ${kw.status === 'berbalik' ? 'berbalik dari rugi' : (kw.yoy ?? '-') + '% YoY'}, QoQ ${kw.berbalikQoq ? 'berbalik dari rugi' : (kw.qoq ?? '-') + '%'}${kw.tumbuh ? ' (naik dari tahun lalu dan kuartal sebelumnya)' : ''}` : '',
     `PBV ${kn.pbv ?? '-'}x · PER ${kn.per ?? '-'}x`].filter(Boolean))
-  if (a.berita.length) { sub('Berita terbaru'); butir(a.berita.slice(0, 6).map(b => `${tgl(b.date)}: ${b.judul}`), { size: 8.3 }) }
+  if (a.berita.length) { sub('Berita terbaru (Stockbit)'); butir(a.berita.slice(0, 6).map(b => `${tgl(b.date)}: ${b.judul}`), { size: 8.3 }) }
+  if (a.beritaLuar?.length) { sub('Berita di luar Stockbit (media nasional)'); butir(a.beritaLuar.slice(0, 15).map(b => `${b.date ? tgl(b.date) : '-'}: ${b.judul} (${b.sumber})`), { size: 8.3 }) }
 
   // ---- Komunitas, dugaan, dan penyelidikan.
   judulKini = 'Dugaan dan penyelidikan'; halaman(judulKini)
