@@ -559,6 +559,48 @@ class BeritaSahamTest(unittest.TestCase):
         server._berita_cache.clear()
 
 
+class PovDalamTest(unittest.TestCase):
+    """povdalam.analyze: contoh AKPI (pendiri 95,72%, jaringan Risjad/Henry Pribadi, posting komunitas)."""
+
+    def data(self):
+        from datetime import datetime
+        return {"t": "AKPI", "nama": "Argha Karya Prima Industry", "profil": {
+            "sector": "Barang Baku", "industry": "Wadah & Kemasan", "stats": {"freeFloat": 4.28, "marketCap": 1e12},
+            "metrics": {"pbv": 0.2}, "beneficiary": [], "directors": ["Dina Risjad (Direktur Utama)"], "commissioners": [],
+            "shareholders": [{"name": "PT Tiara Intimahkota", "pct": "36.11", "pengendali": True}],
+            "holders1": [{"name": "Prismatama Nugraha PT", "pct": 27.28}, {"name": "Nawa Panduta, PT", "pct": 15.05},
+                         {"name": "PT Gitanirwana Mandrasakti", "pct": 4.19}, {"name": "Dina Risjad", "pct": 1.70},
+                         {"name": "Masyarakat", "pct": 4.28}], "chart": [{"d": "2026-11-03", "v": 510}]},
+            "insider": [{"date": "2026-10-01", "name": "Nawa Panduta, PT", "prev": 10, "cur": 15.05, "chg": 5.05, "role": "", "value": 1e9}],
+            "jaringan": {"Nawa Panduta, PT": [{"symbol": "LSIP", "pct": 2.1, "since": "2010-01-01"}, {"symbol": "SCMA", "pct": 1.5}],
+                         "PT Tiara Intimahkota": [{"symbol": "LSIP", "pct": 1.2}]},
+            "laporan": [{"date": "2026-10-20", "title": "Rencana penambahan modal HMETD", "jenis": ["rights"], "inti": "", "url": "u"}],
+            "posts": [{"user": "athira", "d": "2026-10-22", "likes": 40, "url": "p",
+                       "txt": "Saat ini pak henry pribadi, pak risjad dan pak henry liem ada di akpi lewat napan (nawa panduta). "
+                              "Pak henry pribadi bersama pak risjad dulu akuisisi $LSIP. Pendiri dan keluarga 95,72% free float."}],
+            "lk": {"kuartal": {"tumbuh": True, "q": 3}}}, datetime(2026, 11, 3)
+
+    def test_analisa(self):
+        import povdalam
+        d, kini = self.data()
+        r = povdalam.analyze(d, kini)
+        self.assertAlmostEqual(r["kepemilikan"]["nonPublik"], 84.33, places=2)
+        self.assertEqual(r["kepemilikan"]["pemegang"][4]["pengurus"], "Dina Risjad")
+        self.assertEqual(r["bersama"][0]["t"], "LSIP")                      # dimiliki dua pemegang AKPI
+        judul = " | ".join(g["judul"] for g in r["dugaan"])
+        self.assertIn("free float", judul.lower())
+        self.assertIn("jaringan", judul.lower())
+        self.assertIn("HMETD", " ".join(b for g in r["dugaan"] for b in g["bukti"]))
+        nama = {e["nama"]: e["terverifikasi"] for e in r["komunitas"]["nama"]}
+        self.assertIn("Henry Pribadi", nama)
+        self.assertEqual(r["komunitas"]["terkait"][0]["t"], "LSIP")
+
+    def test_nama_disebut(self):
+        import povdalam
+        self.assertEqual(povdalam.nama_disebut("pak djuhar sutanto dan pak ibrahim risjad yg tergabung"),
+                         ["Djuhar Sutanto", "Ibrahim Risjad"])
+
+
 class JadwalTerlewatTest(unittest.TestCase):
     def test_terlewat(self):
         import os

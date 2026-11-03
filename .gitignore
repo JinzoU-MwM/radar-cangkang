@@ -60,6 +60,9 @@ website/tsa-*.json
 # hasil POV terakhir (runtime)
 **/.pov.json
 **/.pov.tmp
+# analisa mendalam POV (runtime)
+**/.pov-dalam.json
+**/.pov-dalam.tmp
 # riwayat skor Saham 50 (runtime)
 **/.saham50-riwayat.json
 **/.saham50-riwayat.tmp
