@@ -420,6 +420,30 @@ def updates_unik(ups: list[dict]) -> list[dict]:
                                          re.sub(r"\s+", " ", str(u.get("title") or "")).strip().lower())) is u]
 
 
+# Cache hasil pencarian saham di luar radar: pencarian ulang dalam BERITA_TTL detik tidak memanggil Stockbit lagi
+# (lebih cepat, hemat kuota). Hasil kosong/galat tidak di-cache agar percobaan berikutnya langsung mengambil ulang.
+BERITA_TTL = 30 * 60
+BERITA_MAKS = 300
+_berita_cache: dict[str, tuple[float, dict]] = {}
+_berita_lock = threading.Lock()
+
+
+def berita_saham_cache(t: str, fresh: bool = False) -> dict:
+    now = time.time()
+    with _berita_lock:
+        hit = _berita_cache.get(t)
+    if hit and not fresh and now - hit[0] < BERITA_TTL:
+        return hit[1]
+    out = berita_saham(t)
+    if out.get("items"):
+        with _berita_lock:
+            _berita_cache[t] = (now, out)
+            if len(_berita_cache) > BERITA_MAKS:   # buang entri tertua
+                for k, _ in sorted(_berita_cache.items(), key=lambda kv: kv[1][0])[:len(_berita_cache) - BERITA_MAKS]:
+                    _berita_cache.pop(k, None)
+    return out
+
+
 def berita_saham(t: str) -> dict:
     """Berita & keterbukaan terbaru satu saham BEI mana pun, diambil saat dicari (cache Stockbit) dan TIDAK disimpan
     ke feed radar backdoor. Dipakai halaman emiten untuk kode di luar radar (berita terakhir + analisanya)."""
@@ -4797,7 +4821,7 @@ class Handler(BaseHTTPRequestHandler):
             if not TICKER_RE.match(t):
                 self.reply_json({"error": "Kode saham harus 4 huruf."})
             else:
-                self.reply_json(berita_saham(t))
+                self.reply_json(berita_saham_cache(t, fresh))
         elif path == "api/lk":
             self.reply_json(lk_api_cache())
         elif path == "api/harga-saham":

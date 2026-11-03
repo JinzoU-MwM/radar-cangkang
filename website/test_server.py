@@ -476,6 +476,21 @@ class BeritaSahamTest(unittest.TestCase):
         self.assertEqual(r["nama"], "Graha Mitra Asia Tbk")
         simpan.assert_not_called()   # tidak masuk feed radar
 
+    def test_cache(self):
+        server._berita_cache.clear()
+        isi = {"ticker": "RELF", "items": [{"id": "a"}]}
+        with unittest.mock.patch.object(server, "berita_saham", return_value=isi) as ambil:
+            server.berita_saham_cache("RELF")
+            server.berita_saham_cache("RELF")
+            self.assertEqual(ambil.call_count, 1)          # pencarian kedua dari cache
+            server.berita_saham_cache("RELF", fresh=True)
+            self.assertEqual(ambil.call_count, 2)
+        with unittest.mock.patch.object(server, "berita_saham", return_value={"ticker": "NAYZ", "items": []}) as ambil:
+            server.berita_saham_cache("NAYZ")
+            server.berita_saham_cache("NAYZ")
+            self.assertEqual(ambil.call_count, 2)          # hasil kosong tidak di-cache
+        server._berita_cache.clear()
+
 
 class Saham50Test(unittest.TestCase):
     def test_teknikal(self):
