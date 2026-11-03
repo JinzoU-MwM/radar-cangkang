@@ -2742,6 +2742,8 @@ def lk_loop() -> None:
 # Universe: Key Stats (kapitalisasi / jumlah saham) + data harga Recovery + radar; harga pasti dari grafik Stockbit.
 # Dibangun di latar (harian) ke .saham50.json; /api/saham50 membaca berkas itu.
 S50_PATH = ROOT / ".saham50.json"
+# Riwayat skor harian Saham 50 ({tanggal: {kode: skor}}, 60 hari) untuk perubahan skor dibanding minggu lalu.
+S50_RIWAYAT_PATH = ROOT / ".saham50-riwayat.json"
 S50_BATAS = 50
 RUTIN_LK_RX = re.compile(r"registrasi pemegang|bukti iklan|laporan bulanan|penggunaan dana hasil|pemanggilan rapat|jadwal", re.I)
 
@@ -2814,6 +2816,60 @@ def s50_kandidat_universe(ks: dict) -> set[str]:
     return out
 
 
+def s50_broker(syms: set[str]) -> dict:
+    """Pola broker 2 bulan terakhir (data Pola Broker bulanan) untuk saham Saham 50: net bandar (3 pembeli + 3 penjual
+    teratas), broker akumulasi dan distribusi utama. Hanya saham yang tercatat di 25 teratas transaksi broker."""
+    d = broker_data()
+    bulan = sorted(BP.view(d, None, None, "").get("bulanAda") or [])[-2:] if d else []
+    out: dict[str, list] = {}
+    for m in bulan:
+        s = BP.view(d, m, None, "", batas=None).get("saham") or {}
+        for side in ("akumulasi", "distribusi"):
+            for a in s.get(side) or []:
+                if a["s"] in syms:
+                    out.setdefault(a["s"], []).append({"bulan": m, "tahun": d.get("tahun"), "bandar": a["bandar"],
+                                                       "akum": [z["b"] for z in a["akum"]], "dist": [z["b"] for z in a["dist"]]})
+    return out
+
+
+def s50_broker_parse(resp: dict) -> dict | None:
+    """Ringkasan broker satu saham (marketdetectors, 30 hari): net 3 pembeli + 3 penjual teratas dan kodenya."""
+    bs = ((resp or {}).get("data") or {}).get("broker_summary") or {}
+
+    def nilai(x, kunci):
+        for k in kunci:
+            v = to_num(x.get(k))
+            if v is not None:
+                return abs(v)
+        return 0.0
+    beli = sorted(((x.get("netbs_broker_code"), nilai(x, ("bval", "value", "netbs_value"))) for x in bs.get("brokers_buy") or []
+                   if x.get("netbs_broker_code")), key=lambda z: -z[1])[:3]
+    jual = sorted(((x.get("netbs_broker_code"), nilai(x, ("sval", "value", "netbs_value"))) for x in bs.get("brokers_sell") or []
+                   if x.get("netbs_broker_code")), key=lambda z: -z[1])[:3]
+    if not beli and not jual:
+        return None
+    return {"bandar": round(sum(v for _, v in beli) - sum(v for _, v in jual)), "akum": [c for c, _ in beli], "dist": [c for c, _ in jual]}
+
+
+def s50_riwayat(rows: list[dict], hari_ini: date) -> None:
+    """Simpan skor hari ini ke riwayat dan isi skorLalu/skorTgl dari catatan >= 7 hari lalu (yang terdekat)."""
+    try:
+        rw = json.loads(S50_RIWAYAT_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        rw = {}
+    kini = hari_ini.isoformat()
+    batas7 = (hari_ini - timedelta(days=7)).isoformat()
+    lalu = max((d for d in rw if d <= batas7), default=None) or min((d for d in rw if d < kini), default=None)
+    for x in rows:
+        if lalu and x["t"] in rw[lalu]:
+            x["skorLalu"], x["skorTgl"] = rw[lalu][x["t"]], lalu
+    rw[kini] = {x["t"]: x["skor"] for x in rows}
+    rw = {d: v for d, v in rw.items() if d >= (hari_ini - timedelta(days=60)).isoformat()}
+    tmp = S50_RIWAYAT_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(rw, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(S50_RIWAYAT_PATH)
+
+
 def saham50_build() -> dict:
     """Bangun daftar Saham 50 (dipanggil di latar). Butuh token Stockbit untuk harga dan keterbukaan."""
     cfg = load_config() or {}
@@ -2839,14 +2895,27 @@ def saham50_build() -> dict:
             laporan = get_reports(cfg.get("reports") or {}, t, max_pages=1) if cfg.get("reports") else []
         except Exception:
             laporan = []
+        # Broker 30 hari terakhir langsung per saham (saham gocap jarang masuk 25 teratas data Pola Broker).
+        try:
+            dari = (hari_ini - timedelta(days=30)).strftime("%Y-%m-%d")
+            bk = s50_broker_parse(sb_fetch(f"/marketdetectors/{t}?from={dari}&to={hari_ini.strftime('%Y-%m-%d')}"
+                                           "&transaction_type=TRANSACTION_TYPE_NET&market_board=MARKET_BOARD_REGULER"
+                                           "&investor_type=INVESTOR_TYPE_ALL&limit=10"))
+        except Exception:
+            bk = None
         time.sleep(0.4)
-        return t, tek, laporan
+        return t, tek, laporan, bk
 
     with ThreadPoolExecutor(max_workers=2) as ex:
         hasil = [x for x in ex.map(satu, sorted(s50_kandidat_universe(ks))) if x]
 
     rows = []
-    for t, tek, laporan in hasil:
+    try:
+        brk = s50_broker({h[0] for h in hasil})
+    except Exception as e:
+        print(f"[saham50] pola broker gagal: {e}", file=sys.stderr)
+        brk = {}
+    for t, tek, laporan, bk in hasil:
         k, it, pa, kd, r = ks.get(t) or {}, items.get(t), pandangan.get(t), kand.get(t), lk.get(t)
         rs = k.get("rasio") or {}
         aksi = []
@@ -2905,6 +2974,12 @@ def saham50_build() -> dict:
         elif tek["dariRendah"] <= 10 and not tek["datar"]:
             skor += 5
             potensi.append(f"Dekat titik terendah 52 minggu (+{tek['dariRendah']:.1f}% dari dasar)".replace(".", ","))
+        # Utama: ringkasan broker 30 hari per saham; cadangan: data Pola Broker bulanan.
+        pb = [{**bk, "bulan": None, "label": "30 hari"}] if bk else [{**b, "label": f"bulan {b['bulan']}"} for b in brk.get(t) or []]
+        if pb and pb[-1]["bandar"] > 0:
+            potensi.append(f"Broker {pb[-1]['label']}: akumulasi oleh {', '.join(pb[-1]['akum']) or '-'}")
+        elif pb and pb[-1]["bandar"] < 0:
+            risiko.append(f"Broker {pb[-1]['label']}: distribusi oleh {', '.join(pb[-1]['dist']) or '-'}")
         if "uma" in jenis90:
             risiko.append("Peringatan UMA / suspensi dalam 90 hari terakhir")
         if tek["datar"]:
@@ -2928,16 +3003,45 @@ def saham50_build() -> dict:
                      "aksi": aksi[:8], "jenisAksi": sorted(jenis90), "kinerja": {"periode": (r or {}).get("periode"), "judul": (r or {}).get("judul"),
                      "kategori": (r or {}).get("kategori"), "kuartal": kw or None},
                      "valuasi": {"pbv": pbv, "pe": rs.get("Current PE Ratio (TTM)"), "mcap": k.get("mcap"), "freeFloat": k.get("freeFloat")},
-                     "potensi": potensi, "risiko": risiko, "target": target})
+                     "potensi": potensi, "risiko": risiko, "target": target, "broker": pb})
     rows.sort(key=lambda x: (-x["skor"], x["t"]))
+    try:
+        s50_riwayat(rows, hari_ini.date())
+    except OSError as e:
+        print(f"[saham50] riwayat gagal: {e}", file=sys.stderr)
     return {"updated": hari_ini.strftime("%Y-%m-%d %H:%M"), "batas": S50_BATAS, "n": len(rows), "rows": rows}
 
 
 def saham50_api() -> dict:
     try:
-        return json.loads(S50_PATH.read_text(encoding="utf-8"))
+        d = json.loads(S50_PATH.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {"error": "Daftar Saham 50 sedang disusun server; muat ulang beberapa menit lagi.", "rows": []}
+    # Kinerja kuartal dan valuasi selalu dari data terbaru (daftar disusun sekali sehari; Key Stats/LK bisa lebih baru).
+    lk = {r["t"]: r for r in lk_api_cache().get("rows") or []}
+    ks = lks_load()
+    for x in d.get("rows") or []:
+        r, k = lk.get(x["t"]), ks.get(x["t"]) or {}
+        if r:
+            x["kinerja"] = {"periode": r.get("periode"), "judul": r.get("judul"), "kategori": r.get("kategori"), "kuartal": r.get("kuartal")}
+        rs = k.get("rasio") or {}
+        v = x.get("valuasi") or {}
+        x["valuasi"] = {"pbv": v.get("pbv") if v.get("pbv") is not None else rs.get("Current Price to Book Value"),
+                        "pe": v.get("pe") if v.get("pe") is not None else rs.get("Current PE Ratio (TTM)"),
+                        "mcap": v.get("mcap") or k.get("mcap"), "freeFloat": v.get("freeFloat") if v.get("freeFloat") is not None else k.get("freeFloat")}
+    return d
+
+
+def s50_data_kosong() -> bool:
+    """Daftar tersimpan disusun saat Key Stats belum tersedia (valuasi kosong hampir semua) padahal kini sudah ada."""
+    try:
+        rows = json.loads(S50_PATH.read_text(encoding="utf-8")).get("rows") or []
+    except (OSError, ValueError):
+        return False
+    if not rows or sum(1 for x in rows if (x.get("valuasi") or {}).get("pbv") is not None) >= len(rows) * 0.2:
+        return False
+    ks = lks_load()
+    return sum(1 for x in rows if (ks.get(x["t"]) or {}).get("rasio")) >= len(rows) * 0.5
 
 
 def saham50_loop() -> None:
@@ -2947,7 +3051,7 @@ def saham50_loop() -> None:
         try:
             jam = datetime.now(timezone(timedelta(hours=7)))
             lama = not S50_PATH.exists() or datetime.fromtimestamp(S50_PATH.stat().st_mtime).date() < jam.date()
-            if get_token() and not token_expired() and (not S50_PATH.exists() or (lama and jam.hour >= 17)):
+            if get_token() and not token_expired() and (not S50_PATH.exists() or (lama and jam.hour >= 17) or s50_data_kosong()):
                 d = saham50_build()
                 tmp = S50_PATH.with_suffix(".tmp")
                 tmp.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")

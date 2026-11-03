@@ -165,9 +165,9 @@ def domestik(jenis: str) -> bool:
     return str(jenis).lower() != "asing"
 
 
-def view(data: dict, month: int | None, broker: str | None, jenis: str = "") -> dict:
+def view(data: dict, month: int | None, broker: str | None, jenis: str = "", batas: int | None = 40) -> dict:
     """Per broker (semua bulan) dan/atau per saham (agregat broker pada satu bulan).
-    jenis: "" semua, "asing", atau "domestik" (lokal + pemerintah)."""
+    jenis: "" semua, "asing", atau "domestik" (lokal + pemerintah). batas=None: semua saham tiap sisi."""
     semua = data.get("broker") or {}
     bro = {c: b for c, b in semua.items() if not jenis or (jenis == "asing") != domestik(b.get("jenis", ""))}
     lst = sorted(({"kode": c, "nama": b.get("nama", ""), "jenis": b.get("jenis", ""),
@@ -207,8 +207,8 @@ def view(data: dict, month: int | None, broker: str | None, jenis: str = "") -> 
             # Harga rata-rata gabungan broker pembeli / penjual utama (tertimbang nilai).
             wa = lambda zs: round(sum(abs(z["val"]) for z in zs) / sum(abs(z["val"]) / z["avg"] for z in zs), 1)                 if zs and all(z.get("avg") for z in zs) else None
             a["avgAkum"], a["avgDist"] = wa(a["akum"]), wa(a["dist"])
-        out["saham"] = {"akumulasi": sorted([a for a in rows if a["bandar"] > 0], key=lambda a: -a["bandar"])[:40],
-                        "distribusi": sorted([a for a in rows if a["bandar"] < 0], key=lambda a: a["bandar"])[:40]}
+        out["saham"] = {"akumulasi": sorted([a for a in rows if a["bandar"] > 0], key=lambda a: -a["bandar"])[:batas],
+                        "distribusi": sorted([a for a in rows if a["bandar"] < 0], key=lambda a: a["bandar"])[:batas]}
     return out
 
 

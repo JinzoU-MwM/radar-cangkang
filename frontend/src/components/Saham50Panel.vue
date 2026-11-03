@@ -10,7 +10,7 @@ import { isHsc } from '../lib/hsc.js'
 const data = ref(null), err = ref(''), loading = ref(true)
 api.get('/api/saham50').then(r => { if (r.error) err.value = r.error; else data.value = r }, e => { err.value = e.message || String(e) }).finally(() => { loading.value = false })
 
-const KAT = [['semua', 'Semua'], ['backdoor', 'Backdoor / calon cangkang'], ['aksi', 'Aksi korporasi 90 hari'], ['kinerja', 'Kinerja membaik'], ['murah', 'PBV < 1']]
+const KAT = [['semua', 'Semua'], ['backdoor', 'Backdoor / calon cangkang'], ['aksi', 'Aksi korporasi 90 hari'], ['kinerja', 'Kinerja membaik'], ['q3', 'Q3 naik (YoY & QoQ)'], ['akum', 'Akumulasi broker'], ['skorNaik', 'Skor naik'], ['murah', 'PBV < 1']]
 const f = reactive({ kat: 'semua', cari: '', tanpaDatar: true })
 // Kriteria tiap kategori (dipakai saringan dan penghitung).
 const KRIT = {
@@ -19,8 +19,18 @@ const KRIT = {
   aksi: x => x.jenisAksi.some(j => j !== 'uma'),
   // Kuartal murni naik dari tahun lalu dan dari kuartal sebelumnya (server lk_tumbuh), atau laporan kumulatif bagus.
   kinerja: x => !!x.kinerja?.kuartal?.tumbuh || ['bagus', 'berbalik'].includes(x.kinerja?.kategori),
+  // Sama dengan tab Kinerja: laba kuartal murni > kuartal sama tahun lalu DAN > kuartal sebelumnya.
+  q3: x => !!x.kinerja?.kuartal?.tumbuh,
+  akum: x => (x.broker?.at(-1)?.bandar ?? 0) > 0,
+  skorNaik: x => x.skorLalu != null && x.skor > x.skorLalu,
   murah: x => x.valuasi?.pbv > 0 && x.valuasi.pbv < 1,
 }
+// Perubahan skor dibanding catatan >= 7 hari lalu (server: riwayat skor harian).
+const dSkor = x => x.skorLalu == null ? null : x.skor - x.skorLalu
+// Nilai rupiah ringkas untuk net broker.
+const rpRingkas = v => { const a = Math.abs(v); return (v < 0 ? '−' : '+') + 'Rp' + (a >= 1e9 ? fmt(a / 1e9, 1) + ' M' : a >= 1e6 ? fmt(a / 1e6, 0) + ' jt' : fmt(a, 0)) }
+const qTeks = k => !k ? '' : `Q${k.q} ` + (k.tumbuh ? (k.status === 'berbalik' ? 'berbalik laba, > Q sebelumnya' : 'naik YoY & QoQ')
+  : ({ naik: 'naik YoY, < Q sebelumnya', berbalik: 'berbalik laba, < Q sebelumnya', turun: 'turun', rugi: 'rugi' }[k.status] || '–'))
 const rows = computed(() => {
   const q = f.cari.trim().toUpperCase()
   return (data.value?.rows || []).filter(x => KRIT[f.kat](x) && (!f.tanpaDatar || !x.tek.datar) && (!q || x.t.includes(q) || (x.nama || '').toUpperCase().includes(q)))
@@ -70,8 +80,8 @@ async function unduhPdf() {
       <div class="mh"><h2>Daftar Saham 50</h2><span class="small muted">{{ rows.length }} dari {{ data.n }} saham ≤ Rp{{ data.batas }} · diperbarui {{ data.updated }}</span></div>
       <div class="scroll">
         <table class="ledger">
-          <thead><tr><th>Saham</th><th class="num">Skor</th><th class="num">Harga</th><th class="num">1M</th><th class="num">YTD</th><th class="num">Dari terendah</th>
-            <th class="num">PBV</th><th>Aksi korporasi</th><th>Kinerja</th><th class="num">Target</th></tr></thead>
+          <thead><tr><th>Saham</th><th class="num">Skor</th><th class="num" title="Perubahan skor dibanding minggu lalu">Δ skor</th><th class="num">Harga</th><th class="num">1M</th><th class="num">YTD</th><th class="num">Dari terendah</th>
+            <th class="num">PBV</th><th>Aksi korporasi</th><th>Kinerja</th><th>Broker 30 hari</th><th class="num">Target</th></tr></thead>
           <tbody>
             <template v-for="x in rows.slice(0, n)" :key="x.t">
               <tr class="row" :class="{ open: buka === x.t }" tabindex="0" @click="buka = buka === x.t ? '' : x.t" @keydown.enter="buka = buka === x.t ? '' : x.t">
@@ -81,22 +91,29 @@ async function unduhPdf() {
                   <span v-if="isHsc(x.t)" class="tag t-warn">HSC</span>
                   <div v-if="x.nama" class="small muted nm">{{ x.nama }}</div></td>
                 <td class="num"><b>{{ x.skor }}</b></td>
+                <td class="num small" :class="dSkor(x) > 0 ? 'c-good' : dSkor(x) < 0 ? 'c-strong' : 'muted'" :title="x.skorTgl ? 'Skor ' + x.skorLalu + ' pada ' + fmtDate(x.skorTgl) : 'Belum ada riwayat'">{{ dSkor(x) == null ? '–' : (dSkor(x) > 0 ? '▲' + dSkor(x) : dSkor(x) < 0 ? '▼' + -dSkor(x) : '0') }}</td>
                 <td class="num">Rp{{ fmt(x.harga, 0) }}</td>
                 <td class="num" :class="(x.tek.ret['1M'] ?? 0) >= 0 ? 'c-good' : 'c-strong'">{{ pct(x.tek.ret['1M']) }}</td>
                 <td class="num" :class="(x.tek.ret.YTD ?? 0) >= 0 ? 'c-good' : 'c-strong'">{{ pct(x.tek.ret.YTD) }}</td>
                 <td class="num small">{{ pct(x.tek.dariRendah) }}</td>
                 <td class="num small">{{ x.valuasi?.pbv != null ? fmt(x.valuasi.pbv, 2) + '×' : '–' }}</td>
                 <td class="small"><span v-for="j in x.jenisAksi" :key="j" class="tag" :class="j === 'uma' ? 't-strong' : 't-calm'">{{ JENIS[j] || j }}</span><span v-if="!x.jenisAksi.length" class="muted">–</span></td>
-                <td class="small">{{ x.kinerja?.kuartal ? 'Q' + x.kinerja.kuartal.q + ' ' + ({ naik: 'naik', berbalik: 'berbalik laba', turun: 'turun', rugi: 'rugi' }[x.kinerja.kuartal.status] || '–') : (x.kinerja?.judul || '–') }}</td>
+                <td class="small" :class="x.kinerja?.kuartal?.tumbuh ? 'c-good' : ''">{{ x.kinerja?.kuartal ? qTeks(x.kinerja.kuartal) : (x.kinerja?.judul || '–') }}</td>
+                <td class="small"><template v-if="x.broker?.length"><span :class="x.broker.at(-1).bandar > 0 ? 'c-good' : 'c-strong'">{{ x.broker.at(-1).bandar > 0 ? 'Akumulasi' : 'Distribusi' }} {{ rpRingkas(x.broker.at(-1).bandar) }}</span>
+                  <div class="muted">{{ x.broker.at(-1).label }} · {{ (x.broker.at(-1).bandar > 0 ? x.broker.at(-1).akum : x.broker.at(-1).dist).join(', ') }}</div></template><span v-else class="muted">–</span></td>
                 <td class="num small">{{ x.target ? 'Rp' + fmt(x.target.harga, 0) + ' (' + pct(x.target.potensi) + ')' : '–' }}</td>
               </tr>
-              <tr v-if="buka === x.t" class="det"><td colspan="10">
+              <tr v-if="buka === x.t" class="det"><td colspan="12">
                 <div class="dua">
                   <div><b class="small">Potensi ke depan</b><ul class="small"><li v-for="p in x.potensi" :key="p">{{ p }}</li><li v-if="!x.potensi.length" class="muted">Belum ada katalis yang terbaca.</li></ul></div>
                   <div><b class="small">Risiko</b><ul class="small"><li v-for="r in x.risiko" :key="r">{{ r }}</li><li v-if="!x.risiko.length" class="muted">Tidak ada catatan risiko khusus.</li></ul></div>
                 </div>
                 <p v-if="x.target" class="small muted">Target {{ x.target.dasar }}: Rp{{ fmt(x.target.harga, 0) }} ({{ pct(x.target.potensi) }}).
                   Teknikal: RSI {{ x.tek.rsi ?? '–' }}, {{ x.tek.diAtasEma20 ? 'di atas' : 'di bawah' }} EMA20, {{ pct(x.tek.dariTinggi) }} dari tertinggi 52 minggu.</p>
+                <p v-if="x.broker?.length" class="small"><b>Pola broker</b> (net 3 pembeli + 3 penjual teratas):
+                  <template v-for="(b, i) in x.broker" :key="b.label"><span v-if="i"> · </span>{{ b.label }} {{ rpRingkas(b.bandar) }}
+                    (akumulasi {{ b.akum.join(', ') || '–' }}; distribusi {{ b.dist.join(', ') || '–' }})</template></p>
+                <p v-if="x.skorTgl" class="small muted">Skor {{ x.skorLalu }} pada {{ fmtDate(x.skorTgl) }} → {{ x.skor }} sekarang.</p>
                 <template v-if="x.aksi.length"><b class="small">Keterbukaan aksi korporasi terbaru</b>
                   <ul class="small"><li v-for="a in x.aksi" :key="a.url + a.judul">{{ fmtDate(a.tgl) }} · <a :href="a.url" target="_blank" rel="noopener" @click.stop>{{ a.judul }}</a><span v-if="a.inti" class="muted"> — {{ a.inti }}</span></li></ul></template>
               </td></tr>
@@ -106,8 +123,9 @@ async function unduhPdf() {
       </div>
       <p v-if="rows.length > n" class="small"><button type="button" class="pill sm" @click="n += 60">Tampilkan 60 lagi ({{ rows.length - n }} tersisa)</button></p>
       <p class="small muted"><b>Skor potensi</b> (0–100): radar backdoor 25 atau calon cangkang 20, aksi pengendali 90 hari 15, penambahan modal/usaha baru 10,
-        laba kuartal murni naik/berbalik 15, PBV &lt; 0,5× 10 (&lt; 1× 5), teknikal mulai naik 10 (dekat dasar 5). <b>Target</b> = batas atas nilai wajar
-        analisa radar bila ada, selain itu resistance terdekat (tertinggi 60 hari). Saham di bawah Rp50 umumnya berlikuiditas tipis dan diperdagangkan
+        laba kuartal murni naik dari tahun lalu dan dari kuartal sebelumnya 15 (hanya dari tahun lalu 8), PBV &lt; 0,5× 10 (&lt; 1× 5), teknikal mulai naik 10 (dekat dasar 5). <b>Target</b> = batas atas nilai wajar
+        analisa radar bila ada, selain itu resistance terdekat (tertinggi 60 hari). <b>Δ skor</b> = perubahan dibanding minggu lalu;
+        <b>Broker</b> = net 3 broker pembeli + 3 penjual teratas 30 hari terakhir (cadangan: data Pola Broker bulanan). Saham di bawah Rp50 umumnya berlikuiditas tipis dan diperdagangkan
         di Papan Pemantauan Khusus; bukan ajakan membeli.</p>
     </template>
   </section>
