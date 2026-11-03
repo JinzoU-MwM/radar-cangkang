@@ -8,6 +8,7 @@ import { fmt, fmtDate } from '../lib/domain.js'
 import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
 import HargaSaham from './HargaSaham.vue'
 import { musimLk } from '../lib/musimLk.js'
+import { grupKonglo, terbaikPerKelompok } from '../lib/kelompokLk.js'
 
 const data = ref(null), err = ref(''), loading = ref(true)
 api.get('/api/lk').then(r => { if (r.error) err.value = r.error; else data.value = r }, e => { err.value = e.message || String(e) }).finally(() => { loading.value = false })
@@ -53,14 +54,15 @@ const labaPct = x => x.kategori === 'berbalik' ? 'berbalik' : x.laba?.pct == nul
 const nada = x => ['bagus', 'berbalik', 'naik'].includes(x.kategori) ? 'c-good' : x.kategori === 'lain' ? 'muted' : 'c-strong'
 const buka = ref('')
 
-// 3 terbaik dari daftar yang sedang tampil, hanya dengan syarat yang bisa dicek di laporan (tanpa target harga):
+// Terbaik per kelompok (lib/kelompokLk.js: Konglo, CPO, Backdoor, Tambang, Telekomunikasi, Migas, Properti, Konsumen;
+// tanpa bank/asuransi) dari seluruh laporan periode terpilih, hanya dengan syarat yang bisa dicek di laporan (tanpa target harga):
 // laba kuartal murni lebih besar dari kuartal yang sama tahun lalu (naik/berbalik YoY) DAN dari kuartal sebelumnya
 // (QoQ > 0), pendapatan naik, PE TTM positif. Basis dinilai dari laba kuartal itu sendiri, bukan kumulatif, sehingga
 // kenaikan kumulatif persentase besar dari basis kecil tetap bisa masuk bila kuartal terakhirnya memang tumbuh.
 // Diurutkan dari PE TTM terendah (paling murah terhadap laba yang sudah terbukti).
 const SYARAT = x => ['naik', 'berbalik'].includes(x.kuartal?.status) && (x.kuartal?.qoq ?? 0) > 0
   && (x.pendapatan?.pct ?? -1) > 0 && x.kuartal?.pe > 0
-const terbaik = computed(() => rows.value.filter(SYARAT).sort((a, b) => a.kuartal.pe - b.kuartal.pe).slice(0, 3))
+const kelompok = computed(() => terbaikPerKelompok(basis.value, SYARAT))
 const alasan = x => [
   `Laba ${Q} murni ${x.kuartal.status === 'berbalik' ? 'berbalik dari rugi' : pct(x.kuartal.yoy) + ' YoY'}, QoQ ${pct(x.kuartal.qoq)}`,
   `Pendapatan ${pct(x.pendapatan.pct)}${x.marginKotor ? `, margin kotor ${fmt(x.marginKotor.dari, 1)}% → ${fmt(x.marginKotor.ke, 1)}%` : ''}`,
@@ -121,18 +123,22 @@ async function unduhPdf() {
         <span class="small muted">Urutkan:</span>
         <button v-for="[v, l] in URUT" :key="v" type="button" class="pill sm" :aria-pressed="String(f.urut === v)" @click="f.urut = v">{{ l }}</button>
       </div>
-      <div v-if="terbaik.length" class="tiga" aria-label="3 terbaik">
-        <div class="th"><h2>{{ terbaik.length }} terbaik</h2>
-          <span class="small muted">dari daftar di bawah · syarat: laba {{ Q }} murni lebih besar dari {{ Q }} tahun lalu dan dari kuartal sebelumnya, pendapatan naik · urut PE TTM terendah · bukan rekomendasi beli/jual</span></div>
+      <div class="tiga" aria-label="Terbaik per kelompok">
+        <div class="th"><h2>Terbaik per kelompok</h2>
+          <span class="small muted">1 saham per kelompok dari seluruh laporan {{ PERIODE.find(p => p[0] === per)[1] }} · tanpa bank & asuransi · syarat: laba {{ Q }} murni lebih besar dari {{ Q }} tahun lalu dan dari kuartal sebelumnya, pendapatan naik · PE TTM terendah · bukan rekomendasi beli/jual</span></div>
         <div class="kartu">
-          <div v-for="(x, i) in terbaik" :key="x.id" class="k">
-            <div class="kh"><span class="no">{{ i + 1 }}</span>
-              <RouterLink :to="{ path: '/emiten/' + x.t, query: { tab: 'berita' } }"><b>{{ x.t }}</b></RouterLink>
-              <span v-if="x.radar" class="tag t-calm">radar</span>
-              <span class="hg"><HargaSaham :kode="x.t" /></span></div>
-            <div v-if="x.nama" class="small muted">{{ x.nama }}</div>
-            <div class="small lb">Laba {{ KUM }} {{ uang(x.laba?.ke) }} <b :class="nada(x)">{{ labaPct(x) }}</b> · {{ Q }} murni {{ uangQ(x.kuartal.laba, x.kuartal.mata) }}</div>
-            <ul class="small"><li v-for="a in alasan(x)" :key="a">{{ a }}</li></ul>
+          <div v-for="g in kelompok" :key="g.k" class="k" :class="{ kosong: !g.x }">
+            <div class="kl">{{ g.label }}<span v-if="g.x && g.k === 'konglo'" class="muted"> · {{ grupKonglo(g.x.t) }}</span></div>
+            <template v-if="g.x">
+              <div class="kh">
+                <RouterLink :to="{ path: '/emiten/' + g.x.t, query: { tab: 'berita' } }"><b>{{ g.x.t }}</b></RouterLink>
+                <span v-if="g.x.radar" class="tag t-calm">radar</span>
+                <span class="hg"><HargaSaham :kode="g.x.t" /></span></div>
+              <div v-if="g.x.nama" class="small muted">{{ g.x.nama }}</div>
+              <div class="small lb">Laba {{ KUM }} {{ uang(g.x.laba?.ke) }} <b :class="nada(g.x)">{{ labaPct(g.x) }}</b> · {{ Q }} murni {{ uangQ(g.x.kuartal.laba, g.x.kuartal.mata) }}</div>
+              <ul class="small"><li v-for="a in alasan(g.x)" :key="a">{{ a }}</li></ul>
+            </template>
+            <p v-else class="small muted">Belum ada emiten di kelompok ini yang lolos syarat.</p>
           </div>
         </div>
       </div>
@@ -199,7 +205,8 @@ async function unduhPdf() {
 .kartu{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
 .k{border:1px solid var(--rule);border-left:4px solid var(--now-ink);background:var(--sheet);padding:10px 12px;border-radius:6px}
 .kh{display:flex;align-items:center;gap:8px;font-size:16px}.kh .hg{margin-left:auto;font-size:13px}
-.no{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--now-ink);color:var(--sheet);font-size:12px;font-weight:700}
+.kl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--now-ink);margin-bottom:4px}
+.k.kosong{border-left-color:var(--rule)}
 .lb{margin:6px 0 2px}.k ul{margin:4px 0 0;padding-left:16px}
 .dr{min-width:260px;max-width:340px}.det td{background:var(--sheet)}.det p{margin:4px 0}.det ul{margin:4px 0;padding-left:18px}
 </style>

@@ -2601,11 +2601,57 @@ def lk_kuartal_ks(r: dict, ks: dict | None) -> dict | None:
 _lk_memo: tuple[tuple, float, dict] = ((), 0.0, {})
 
 
+# Klasifikasi emiten (sektor/subsektor/industri IDX-IC dari profil Stockbit) untuk kartu "terbaik per kelompok" di
+# Kinerja: jarang berubah, diambil bertahap di latar dan disimpan ke .sektor.json.
+SEKTOR_PATH = ROOT / ".sektor.json"
+
+
+def sektor_load() -> dict:
+    try:
+        return json.loads(SEKTOR_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def sync_sektor(batas: int = 300) -> int:
+    """Ambil klasifikasi untuk emiten di daftar LK yang belum punya (maks. `batas` per putaran)."""
+    if not (get_token() and not token_expired()):
+        return 0
+    sk = sektor_load()
+    target = sorted({r["t"] for r in lk_load().values()} - set(sk))[:batas]
+    tok = get_token()
+
+    def ambil(t):
+        for coba in range(4):
+            try:
+                c = (json.loads(http_get_api(SB + f"/emitten/{t}/profile", tok)).get("data") or {}).get("classification") or {}
+                time.sleep(0.5)
+                return t, {k: (c.get(f) or {}).get("name", "") for k, f in (("sektor", "sector"), ("sub", "sub_sector"), ("ind", "industry"))}
+            except urllib.error.HTTPError as e:
+                if e.code != 429 or coba == 3:
+                    return t, None
+                time.sleep(10 * (coba + 1))
+            except Exception:
+                return t, None
+        return t, None
+    n = 0
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        for t, v in ex.map(ambil, target):
+            if v:
+                sk[t] = v
+                n += 1
+    if n:
+        tmp = SEKTOR_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps(sk, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(SEKTOR_PATH)
+    return n
+
+
 def lk_api_cache() -> dict:
     """lk_api dengan cache: dihitung ulang bila berkas LK / kuartalan / Key Stats berubah atau setelah 5 menit
     (harga & daftar radar), agar tab Kinerja tidak menghitung ulang ratusan laporan di setiap kunjungan."""
     global _lk_memo
-    kunci = tuple(p.stat().st_mtime if p.exists() else 0 for p in (LK_PATH, LKQ_PATH, LKS_PATH))
+    kunci = tuple(p.stat().st_mtime if p.exists() else 0 for p in (LK_PATH, LKQ_PATH, LKS_PATH, SEKTOR_PATH))
     if _lk_memo[0] == kunci and time.time() - _lk_memo[1] < 300:
         return _lk_memo[2]
     hasil = lk_api()
@@ -2613,9 +2659,12 @@ def lk_api_cache() -> dict:
     return hasil
 
 
-def lk_api(data: dict | None = None, kuartalan: dict | None = None, keystats: dict | None = None) -> dict:
+def lk_api(data: dict | None = None, kuartalan: dict | None = None, keystats: dict | None = None, sektor: dict | None = None) -> dict:
     """Daftar LK terbaru per emiten (satu laporan terakhir per kode) + ringkasan per kategori."""
     data = lk_load() if data is None else data
+    sektor = sektor_load() if sektor is None else sektor
+    # Cadangan sektor dari indeks sektoral data Seasonality bila profil belum diambil.
+    ix = {t: SZ.SECTORS.get((v.get("ix") or [""])[0], "") for t, v in (season_data().get("stock") or {}).items()}
     kuartalan = lkq_load() if kuartalan is None else kuartalan
     keystats = lks_load() if keystats is None else keystats
     terakhir, per_periode = {}, {}
@@ -2631,7 +2680,8 @@ def lk_api(data: dict | None = None, kuartalan: dict | None = None, keystats: di
         if kw is None and m:
             pp = per_periode[r["t"]]
             kw = lk_kuartal(r, pp.get(f"1H{m.group(1)}") or pp.get(f"6M{m.group(1)}"), pp.get(f"3M{m.group(1)}") or pp.get(f"1Q{m.group(1)}"))
-        rows.append({**r, "radar": r["t"] in radar, "kuartal": kw})
+        rows.append({**r, "radar": r["t"] in radar, "kuartal": kw,
+                     "kelas": sektor.get(r["t"]) or ({"sektor": ix[r["t"]]} if ix.get(r["t"]) else None)})
     rows.sort(key=lambda r: (r.get("tgl", ""), (r.get("laba") or {}).get("pct") or 0), reverse=True)
     hit = {}
     for r in rows:
@@ -2660,6 +2710,9 @@ def lk_loop() -> None:
                 n = sync_lk_kuartal()
                 if n:
                     print(f"[lk] laba rugi kuartalan diperbarui untuk {n} emiten", file=sys.stderr)
+                n = sync_sektor()
+                if n:
+                    print(f"[lk] klasifikasi sektor untuk {n} emiten", file=sys.stderr)
             except Exception as e:
                 print(f"[lk] gagal: {e}", file=sys.stderr)
         time.sleep(1800)
