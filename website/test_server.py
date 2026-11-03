@@ -465,6 +465,41 @@ class UpdatesUnikTest(unittest.TestCase):
         self.assertEqual([u["id"] for u in server.updates_unik(ups)], ["sb-report-2", "sb-news-3", "sb-news-4"])
 
 
+class CekPascaDeployTest(unittest.TestCase):
+    """deploy/cek_pasca.py: halaman utama/JS = kritis, data kosong = peringatan."""
+
+    def setUp(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("cek_pasca", Path(__file__).resolve().parent.parent / "deploy" / "cek_pasca.py")
+        self.cek = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.cek)
+
+    def jawab(self, ubah=None):
+        isi = {"": (200, b'<div id="app"></div><script type="module" src="./assets/index-A.js"></script>'),
+               "assets/index-A.js": (200, b"x"),
+               "api/items": (200, b'[{"ticker": "AGAR"}]'), "api/updates": (200, b'[{"id": 1}]'),
+               "api/lk": (200, b'{"n": 800}'), "api/saham50": (200, b'{"n": 150}'),
+               "api/broker-pola": (200, json.dumps({"brokers": [{}] * 90}).encode()),
+               "api/seasonality": (200, b'{"total": 239}'),
+               "api/kode-bei": (200, json.dumps({"kode": [{}] * 1000}).encode())}
+        isi.update(ubah or {})
+        return lambda p: isi.get(p, (404, b""))
+
+    def test_semua_lulus(self):
+        self.assertEqual(self.cek.periksa(self.jawab()), {"kritis": [], "peringatan": []})
+
+    def test_js_hilang_kritis(self):
+        r = self.cek.periksa(self.jawab({"assets/index-A.js": (404, b"")}))
+        self.assertEqual(len(r["kritis"]), 1)
+
+    def test_data_kosong_peringatan(self):
+        r = self.cek.periksa(self.jawab({"api/broker-pola": (200, b'{"error": "Data pola broker sedang disiapkan"}'),
+                                         "api/lk": (500, b"")}))
+        self.assertEqual(r["kritis"], [])
+        self.assertEqual(len(r["peringatan"]), 2)
+        self.assertIn("Pola Broker", r["peringatan"][1] + r["peringatan"][0])
+
+
 class BeritaSahamTest(unittest.TestCase):
     def test_gabung_tanpa_simpan(self):
         lap = [{"id": "sb-report-1", "ticker": "RELF", "date": "2026-10-01", "title": "Laporan Bulanan"}]
