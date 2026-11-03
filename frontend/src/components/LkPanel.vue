@@ -54,17 +54,21 @@ const labaPct = x => x.kategori === 'berbalik' ? 'berbalik' : x.laba?.pct == nul
 const nada = x => ['bagus', 'berbalik', 'naik'].includes(x.kategori) ? 'c-good' : x.kategori === 'lain' ? 'muted' : 'c-strong'
 const buka = ref('')
 
-// Terbaik per kelompok (lib/kelompokLk.js: Konglo, CPO, Backdoor, Tambang, Telekomunikasi & kabel, Konsumen;
+// Terbaik per kelompok (lib/kelompokLk.js: Konglo, CPO, Backdoor, Tambang, Telekomunikasi & kabel;
 // tanpa bank/asuransi) dari seluruh laporan periode terpilih, hanya dengan syarat yang bisa dicek di laporan (tanpa target harga):
 // laba kuartal murni lebih besar dari kuartal yang sama tahun lalu (naik/berbalik YoY) DAN dari kuartal sebelumnya
 // (QoQ > 0), pendapatan naik, PE TTM positif. Basis dinilai dari laba kuartal itu sendiri, bukan kumulatif, sehingga
 // kenaikan kumulatif persentase besar dari basis kecil tetap bisa masuk bila kuartal terakhirnya memang tumbuh.
 // Diurutkan dari PE TTM terendah (paling murah terhadap laba yang sudah terbukti).
-const SYARAT = x => ['naik', 'berbalik'].includes(x.kuartal?.status) && (x.kuartal?.qoq ?? 0) > 0
+// Kuartal sebelumnya rugi -> QoQ (%) tidak terdefinisi; laba kini > rugi kuartal lalu = berbalik laba QoQ.
+const qoqBerbalik = k => k?.qoq == null && k?.labaSebelum != null && k.labaSebelum < 0 && k.laba > 0
+const naikQoq = k => (k?.qoq ?? 0) > 0 || qoqBerbalik(k)
+const qoqTeks = k => qoqBerbalik(k) ? 'berbalik dari rugi' : pct(k?.qoq)
+const SYARAT = x => ['naik', 'berbalik'].includes(x.kuartal?.status) && naikQoq(x.kuartal)
   && (x.pendapatan?.pct ?? -1) > 0 && x.kuartal?.pe > 0
 const kelompok = computed(() => terbaikPerKelompok(basis.value, SYARAT))
 const alasan = x => [
-  `Laba ${Q} murni ${x.kuartal.status === 'berbalik' ? 'berbalik dari rugi' : pct(x.kuartal.yoy) + ' YoY'}, QoQ ${pct(x.kuartal.qoq)}`,
+  `Laba ${Q} murni ${x.kuartal.status === 'berbalik' ? 'berbalik dari rugi' : pct(x.kuartal.yoy) + ' YoY'}, QoQ ${qoqTeks(x.kuartal)}`,
   `Pendapatan ${pct(x.pendapatan.pct)}${x.marginKotor ? `, margin kotor ${fmt(x.marginKotor.dari, 1)}% → ${fmt(x.marginKotor.ke, 1)}%` : ''}`,
   `PE TTM ${fmt(x.kuartal.pe, 1)}×${x.kuartal.peMedian ? ` (median IHSG ${fmt(x.kuartal.peMedian, 1)}×)` : ''}${x.kuartal.pbv ? ` · PBV ${fmt(x.kuartal.pbv, 2)}×` : ''}`]
 
@@ -163,7 +167,7 @@ async function unduhPdf() {
                 <td class="num small">{{ uangQ(x.kuartal?.laba, x.kuartal?.mata) }}</td>
                 <td class="num"><b :class="Q3TXT[x.kuartal?.status] || 'muted'">{{ q3Pct(x.kuartal) }}</b>
                   <div v-if="x.kuartal?.melemah" class="tag t-warn" :title="`Laba ${KUM} naik, tetapi laba ${Q} sendiri turun atau rugi`">{{ Q }} melemah</div></td>
-                <td class="num small" :class="(x.kuartal?.qoq ?? 0) >= 0 ? '' : 'c-strong'">{{ pct(x.kuartal?.qoq) }}</td>
+                <td class="num small" :class="(x.kuartal?.qoq ?? 0) >= 0 ? '' : 'c-strong'">{{ qoqTeks(x.kuartal) }}</td>
                 <td class="num" :class="(x.pendapatan?.pct ?? 0) >= 0 ? 'c-good' : 'c-strong'">{{ pct(x.pendapatan?.pct) }}</td>
                 <td class="num small">{{ x.marginKotor ? fmt(x.marginKotor.dari, 2) + '% → ' + fmt(x.marginKotor.ke, 2) + '%' : '–' }}</td>
                 <td class="small dr">{{ x.pendorong || '–' }}</td>

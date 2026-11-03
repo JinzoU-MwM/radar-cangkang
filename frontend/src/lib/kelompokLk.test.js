@@ -23,14 +23,13 @@ describe('kelompokLk', () => {
       r('BBRI', 2, { nama: 'Bank Rakyat Indonesia', kelas: { sub: 'Banks' } }),
     ]
     const h = Object.fromEntries(terbaikPerKelompok(rows, semua).map(g => [g.k, g.x?.t || null]))
-    expect(h).toEqual({ konglo: 'SIMP', cpo: 'LSIP', backdoor: 'NAYZ', tambang: 'MBAP', telko: 'TLKM', konsumen: null })
+    expect(h).toEqual({ konglo: 'SIMP', cpo: 'LSIP', backdoor: 'NAYZ', tambang: 'MBAP', telko: 'TLKM' })
   })
 
   it('SMAR masuk CPO walau profilnya produk makanan', () => {
-    // SIMP mengisi Konglo lebih dulu, sehingga SMAR (Sinar Mas) tersedia untuk CPO; bukan Konsumen.
+    // SIMP mengisi Konglo lebih dulu, sehingga SMAR (Sinar Mas) tersedia untuk CPO.
     const g = terbaikPerKelompok([r('SIMP', 3.1), r('SMAR', 3.87, { kelas: { ind: 'Food Products' } }), r('CSRA', 3.89)], semua)
     expect(g.find(x => x.k === 'cpo').x.t).toBe('SMAR')
-    expect(g.find(x => x.k === 'konsumen').x).toBe(null)
   })
 
   it('tambang mencakup emas, nikel, batu bara', () => {
