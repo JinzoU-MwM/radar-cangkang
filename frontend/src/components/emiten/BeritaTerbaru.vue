@@ -6,9 +6,11 @@ import { store } from '../../store.js'
 import { fmtDate } from '../../lib/domain.js'
 import { beritaTerakhir, analisaBerita } from '../../lib/beritaTerbaru.js'
 
-const props = defineProps({ ticker: { type: String, required: true } })
-const a = computed(() => analisaBerita(beritaTerakhir(store.updates, props.ticker), {
-  items: store.items, pandangan: store.pandangan, updates: store.updates, pengendali: store.pengendali, relasi: store.relasi, verified: store.verified,
+// daftar: berita saham di luar radar (diambil saat dicari); bila kosong memakai feed radar (store.updates).
+const props = defineProps({ ticker: { type: String, required: true }, daftar: { type: Array, default: null } })
+const sumber = computed(() => props.daftar || store.updates)
+const a = computed(() => analisaBerita(beritaTerakhir(sumber.value, props.ticker), {
+  items: store.items, pandangan: store.pandangan, updates: sumber.value, pengendali: store.pengendali, relasi: store.relasi, verified: store.verified,
 }))
 const busy = ref(false), err = ref('')
 async function unduh() {

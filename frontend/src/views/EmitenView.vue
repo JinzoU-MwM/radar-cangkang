@@ -27,7 +27,7 @@ const props = defineProps({ ticker: { type: String, required: true } })
 // Tampilan tab: 'slide' (ringkas interaktif) atau 'lengkap' (teks penuh); pilihan diingat per perangkat.
 const view = ref((() => { try { return localStorage.getItem('emitenView') || 'slide' } catch { return 'slide' } })())
 watch(view, v => { try { localStorage.setItem('emitenView', v) } catch { /* penyimpanan tidak tersedia */ } })
-const slideOn = computed(() => view.value === 'slide' && SLIDE_TABS.includes(tab.value))
+const slideOn = computed(() => view.value === 'slide' && SLIDE_TABS.includes(tab.value) && known.value)
 const route = useRoute()
 const router = useRouter()
 
@@ -58,17 +58,19 @@ const valid = computed(() => /^[A-Z]{4}$/.test(T.value))
 // Tab yang hanya berisi data radar/story; untuk kode bebas ditulis "belum ada".
 const RADAR_ONLY = ['ringkasan', 'story']
 
-const tab = computed(() => TABS.some(t => t.id === route.query.tab) ? route.query.tab : known.value ? 'ringkasan' : 'analisa')
+// Saham di luar radar (hasil pencarian) hanya menampilkan berita terakhir dan analisanya.
+const TABS_TAMPIL = computed(() => known.value ? TABS : TABS.filter(t => t.id === 'berita'))
+const tab = computed(() => TABS_TAMPIL.value.some(t => t.id === route.query.tab) ? route.query.tab : known.value ? 'ringkasan' : 'berita')
 function pick(id) { router.replace({ query: { ...route.query, tab: id } }) }
 
 // Panah kiri/kanan, Home/End di daftar tab (pola tab WAI-ARIA, aktivasi otomatis).
 const tabEls = ref([])
 function onTabKey(e, i) {
-  const n = TABS.length
+  const n = TABS_TAMPIL.value.length
   const j = { ArrowRight: (i + 1) % n, ArrowLeft: (i - 1 + n) % n, Home: 0, End: n - 1 }[e.key]
   if (j === undefined) return
   e.preventDefault()
-  pick(TABS[j].id)
+  pick(TABS_TAMPIL.value[j].id)
   nextTick(() => tabEls.value[j]?.focus())
 }
 
@@ -184,7 +186,7 @@ watch(() => props.ticker, t => loadStories([t]).catch(() => {}))
       <PembaruanBanner :ticker="T" />
 
       <div class="tabs" role="tablist" aria-label="Bagian emiten">
-        <button v-for="(t, i) in TABS" :key="t.id" :ref="el => (tabEls[i] = el)" type="button" role="tab" class="tab"
+        <button v-for="(t, i) in TABS_TAMPIL" :key="t.id" :ref="el => (tabEls[i] = el)" type="button" role="tab" class="tab"
           :id="'tab-' + t.id" :aria-selected="tab === t.id" :aria-controls="'panel-' + t.id" :tabindex="tab === t.id ? 0 : -1"
           @click="pick(t.id)" @keydown="onTabKey($event, i)">{{ t.name }}</button>
       </div>

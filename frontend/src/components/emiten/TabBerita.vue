@@ -1,5 +1,6 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { api } from '../../api.js'
 import { store, userRefresh } from '../../store.js'
 import { fmtDate } from '../../lib/domain.js'
 import { newsConclusion } from '../../lib/newsConclusion.js'
@@ -8,7 +9,21 @@ import PenjelasanBursa from './PenjelasanBursa.vue'
 import BeritaTerbaru from './BeritaTerbaru.vue'
 
 const props = defineProps({ ticker: { type: String, required: true } })
-const list = computed(() => store.updates.filter(u => u.ticker === props.ticker)
+// Saham di luar radar: berita & keterbukaan terbaru diambil saat dicari (/api/berita-saham), tidak masuk feed radar.
+const diRadar = computed(() => store.updates.some(u => u.ticker === props.ticker) || store.items.some(i => i.ticker === props.ticker))
+const luar = ref(null), luarErr = ref(''), luarMuat = ref(false)
+watch(() => [props.ticker, diRadar.value], async () => {
+  luar.value = null; luarErr.value = ''
+  if (diRadar.value) return
+  luarMuat.value = true
+  try {
+    const r = await api.get('/api/berita-saham', { ticker: props.ticker })
+    luar.value = r.items || []
+    if (r.error) luarErr.value = r.error
+  } catch (e) { luarErr.value = e.message || String(e) } finally { luarMuat.value = false }
+}, { immediate: true })
+const sumber = computed(() => (diRadar.value ? store.updates : luar.value || []))
+const list = computed(() => sumber.value.filter(u => u.ticker === props.ticker)
   .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))))
 // Dikelompokkan per tanggal, sama seperti halaman Berita.
 const groups = computed(() => {
@@ -27,7 +42,10 @@ const newsAt = computed(() => store.status?.newsAt ? new Date(store.status.newsA
 </script>
 
 <template>
-  <BeritaTerbaru :ticker="ticker" />
+  <p v-if="!diRadar" class="small muted luar">{{ ticker }} di luar radar backdoor: berita dan keterbukaan terbaru diambil langsung dari Stockbit saat dicari dan tidak ditambahkan ke radar.</p>
+  <p v-if="luarMuat" class="muted">Memuat berita {{ ticker }}…</p>
+  <p v-else-if="luarErr && !list.length" class="muted">{{ luarErr }}</p>
+  <BeritaTerbaru :ticker="ticker" :daftar="diRadar ? null : luar" />
   <PenjelasanBursa v-if="store.riDoc?.[ticker]?.penjelasanBursa" :pb="store.riDoc[ticker].penjelasanBursa" />
   <section class="rule-top">
     <div class="bar">

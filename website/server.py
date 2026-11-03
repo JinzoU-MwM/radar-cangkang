@@ -420,6 +420,27 @@ def updates_unik(ups: list[dict]) -> list[dict]:
                                          re.sub(r"\s+", " ", str(u.get("title") or "")).strip().lower())) is u]
 
 
+def berita_saham(t: str) -> dict:
+    """Berita & keterbukaan terbaru satu saham BEI mana pun, diambil saat dicari (cache Stockbit) dan TIDAK disimpan
+    ke feed radar backdoor. Dipakai halaman emiten untuk kode di luar radar (berita terakhir + analisanya)."""
+    cfg = (load_config() or {}).get("reports") or {}
+    if not cfg.get("url"):
+        return {"ticker": t, "items": [], "error": "Konfigurasi laporan Stockbit belum ada."}
+    items, galat = [], []
+    for nama, ambil in (("laporan", lambda: get_reports(cfg, t, max_pages=1)), ("berita", lambda: get_sb_news(cfg, t))):
+        try:
+            items += ambil()
+        except PublicNoCache as e:
+            galat.append(str(e))
+        except Exception as e:
+            galat.append(f"{nama}: {e}"[:120])
+    items = updates_unik(sorted(items, key=lambda u: (str(u.get("date") or ""), str(u.get("id"))), reverse=True))
+    out = {"ticker": t, "nama": nama_semua().get(t, ""), "items": items[:60]}
+    if not items and galat:
+        out["error"] = galat[0]
+    return out
+
+
 def updates_put(ups: list[dict]) -> None:
     data_exec("INSERT OR REPLACE INTO updates VALUES(?,?,?)",
               [(str(u["id"]), json.dumps(u, ensure_ascii=False), str(u.get("date") or "")) for u in ups])
@@ -4524,7 +4545,8 @@ class Handler(BaseHTTPRequestHandler):
                 t = self.qs("ticker").upper()
                 deals = [d.split(":")[0] for d in self.qs("deals").upper().split(",") if d]
                 wanted = ([t] if t else []) + deals
-                _req.public_fetch = all(x in radar_tickers() for x in wanted)
+                _req.public_fetch = all(x in radar_tickers() for x in wanted) or (
+                    path == "api/berita-saham" and bool(t) and t in bei_kode_load())
             if path.startswith("api/"):
                 self.handle_api(path, fresh)
                 return
@@ -4767,6 +4789,15 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply_json({"error": f"Analisa HSC belum bisa dihitung: {e}"})
         elif path == "api/saham50":
             self.reply_json(saham50_api())
+        elif path == "api/kode-bei":
+            nama = nama_semua()
+            self.reply_json({"kode": [{"t": t, "nama": nama.get(t, "")} for t in sorted(set(bei_kode_load()) | radar_tickers())]})
+        elif path == "api/berita-saham":
+            t = self.qs("ticker").upper()
+            if not TICKER_RE.match(t):
+                self.reply_json({"error": "Kode saham harus 4 huruf."})
+            else:
+                self.reply_json(berita_saham(t))
         elif path == "api/lk":
             self.reply_json(lk_api_cache())
         elif path == "api/harga-saham":

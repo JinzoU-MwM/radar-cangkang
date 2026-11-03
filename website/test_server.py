@@ -465,6 +465,18 @@ class UpdatesUnikTest(unittest.TestCase):
         self.assertEqual([u["id"] for u in server.updates_unik(ups)], ["sb-report-2", "sb-news-3", "sb-news-4"])
 
 
+class BeritaSahamTest(unittest.TestCase):
+    def test_gabung_tanpa_simpan(self):
+        lap = [{"id": "sb-report-1", "ticker": "RELF", "date": "2026-10-01", "title": "Laporan Bulanan"}]
+        news = [{"id": "sb-news-2", "ticker": "RELF", "date": "2026-11-01", "title": "RELF masuk UMA"},
+                {"id": "sb-news-3", "ticker": "RELF", "date": "2026-10-01", "title": "Laporan bulanan"}]
+        with unittest.mock.patch.object(server, "load_config", return_value={"reports": {"url": "x"}}),                 unittest.mock.patch.object(server, "get_reports", return_value=lap),                 unittest.mock.patch.object(server, "get_sb_news", return_value=news),                 unittest.mock.patch.object(server, "nama_semua", return_value={"RELF": "Graha Mitra Asia Tbk"}),                 unittest.mock.patch.object(server, "updates_put") as simpan:
+            r = server.berita_saham("RELF")
+        self.assertEqual([u["id"] for u in r["items"]], ["sb-news-2", "sb-report-1"])
+        self.assertEqual(r["nama"], "Graha Mitra Asia Tbk")
+        simpan.assert_not_called()   # tidak masuk feed radar
+
+
 class Saham50Test(unittest.TestCase):
     def test_teknikal(self):
         # 80 hari turun dari 60 ke 41, lalu naik ke 45: di atas EMA20, resistance 60 hari di atas harga.
