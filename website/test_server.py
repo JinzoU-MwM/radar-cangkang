@@ -559,6 +559,35 @@ class BeritaSahamTest(unittest.TestCase):
         server._berita_cache.clear()
 
 
+class Saham50TambahTest(unittest.TestCase):
+    def test_riwayat_skor(self):
+        from datetime import date
+        with tempfile.TemporaryDirectory() as d, unittest.mock.patch.object(server, "S50_RIWAYAT_PATH", Path(d) / "r.json"):
+            server.s50_riwayat([{"t": "PURA", "skor": 30}], date(2026, 10, 27))
+            rows = [{"t": "PURA", "skor": 43}, {"t": "BARU", "skor": 10}]
+            server.s50_riwayat(rows, date(2026, 11, 3))
+            self.assertEqual((rows[0]["skorLalu"], rows[0]["skorTgl"]), (30, "2026-10-27"))
+            self.assertNotIn("skorLalu", rows[1])
+
+    def test_broker_per_saham(self):
+        resp = {"data": {"broker_summary": {
+            "brokers_buy": [{"netbs_broker_code": "YP", "bval": "500000000"}, {"netbs_broker_code": "PD", "bval": "100000000"}],
+            "brokers_sell": [{"netbs_broker_code": "CC", "sval": "-200000000"}]}}}
+        b = server.s50_broker_parse(resp)
+        self.assertEqual((b["bandar"], b["akum"], b["dist"]), (400000000, ["YP", "PD"], ["CC"]))
+        self.assertIsNone(server.s50_broker_parse({"data": {}}))
+
+    def test_broker(self):
+        data = {"tahun": "2026", "broker": {
+            "YP": {"jenis": "Lokal", "bulan": {"10": {"beli": [{"s": "PURA", "val": 5e8, "lot": 100}], "jual": []}}},
+            "CC": {"jenis": "Lokal", "bulan": {"10": {"beli": [], "jual": [{"s": "PURA", "val": -1e8, "lot": 20}]}}}}}
+        with unittest.mock.patch.object(server, "broker_data", return_value=data):
+            b = server.s50_broker({"PURA"})["PURA"]
+        self.assertEqual(b[-1]["bulan"], 10)
+        self.assertEqual(b[-1]["akum"], ["YP"])
+        self.assertGreater(b[-1]["bandar"], 0)
+
+
 class Saham50Test(unittest.TestCase):
     def test_teknikal(self):
         # 80 hari turun dari 60 ke 41, lalu naik ke 45: di atas EMA20, resistance 60 hari di atas harga.
