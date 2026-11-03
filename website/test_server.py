@@ -576,15 +576,16 @@ class PovDalamTest(unittest.TestCase):
                          "PT Tiara Intimahkota": [{"symbol": "LSIP", "pct": 1.2}]},
             "laporan": [{"date": "2026-10-20", "title": "Rencana penambahan modal HMETD", "jenis": ["rights"], "inti": "", "url": "u"}],
             "posts": [{"user": "athira", "d": "2026-10-22", "likes": 40, "url": "p",
-                       "txt": "Saat ini pak henry pribadi, pak risjad dan pak henry liem ada di akpi lewat napan (nawa panduta). "
-                              "Pak henry pribadi bersama pak risjad dulu akuisisi $LSIP. Pendiri dan keluarga 95,72% free float."}],
+                       "txt": "$AKPI Saat ini pak henry pribadi, pak risjad dan pak henry liem ada di akpi lewat napan (nawa panduta). "
+                              "Pak henry pribadi bersama pak risjad dulu akuisisi $LSIP. Pendiri dan keluarga 95,72% free float. "
+                              "Henry Liem melalui PT Gitanirwana Mandrasakti masih menjual, tersisa 26 juta lembar."}],
             "lk": {"kuartal": {"tumbuh": True, "q": 3}}}, datetime(2026, 11, 3)
 
     def test_analisa(self):
         import povdalam
         d, kini = self.data()
         r = povdalam.analyze(d, kini)
-        self.assertAlmostEqual(r["kepemilikan"]["nonPublik"], 84.33, places=2)
+        self.assertAlmostEqual(r["kepemilikan"]["nonPublik"], 80.14, places=2)   # >=5% + pengurus (Dina Risjad)
         self.assertEqual(r["kepemilikan"]["pemegang"][4]["pengurus"], "Dina Risjad")
         self.assertEqual(r["bersama"][0]["t"], "LSIP")                      # dimiliki dua pemegang AKPI
         judul = " | ".join(g["judul"] for g in r["dugaan"])
@@ -594,6 +595,32 @@ class PovDalamTest(unittest.TestCase):
         nama = {e["nama"]: e["terverifikasi"] for e in r["komunitas"]["nama"]}
         self.assertIn("Henry Pribadi", nama)
         self.assertEqual(r["komunitas"]["terkait"][0]["t"], "LSIP")
+        rel = r["komunitas"]["relasi"]
+        self.assertTrue(any(x["orang"] == "Henry Liem" and "GITANIRWANA" in x["badan"] and x["terverifikasi"] for x in rel), rel)
+        self.assertTrue(any("26 juta lembar" in c["teks"] for c in r["komunitas"]["klaim"]))
+
+    def test_cek_klaim(self):
+        import povdalam
+        from datetime import datetime
+        d = {"t": "PTIS", "nama": "", "profil": {"stats": {"freeFloat": 9.0}, "metrics": {"pbv": 0.4, "bvps": 1500},
+             "shareholders": [{"name": "PT Anugerah Salim Investama", "pct": "60"}], "holders1": [], "chart": [{"v": 500}]},
+             "posts": [{"user": "PMFernandoR", "d": "2026-10-21", "likes": 9, "url": "u", "txt":
+                        "Maybe next $PTIS, 1000% saya yakin ini sahamnya punya konglo itu. Alasan beli: 1. Ada 2 Konglo Tier 1 di sini. "
+                        "2. Saham gak liquid/gorengan tapi valuasi murah. 3. Valuasi wajarnya di 3x harga sekarang."}]}
+        r = povdalam.analyze(d, datetime(2026, 11, 3))
+        st = {c["jenis"]: c["status"] for c in r["klaim"]}
+        self.assertEqual(st["konglo"], "didukung data")      # pemegang bernama Salim
+        self.assertEqual(st["murah"], "didukung data")       # PBV 0,4x
+        self.assertEqual(st["likuid"], "didukung data")      # free float efektif 40% tidak, tetapi ff 9% < 10
+        self.assertNotIn("fokusPosts", r["komunitas"])
+
+    def test_keluarga(self):
+        import povdalam
+        pm = [{"name": n, "pct": 1.7} for n in ("AMIRSYAH RISJAD", "DINA RISJAD", "DEDEY RISJAD", "SELVIYA RISJAD DANANTO")]
+        pm.append({"name": "PT NAWA PANDUTA", "pct": 15.05})
+        k = povdalam.keluarga(pm)
+        self.assertEqual((k[0]["nama"], len(k[0]["anggota"]), k[0]["pct"]), ("Risjad", 4, 6.8))
+        self.assertEqual(povdalam.nama_disebut("pak komisaris aris bilang"), [])
 
     def test_nama_disebut(self):
         import povdalam

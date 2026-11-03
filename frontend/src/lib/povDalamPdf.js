@@ -30,6 +30,8 @@ export async function povDalamPdf(a, jsPDF) {
       const lines = doc.splitTextToSize(pdfText(`${tanda} ${r}`), w)
       const h = lines.length * size * 0.3528 * 1.4 + 1.4
       ruang(h)
+      // Halaman baru mengganti font (judul); set ulang sebelum menulis agar ukuran tidak terbawa.
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(size)
       doc.setTextColor(color); doc.text(lines, x, y, { lineHeightFactor: 1.4 }); y += h
     }
   }
@@ -41,7 +43,7 @@ export async function povDalamPdf(a, jsPDF) {
     besar: a.t, judul: 'Analisa mendalam', label: `${a.nama || a.t} · ${tgl(a.dibuat)}`,
     sub: [idn.sektor, idn.industri].filter(Boolean).join(' · ') + (kuat ? `. Dugaan terkuat: ${kuat.judul}.` : ''),
     updated: a.dibuat, seri: [],
-    box: [['Pemegang non-publik', p2(k.nonPublik)], ['Free float', p2(idn.freeFloat)], ['Emiten di jaringan', String(a.sumber.jaringan)], ['Dugaan tujuan', String(a.dugaan.length)]],
+    box: [['Pihak terafiliasi', p2(k.nonPublik)], ['Free float efektif', p2(k.ffEfektif)], ['Emiten di jaringan', String(a.sumber.jaringan)], ['Dugaan tujuan', String(a.dugaan.length)]],
     catatan: `Disusun otomatis dari ${a.sumber.pemegang} pemegang saham, ${a.sumber.insider} keterbukaan pemegang saham, ${a.sumber.keterbukaan} keterbukaan informasi, ${a.sumber.berita} berita, dan ${a.sumber.posting} posting publik Stockbit. Bukan ajakan membeli atau menjual efek.`,
   })
 
@@ -54,8 +56,9 @@ export async function povDalamPdf(a, jsPDF) {
   butir([`Harga terakhir ${idn.harga ? 'Rp' + Math.round(idn.harga) : '-'}${idn.mcap ? ' · kapitalisasi Rp' + Math.round(idn.mcap / 1e9) + ' M' : ''}`,
     ...a.skenario.map(s => `${s.label}: Rp${Math.round(s.harga)} (${s.selisih > 0 ? '+' : ''}${String(s.selisih).replace('.', ',')}% dari harga sekarang)`),
     ...(a.broker ? [`Broker 30 hari: ${a.broker.bandar > 0 ? 'akumulasi' : 'distribusi'} Rp${(Math.abs(a.broker.bandar) / 1e9).toFixed(2).replace('.', ',')} M; pembeli ${a.broker.akum.join(', ') || '-'}; penjual ${a.broker.dist.join(', ') || '-'}`] : [])])
-  sub(`Pemegang saham (non-publik ${p2(k.nonPublik)})`)
-  butir(k.pemegang.map(p => `${p.name} ${p2(p.pct)}${p.pengendali ? ' · pengendali' : ''}${p.pengurus ? ' · juga pengurus (' + p.pengurus + ')' : ''}`))
+  sub(`Pemegang saham (terafiliasi ${p2(k.nonPublik)} · free float efektif ${p2(k.ffEfektif)})`)
+  butir(k.pemegang.map(p => `${p.name} ${p2(p.pct)}${p.pengendali ? ' · pengendali' : ''}${p.pengurus ? ' · juga pengurus (' + p.pengurus + ')' : ''}${p.keluarga ? ' · keluarga ' + p.keluarga : ''}`))
+  if (k.keluarga?.length) butir(k.keluarga.map(x => `Keluarga ${x.nama}: ${x.anggota.length} anggota, total ${p2(x.pct)}`), { color: PRIMER })
   if (k.ubo.length) butir([`Pemilik manfaat akhir (UBO): ${k.ubo.join(', ')}`], { color: PRIMER })
   if (k.direksi.length || k.komisaris.length) butir([`Direksi: ${k.direksi.join(', ') || '-'}`, `Komisaris: ${k.komisaris.join(', ') || '-'}`], { size: 8.2, color: MUTED })
   sub('Jaringan: kepemilikan pemegang saham di emiten lain', GOLD)
@@ -76,7 +79,10 @@ export async function povDalamPdf(a, jsPDF) {
   butir(a.riwayat.map(r => `${tgl(r.date)}: ${r.teks}`))
   if (a.insider.length) {
     sub('Transaksi pemegang saham / orang dalam (180 hari)')
-    butir(a.insider.map(x => `${x.nama}${x.role ? ' (' + x.role + ')' : ''}: ${x.chg > 0 ? '+' : ''}${x.chg.toFixed(2).replace('.', ',')} poin, ${x.n} transaksi, terakhir ${tgl(x.akhir)}`),
+    butir(a.insider.map(x => `${x.nama}${x.role ? ' (' + x.role + ')' : ''}: ${x.chg > 0 ? '+' : ''}${x.chg.toFixed(2).replace('.', ',')} poin, ${x.n} transaksi, terakhir ${tgl(x.akhir)}`
+      + (x.lembar ? `; ${(x.lembar / 1e6).toFixed(1).replace('.', ',')} juta lembar` : '') + (x.harga ? ` @ ±Rp${x.harga}` : '')
+      + (x.sisa ? `; sisa ${(x.sisa / 1e6).toFixed(1).replace('.', ',')} juta lembar (${p2(x.sisaPct)})` : '')
+      + (x.habisBulan ? `; habis ± ${Math.round(x.habisBulan)} bulan lagi bila laju sama` : '')),
       { color: INK })
   }
   sub('Keterbukaan aksi korporasi (1 tahun)')
@@ -87,30 +93,50 @@ export async function povDalamPdf(a, jsPDF) {
   butir([kn.judul ? `Laporan ${kn.periode}: ${kn.judul}` : 'Laporan keuangan terbaru belum terbaca.',
     kw ? `Laba Q${kw.q} murni ${kw.status === 'berbalik' ? 'berbalik dari rugi' : (kw.yoy ?? '-') + '% YoY'}, QoQ ${kw.berbalikQoq ? 'berbalik dari rugi' : (kw.qoq ?? '-') + '%'}${kw.tumbuh ? ' (naik dari tahun lalu dan kuartal sebelumnya)' : ''}` : '',
     `PBV ${kn.pbv ?? '-'}x · PER ${kn.per ?? '-'}x`].filter(Boolean))
-  if (a.berita.length) { sub('Berita terbaru'); butir(a.berita.slice(0, 6).map(b => `${tgl(b.date)}: ${b.judul}`), { size: 8.3 }) }
+  if (a.berita.length) { sub('Berita terbaru (Stockbit)'); butir(a.berita.slice(0, 6).map(b => `${tgl(b.date)}: ${b.judul}`), { size: 8.3 }) }
+  if (a.beritaLuar?.length) { sub('Berita di luar Stockbit (media nasional)'); butir(a.beritaLuar.slice(0, 15).map(b => `${b.date ? tgl(b.date) : '-'}: ${b.judul} (${b.sumber})`), { size: 8.3 }) }
 
   // ---- Komunitas, dugaan, dan penyelidikan.
   judulKini = 'Dugaan dan penyelidikan'; halaman(judulKini)
+  if (a.klaim?.length) {
+    sub('Cek kebenaran klaim publik', PRIMER)
+    for (const c of a.klaim) {
+      ruang(14)
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(c.status === 'didukung data' ? GOOD : c.status === 'tidak didukung' ? BAD : MUTED)
+      const h = doc.splitTextToSize(pdfText(`[${c.status}] "${potong(c.klaim, 200)}" (@${c.user}, ${tgl(c.d)})`), 178); doc.text(h, 18, y, { lineHeightFactor: 1.3 }); y += h.length * 4.2 + 0.6
+      butir(c.bukti, { size: 8.3, tanda: '›', x: 22, w: 174 }); y += 0.8
+    }
+  }
   sub('Dugaan tujuan dan buktinya', GOLD)
   if (!a.dugaan.length) teks('Belum ada bukti yang cukup untuk menyusun dugaan tujuan.', 9, MUTED)
   for (const g of a.dugaan) {
-    ruang(12)
+    ruang(16)
     doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(g.arah > 0 ? GOOD : g.keyakinan === 'tinggi' ? GOLD : PRIMER)
     const h = doc.splitTextToSize(pdfText(`${g.judul} (keyakinan ${g.keyakinan})`), 178); doc.text(h, 18, y, { lineHeightFactor: 1.3 }); y += h.length * 4.4 + 0.6
     butir(g.bukti, { size: 8.4, tanda: '›', x: 22, w: 174 }); y += 1
   }
   sub('Yang perlu diselidiki', PRIMER)
   butir(a.selidiki, { size: 8.6 })
+  // Informasi dari sumber publik: terverifikasi data lebih dulu, lalu rumor (belum terverifikasi) dengan sumbernya.
   const kom = a.komunitas
-  sub(`Diskusi komunitas Stockbit (${kom.jumlah} posting publik)`)
-  if (kom.nama.length) butir([`Tokoh yang disebut: ${kom.nama.map(e => e.nama + (e.terverifikasi ? ' (terkonfirmasi data)' : '')).join(', ')}`], { color: PRIMER })
-  if (kom.terkait.length) butir([`Saham yang disebut bersamaan: ${kom.terkait.map(x => `${x.t} (${x.n})`).join(', ')}`], { color: PRIMER })
-  butir(kom.posts.slice(0, 6).map(p => `@${p.user || '-'} · ${tgl(p.d)} · ${p.likes} suka: ${potong(p.txt, 330)}`), { size: 8 })
+  const rel = kom.relasi || [], klaim = kom.klaim || []
+  const tokoh = kom.nama.filter(e => e.terverifikasi)
+  if (rel.length || klaim.length || tokoh.length) {
+    sub('Informasi dari sumber publik: terverifikasi', GOOD)
+    const v = [...rel.filter(r => r.terverifikasi).map(r => `${r.orang} melalui ${r.badan} (cocok dengan data kepemilikan; sumber @${r.user})`),
+      ...tokoh.map(e => `${e.nama}: tercatat di data pemegang saham/pengurus (disebut ${e.n}x)`)]
+    if (!v.length) teks('Belum ada informasi publik yang cocok dengan data kepemilikan.', 8.8, MUTED)
+    butir(v, { size: 8.6 })
+    const r2 = [...rel.filter(r => !r.terverifikasi).map(r => `${r.orang} melalui ${r.badan} (@${r.user})`),
+      ...klaim.slice(0, 8).map(c => `${potong(c.teks, 240)} (@${c.user}, ${tgl(c.d)})`)]
+    if (r2.length) { sub('Rumor / klaim belum terverifikasi (cek dokumen sumber)', GOLD); butir(r2, { size: 8.3, color: MUTED }) }
+  }
   if (a.catatan?.length) butir(a.catatan, { size: 7.8, color: BAD, tanda: '!' })
 
   const dis = 'Disusun otomatis oleh Radar Backdoor dari data Stockbit (profil, keterbukaan pemegang saham KSEI/IDX, keterbukaan informasi, berita, dan posting publik). '
-    + 'Hubungan antarpihak dan dugaan tujuan dibaca dengan aturan otomatis; klaim komunitas yang belum terkonfirmasi harus diverifikasi di dokumen sumber. '
+    + 'Hubungan antarpihak dan dugaan tujuan dibaca dengan aturan otomatis; rumor dan klaim yang belum terverifikasi harus dicek di dokumen sumber. '
     + 'Bukan penawaran, ajakan, atau rekomendasi membeli atau menjual efek; keputusan investasi sepenuhnya tanggung jawab pembaca.'
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5)
   const lines = doc.splitTextToSize(pdfText(dis), 182)
   ruang(lines.length * 3.4 + 6)
   doc.setDrawColor(LINE); doc.setLineWidth(0.3); doc.line(14, y + 1, 196, y + 1)
