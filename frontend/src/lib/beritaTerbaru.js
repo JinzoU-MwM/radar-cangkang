@@ -5,6 +5,7 @@ import { UTYPES } from './domain.js'
 import { newsTake, maxAmountRp } from './news.js'
 import { faktaAset, laporanMaterial, RUTIN_RX } from './pembaruan.js'
 import { selidikBerita } from './selidikBerita.js'
+import { INSIDER_BELI, INSIDER_JUAL } from './insider.js'
 
 const day = u => String(u.date || '').slice(0, 10)
 const isReport = u => /^sb-report-/.test(String(u.id || ''))
@@ -21,6 +22,7 @@ export function beritaTerakhir(updates, ticker) {
 // Dampak dua sisi dari isi dokumen: [pola, sisi (1 positif / -1 negatif), teks]. Teks memakai isi dokumen;
 // afiliasi tidak dihitung negatif (hanya transaksi yang merugikan publik secara terukur).
 const SISI = [
+  [INSIDER_BELI, 1, 'Orang dalam (komisaris/direksi/pengendali) menambah kepemilikan: sinyal keyakinan terhadap prospek perseroan.'],
   [/pendirian anak usaha|mendirikan anak usaha|anak usaha baru/i, 1, 'Ekspansi lewat anak usaha baru; kinerjanya dikonsolidasikan ke perseroan.'],
   [/(akuisisi|mengakuisisi|pengambilalihan|inbreng)/i, 1, 'Masuknya aset atau usaha baru berpotensi menambah skala dan pendapatan perseroan.'],
   [/kontrak|proyek|tender proyek|kantongi|memperoleh pesanan/i, 1, 'Kontrak atau proyek baru menambah sumber pendapatan ke depan.'],
@@ -46,12 +48,17 @@ export function duaSisi(u, { tesis = null, rutin = false } = {}) {
   const milik = /kepemilikan|porsi|menguasai|memiliki/i.test(text) ? pct.find(v => v >= 50) : undefined
   if (milik != null) pos.push(`Kepemilikan ${String(milik).replace('.', ',')}% memberi kendali penuh atas entitas tersebut.`)
   const amt = maxAmountRp(text)
-  if (/anak usaha|akuisisi|kontrak|proyek|investasi/i.test(text) && !amt) neg.push('Nilai investasi dan proyeksi kontribusi pendapatan belum diungkap, sehingga dampaknya belum terukur.')
+  // Pembelian/penjualan saham oleh orang dalam bukan investasi perseroan: catatan nilai investasi tidak berlaku.
+  const insider = INSIDER_BELI.test(text) || INSIDER_JUAL.test(text)
+  if (!insider && /anak usaha|akuisisi|kontrak|proyek|investasi/i.test(text) && !amt) neg.push('Nilai investasi dan proyeksi kontribusi pendapatan belum diungkap, sehingga dampaknya belum terukur.')
   if (/bergerak di bidang|kegiatan usaha|bidang usaha/i.test(text) && /anak usaha|diversifikasi|perubahan kegiatan/i.test(text)) neg.push('Bidang usaha baru perlu dibuktikan keterkaitannya dengan usaha inti; ada risiko eksekusi.')
   if (tesis?.posisi && /di atas rentang/.test(tesis.posisi)) neg.push(`${tesis.posisi} Ruang kenaikan dari berita ini relatif terbatas.`)
   if (tesis?.posisi && /di bawah rentang/.test(tesis.posisi)) pos.push(`${tesis.posisi} Ada ruang bagi harga untuk menyesuaikan.`)
   const uniq = a => [...new Set(a)]
   if (rutin) return { positif: [], negatif: [], catatan: 'Dokumen administratif: tidak ada dampak langsung terhadap nilai saham.' }
+  // Penjualan saham oleh orang dalam tanpa faktor lain: netral, perlu dicermati alasannya (bukan otomatis negatif).
+  if (INSIDER_JUAL.test(text) && !INSIDER_BELI.test(text) && !pos.length && !neg.length)
+    return { positif: [], negatif: [], catatan: 'Orang dalam mengurangi kepemilikan; perlu dicermati alasannya, bukan otomatis negatif.', netral: true }
   return { positif: uniq(pos), negatif: uniq(neg), catatan: '' }
 }
 
@@ -88,6 +95,7 @@ export function analisaBerita(u, { items = [], pandangan = {}, updates = [], pen
   const sisi = duaSisi(u, { tesis, rutin })
   // Label dampak mengikuti keseimbangan faktor positif vs negatif dari isi dokumen (bila ada).
   if (sisi.positif.length || sisi.negatif.length) arah = Math.sign(sisi.positif.length - sisi.negatif.length)
+  if (sisi.netral) arah = 0
   // Rangkaian keterbukaan material sebelumnya (maks. 5, 90 hari) sebagai konteks.
   const batas = new Date(Date.parse(day(u)) - 90 * 864e5).toISOString().slice(0, 10)
   const riwayat = laporanMaterial(updates, t).filter(x => x.id !== u.id && day(x) <= day(u) && day(x) >= batas).slice(0, 5)
