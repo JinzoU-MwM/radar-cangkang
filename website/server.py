@@ -2576,15 +2576,16 @@ def lk_kuartal_ks(r: dict, ks: dict | None) -> dict | None:
     yoy = rs.get("Net Income (Quarter YoY Growth)")
     if yoy is None and e is not None and el and el > 0:
         yoy = round((e / el - 1) * 100, 1)
-    nilai = e if e is not None else laba
-    lalu = el if e is not None else ni.get(f"Q{q}{py}")
-    sblm = es if e is not None else ni.get(sb)
+    pakai_eps = e is not None and not (e == 0 and laba)
+    nilai = e if pakai_eps else laba
+    lalu = el if pakai_eps else ni.get(f"Q{q}{py}")
+    sblm = es if pakai_eps else ni.get(sb)
     qoq = round((nilai / sblm - 1) * 100, 1) if sblm and sblm > 0 and nilai is not None else None
     # TTM dan run-rate dari EPS: kuartal ini + 3 kuartal sebelumnya.
     lalu3, (qq, yr) = [], (q, int(yy))
     for _ in range(3):
         qq, yr = (qq - 1, yr) if qq > 1 else (4, yr - 1)
-        lalu3.append((eps if e is not None else ni).get(f"Q{qq}{yr % 100:02d}"))
+        lalu3.append((eps if pakai_eps else ni).get(f"Q{qq}{yr % 100:02d}"))
     ttm = nilai + sum(lalu3) if nilai is not None and None not in lalu3 else None
     potensi = round((nilai * 4 / ttm - 1) * 100, 1) if ttm and ttm > 0 and nilai and nilai > 0 else None
     status = ("rugi" if nilai is not None and nilai <= 0 else "berbalik" if lalu is not None and lalu <= 0 else
@@ -2599,6 +2600,20 @@ def lk_kuartal_ks(r: dict, ks: dict | None) -> dict | None:
 
 
 _lk_memo: tuple[tuple, float, dict] = ((), 0.0, {})
+
+
+def lk_tumbuh(kw: dict | None) -> dict | None:
+    """Definisi tunggal "kuartal naik" untuk semua rekomendasi: laba kuartal murni positif, lebih besar dari kuartal
+    yang sama tahun lalu (naik/berbalik YoY) DAN dari kuartal sebelumnya. QoQ % tidak terdefinisi bila kuartal
+    sebelumnya rugi; saat itu laba kini > rugi kuartal lalu = naik (berbalik QoQ)."""
+    if not kw:
+        return kw
+    laba, sblm, qoq = kw.get("laba"), kw.get("labaSebelum"), kw.get("qoq")
+    naik_qoq = qoq > 0 if qoq is not None else (laba > sblm if laba is not None and sblm is not None else None)
+    kw["naikQoq"] = naik_qoq
+    kw["berbalikQoq"] = qoq is None and sblm is not None and sblm < 0 and (laba or 0) > 0
+    kw["tumbuh"] = kw.get("status") in ("naik", "berbalik") and bool(naik_qoq)
+    return kw
 
 
 # Klasifikasi emiten (sektor/subsektor/industri IDX-IC dari profil Stockbit) untuk kartu "terbaik per kelompok" di
@@ -2683,7 +2698,7 @@ def lk_api(data: dict | None = None, kuartalan: dict | None = None, keystats: di
         if kw is None and m:
             pp = per_periode[r["t"]]
             kw = lk_kuartal(r, pp.get(f"1H{m.group(1)}") or pp.get(f"6M{m.group(1)}"), pp.get(f"3M{m.group(1)}") or pp.get(f"1Q{m.group(1)}"))
-        rows.append({**r, "radar": r["t"] in radar, "backdoor": r["t"] in backdoor, "kuartal": kw,
+        rows.append({**r, "radar": r["t"] in radar, "backdoor": r["t"] in backdoor, "kuartal": lk_tumbuh(kw),
                      "kelas": sektor.get(r["t"]) or ({"sektor": ix[r["t"]]} if ix.get(r["t"]) else None)})
     rows.sort(key=lambda r: (r.get("tgl", ""), (r.get("laba") or {}).get("pct") or 0), reverse=True)
     hit = {}
@@ -2863,9 +2878,13 @@ def saham50_build() -> dict:
             if a["tgl"] >= batas90 and set(a["jenis"]) - {"uma"}:
                 potensi.append(f"{a['tgl']}: {a['judul'][:110]}")
         kw = (r or {}).get("kuartal") or {}
-        if kw.get("status") in ("naik", "berbalik"):
+        if kw.get("tumbuh"):
             skor += 15
-            potensi.append(f"Laba Q{kw['q']} murni " + ("berbalik menjadi laba" if kw["status"] == "berbalik" else f"naik {kw['yoy']:.1f}% YoY".replace(".", ",")))
+            potensi.append(f"Laba Q{kw['q']} murni " + ("berbalik menjadi laba" if kw["status"] == "berbalik" else f"naik {kw['yoy']:.1f}% YoY".replace(".", ","))
+                           + " dan lebih besar dari kuartal sebelumnya")
+        elif kw.get("status") in ("naik", "berbalik"):
+            skor += 8
+            potensi.append(f"Laba Q{kw['q']} murni naik dari tahun lalu, tetapi tidak lebih besar dari kuartal sebelumnya")
         elif r and r.get("kategori") in ("bagus", "berbalik"):
             skor += 8
             potensi.append(f"Laporan {r.get('periode')}: {r.get('judul', '')}")
