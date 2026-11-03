@@ -74,10 +74,14 @@ const GAGAL = x => {
   if (!(k.pe > 0)) g.push('PE TTM negatif (rugi 12 bulan)')
   return g
 }
-const kelompok = computed(() => terbaikPerKelompok(basis.value, GAGAL))
+// Kartu: p = pilihan (yang lolos; bila tidak ada, kandidat terdekat dengan peringatan syarat yang belum terpenuhi).
+const kelompok = computed(() => terbaikPerKelompok(basis.value, GAGAL).map(g => {
+  const d0 = g.x ? null : g.dekat[0]
+  return { ...g, p: g.x || d0?.r || null, gagal: d0?.g || [], dekat: d0 ? g.dekat.slice(1) : g.dekat }
+}))
 const alasan = x => [
   `Laba ${Q} murni ${x.kuartal.status === 'berbalik' ? 'berbalik dari rugi' : pct(x.kuartal.yoy) + ' YoY'}, QoQ ${qoqTeks(x.kuartal)}`,
-  `Pendapatan ${pct(x.pendapatan.pct)}${x.marginKotor ? `, margin kotor ${fmt(x.marginKotor.dari, 1)}% → ${fmt(x.marginKotor.ke, 1)}%` : ''}`,
+  `Pendapatan ${pct(x.pendapatan?.pct)}${x.marginKotor ? `, margin kotor ${fmt(x.marginKotor.dari, 1)}% → ${fmt(x.marginKotor.ke, 1)}%` : ''}`,
   `PE TTM ${fmt(x.kuartal.pe, 1)}×${x.kuartal.peMedian ? ` (median IHSG ${fmt(x.kuartal.peMedian, 1)}×)` : ''}${x.kuartal.pbv ? ` · PBV ${fmt(x.kuartal.pbv, 2)}×` : ''}`]
 
 // Unduh riset (PDF, format sama dengan tab Pola Broker/Recovery/Low).
@@ -140,24 +144,25 @@ async function unduhPdf() {
           <span class="small muted">1 saham per kelompok dari seluruh laporan {{ PERIODE.find(p => p[0] === per)[1] }} · tanpa bank & asuransi · syarat: laba {{ Q }} murni lebih besar dari {{ Q }} tahun lalu dan dari kuartal sebelumnya, pendapatan naik · PE TTM terendah · bukan rekomendasi beli/jual</span></div>
         <div class="kartu">
           <div v-for="g in kelompok" :key="g.k" class="k" :class="{ kosong: !g.x }">
-            <div class="kl">{{ g.label }}<span v-if="g.x && g.k === 'konglo'" class="muted"> · {{ grupKonglo(g.x.t) }}</span><span v-if="g.x && g.k === 'logam' && komoditas(g.x.t)" class="muted"> · {{ komoditas(g.x.t) }}</span></div>
-            <template v-if="g.x">
+            <div class="kl">{{ g.label }}<span v-if="g.p && g.k === 'konglo'" class="muted"> · {{ grupKonglo(g.p.t) }}</span><span v-if="g.p && g.k === 'logam' && komoditas(g.p.t)" class="muted"> · {{ komoditas(g.p.t) }}</span></div>
+            <p v-if="g.p && !g.x" class="small warn">Belum ada yang lolos semua syarat; ini kandidat terdekat. Belum terpenuhi: {{ g.gagal.join('; ') }}.</p>
+            <template v-if="g.p">
               <div class="kh">
-                <RouterLink :to="{ path: '/emiten/' + g.x.t, query: { tab: 'berita' } }"><b>{{ g.x.t }}</b></RouterLink>
-                <span v-if="g.x.radar" class="tag t-calm">radar</span>
-                <span class="hg"><HargaSaham :kode="g.x.t" /></span></div>
-              <div v-if="g.x.nama" class="small muted">{{ g.x.nama }}</div>
-              <div class="small lb">Laba {{ KUM }} {{ uang(g.x.laba?.ke) }} <b :class="nada(g.x)">{{ labaPct(g.x) }}</b> · {{ Q }} murni {{ uangQ(g.x.kuartal.laba, g.x.kuartal.mata) }}</div>
-              <ul class="small"><li v-for="a in alasan(g.x)" :key="a">{{ a }}</li></ul>
+                <RouterLink :to="{ path: '/emiten/' + g.p.t, query: { tab: 'berita' } }"><b>{{ g.p.t }}</b></RouterLink>
+                <span v-if="g.p.radar" class="tag t-calm">radar</span>
+                <span class="hg"><HargaSaham :kode="g.p.t" /></span></div>
+              <div v-if="g.p.nama" class="small muted">{{ g.p.nama }}</div>
+              <div class="small lb">Laba {{ KUM }} {{ uang(g.p.laba?.ke) }} <b :class="nada(g.p)">{{ labaPct(g.p) }}</b> · {{ Q }} murni {{ uangQ(g.p.kuartal.laba, g.p.kuartal.mata) }}</div>
+              <ul class="small"><li v-for="a in alasan(g.p)" :key="a">{{ a }}</li></ul>
               <p v-if="g.alt.length" class="small muted alt">Pembanding:
                 <template v-for="(a, i) in g.alt" :key="a.t"><span v-if="i">, </span><RouterLink :to="{ path: '/emiten/' + a.t, query: { tab: 'berita' } }">{{ a.t }}</RouterLink> PE {{ fmt(a.kuartal.pe, 1) }}×</template></p>
             </template>
-            <template v-else>
-              <p class="small muted">Belum ada emiten di kelompok ini yang lolos syarat.</p>
-              <p v-if="g.dekat.length" class="small alt">Terdekat:</p>
-              <ul v-if="g.dekat.length" class="small">
+            <p v-else class="small muted">Belum ada emiten di kelompok ini.</p>
+            <template v-if="g.dekat.length">
+              <p class="small alt">{{ g.x ? 'Belum lolos' : 'Kandidat lain' }}:</p>
+              <ul class="small muted">
                 <li v-for="d in g.dekat" :key="d.r.t"><RouterLink :to="{ path: '/emiten/' + d.r.t, query: { tab: 'berita' } }"><b>{{ d.r.t }}</b></RouterLink>
-                  PE {{ fmt(d.r.kuartal.pe, 1) }}× · belum lolos: {{ d.g.join('; ') }}</li>
+                  PE {{ fmt(d.r.kuartal.pe, 1) }}× · {{ d.g.join('; ') }}</li>
               </ul>
             </template>
           </div>
@@ -229,6 +234,6 @@ async function unduhPdf() {
 .kl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--now-ink);margin-bottom:4px}
 .k.kosong{border-left-color:var(--rule)}
 .lb{margin:6px 0 2px}.k ul{margin:4px 0 0;padding-left:16px}
-.alt{margin:6px 0 0}
+.alt{margin:6px 0 0}.warn{margin:2px 0 6px;color:var(--ink-2);font-style:italic}
 .dr{min-width:260px;max-width:340px}.det td{background:var(--sheet)}.det p{margin:4px 0}.det ul{margin:4px 0;padding-left:18px}
 </style>

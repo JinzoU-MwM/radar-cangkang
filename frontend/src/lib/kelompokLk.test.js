@@ -33,6 +33,9 @@ describe('kelompokLk', () => {
     const h = pilih([r('PSAB', 3), r('INCO', 8), r('PTBA', 7), r('XYZA', 4, { kelas: { ind: 'Logam & Mineral' }, ringkas: 'produksi nikel naik' })])
     expect([h.batubara, h.emas, h.nikel]).toEqual(['PTBA', 'PSAB', 'XYZA'])
     expect(komoditas('MDKA')).toBe('Emas')
+    expect(komoditas('ANTM')).toBe('Nikel, Emas')
+    expect(pilih([r('ANTM', 6)]).emas).toBe('ANTM')   // emas didahulukan
+    expect(pilih([r('ANTM', 6), r('PSAB', 3)]).emas).toBe('PSAB')
     expect(pilih([r('TINS', 5.6), r('AMMN', 11.9)]).logam).toBe('TINS')
   })
 

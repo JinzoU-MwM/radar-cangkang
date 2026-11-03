@@ -37,19 +37,22 @@ export const CPO = new Set([
   'AALI', 'LSIP', 'SIMP', 'SMAR', 'SSMS', 'TAPG', 'DSNG', 'SGRO', 'BWPT', 'PALM', 'ANJT', 'JAWA', 'GZCO', 'UNSP',
   'MAGP', 'PSGO', 'CSRA', 'STAA', 'TBLA', 'NSSS', 'FAPA', 'MGRO', 'TLDN', 'IPPE', 'GOLL', 'PGUN',
 ])
-// Emiten tambang dan komoditas utamanya (emas, nikel, batu bara, timah, tembaga, bauksit, dll.).
+// Emiten tambang dan komoditasnya (emas, nikel, batu bara, timah, tembaga, bauksit, dll.); satu emiten bisa lebih dari
+// satu komoditas (ANTM: emas & nikel).
 export const TAMBANG = {
   'Batu bara': ['ADRO', 'AADI', 'ADMR', 'PTBA', 'ITMG', 'BUMI', 'INDY', 'HRUM', 'GEMS', 'BSSR', 'MBAP', 'KKGI', 'DOID',
     'TOBA', 'ABMM', 'BYAN', 'MCOL', 'SMMT', 'ARII', 'GTBO', 'FIRE', 'BOSS', 'COAL', 'DEWA', 'CUAN', 'RMKO', 'MYOH'],
   Nikel: ['INCO', 'ANTM', 'NCKL', 'MBMA', 'NICL', 'NICE', 'DKFT', 'IFSH', 'PURE'],
-  Emas: ['MDKA', 'EMAS', 'ARCI', 'BRMS', 'PSAB', 'SQMI'],
+  Emas: ['ANTM', 'MDKA', 'EMAS', 'ARCI', 'BRMS', 'PSAB', 'SQMI'],
   Tembaga: ['AMMN'],
   Timah: ['TINS'],
   Bauksit: ['CITA'],
   Seng: ['ZINC'],
 }
-const KOMODITAS = Object.fromEntries(Object.entries(TAMBANG).flatMap(([g, ks]) => ks.map(k => [k, g])))
-export const komoditas = t => KOMODITAS[t] || ''
+const KOMODITAS = {}
+for (const [g, ks] of Object.entries(TAMBANG)) for (const k of ks) (KOMODITAS[k] ||= []).push(g)
+export const komoditas = t => (KOMODITAS[t] || []).join(', ')
+const punya = (t, ...gs) => (KOMODITAS[t] || []).some(g => gs.includes(g))
 const GRUP = Object.fromEntries(Object.entries(KONGLO).flatMap(([g, ks]) => ks.map(k => [k, g])))
 export const grupKonglo = t => GRUP[t] || ''
 
@@ -74,18 +77,18 @@ export const KELOMPOK = [
   ['cpo', 'CPO', x => CPO.has(x.t) || cek(x, /perkebunan|plantation|crops/i, /\b(sawit|CPO|TBS|perkebunan|plantation)\b/i)],
   // Hanya backdoor terkonfirmasi (server: tahap PPJB/PTW/dst. + confirmed), bukan saham yang baru bersinyal di radar.
   ['backdoor', 'Backdoor', x => !!x.backdoor],
-  ['batubara', 'Tambang · Batu bara', x => komoditas(x.t) === 'Batu bara' || cek(x, /^(batu ?bara|coal)/i, /\b(batu ?bara|coal)\b/i)],
-  ['emas', 'Tambang · Emas', x => komoditas(x.t) === 'Emas' || (!komoditas(x.t) && logam(x, /\b(emas|gold)\b/i))],
-  ['nikel', 'Tambang · Nikel', x => komoditas(x.t) === 'Nikel' || (!komoditas(x.t) && logam(x, /\b(nikel|nickel|feronikel)\b/i))],
-  ['logam', 'Tambang · Tembaga, Timah & lainnya', x => ['Tembaga', 'Timah', 'Bauksit', 'Seng'].includes(komoditas(x.t))
+  ['batubara', 'Tambang · Batu bara', x => punya(x.t, 'Batu bara') || cek(x, /^(batu ?bara|coal)/i, /\b(batu ?bara|coal)\b/i)],
+  ['emas', 'Tambang · Emas', x => punya(x.t, 'Emas') || (!komoditas(x.t) && logam(x, /\b(emas|gold)\b/i))],
+  ['nikel', 'Tambang · Nikel', x => punya(x.t, 'Nikel') || (!komoditas(x.t) && logam(x, /\b(nikel|nickel|feronikel)\b/i))],
+  ['logam', 'Tambang · Tembaga, Timah & lainnya', x => punya(x.t, 'Tembaga', 'Timah', 'Bauksit', 'Seng')
     || (!komoditas(x.t) && logam(x, /\b(tembaga|copper|timah|bauksit|bauxite|alumina|seng|zinc)\b/i))],
   ['telko', 'Telekomunikasi & kabel', x => TELKO.has(x.t) || cek(x, /telekomunikasi|telecom/i, /\b(telekomunikasi|seluler|menara telekomunikasi|fiber optik)\b/i)],
 ]
 
 // Terbaik per kelompok: `gagal(x)` = daftar syarat yang tidak terpenuhi (kosong = lolos); bukan bank/asuransi;
 // PE TTM terendah. Satu emiten hanya menjadi pilihan utama sekali (kelompok di depan didahulukan).
-// alt = 2 emiten lolos berikutnya sebagai pembanding; dekat = bila tidak ada yang lolos, 2 emiten berlaba dengan
-// syarat gagal paling sedikit, beserta alasannya.
+// alt = 2 emiten lolos berikutnya sebagai pembanding; dekat = 2 emiten (PE positif) yang belum lolos dengan syarat
+// gagal paling sedikit, beserta alasannya.
 export function terbaikPerKelompok(rows, gagal) {
   const dipakai = new Set()
   const pe = r => r.kuartal?.pe
@@ -95,7 +98,7 @@ export function terbaikPerKelompok(rows, gagal) {
     const x = lolos.find(r => !dipakai.has(r.t)) || null
     if (x) dipakai.add(x.t)
     const alt = lolos.filter(r => r !== x).slice(0, 2)
-    const dekat = x ? [] : anggota.filter(a => a.g.length && pe(a.r) > 0)
+    const dekat = anggota.filter(a => a.g.length && pe(a.r) > 0)
       .sort((a, b) => a.g.length - b.g.length || pe(a.r) - pe(b.r)).slice(0, 2)
     return { k, label, x, alt, dekat }
   })
