@@ -3390,6 +3390,15 @@ def season_next_run(now: datetime) -> datetime:
     return t
 
 
+def jadwal_terlewat(path: Path, now: datetime) -> bool:
+    """Pembaruan terjadwal (00.01 WIB) sesudah berkas terakhir ditulis sudah lewat >10 menit, mis. server mati saat itu."""
+    try:
+        m = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+    except OSError:
+        return False
+    return now > season_next_run(m) + timedelta(minutes=10)
+
+
 def season_build() -> None:
     uni = season_universe()
     print(f"[seasonality] membangun data {len(uni)} saham")
@@ -4603,6 +4612,13 @@ def season_loop() -> None:
             except Exception as e:
                 print(f"[{fn.__name__}] gagal: {e}; dicoba lagi 30 menit", file=sys.stderr)
             time.sleep(1800)
+    # Jadwal 00.01 terlewat (server mati/restart melewati jam itu): kejar sekali sekarang.
+    if get_token() and any(jadwal_terlewat(p, datetime.now(timezone.utc)) for p in (SEASON_PATH, BROKER_PATH)):
+        print("[seasonality] jadwal harian terlewat; memperbarui sekarang", file=sys.stderr)
+        try:
+            daily_builds()
+        except Exception as e:
+            print(f"[seasonality] pembaruan susulan gagal: {e}", file=sys.stderr)
     while True:
         nxt = season_next_run(datetime.now(timezone.utc))
         time.sleep(max(1.0, (nxt - datetime.now(timezone.utc)).total_seconds()))
