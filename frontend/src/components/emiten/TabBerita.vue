@@ -59,7 +59,7 @@ const newsAt = computed(() => store.status?.newsAt ? new Date(store.status.newsA
     <div v-else class="sheet list">
       <div v-for="g in groups" :key="g.d">
         <h3 class="lbl gd">{{ g.label }}</h3>
-        <NewsItem v-for="u in g.rows" :key="u.id" :u="u" :show-ticker="false" />
+        <NewsItem v-for="u in g.rows" :key="u.id" :u="u" :show-ticker="false" :daftar="diRadar ? null : luar" />
       </div>
     </div>
     <div v-if="sum" class="concl" :class="'c-' + sum.tone">
