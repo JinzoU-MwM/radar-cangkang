@@ -406,6 +406,20 @@ def updates_all() -> list[dict]:
     return [json.loads(r[0]) for r in data_rows("SELECT data FROM updates ORDER BY date DESC")]
 
 
+def updates_unik(ups: list[dict]) -> list[dict]:
+    """Satu baris per (emiten, tanggal, judul): posting ulang atau salinan dari dua sumber tidak tampil ganda.
+    Keterbukaan resmi (sb-report) didahulukan, lalu yang terbaru diperbarui. Data tersimpan tidak diubah."""
+    pilih: dict[tuple, dict] = {}
+    for u in ups:
+        k = (u.get("ticker"), str(u.get("date") or "")[:10], re.sub(r"\s+", " ", str(u.get("title") or "")).strip().lower())
+        lama = pilih.get(k)
+        nilai = lambda x: (str(x.get("id", "")).startswith("sb-report-"), str(x.get("updatedAt") or ""))
+        if lama is None or nilai(u) > nilai(lama):
+            pilih[k] = u
+    return [u for u in ups if pilih.get((u.get("ticker"), str(u.get("date") or "")[:10],
+                                         re.sub(r"\s+", " ", str(u.get("title") or "")).strip().lower())) is u]
+
+
 def updates_put(ups: list[dict]) -> None:
     data_exec("INSERT OR REPLACE INTO updates VALUES(?,?,?)",
               [(str(u["id"]), json.dumps(u, ensure_ascii=False), str(u.get("date") or "")) for u in ups])
@@ -2539,6 +2553,21 @@ def lk_kuartal_ks(r: dict, ks: dict | None) -> dict | None:
             "melemah": r.get("kategori") in ("bagus", "naik", "berbalik") and status in ("turun", "rugi")}
 
 
+_lk_memo: tuple[tuple, float, dict] = ((), 0.0, {})
+
+
+def lk_api_cache() -> dict:
+    """lk_api dengan cache: dihitung ulang bila berkas LK / kuartalan / Key Stats berubah atau setelah 5 menit
+    (harga & daftar radar), agar tab Kinerja tidak menghitung ulang ratusan laporan di setiap kunjungan."""
+    global _lk_memo
+    kunci = tuple(p.stat().st_mtime if p.exists() else 0 for p in (LK_PATH, LKQ_PATH, LKS_PATH))
+    if _lk_memo[0] == kunci and time.time() - _lk_memo[1] < 300:
+        return _lk_memo[2]
+    hasil = lk_api()
+    _lk_memo = (kunci, time.time(), hasil)
+    return hasil
+
+
 def lk_api(data: dict | None = None, kuartalan: dict | None = None, keystats: dict | None = None) -> dict:
     """Daftar LK terbaru per emiten (satu laporan terakhir per kode) + ringkasan per kategori."""
     data = lk_load() if data is None else data
@@ -4637,7 +4666,7 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json(items_all())
         elif path == "api/updates":
             # Laporan keuangan tidak tampil di feed radar backdoor; dianalisa di tab IHSG -> LK Bagus (/api/lk).
-            self.reply_json([u for u in updates_all() if not LK_JUDUL_RX.search(str(u.get("title") or ""))])
+            self.reply_json(updates_unik([u for u in updates_all() if not LK_JUDUL_RX.search(str(u.get("title") or ""))]))
         elif path.startswith("api/layout/"):
             t = path.rsplit("/", 1)[1]
             if not TICKER_RE.match(t):
@@ -4739,7 +4768,7 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "api/saham50":
             self.reply_json(saham50_api())
         elif path == "api/lk":
-            self.reply_json(lk_api())
+            self.reply_json(lk_api_cache())
         elif path == "api/harga-saham":
             self.reply_json(harga_semua())
         elif path == "api/nama-saham":

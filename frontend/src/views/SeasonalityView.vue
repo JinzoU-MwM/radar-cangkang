@@ -48,6 +48,11 @@ const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt
 // Default bulan depan (Desember -> Januari).
 const bulan = ref((new Date().getMonth() + 1) % 12 + 1)
 const tahun = ref(10)
+// Keterangan bulan terpilih terhadap bulan berjalan (bawaan halaman = bulan depan).
+const relBulanTeks = computed(() => {
+  const ini = new Date().getMonth() + 1
+  return bulan.value === ini ? 'bulan ini' : bulan.value === ini % 12 + 1 ? 'bulan depan' : ''
+})
 const data = ref(null), err = ref(''), loading = ref(false)
 async function load() {
   loading.value = true; err.value = ''
@@ -131,6 +136,7 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
       <div class="ctl">
         <div class="bln" role="group" aria-label="Bulan">
           <button v-for="(b, i) in BLN" :key="b" type="button" class="pill sm" :aria-pressed="String(bulan === i + 1)" @click="bulan = i + 1">{{ b }}</button>
+          <span class="small muted relb">{{ relBulanTeks }}</span>
         </div>
         <div class="ctl2">
           <div role="group" aria-label="Rentang">
@@ -140,6 +146,8 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
           <button type="button" class="pill sm" :aria-expanded="String(info)" @click="info = !info">ⓘ Cara membaca</button>
         </div>
       </div>
+      <p v-if="data && data.total < 100" class="small warn">Data Seasonality belum lengkap ({{ data.total }} saham); server sedang
+        melengkapinya (pembaruan otomatis Senin–Sabtu pukul 00.01 WIB).</p>
       <div v-if="info" class="info small">
         <p>Pola kenaikan berulang di bulan yang sama selama {{ tahun }} tahun: IHSG, sektor, dan saham, dipadukan dengan sinyal broker dan katalis. Probabilitas historis, bukan kepastian; bukan rekomendasi beli/jual.</p>
         <p v-if="data"><b>Skor 0–100</b> = pola saham {{ data.bobot.pola }} + sektor {{ data.bobot.sektor }} + IHSG {{ data.bobot.ihsg }} + akumulasi broker {{ data.bobot.broker }} + katalis {{ data.bobot.katalis }}. Pola memakai peluang naik terkoreksi sampel kecil (Wilson).</p>
@@ -328,6 +336,8 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
 </template>
 
 <style scoped>
+.warn{border-left:3px solid var(--warn);background:var(--warn-bg);padding:6px 10px;margin:6px 0}
+.relb{margin-left:6px}
 .sz header{margin-bottom:8px}
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--rule);margin:4px 0 8px}
 .tab.grup{margin-left:2px;border-left:1px solid var(--rule)}

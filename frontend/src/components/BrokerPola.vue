@@ -161,6 +161,8 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
     <p v-if="loading" class="muted">Memuat pola broker…</p>
     <p v-else-if="err" class="muted">{{ err }}</p>
     <template v-else-if="data">
+      <p v-if="data.updated === 'uji' || (data.brokers && data.brokers.length < 20)" class="small warn">Data Pola Broker belum lengkap
+        (data contoh); server sedang menyusun data asli (pembaruan otomatis Senin–Sabtu pukul 00.01 WIB).</p>
       <!-- Per saham: agregat semua broker (sesuai filter) pada bulan terpilih. -->
       <template v-if="mode === 'saham' && data.saham">
         <!-- Grafik batang dua arah: 10 saham paling diakumulasi (kanan, hijau) dan didistribusi (kiri, merah). -->
@@ -264,6 +266,7 @@ const tag = j => j === 'Asing' ? 't-calm' : j === 'Pemerintah' ? 't-warn' : 't-g
 </template>
 
 <style scoped>
+.warn{border-left:3px solid var(--warn);background:var(--warn-bg);padding:6px 10px;margin:6px 0}
 .ctl{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;margin:6px 0}
 .bln{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
 .two{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}

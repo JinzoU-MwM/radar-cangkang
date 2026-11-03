@@ -456,6 +456,15 @@ class LkTest(unittest.TestCase):
         self.assertEqual(r["hitung"], {"bagus": 1})
 
 
+class UpdatesUnikTest(unittest.TestCase):
+    def test_ganda_disaring_resmi_didahulukan(self):
+        ups = [{"id": "sb-news-1", "ticker": "VISI", "date": "2026-11-02", "title": "Raffi Ahmad Borong Saham VISI"},
+               {"id": "sb-report-2", "ticker": "VISI", "date": "2026-11-02", "title": "Raffi  Ahmad borong saham VISI"},
+               {"id": "sb-news-3", "ticker": "VISI", "date": "2026-11-01", "title": "Raffi Ahmad Borong Saham VISI"},
+               {"id": "sb-news-4", "ticker": "MKNT", "date": "2026-11-02", "title": "Raffi Ahmad Borong Saham VISI"}]
+        self.assertEqual([u["id"] for u in server.updates_unik(ups)], ["sb-report-2", "sb-news-3", "sb-news-4"])
+
+
 class Saham50Test(unittest.TestCase):
     def test_teknikal(self):
         # 80 hari turun dari 60 ke 41, lalu naik ke 45: di atas EMA20, resistance 60 hari di atas harga.
