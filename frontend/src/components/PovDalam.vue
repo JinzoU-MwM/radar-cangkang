@@ -74,9 +74,10 @@ async function unduh() {
         <li v-if="hasil.broker">Broker 30 hari: <b :class="hasil.broker.bandar > 0 ? 'c-good' : 'c-strong'">{{ hasil.broker.bandar > 0 ? 'akumulasi' : 'distribusi' }} Rp{{ fmt(Math.abs(hasil.broker.bandar) / 1e9, 2) }} M</b>
           · pembeli {{ hasil.broker.akum.join(', ') || '–' }} · penjual {{ hasil.broker.dist.join(', ') || '–' }}</li></ul>
 
-      <h3>Kepemilikan · non-publik {{ p2(hasil.kepemilikan.nonPublik) }} · free float {{ p2(hasil.identitas.freeFloat) }}</h3>
+      <h3>Kepemilikan · terafiliasi {{ p2(hasil.kepemilikan.nonPublik) }} · free float efektif {{ p2(hasil.kepemilikan.ffEfektif) }} · free float Stockbit {{ p2(hasil.identitas.freeFloat) }}</h3>
       <ul class="small">
-        <li v-for="p in hasil.kepemilikan.pemegang" :key="p.name"><b>{{ p.name }}</b> {{ p2(p.pct) }}<span v-if="p.pengendali" class="tag t-warn">pengendali</span><span v-if="p.pengurus" class="tag t-calm">pengurus: {{ p.pengurus }}</span></li>
+        <li v-for="p in hasil.kepemilikan.pemegang" :key="p.name"><b>{{ p.name }}</b> {{ p2(p.pct) }}<span v-if="p.pengendali" class="tag t-warn">pengendali</span><span v-if="p.pengurus" class="tag t-calm">pengurus: {{ p.pengurus }}</span><span v-if="p.keluarga" class="tag t-calm">keluarga {{ p.keluarga }}</span></li>
+        <li v-for="k in hasil.kepemilikan.keluarga || []" :key="'k' + k.nama"><b>Keluarga {{ k.nama }}</b>: {{ k.anggota.length }} anggota, total {{ p2(k.pct) }}</li>
         <li v-if="hasil.kepemilikan.ubo.length">UBO: {{ hasil.kepemilikan.ubo.join(', ') }}</li>
       </ul>
       <p class="small muted">Direksi: {{ hasil.kepemilikan.direksi.join(', ') || '–' }} · Komisaris: {{ hasil.kepemilikan.komisaris.join(', ') || '–' }}</p>

@@ -16,7 +16,28 @@ TOPIK_RX = re.compile(r"pengendali|akuisisi|diakuisisi|pemilik|grup|group|konsor
                       r"divestasi|caplok|private placement|injeksi|jv\b|joint venture", re.I)
 NAMA_STOP = {"yang", "yg", "dan", "dg", "dengan", "lewat", "bersama", "di", "ke", "dari", "sebagai", "adalah", "juga", "sudah",
              "itu", "ini", "kemudian", "lalu", "dulu", "saat", "pernah", "dan", "atau", "akan", "masih", "sekarang", "nya",
-             "the", "and", "via", "punya", "memiliki", "mendirikan", "sedangkan", "untuk", "pada", "tbk", "pt"}
+             "the", "and", "via", "punya", "memiliki", "mendirikan", "sedangkan", "untuk", "pada", "tbk", "pt",
+             "komis", "komisaris", "komut", "direktur", "dirut", "owner", "haji", "bos", "boss", "pemilik", "pengendali"}
+BADAN_RX = re.compile(r"\b(PT|TBK|LTD|PTE|LIMITED|INC|CORP|CO|FUND|BANK|KOPERASI|YAYASAN|DANA PENSIUN|ASURANSI)\b", re.I)
+
+
+def keluarga(pemegang: list[dict]) -> list[dict]:
+    """Pemegang perorangan dengan nama belakang sama (>= 2 orang) dianggap satu keluarga: Risjad, Dananto, dst."""
+    grup: dict = {}
+    for p in pemegang:
+        kata = re.sub(r"[^A-Za-z ]", " ", p["name"]).split()
+        if BADAN_RX.search(p["name"]) or not 2 <= len(kata) <= 4:
+            continue
+        for w in {k.upper() for k in kata[1:]}:
+            if len(w) >= 4:
+                grup.setdefault(w, []).append(p)
+    out, dipakai = [], set()
+    for nama, ps in sorted(grup.items(), key=lambda kv: -len(kv[1])):
+        ps = [p for p in ps if p["name"] not in dipakai]
+        if len(ps) >= 2:
+            dipakai |= {p["name"] for p in ps}
+            out.append({"nama": nama.title(), "anggota": [p["name"] for p in ps], "pct": round(sum(p["pct"] for p in ps), 2)})
+    return out
 JENIS_AKSI = {"akuisisi": "Pengendali / akuisisi", "rights": "Modal (HMETD / private placement / inbreng)",
               "kbli": "Kegiatan usaha / nama", "direksi": "Pengurus", "uma": "UMA / suspensi"}
 
@@ -135,10 +156,16 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
             pmg[k] = {"name": s["name"], "pct": _pct(s.get("pct")), "pengendali": False}
     semua = sorted(pmg.values(), key=lambda p: -p["pct"])
     non_publik = [p for p in semua if not PUBLIK_RX.search(p["name"])]
-    total_np = round(sum(p["pct"] for p in non_publik), 2)
     pengurus = [re.sub(r"\s*\(.*\)$", "", x) for x in (prof.get("directors") or []) + (prof.get("commissioners") or [])]
     for p in non_publik:
         p["pengurus"] = next((x for x in pengurus if _cocok_nama(x, p["name"])), "")
+    kel = keluarga(non_publik)
+    anggota_kel = {n: k["nama"] for k in kel for n in k["anggota"]}
+    for p in non_publik:
+        p["keluarga"] = anggota_kel.get(p["name"], "")
+    # Terafiliasi (bukan free float menurut BEI): >= 5%, pengendali, pengurus, dan anggota keluarga pemegang tersebut.
+    total_np = round(sum(p["pct"] for p in non_publik if p["pct"] >= 5 or p["pengendali"] or p["pengurus"] or p["keluarga"]), 2)
+    ff_efektif = round(max(0.0, 100 - total_np), 2)
     jar_rows, bersama = _jaringan(t, non_publik[:6], d.get("jaringan") or {})
     riwayat = _riwayat(d.get("insider") or [], kini)
     ins = _insider180(d.get("insider") or [], kini)
@@ -160,8 +187,9 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
     b = []
     if ff is not None and ff < 7.5:
         b.append(f"Free float {ff:.2f}% di bawah ketentuan minimal 7,5% (Peraturan BEI I-A).")
-    if total_np >= 92.5:
-        b.append(f"Pemegang non-publik menguasai {total_np:.2f}% saham.")
+    if ff_efektif < 15:
+        b.append(f"Pihak terafiliasi (>= 5%, pengendali, pengurus, keluarga) menguasai {total_np:.2f}%; free float efektif hanya {ff_efektif:.2f}%.")
+        b += [f"Keluarga {k['nama']}: {len(k['anggota'])} anggota memegang {k['pct']:.2f}% ({', '.join(k['anggota'][:6])})." for k in kel if k["pct"] >= 3]
     if b:
         b.append("Pemenuhan free float biasanya ditempuh lewat penjualan/distribusi saham pemegang utama atau penambahan saham baru ke publik.")
         tambah("Pemenuhan free float: pemegang utama berpotensi melepas saham ke publik", b, 0)
@@ -236,7 +264,7 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
     ringkas = [f"{t} · {d.get('nama') or ''}".strip(" ·"),
                " / ".join(x for x in (prof.get("sector"), prof.get("industry")) if x)]
     if non_publik:
-        ringkas.append(f"Pemegang utama {non_publik[0]['name']} {non_publik[0]['pct']:.2f}%; non-publik total {total_np:.2f}%"
+        ringkas.append(f"Pemegang utama {non_publik[0]['name']} {non_publik[0]['pct']:.2f}%; terafiliasi {total_np:.2f}% (free float efektif {ff_efektif:.2f}%)"
                        + (f"; free float {ff:.2f}%" if ff is not None else ""))
     if dugaan:
         ringkas.append("Dugaan terkuat: " + max(dugaan, key=lambda g: len(g["bukti"]))["judul"].split(":")[0])
@@ -245,7 +273,7 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
         "identitas": {"sektor": prof.get("sector"), "subsektor": prof.get("subSector"), "industri": prof.get("industry"),
                       "latar": (prof.get("background") or "")[:900], "website": prof.get("website"), "harga": harga,
                       "mcap": stats.get("marketCap"), "saham": stats.get("shares"), "freeFloat": ff},
-        "kepemilikan": {"pemegang": non_publik[:12], "publik": [p for p in semua if PUBLIK_RX.search(p["name"])][:3], "nonPublik": total_np,
+        "kepemilikan": {"pemegang": non_publik[:12], "publik": [p for p in semua if PUBLIK_RX.search(p["name"])][:3], "nonPublik": total_np, "ffEfektif": ff_efektif, "keluarga": kel,
                         "ubo": prof.get("beneficiary") or [], "direksi": prof.get("directors") or [], "komisaris": prof.get("commissioners") or []},
         "jaringan": jar_rows, "bersama": bersama[:10], "riwayat": riwayat, "insider": ins, "aksi": aksi,
         "berita": [{"date": u.get("date"), "judul": u.get("title"), "url": u.get("url")} for u in (d.get("berita") or [])[:10]],

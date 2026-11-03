@@ -584,7 +584,7 @@ class PovDalamTest(unittest.TestCase):
         import povdalam
         d, kini = self.data()
         r = povdalam.analyze(d, kini)
-        self.assertAlmostEqual(r["kepemilikan"]["nonPublik"], 84.33, places=2)
+        self.assertAlmostEqual(r["kepemilikan"]["nonPublik"], 80.14, places=2)   # >=5% + pengurus (Dina Risjad)
         self.assertEqual(r["kepemilikan"]["pemegang"][4]["pengurus"], "Dina Risjad")
         self.assertEqual(r["bersama"][0]["t"], "LSIP")                      # dimiliki dua pemegang AKPI
         judul = " | ".join(g["judul"] for g in r["dugaan"])
@@ -594,6 +594,14 @@ class PovDalamTest(unittest.TestCase):
         nama = {e["nama"]: e["terverifikasi"] for e in r["komunitas"]["nama"]}
         self.assertIn("Henry Pribadi", nama)
         self.assertEqual(r["komunitas"]["terkait"][0]["t"], "LSIP")
+
+    def test_keluarga(self):
+        import povdalam
+        pm = [{"name": n, "pct": 1.7} for n in ("AMIRSYAH RISJAD", "DINA RISJAD", "DEDEY RISJAD", "SELVIYA RISJAD DANANTO")]
+        pm.append({"name": "PT NAWA PANDUTA", "pct": 15.05})
+        k = povdalam.keluarga(pm)
+        self.assertEqual((k[0]["nama"], len(k[0]["anggota"]), k[0]["pct"]), ("Risjad", 4, 6.8))
+        self.assertEqual(povdalam.nama_disebut("pak komisaris aris bilang"), [])
 
     def test_nama_disebut(self):
         import povdalam

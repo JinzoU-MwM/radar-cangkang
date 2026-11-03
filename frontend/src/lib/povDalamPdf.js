@@ -41,7 +41,7 @@ export async function povDalamPdf(a, jsPDF) {
     besar: a.t, judul: 'Analisa mendalam', label: `${a.nama || a.t} · ${tgl(a.dibuat)}`,
     sub: [idn.sektor, idn.industri].filter(Boolean).join(' · ') + (kuat ? `. Dugaan terkuat: ${kuat.judul}.` : ''),
     updated: a.dibuat, seri: [],
-    box: [['Pemegang non-publik', p2(k.nonPublik)], ['Free float', p2(idn.freeFloat)], ['Emiten di jaringan', String(a.sumber.jaringan)], ['Dugaan tujuan', String(a.dugaan.length)]],
+    box: [['Pihak terafiliasi', p2(k.nonPublik)], ['Free float efektif', p2(k.ffEfektif)], ['Emiten di jaringan', String(a.sumber.jaringan)], ['Dugaan tujuan', String(a.dugaan.length)]],
     catatan: `Disusun otomatis dari ${a.sumber.pemegang} pemegang saham, ${a.sumber.insider} keterbukaan pemegang saham, ${a.sumber.keterbukaan} keterbukaan informasi, ${a.sumber.berita} berita, dan ${a.sumber.posting} posting publik Stockbit. Bukan ajakan membeli atau menjual efek.`,
   })
 
@@ -54,8 +54,9 @@ export async function povDalamPdf(a, jsPDF) {
   butir([`Harga terakhir ${idn.harga ? 'Rp' + Math.round(idn.harga) : '-'}${idn.mcap ? ' · kapitalisasi Rp' + Math.round(idn.mcap / 1e9) + ' M' : ''}`,
     ...a.skenario.map(s => `${s.label}: Rp${Math.round(s.harga)} (${s.selisih > 0 ? '+' : ''}${String(s.selisih).replace('.', ',')}% dari harga sekarang)`),
     ...(a.broker ? [`Broker 30 hari: ${a.broker.bandar > 0 ? 'akumulasi' : 'distribusi'} Rp${(Math.abs(a.broker.bandar) / 1e9).toFixed(2).replace('.', ',')} M; pembeli ${a.broker.akum.join(', ') || '-'}; penjual ${a.broker.dist.join(', ') || '-'}`] : [])])
-  sub(`Pemegang saham (non-publik ${p2(k.nonPublik)})`)
-  butir(k.pemegang.map(p => `${p.name} ${p2(p.pct)}${p.pengendali ? ' · pengendali' : ''}${p.pengurus ? ' · juga pengurus (' + p.pengurus + ')' : ''}`))
+  sub(`Pemegang saham (terafiliasi ${p2(k.nonPublik)} · free float efektif ${p2(k.ffEfektif)})`)
+  butir(k.pemegang.map(p => `${p.name} ${p2(p.pct)}${p.pengendali ? ' · pengendali' : ''}${p.pengurus ? ' · juga pengurus (' + p.pengurus + ')' : ''}${p.keluarga ? ' · keluarga ' + p.keluarga : ''}`))
+  if (k.keluarga?.length) butir(k.keluarga.map(x => `Keluarga ${x.nama}: ${x.anggota.length} anggota, total ${p2(x.pct)}`), { color: PRIMER })
   if (k.ubo.length) butir([`Pemilik manfaat akhir (UBO): ${k.ubo.join(', ')}`], { color: PRIMER })
   if (k.direksi.length || k.komisaris.length) butir([`Direksi: ${k.direksi.join(', ') || '-'}`, `Komisaris: ${k.komisaris.join(', ') || '-'}`], { size: 8.2, color: MUTED })
   sub('Jaringan: kepemilikan pemegang saham di emiten lain', GOLD)
