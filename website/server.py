@@ -3080,11 +3080,39 @@ def pov_hit_rate(tickers: list[dict]) -> dict:
 
 _pov_memo: tuple | None = None
 _pov_lock = threading.Lock()
+# Hasil POV terakhir juga disimpan ke disk: setelah restart (mis. deploy) halaman langsung tampil tanpa menunggu
+# perhitungan ulang yang memanggil Stockbit untuk tiap akun.
+POV_PATH = ROOT / ".pov.json"
+
+
+def _pov_dari_disk() -> tuple | None:
+    try:
+        d = json.loads(POV_PATH.read_text(encoding="utf-8"))
+        return (float(d["ts"]), d["res"]) if d.get("res", {}).get("users") else None
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def _pov_ke_disk(ts: float, res: dict) -> None:
+    try:
+        tmp = POV_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"ts": ts, "res": res}, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(POV_PATH)
+    except OSError as e:
+        print(f"[pov] gagal simpan: {e}", file=sys.stderr)
 
 
 def get_pov(fresh: bool = False) -> dict:
     """Hasil POV disimpan di memori (dihitung ulang tiap 6 jam oleh pov_loop); versi publik hanya membaca."""
     global _pov_memo
+    if _pov_memo is None:
+        _pov_memo = _pov_dari_disk()
+    # Jalur baca tanpa kunci: pengunjung tidak ikut menunggu saat pov_loop sedang menghitung ulang.
+    m = _pov_memo
+    if m and (is_public_request() or (not fresh and time.time() - m[0] < 6 * 3600)):
+        return m[1]
+    if is_public_request():
+        return {"asOf": None, "users": [], "consensus": [], "errors": [{"source": "POV", "error": "Data POV sedang disiapkan."}]}
     with _pov_lock:
         if _pov_memo and (is_public_request() or (not fresh and time.time() - _pov_memo[0] < 6 * 3600)):
             return _pov_memo[1]
@@ -3126,6 +3154,8 @@ def get_pov(fresh: bool = False) -> dict:
         # Hasil gagal total (mis. token kedaluwarsa) tidak menimpa hasil lama yang masih berguna.
         if users or not _pov_memo:
             _pov_memo = (time.time() if users else 0, res)
+            if users:
+                _pov_ke_disk(_pov_memo[0], res)
         return _pov_memo[1] if not users and _pov_memo[1].get("users") else res
 
 
