@@ -1,5 +1,5 @@
 // Kelompok untuk kartu "terbaik per kelompok" di tab Kinerja: Konglo, CPO, Backdoor, Tambang, Telekomunikasi,
-// Migas, Properti, Konsumen. Klasifikasi dari profil Stockbit (x.kelas: sektor/sub/ind IDX-IC) dengan cadangan
+// Konsumen. Klasifikasi dari profil Stockbit (x.kelas: sektor/sub/ind IDX-IC) dengan cadangan
 // nama & ringkasan laporan bila profil belum diambil. Perbankan dan asuransi selalu dikecualikan.
 
 // Grup konglomerasi besar BEI dan emiten anggotanya (kepemilikan pengendali yang dikenal publik).
@@ -25,6 +25,31 @@ export const KONGLO = {
   Ciputra: ['CTRA'],
   'Gudang Garam': ['GGRM'],
 }
+// Telekomunikasi & penunjangnya: operator, menara, internet/data center, serta komponen & peralatan kelistrikan
+// (kabel) yang memasok jaringan. Ditambah emiten berklasifikasi "Telecommunication" di profil Stockbit.
+export const TELKO = new Set([
+  'TLKM', 'ISAT', 'EXCL', 'TOWR', 'TBIG', 'MTEL', 'LINK', 'BALI', 'CENT', 'GHON', 'JAST', 'DATA',
+  'COIN', 'DOOH', 'DSSA', 'INET', 'IRSX', 'KETR', 'MORA', 'PADA', 'WIFI',
+  'CCSI', 'IKBI', 'JECC', 'KBLI', 'KBLM', 'SCCO', 'VOKS',
+])
+// Emiten sawit/CPO (perkebunan & pengolahan minyak sawit); klasifikasi profil kadang menaruhnya di "Food Products".
+export const CPO = new Set([
+  'AALI', 'LSIP', 'SIMP', 'SMAR', 'SSMS', 'TAPG', 'DSNG', 'SGRO', 'BWPT', 'PALM', 'ANJT', 'JAWA', 'GZCO', 'UNSP',
+  'MAGP', 'PSGO', 'CSRA', 'STAA', 'TBLA', 'NSSS', 'FAPA', 'MGRO', 'TLDN', 'IPPE', 'GOLL', 'PGUN',
+])
+// Emiten tambang dan komoditas utamanya (emas, nikel, batu bara, timah, tembaga, bauksit, dll.).
+export const TAMBANG = {
+  'Batu bara': ['ADRO', 'AADI', 'ADMR', 'PTBA', 'ITMG', 'BUMI', 'INDY', 'HRUM', 'GEMS', 'BSSR', 'MBAP', 'KKGI', 'DOID',
+    'TOBA', 'ABMM', 'BYAN', 'MCOL', 'SMMT', 'ARII', 'GTBO', 'FIRE', 'BOSS', 'COAL', 'DEWA', 'CUAN', 'RMKO', 'MYOH'],
+  Nikel: ['INCO', 'ANTM', 'NCKL', 'MBMA', 'NICL', 'NICE', 'DKFT', 'IFSH', 'PURE'],
+  Emas: ['MDKA', 'EMAS', 'ARCI', 'BRMS', 'PSAB', 'SQMI'],
+  Tembaga: ['AMMN'],
+  Timah: ['TINS'],
+  Bauksit: ['CITA'],
+  Seng: ['ZINC'],
+}
+const KOMODITAS = Object.fromEntries(Object.entries(TAMBANG).flatMap(([g, ks]) => ks.map(k => [k, g])))
+export const komoditas = t => KOMODITAS[t] || ''
 const GRUP = Object.fromEntries(Object.entries(KONGLO).flatMap(([g, ks]) => ks.map(k => [k, g])))
 export const grupKonglo = t => GRUP[t] || ''
 
@@ -40,13 +65,12 @@ export const bankAsuransi = x => /bank|insurance|asuransi/i.test([x.kelas?.sub, 
 
 export const KELOMPOK = [
   ['konglo', 'Konglo', x => !!grupKonglo(x.t)],
-  ['cpo', 'CPO', x => cek(x, /plantation|crops|perkebunan/i, /\b(sawit|CPO|TBS|perkebunan|plantation)\b/i)],
-  ['backdoor', 'Backdoor', x => !!x.radar],
-  ['tambang', 'Tambang', x => cek(x, /coal|mining|metal|mineral/i, /\b(batu ?bara|tambang|pertambangan|penambangan|nikel|bijih|coal|mining)\b/i)],
-  ['telko', 'Telekomunikasi', x => cek(x, /telecom/i, /\b(telekomunikasi|seluler|menara telekomunikasi|fiber optik)\b/i)],
-  ['migas', 'Migas', x => cek(x, /oil|gas/i, /\b(minyak dan gas|migas|minyak bumi|gas bumi)\b/i)],
-  ['properti', 'Properti', x => cek(x, /propert|real estate/i, /\b(properti|real estat|perumahan|kawasan industri)\b/i)],
-  ['konsumen', 'Konsumen', x => cek(x, /food|beverage|tobacco|household|personal care|retail|konsumen primer/i, null)],
+  ['cpo', 'CPO', x => CPO.has(x.t) || cek(x, /plantation|crops|perkebunan/i, /\b(sawit|CPO|TBS|perkebunan|plantation)\b/i)],
+  // Hanya backdoor terkonfirmasi (server: tahap PPJB/PTW/dst. + confirmed), bukan saham yang baru bersinyal di radar.
+  ['backdoor', 'Backdoor', x => !!x.backdoor],
+  ['tambang', 'Tambang', x => !!komoditas(x.t) || cek(x, /coal|mining|metal|mineral|gold|nickel/i, /\b(batu ?bara|tambang|pertambangan|penambangan|nikel|bijih|coal|mining)\b/i)],
+  ['telko', 'Telekomunikasi & kabel', x => TELKO.has(x.t) || cek(x, /telecom/i, /\b(telekomunikasi|seluler|menara telekomunikasi|fiber optik)\b/i)],
+  ['konsumen', 'Konsumen', x => !CPO.has(x.t) && cek(x, /food|beverage|tobacco|household|personal care|retail|konsumen primer/i, null)],
 ]
 
 // Terbaik per kelompok: lolos `syarat`, bukan bank/asuransi, PE TTM terendah. Satu emiten hanya dipakai sekali

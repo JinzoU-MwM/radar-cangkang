@@ -8,7 +8,7 @@ import { fmt, fmtDate } from '../lib/domain.js'
 import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
 import HargaSaham from './HargaSaham.vue'
 import { musimLk } from '../lib/musimLk.js'
-import { grupKonglo, terbaikPerKelompok } from '../lib/kelompokLk.js'
+import { grupKonglo, komoditas, terbaikPerKelompok } from '../lib/kelompokLk.js'
 
 const data = ref(null), err = ref(''), loading = ref(true)
 api.get('/api/lk').then(r => { if (r.error) err.value = r.error; else data.value = r }, e => { err.value = e.message || String(e) }).finally(() => { loading.value = false })
@@ -54,7 +54,7 @@ const labaPct = x => x.kategori === 'berbalik' ? 'berbalik' : x.laba?.pct == nul
 const nada = x => ['bagus', 'berbalik', 'naik'].includes(x.kategori) ? 'c-good' : x.kategori === 'lain' ? 'muted' : 'c-strong'
 const buka = ref('')
 
-// Terbaik per kelompok (lib/kelompokLk.js: Konglo, CPO, Backdoor, Tambang, Telekomunikasi, Migas, Properti, Konsumen;
+// Terbaik per kelompok (lib/kelompokLk.js: Konglo, CPO, Backdoor, Tambang, Telekomunikasi & kabel, Konsumen;
 // tanpa bank/asuransi) dari seluruh laporan periode terpilih, hanya dengan syarat yang bisa dicek di laporan (tanpa target harga):
 // laba kuartal murni lebih besar dari kuartal yang sama tahun lalu (naik/berbalik YoY) DAN dari kuartal sebelumnya
 // (QoQ > 0), pendapatan naik, PE TTM positif. Basis dinilai dari laba kuartal itu sendiri, bukan kumulatif, sehingga
@@ -128,7 +128,7 @@ async function unduhPdf() {
           <span class="small muted">1 saham per kelompok dari seluruh laporan {{ PERIODE.find(p => p[0] === per)[1] }} · tanpa bank & asuransi · syarat: laba {{ Q }} murni lebih besar dari {{ Q }} tahun lalu dan dari kuartal sebelumnya, pendapatan naik · PE TTM terendah · bukan rekomendasi beli/jual</span></div>
         <div class="kartu">
           <div v-for="g in kelompok" :key="g.k" class="k" :class="{ kosong: !g.x }">
-            <div class="kl">{{ g.label }}<span v-if="g.x && g.k === 'konglo'" class="muted"> · {{ grupKonglo(g.x.t) }}</span></div>
+            <div class="kl">{{ g.label }}<span v-if="g.x && g.k === 'konglo'" class="muted"> · {{ grupKonglo(g.x.t) }}</span><span v-if="g.x && g.k === 'tambang' && komoditas(g.x.t)" class="muted"> · {{ komoditas(g.x.t) }}</span></div>
             <template v-if="g.x">
               <div class="kh">
                 <RouterLink :to="{ path: '/emiten/' + g.x.t, query: { tab: 'berita' } }"><b>{{ g.x.t }}</b></RouterLink>

@@ -2671,7 +2671,10 @@ def lk_api(data: dict | None = None, kuartalan: dict | None = None, keystats: di
     for r in sorted(data.values(), key=lambda r: (r.get("tgl", ""), r["id"])):
         terakhir[r["t"]] = r
         per_periode.setdefault(r["t"], {})[r.get("periode") or ""] = r
-    radar = {it["ticker"] for it in items_all()}
+    items = items_all()
+    radar = {it["ticker"] for it in items}
+    # Backdoor terkonfirmasi: sudah lewat tahap penyaringan (PPJB/PTW/dst.) dan ditandai terkonfirmasi.
+    backdoor = {it["ticker"] for it in items if it.get("confirmed") and it.get("stage") not in (None, "", "radar")}
     rows = []
     for r in terakhir.values():
         # Kuartal terakhir murni (Q1/Q2/Q3/Q4) dari laba rugi kuartalan Stockbit; cadangan khusus 9M: ringkasan 9M - 1H.
@@ -2680,7 +2683,7 @@ def lk_api(data: dict | None = None, kuartalan: dict | None = None, keystats: di
         if kw is None and m:
             pp = per_periode[r["t"]]
             kw = lk_kuartal(r, pp.get(f"1H{m.group(1)}") or pp.get(f"6M{m.group(1)}"), pp.get(f"3M{m.group(1)}") or pp.get(f"1Q{m.group(1)}"))
-        rows.append({**r, "radar": r["t"] in radar, "kuartal": kw,
+        rows.append({**r, "radar": r["t"] in radar, "backdoor": r["t"] in backdoor, "kuartal": kw,
                      "kelas": sektor.get(r["t"]) or ({"sektor": ix[r["t"]]} if ix.get(r["t"]) else None)})
     rows.sort(key=lambda r: (r.get("tgl", ""), (r.get("laba") or {}).get("pct") or 0), reverse=True)
     hit = {}
