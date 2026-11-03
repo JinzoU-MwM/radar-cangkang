@@ -19,7 +19,10 @@ const kalimat1 = s => {
 const big = v => v >= 1e12 ? `Rp${(v / 1e12).toFixed(2).replace('.', ',')} T` : `Rp${(v / 1e9).toFixed(1).replace('.', ',')} M`
 
 // Jenis aksi utama dokumen (urutan = prioritas).
+import { INSIDER_BELI, INSIDER_JUAL } from './insider.js'
+
 const JENIS = [
+  ['insider', new RegExp(INSIDER_BELI.source + '|' + INSIDER_JUAL.source, 'i')],
   ['anakUsaha', /pendirian anak usaha|mendirikan anak usaha|anak usaha baru/i],
   ['akuisisi', /akuisisi|mengakuisisi|pengambilalihan|inbreng|pengalihan saham|caplok/i],
   ['saham', /hmetd|pmthmetd|private placement|rights issue|penambahan modal/i],
@@ -52,6 +55,14 @@ function konteks(u, { pengendali, relasi, story, riwayat, pa, nama = '' }) {
 
 // Dugaan tujuan: [id, berlaku untuk jenis, teks dugaan, fungsi bukti(c) → [{teks, arah}]].
 const DUGAAN = [
+  ['insider', ['insider'], c => INSIDER_BELI.test(c.text) ? 'Orang dalam menambah kepemilikan saham (sinyal keyakinan terhadap prospek perseroan)'
+    : 'Orang dalam mengurangi kepemilikan saham (kebutuhan pribadi atau penyesuaian portofolio; perlu dicermati)', c => {
+    const b = [{ teks: 'Dokumen menyebut transaksi saham oleh komisaris/direksi/pengendali.', arah: 1 }]
+    const p = (c.text.match(/(\d+(?:[.,]\d+)?)\s*(?:persen|%)/i) || [])[1]
+    if (p) b.push({ teks: `Porsi yang ditransaksikan sekitar ${p}% saham.`, arah: 1 })
+    for (const o of c.orang) b.push({ teks: `${o.nama} (${o.peran}) terkait transaksi ini.`, arah: 1 })
+    return b
+  }],
   ['rencana', null, c => `Bagian dari rencana pengendali${c.baru ? ` mengubah arah usaha ke ${c.baru.toLowerCase()}` : ''}`, c => {
     if (!c.adaPengendali) return []
     const b = []

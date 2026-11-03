@@ -65,3 +65,18 @@ describe('analisa berita terbaru', () => {
     expect((await beritaPdf(b, jsPDF)).getNumberOfPages()).toBe(3)
   })
 })
+
+describe('transaksi saham orang dalam', () => {
+  const u = { id: 'sb-news-9', ticker: 'RELF', date: '2026-10-30', title: 'Investasi Perdana, Komut RELF Caplok 1,43 Persen Saham',
+    summary: 'Komisaris Utama membeli 1,43 persen saham perseroan dalam investasi perdananya.' }
+  it('pembelian oleh komisaris tidak dibaca negatif', () => {
+    const a = analisaBerita(u, {})
+    expect(a.dampak.label).toBe('Positif')
+    expect(a.dampak.negatif).toEqual([])
+    expect(a.tujuan.utama).toMatch(/menambah kepemilikan/)
+  })
+  it('penjualan oleh direktur netral', () => {
+    const a = analisaBerita({ ...u, title: 'Direktur ABCD menjual 2 persen saham', summary: 'Direktur ABCD melepas 2% saham.' }, {})
+    expect(a.dampak.label).toBe('Netral')
+  })
+})
