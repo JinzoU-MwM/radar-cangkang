@@ -2837,10 +2837,12 @@ def s50_broker_parse(resp: dict) -> dict | None:
     bs = ((resp or {}).get("data") or {}).get("broker_summary") or {}
 
     def nilai(x, kunci):
+        # Angka mentah Stockbit (bisa notasi ilmiah, mis. "1.5e+09"): float() seperti nego_month di brokerpola.
         for k in kunci:
-            v = to_num(x.get(k))
-            if v is not None:
-                return abs(v)
+            try:
+                return abs(float(x[k]))
+            except (KeyError, TypeError, ValueError):
+                continue
         return 0.0
     beli = sorted(((x.get("netbs_broker_code"), nilai(x, ("bval", "value", "netbs_value"))) for x in bs.get("brokers_buy") or []
                    if x.get("netbs_broker_code")), key=lambda z: -z[1])[:3]
