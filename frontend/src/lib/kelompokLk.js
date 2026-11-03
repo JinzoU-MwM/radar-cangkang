@@ -1,5 +1,5 @@
-// Kelompok untuk kartu "terbaik per kelompok" di tab Kinerja: Konglo, CPO, Backdoor, Tambang, Telekomunikasi,
-// Konsumen. Klasifikasi dari profil Stockbit (x.kelas: sektor/sub/ind IDX-IC) dengan cadangan
+// Kelompok untuk kartu "terbaik per kelompok" di tab Kinerja: Konglo, CPO, Backdoor, Tambang, Telekomunikasi
+// & kabel. Klasifikasi dari profil Stockbit (x.kelas: sektor/sub/ind IDX-IC) dengan cadangan
 // nama & ringkasan laporan bila profil belum diambil. Perbankan dan asuransi selalu dikecualikan.
 
 // Grup konglomerasi besar BEI dan emiten anggotanya (kepemilikan pengendali yang dikenal publik).
@@ -70,7 +70,6 @@ export const KELOMPOK = [
   ['backdoor', 'Backdoor', x => !!x.backdoor],
   ['tambang', 'Tambang', x => !!komoditas(x.t) || cek(x, /coal|mining|metal|mineral|gold|nickel/i, /\b(batu ?bara|tambang|pertambangan|penambangan|nikel|bijih|coal|mining)\b/i)],
   ['telko', 'Telekomunikasi & kabel', x => TELKO.has(x.t) || cek(x, /telecom/i, /\b(telekomunikasi|seluler|menara telekomunikasi|fiber optik)\b/i)],
-  ['konsumen', 'Konsumen', x => !CPO.has(x.t) && cek(x, /food|beverage|tobacco|household|personal care|retail|konsumen primer/i, null)],
 ]
 
 // Terbaik per kelompok: lolos `syarat`, bukan bank/asuransi, PE TTM terendah. Satu emiten hanya dipakai sekali

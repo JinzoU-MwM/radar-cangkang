@@ -54,7 +54,7 @@ const labaPct = x => x.kategori === 'berbalik' ? 'berbalik' : x.laba?.pct == nul
 const nada = x => ['bagus', 'berbalik', 'naik'].includes(x.kategori) ? 'c-good' : x.kategori === 'lain' ? 'muted' : 'c-strong'
 const buka = ref('')
 
-// Terbaik per kelompok (lib/kelompokLk.js: Konglo, CPO, Backdoor, Tambang, Telekomunikasi & kabel, Konsumen;
+// Terbaik per kelompok (lib/kelompokLk.js: Konglo, CPO, Backdoor, Tambang, Telekomunikasi & kabel;
 // tanpa bank/asuransi) dari seluruh laporan periode terpilih, hanya dengan syarat yang bisa dicek di laporan (tanpa target harga):
 // laba kuartal murni lebih besar dari kuartal yang sama tahun lalu (naik/berbalik YoY) DAN dari kuartal sebelumnya
 // (QoQ > 0), pendapatan naik, PE TTM positif. Basis dinilai dari laba kuartal itu sendiri, bukan kumulatif, sehingga
