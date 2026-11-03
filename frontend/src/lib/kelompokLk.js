@@ -25,6 +25,13 @@ export const KONGLO = {
   Ciputra: ['CTRA'],
   'Gudang Garam': ['GGRM'],
 }
+// Telekomunikasi & penunjangnya: operator, menara, internet/data center, serta komponen & peralatan kelistrikan
+// (kabel) yang memasok jaringan. Ditambah emiten berklasifikasi "Telecommunication" di profil Stockbit.
+export const TELKO = new Set([
+  'TLKM', 'ISAT', 'EXCL', 'TOWR', 'TBIG', 'MTEL', 'LINK', 'BALI', 'CENT', 'GHON', 'JAST', 'DATA',
+  'COIN', 'DOOH', 'DSSA', 'INET', 'IRSX', 'KETR', 'MORA', 'PADA', 'WIFI',
+  'CCSI', 'IKBI', 'JECC', 'KBLI', 'KBLM', 'SCCO', 'VOKS',
+])
 const GRUP = Object.fromEntries(Object.entries(KONGLO).flatMap(([g, ks]) => ks.map(k => [k, g])))
 export const grupKonglo = t => GRUP[t] || ''
 
@@ -43,7 +50,7 @@ export const KELOMPOK = [
   ['cpo', 'CPO', x => cek(x, /plantation|crops|perkebunan/i, /\b(sawit|CPO|TBS|perkebunan|plantation)\b/i)],
   ['backdoor', 'Backdoor', x => !!x.radar],
   ['tambang', 'Tambang', x => cek(x, /coal|mining|metal|mineral/i, /\b(batu ?bara|tambang|pertambangan|penambangan|nikel|bijih|coal|mining)\b/i)],
-  ['telko', 'Telekomunikasi', x => cek(x, /telecom/i, /\b(telekomunikasi|seluler|menara telekomunikasi|fiber optik)\b/i)],
+  ['telko', 'Telekomunikasi & kabel', x => TELKO.has(x.t) || cek(x, /telecom/i, /\b(telekomunikasi|seluler|menara telekomunikasi|fiber optik)\b/i)],
   ['migas', 'Migas', x => cek(x, /oil|gas/i, /\b(minyak dan gas|migas|minyak bumi|gas bumi)\b/i)],
   ['properti', 'Properti', x => cek(x, /propert|real estate/i, /\b(properti|real estat|perumahan|kawasan industri)\b/i)],
   ['konsumen', 'Konsumen', x => cek(x, /food|beverage|tobacco|household|personal care|retail|konsumen primer/i, null)],
