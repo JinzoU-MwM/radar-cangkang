@@ -1,12 +1,13 @@
 <script setup>
 // POV: pola pikir akun Stockbit prioritas + trending (dari posting ide publik), konsensus saham yang diincar,
 // dicocokkan dengan sikap analis radar; ditambah ringkasan metode KakdrWay (kakdr.com).
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { api, loadJson } from '../api.js'
 import { store } from '../store.js'
 import { fmt, fmtDate } from '../lib/domain.js'
 import SikapTag from '../components/SikapTag.vue'
 import PovDetail from '../components/PovDetail.vue'
+import PovDalam from '../components/PovDalam.vue'
 
 const data = ref(null), err = ref(''), kd = ref(null)
 // Analisa KakdrWay disembunyikan sampai tombolnya diklik.
@@ -39,6 +40,22 @@ function pola(u) {
 const users = computed(() => data.value?.users || [])
 // Akun yang detailnya sedang dibuka (klik kartu).
 const buka = ref(null)
+
+// Cari saham BEI mana pun (/api/kode-bei) untuk analisa mendalam; tidak memasukkan saham ke radar.
+const q = ref(''), kodeBei = ref(null), pilih = ref('')
+watch(q, v => {
+  if (v.trim() && kodeBei.value === null) {
+    kodeBei.value = []
+    api.get('/api/kode-bei').then(r => { kodeBei.value = r.kode || [] }, () => { kodeBei.value = [] })
+  }
+})
+const saranCari = computed(() => {
+  const s = q.value.trim().toLowerCase()
+  if (s.length < 2 || !kodeBei.value) return []
+  const cocok = kodeBei.value.filter(k => k.t.toLowerCase().startsWith(s) || (s.length >= 3 && (k.nama || '').toLowerCase().includes(s)))
+  return cocok.sort((a, b) => (b.t.toLowerCase() === s) - (a.t.toLowerCase() === s) || a.t.localeCompare(b.t)).slice(0, 8)
+})
+const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.value)?.nama || '')
 </script>
 
 <template>
@@ -47,6 +64,19 @@ const buka = ref(null)
       <h1>POV</h1>
       <p class="muted small">Pola pikir akun Stockbit prioritas dan trending dari posting ide publik {{ data?.asOf ? '· diperbarui ' + fmtDate(String(data.asOf).slice(0, 10)) : '' }}. Bukan rekomendasi beli/jual.</p>
     </header>
+    <section class="cari-dalam">
+      <input v-model="q" type="search" class="cari" placeholder="Cari saham BEI untuk analisa mendalam (kode atau nama)" aria-label="Cari saham untuk analisa mendalam" />
+      <div v-if="saranCari.length" class="sar-wrap">
+        <button v-for="k in saranCari" :key="k.t" type="button" class="sar" :class="{ on: pilih === k.t }" :title="k.nama" @click="pilih = k.t">
+          <b>{{ k.t }}</b><span v-if="k.nama">{{ k.nama.replace(/ Tbk\.?$/i, '') }}</span></button>
+      </div>
+      <section v-if="pilih" class="luarpanel">
+        <div class="lh"><h2>{{ pilih }}<span v-if="namaPilih" class="muted"> · {{ namaPilih }}</span></h2>
+          <button type="button" class="btn" @click="pilih = ''">Tutup</button></div>
+        <PovDalam :key="pilih" :ticker="pilih" />
+      </section>
+    </section>
+
     <p v-if="err" class="muted">Gagal memuat POV: {{ err }}</p>
     <p v-else-if="!data" class="muted">Memuat…</p>
     <p v-else-if="!users.length" class="muted">Data POV sedang disiapkan server; coba lagi beberapa menit lagi.</p>
@@ -140,6 +170,15 @@ const buka = ref(null)
 </template>
 
 <style scoped>
+.cari-dalam{margin:8px 0 14px}
+.cari-dalam .cari{width:100%;max-width:520px;padding:8px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--sheet);color:inherit;font:inherit}
+.sar-wrap{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.sar{display:inline-flex;align-items:baseline;gap:8px;padding:8px 14px;border:1px solid var(--rule);border-left:4px solid var(--now-ink);
+  border-radius:8px;background:var(--sheet);color:var(--ink);font:inherit;font-size:15px;cursor:pointer}
+.sar b{font-size:16px;letter-spacing:.02em}.sar span{color:var(--ink-2);font-size:14px}
+.sar:hover,.sar:focus-visible,.sar.on{border-color:var(--now-ink)}
+.luarpanel{border:1px solid var(--rule);border-left:4px solid var(--now-ink);background:var(--sheet);padding:10px 14px;margin:8px 0 14px}
+.lh{display:flex;justify-content:space-between;align-items:center;gap:10px}.lh h2{margin:4px 0}
 .pov{display:flex;flex-direction:column;gap:14px}
 header h1{margin:0}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}

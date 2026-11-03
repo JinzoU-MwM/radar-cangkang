@@ -36,6 +36,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import brokerpola as BP
+import povdalam as PD
 import beritapasar as BN
 import ihsg as IH
 import astro as AS
@@ -3071,6 +3072,191 @@ def saham50_loop() -> None:
         time.sleep(1800)
 
 
+# ------------------------------------------------------- POV: analisa mendalam ----
+# Satu emiten BEI mana pun, ditarik saat tombol "Analisa mendalam" diklik (pekerjaan latar, maks. 15 menit):
+# profil & pemegang saham, jaringan tiap pemegang di emiten lain (+ pemegang emiten grup), riwayat keterbukaan
+# pemegang saham, keterbukaan informasi 1 tahun, berita, kinerja, dan posting publik Stockbit. Disusun aturan
+# otomatis oleh povdalam.analyze(); hasil disimpan 12 jam di .pov-dalam.json.
+PD_PATH = ROOT / ".pov-dalam.json"
+PD_TTL, PD_BATAS_DETIK, PD_MAKS_JALAN, PD_MAKS_JAM = 12 * 3600, 15 * 60, 2, 30
+PD_AKUN_RESMI = {"stockbitreports", "stockbitnews", "stockbit", "stockbitofficial"}
+_pd_jobs: dict[str, dict] = {}
+_pd_lock = threading.Lock()
+_pd_mulai: list[float] = []
+
+
+def pd_load() -> dict:
+    try:
+        return json.loads(PD_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def pd_simpan(t: str, hasil: dict) -> None:
+    with _pd_lock:
+        d = pd_load()
+        d[t] = {"at": time.time(), "hasil": hasil}
+        d = dict(sorted(d.items(), key=lambda kv: -kv[1]["at"])[:200])
+        tmp = PD_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(PD_PATH)
+
+
+def pd_posts(t: str, halaman: int = 10) -> tuple[list[dict], str]:
+    """Posting publik (ide) tentang satu saham dari stream simbol Stockbit, tanpa akun resmi laporan/berita."""
+    for kat in ("STREAM_CATEGORY_IDEAS", "STREAM_CATEGORY_MAIN_IDEAS", "STREAM_CATEGORY_ALL"):
+        out, cursor = [], 0
+        try:
+            for _ in range(halaman):
+                d = sb_fetch(f"/stream/v3/symbol/{t}?category={kat}&last_stream_id={cursor}&limit=20").get("data") or {}
+                page = d.get("stream") or []
+                for p in page:
+                    user = str(p.get("username") or (p.get("user") or {}).get("username") or "")
+                    txt = re.sub(r"\s+", " ", str(p.get("content_original") or p.get("content") or "")).strip()
+                    if user.lower() in PD_AKUN_RESMI or not txt:
+                        continue
+                    out.append({"user": user, "d": str(p.get("created_at") or "")[:10], "txt": txt,
+                                "likes": int(p.get("total_likes") or 0), "url": f"https://stockbit.com/post/{p.get('stream_id')}"})
+                if not page or (d.get("pagination") or {}).get("is_last_page"):
+                    break
+                cursor = (d.get("pagination") or {}).get("next_cursor") or page[-1].get("stream_id")
+                time.sleep(0.25)
+        except Exception as e:
+            print(f"[pov-dalam] posting {t} {kat}: {e}", file=sys.stderr)
+            continue
+        if out:
+            return out, kat
+    return [], ""
+
+
+def pd_kumpul(t: str, job: dict) -> dict:
+    mulai = time.time()
+    catatan: list[str] = []
+
+    def tahap(i, label):
+        job.update({"langkah": i, "label": label})
+
+    def sisa():
+        return PD_BATAS_DETIK - (time.time() - mulai)
+    cfg = (load_config() or {}).get("reports") or {}
+    tahap(1, "Profil, pemegang saham, dan valuasi")
+    prof = get_profile(t)
+    tahap(2, "Riwayat keterbukaan pemegang saham (KSEI/IDX)")
+    try:
+        insider = get_insider_rows(t)["rows"]
+    except Exception as e:
+        insider = []
+        catatan.append(f"Riwayat pemegang saham gagal diambil: {e}"[:160])
+    pmg = [s for s in (prof.get("shareholders") or []) + (prof.get("holders1") or [])
+           if s.get("name") and not PD.PUBLIK_RX.search(s["name"])]
+    nama_pmg = list(dict.fromkeys(s["name"] for s in sorted(pmg, key=lambda s: -PD._pct(s.get("pct")))))[:10]
+    # Perkiraan waktu setelah jumlah pemegang diketahui (disampaikan ke pengunjung).
+    job["estimasi"] = int(min(PD_BATAS_DETIK, 60 + 25 * len(nama_pmg) + 120))
+    tahap(3, f"Menelusuri jaringan {len(nama_pmg)} pemegang saham di emiten lain")
+    jaringan = {}
+    for i, n in enumerate(nama_pmg):
+        if sisa() < 240:
+            catatan.append(f"Waktu terbatas: jaringan {len(nama_pmg) - i} pemegang terakhir tidak ditelusuri.")
+            break
+        job["label"] = f"Menelusuri jaringan pemegang saham ({i + 1}/{len(nama_pmg)}): {n}"
+        try:
+            jaringan[n] = get_controller(t, n).get("holdings") or []
+        except Exception as e:
+            catatan.append(f"Jaringan {n} gagal: {e}"[:160])
+    tahap(4, "Profil emiten grup (dimiliki pemegang yang sama)")
+    grup: dict[str, dict] = {}
+    hit: dict[str, int] = {}
+    for hs in jaringan.values():
+        for h in hs:
+            if h.get("symbol") and h["symbol"] != t:
+                hit[h["symbol"]] = hit.get(h["symbol"], 0) + 1
+    for s in sorted(hit, key=lambda s: -hit[s])[:8]:
+        if sisa() < 150:
+            break
+        try:
+            p = sb_fetch(f"/emitten/{s}/profile").get("data") or {}
+            grup[s] = {"t": s, "nama": nama_semua().get(s, ""), "sektor": ((p.get("classification") or {}).get("industry") or {}).get("name", ""),
+                       "pemegang": [{"name": x.get("name"), "pct": x.get("percentage")} for x in (p.get("shareholder") or [])[:5]]}
+        except Exception:
+            pass
+    tahap(5, "Keterbukaan informasi 1 tahun")
+    laporan = []
+    if cfg.get("url"):
+        try:
+            laporan = get_reports({**cfg, "days": 365}, t, max_pages=10)
+        except Exception as e:
+            catatan.append(f"Keterbukaan informasi gagal: {e}"[:160])
+    for u in laporan:
+        u["jenis"] = kandidat_sigs(u.get("title", ""))
+        u["inti"] = (re.search(r"Inti:\s*(.+?)\s*(\(Ringkasan AI Stockbit\))?$", u.get("summary") or "") or [None, ""])[1]
+    tahap(6, "Berita")
+    berita = []
+    if cfg.get("url") and sisa() > 90:
+        try:
+            berita = get_sb_news(cfg, t, pages=3)
+        except Exception as e:
+            catatan.append(f"Berita gagal: {e}"[:160])
+    tahap(7, "Posting publik Stockbit tentang saham ini")
+    posts, kat = pd_posts(t, 10 if sisa() > 120 else 3)
+    if not posts:
+        catatan.append("Posting publik tidak ditemukan atau tidak dapat diambil.")
+    tahap(8, "Pola broker 30 hari")
+    bk = None
+    try:
+        dari = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+        bk = s50_broker_parse(sb_fetch(f"/marketdetectors/{t}?from={dari}&to={datetime.now().strftime('%Y-%m-%d')}"
+                                       "&transaction_type=TRANSACTION_TYPE_NET&market_board=MARKET_BOARD_REGULER"
+                                       "&investor_type=INVESTOR_TYPE_ALL&limit=10"))
+    except Exception as e:
+        catatan.append(f"Pola broker gagal: {e}"[:160])
+    tahap(9, "Menyusun analisa")
+    lk = next((r for r in lk_api_cache().get("rows") or [] if r["t"] == t), {})
+    hasil = PD.analyze({"t": t, "nama": nama_semua().get(t, ""), "profil": prof, "insider": insider, "jaringan": jaringan,
+                        "laporan": laporan, "berita": berita, "posts": posts, "lk": lk, "catatan": catatan, "broker": bk,
+                        "pandangan": _json_berkas("pandangan-analis.json").get(t)})
+    hasil["grup"] = list(grup.values())
+    hasil["radar"] = t in radar_tickers()
+    hasil["durasi"] = int(time.time() - mulai)
+    return hasil
+
+
+def _pd_jalan(t: str) -> None:
+    job = _pd_jobs[t]
+    try:
+        hasil = pd_kumpul(t, job)
+        pd_simpan(t, hasil)
+        job.update({"status": "selesai", "hasil": hasil})
+    except Exception as e:
+        print(f"[pov-dalam] {t} gagal: {e}", file=sys.stderr)
+        job.update({"status": "gagal", "galat": str(e)[:200]})
+
+
+def pov_dalam_api(t: str, mulai: bool) -> dict:
+    """Status/hasil analisa mendalam. mulai=True memulai pekerjaan latar bila belum ada hasil segar."""
+    simpan = pd_load().get(t)
+    with _pd_lock:
+        job = _pd_jobs.get(t)
+        if job and job["status"] == "jalan":
+            return {"status": "jalan", **{k: job.get(k) for k in ("langkah", "total", "label", "estimasi")},
+                    "berjalan": int(time.time() - job["mulai"])}
+        if job and job["status"] == "gagal" and not mulai:
+            return {"status": "gagal", "galat": job.get("galat")}
+        if simpan and time.time() - simpan["at"] < PD_TTL:
+            return {"status": "selesai", "hasil": simpan["hasil"], "umur": int(time.time() - simpan["at"])}
+        if not mulai:
+            return {"status": "kosong"}
+        if not (get_token() and not token_expired()):
+            return {"status": "gagal", "galat": "Token Stockbit server belum aktif; analisa belum bisa ditarik."}
+        now = time.time()
+        _pd_mulai[:] = [x for x in _pd_mulai if now - x < 3600]
+        if sum(1 for j in _pd_jobs.values() if j["status"] == "jalan") >= PD_MAKS_JALAN or len(_pd_mulai) >= PD_MAKS_JAM:
+            return {"status": "antre", "galat": "Sedang ada analisa lain berjalan; coba lagi beberapa menit lagi."}
+        _pd_mulai.append(now)
+        _pd_jobs[t] = {"status": "jalan", "mulai": now, "langkah": 0, "total": 9, "label": "Memulai", "estimasi": 180}
+    threading.Thread(target=_pd_jalan, args=(t,), daemon=True, name=f"pov-dalam-{t}").start()
+    return {"status": "jalan", "langkah": 0, "total": 9, "label": "Memulai", "estimasi": 180, "berjalan": 0}
+
+
 # ------------------------------------------------------------------- POV ----
 # Sudut pandang (POV) akun Stockbit yang diprioritaskan + akun trending: saham yang mereka incar, gaya analisa,
 # horizon, dan nada (bullish/bearish). Hanya posting ide publik yang dianalisis; tidak ada data pribadi.
@@ -4804,7 +4990,7 @@ class Handler(BaseHTTPRequestHandler):
                 deals = [d.split(":")[0] for d in self.qs("deals").upper().split(",") if d]
                 wanted = ([t] if t else []) + deals
                 _req.public_fetch = all(x in radar_tickers() for x in wanted) or (
-                    path == "api/berita-saham" and bool(t) and t in bei_kode_load())
+                    path in ("api/berita-saham", "api/pov-dalam") and bool(t) and t in bei_kode_load())
             if path.startswith("api/"):
                 self.handle_api(path, fresh)
                 return
@@ -5050,6 +5236,12 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "api/kode-bei":
             nama = nama_semua()
             self.reply_json({"kode": [{"t": t, "nama": nama.get(t, "")} for t in sorted(set(bei_kode_load()) | radar_tickers())]})
+        elif path == "api/pov-dalam":
+            t = self.qs("ticker").upper()
+            if not TICKER_RE.match(t) or t not in bei_kode_load() and t not in radar_tickers():
+                self.reply_json({"status": "gagal", "galat": "Kode saham tidak dikenal di BEI."})
+            else:
+                self.reply_json(pov_dalam_api(t, self.qs("mulai") == "1"))
         elif path == "api/berita-saham":
             t = self.qs("ticker").upper()
             if not TICKER_RE.match(t):
