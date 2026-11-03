@@ -559,6 +559,19 @@ class BeritaSahamTest(unittest.TestCase):
         server._berita_cache.clear()
 
 
+class JadwalTerlewatTest(unittest.TestCase):
+    def test_terlewat(self):
+        import os
+        from datetime import datetime, timezone
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "x.json"
+            p.write_text("{}")
+            t = datetime(2026, 11, 1, 17, 21, tzinfo=timezone.utc).timestamp()   # Senin 2 Nov 00.21 WIB
+            os.utime(p, (t, t))
+            self.assertTrue(server.jadwal_terlewat(p, datetime(2026, 11, 3, 9, 0, tzinfo=timezone.utc)))    # 3 Nov 16.00 WIB
+            self.assertFalse(server.jadwal_terlewat(p, datetime(2026, 11, 2, 9, 0, tzinfo=timezone.utc)))   # 2 Nov 16.00 WIB
+
+
 class Saham50TambahTest(unittest.TestCase):
     def test_riwayat_skor(self):
         from datetime import date

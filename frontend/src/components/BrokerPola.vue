@@ -31,6 +31,9 @@ async function load() {
       data.value = r
       if (r.harian && r.tanggal && tanggal.value !== r.tanggal) tanggal.value = r.tanggal
       if (!broker.value && r.brokers?.length) broker.value = r.brokers[0].kode
+      // Bulan terpilih belum punya data (mis. awal bulan sebelum pembaruan 00.01): pindah ke bulan terakhir yang ada.
+      const ada = r.bulanAda || []
+      if (!r.harian && ada.length && !ada.includes(bulan.value)) bulan.value = Math.max(...ada)
     }
   } catch (e) { err.value = e.message || String(e) } finally { loading.value = false }
 }
