@@ -97,6 +97,15 @@ export async function povDalamPdf(a, jsPDF) {
 
   // ---- Komunitas, dugaan, dan penyelidikan.
   judulKini = 'Dugaan dan penyelidikan'; halaman(judulKini)
+  if (a.klaim?.length) {
+    sub('Cek kebenaran klaim publik', PRIMER)
+    for (const c of a.klaim) {
+      ruang(14)
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(c.status === 'didukung data' ? GOOD : c.status === 'tidak didukung' ? BAD : MUTED)
+      const h = doc.splitTextToSize(pdfText(`[${c.status}] "${potong(c.klaim, 200)}" (@${c.user}, ${tgl(c.d)})`), 178); doc.text(h, 18, y, { lineHeightFactor: 1.3 }); y += h.length * 4.2 + 0.6
+      butir(c.bukti, { size: 8.3, tanda: '›', x: 22, w: 174 }); y += 0.8
+    }
+  }
   sub('Dugaan tujuan dan buktinya', GOLD)
   if (!a.dugaan.length) teks('Belum ada bukti yang cukup untuk menyusun dugaan tujuan.', 9, MUTED)
   for (const g of a.dugaan) {

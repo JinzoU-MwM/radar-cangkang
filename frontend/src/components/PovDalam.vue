@@ -67,6 +67,15 @@ async function unduh() {
       </div>
       <ul class="small rk"><li v-for="r in hasil.ringkas" :key="r">{{ r }}</li></ul>
 
+      <template v-if="hasil.klaim?.length">
+        <h3>Cek kebenaran klaim publik</h3>
+        <div v-for="c in hasil.klaim" :key="c.jenis + c.user" class="dg" :class="c.status === 'didukung data' ? 'pos' : ''">
+          <span class="tag" :class="c.status === 'didukung data' ? 't-good' : c.status === 'tidak didukung' ? 't-strong' : 't-calm'">{{ c.status }}</span>
+          “{{ c.klaim }}” <a :href="c.url" target="_blank" rel="noopener" class="small">@{{ c.user }} · {{ fmtDate(c.d) }}</a>
+          <ul class="small"><li v-for="b in c.bukti" :key="b">{{ b }}</li></ul>
+        </div>
+      </template>
+
       <h3>Dugaan tujuan</h3>
       <p v-if="!hasil.dugaan.length" class="small muted">Belum ada bukti yang cukup untuk menyusun dugaan tujuan.</p>
       <div v-for="g in hasil.dugaan" :key="g.judul" class="dg" :class="g.arah > 0 ? 'pos' : ''">

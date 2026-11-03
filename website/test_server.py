@@ -599,6 +599,21 @@ class PovDalamTest(unittest.TestCase):
         self.assertTrue(any(x["orang"] == "Henry Liem" and "GITANIRWANA" in x["badan"] and x["terverifikasi"] for x in rel), rel)
         self.assertTrue(any("26 juta lembar" in c["teks"] for c in r["komunitas"]["klaim"]))
 
+    def test_cek_klaim(self):
+        import povdalam
+        from datetime import datetime
+        d = {"t": "PTIS", "nama": "", "profil": {"stats": {"freeFloat": 9.0}, "metrics": {"pbv": 0.4, "bvps": 1500},
+             "shareholders": [{"name": "PT Anugerah Salim Investama", "pct": "60"}], "holders1": [], "chart": [{"v": 500}]},
+             "posts": [{"user": "PMFernandoR", "d": "2026-10-21", "likes": 9, "url": "u", "txt":
+                        "Maybe next $PTIS, 1000% saya yakin ini sahamnya punya konglo itu. Alasan beli: 1. Ada 2 Konglo Tier 1 di sini. "
+                        "2. Saham gak liquid/gorengan tapi valuasi murah. 3. Valuasi wajarnya di 3x harga sekarang."}]}
+        r = povdalam.analyze(d, datetime(2026, 11, 3))
+        st = {c["jenis"]: c["status"] for c in r["klaim"]}
+        self.assertEqual(st["konglo"], "didukung data")      # pemegang bernama Salim
+        self.assertEqual(st["murah"], "didukung data")       # PBV 0,4x
+        self.assertEqual(st["likuid"], "didukung data")      # free float efektif 40% tidak, tetapi ff 9% < 10
+        self.assertNotIn("fokusPosts", r["komunitas"])
+
     def test_keluarga(self):
         import povdalam
         pm = [{"name": n, "pct": 1.7} for n in ("AMIRSYAH RISJAD", "DINA RISJAD", "DEDEY RISJAD", "SELVIYA RISJAD DANANTO")]
