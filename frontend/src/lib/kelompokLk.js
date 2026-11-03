@@ -63,23 +63,40 @@ const cek = (x, rxKelas, rxTeks) => {
 export const bankAsuransi = x => /bank|insurance|asuransi/i.test([x.kelas?.sub, x.kelas?.ind].join(' '))
   || /\b(bank|asuransi|reasuransi|insurance|assurance)\b/i.test(x.nama || '')
 
+// Industri logam & mineral (profil Stockbit berbahasa Indonesia) dengan komoditas disebut di teks laporan.
+// Pengolah/pabrikan logam (pelat timah, baja, aluminium) berindustri sama tetapi bukan penambang.
+const BUKAN_TAMBANG = new Set(['NIKL', 'ISSP', 'KRAS', 'GDST', 'BTON', 'LION', 'LMSH', 'ALKA', 'ALMI', 'INAI', 'PICO',
+  'CTBN', 'JKSW', 'TBMS', 'BAJA', 'GGRP', 'OPMS', 'SMRU'])
+const logam = (x, rx) => !BUKAN_TAMBANG.has(x.t) && /logam|mineral|metal/i.test(x.kelas?.ind || x.kelas?.sub || '') && rx.test(isiTeks(x))
+
 export const KELOMPOK = [
   ['konglo', 'Konglo', x => !!grupKonglo(x.t)],
-  ['cpo', 'CPO', x => CPO.has(x.t) || cek(x, /plantation|crops|perkebunan/i, /\b(sawit|CPO|TBS|perkebunan|plantation)\b/i)],
+  ['cpo', 'CPO', x => CPO.has(x.t) || cek(x, /perkebunan|plantation|crops/i, /\b(sawit|CPO|TBS|perkebunan|plantation)\b/i)],
   // Hanya backdoor terkonfirmasi (server: tahap PPJB/PTW/dst. + confirmed), bukan saham yang baru bersinyal di radar.
   ['backdoor', 'Backdoor', x => !!x.backdoor],
-  ['tambang', 'Tambang', x => !!komoditas(x.t) || cek(x, /coal|mining|metal|mineral|gold|nickel/i, /\b(batu ?bara|tambang|pertambangan|penambangan|nikel|bijih|coal|mining)\b/i)],
-  ['telko', 'Telekomunikasi & kabel', x => TELKO.has(x.t) || cek(x, /telecom/i, /\b(telekomunikasi|seluler|menara telekomunikasi|fiber optik)\b/i)],
+  ['batubara', 'Tambang · Batu bara', x => komoditas(x.t) === 'Batu bara' || cek(x, /^(batu ?bara|coal)/i, /\b(batu ?bara|coal)\b/i)],
+  ['emas', 'Tambang · Emas', x => komoditas(x.t) === 'Emas' || (!komoditas(x.t) && logam(x, /\b(emas|gold)\b/i))],
+  ['nikel', 'Tambang · Nikel', x => komoditas(x.t) === 'Nikel' || (!komoditas(x.t) && logam(x, /\b(nikel|nickel|feronikel)\b/i))],
+  ['logam', 'Tambang · Tembaga, Timah & lainnya', x => ['Tembaga', 'Timah', 'Bauksit', 'Seng'].includes(komoditas(x.t))
+    || (!komoditas(x.t) && logam(x, /\b(tembaga|copper|timah|bauksit|bauxite|alumina|seng|zinc)\b/i))],
+  ['telko', 'Telekomunikasi & kabel', x => TELKO.has(x.t) || cek(x, /telekomunikasi|telecom/i, /\b(telekomunikasi|seluler|menara telekomunikasi|fiber optik)\b/i)],
 ]
 
-// Terbaik per kelompok: lolos `syarat`, bukan bank/asuransi, PE TTM terendah. Satu emiten hanya dipakai sekali
-// (kelompok di depan didahulukan) agar setiap kartu berisi saham berbeda.
-export function terbaikPerKelompok(rows, syarat) {
+// Terbaik per kelompok: `gagal(x)` = daftar syarat yang tidak terpenuhi (kosong = lolos); bukan bank/asuransi;
+// PE TTM terendah. Satu emiten hanya menjadi pilihan utama sekali (kelompok di depan didahulukan).
+// alt = 2 emiten lolos berikutnya sebagai pembanding; dekat = bila tidak ada yang lolos, 2 emiten berlaba dengan
+// syarat gagal paling sedikit, beserta alasannya.
+export function terbaikPerKelompok(rows, gagal) {
   const dipakai = new Set()
+  const pe = r => r.kuartal?.pe
   return KELOMPOK.map(([k, label, cocok]) => {
-    const x = rows.filter(r => !dipakai.has(r.t) && !bankAsuransi(r) && cocok(r) && syarat(r))
-      .sort((a, b) => a.kuartal.pe - b.kuartal.pe)[0] || null
+    const anggota = rows.filter(r => !bankAsuransi(r) && cocok(r)).map(r => ({ r, g: gagal(r) }))
+    const lolos = anggota.filter(a => !a.g.length).map(a => a.r).sort((a, b) => pe(a) - pe(b))
+    const x = lolos.find(r => !dipakai.has(r.t)) || null
     if (x) dipakai.add(x.t)
-    return { k, label, x }
+    const alt = lolos.filter(r => r !== x).slice(0, 2)
+    const dekat = x ? [] : anggota.filter(a => a.g.length && pe(a.r) > 0)
+      .sort((a, b) => a.g.length - b.g.length || pe(a.r) - pe(b.r)).slice(0, 2)
+    return { k, label, x, alt, dekat }
   })
 }
