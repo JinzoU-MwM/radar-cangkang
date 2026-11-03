@@ -500,6 +500,27 @@ class CekPascaDeployTest(unittest.TestCase):
         self.assertIn("Pola Broker", r["peringatan"][1] + r["peringatan"][0])
 
 
+class PovDiskTest(unittest.TestCase):
+    def test_pulih_dari_disk_setelah_restart(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / ".pov.json"
+            res = {"asOf": "2026-11-03T08:00:00", "users": [{"username": "athira"}], "consensus": [], "errors": []}
+            with unittest.mock.patch.object(server, "POV_PATH", p), unittest.mock.patch.object(server, "_pov_memo", None):
+                server._pov_ke_disk(123.0, res)
+                with unittest.mock.patch.object(server, "is_public_request", return_value=True):
+                    self.assertEqual(server.get_pov()["users"][0]["username"], "athira")   # tanpa memanggil Stockbit
+
+    def test_publik_tidak_menunggu_kunci(self):
+        with tempfile.TemporaryDirectory() as d, \
+                unittest.mock.patch.object(server, "POV_PATH", Path(d) / ".pov.json"), \
+                unittest.mock.patch.object(server, "_pov_memo", None), \
+                unittest.mock.patch.object(server, "is_public_request", return_value=True):
+            with server._pov_lock:   # seolah pov_loop sedang menghitung
+                r = server.get_pov()
+            self.assertEqual(r["users"], [])
+            self.assertIn("disiapkan", r["errors"][0]["error"])
+
+
 class BeritaSahamTest(unittest.TestCase):
     def test_gabung_tanpa_simpan(self):
         lap = [{"id": "sb-report-1", "ticker": "RELF", "date": "2026-10-01", "title": "Laporan Bulanan"}]
