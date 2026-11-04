@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import povarah as PA
 
 # Naikkan bila isi analisa berubah: hasil tersimpan versi lama ditarik ulang saat dibuka.
-VERSI = 19
+VERSI = 20
 PUBLIK_RX = re.compile(r"MASYARAKAT|PUBLIK|PUBLIC|SCRIPLESS|SCRIP\b", re.I)
 # Kata kunci posting yang membahas struktur kepemilikan/aksi korporasi (dipakai mengurutkan relevansi).
 TOPIK_RX = re.compile(r"pengendali|akuisisi|diakuisisi|pemilik|grup|group|konsorsium|backdoor|inbreng|rights|hmetd|tender|"
@@ -665,7 +665,7 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
         "tokoh": d.get("tokoh") or [],
         "kinerja": {"periode": lk.get("periode"), "judul": lk.get("judul"), "kuartal": kw or None, "pbv": pbv, "per": met.get("per"),
                     "laba": met.get("netIncomeTtm"), "pendapatan": met.get("revenueTtm"), "ekuitas": met.get("equity"), "bvps": met.get("bvps")},
-        "komunitas": kom, "dugaan": dugaan, "selidiki": selidiki, "skenario": skenario, "kronologi": kron, "broker": bk, "klaim": klaim, "beritaLuar": (d.get("beritaLuar") or [])[:25],
+        "komunitas": kom, "dugaan": dugaan, "selidiki": selidiki, "skenario": skenario, "kronologi": kron, "broker": bk, "klaim": [k for k in klaim if k["status"] == "didukung data"], "beritaLuar": (d.get("beritaLuar") or [])[:25],
         "arah": arah_, "bandarmologi": bandar, "afiliasi": afil, "backdoor": bd, "marketMaker": mm, "jejakCangkang": jejak, "pertanyaan": tanya, "volume": volume, "preseden": pres, "sudut": sudut, "target": target,
         "radarSikap": {"sikap": pa.get("sikap"), "ringkas": (pa.get("ringkas") or "")[:400], "nilaiWajar": pa.get("nilaiWajar")} if pa.get("sikap") else None,
         "sumber": {"pemegang": len(semua), "jaringan": sum(len(r["emiten"]) for r in jar_rows), "keterbukaan": len(d.get("laporan") or []),
