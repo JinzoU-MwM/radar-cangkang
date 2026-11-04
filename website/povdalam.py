@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import povarah as PA
 
 # Naikkan bila isi analisa berubah: hasil tersimpan versi lama ditarik ulang saat dibuka.
-VERSI = 17
+VERSI = 18
 PUBLIK_RX = re.compile(r"MASYARAKAT|PUBLIK|PUBLIC|SCRIPLESS|SCRIP\b", re.I)
 # Kata kunci posting yang membahas struktur kepemilikan/aksi korporasi (dipakai mengurutkan relevansi).
 TOPIK_RX = re.compile(r"pengendali|akuisisi|diakuisisi|pemilik|grup|group|konsorsium|backdoor|inbreng|rights|hmetd|tender|"
@@ -161,7 +161,8 @@ def _insider180(insider: list[dict], kini: datetime) -> list[dict]:
     batas = (kini - timedelta(days=180)).strftime("%Y-%m-%d")
     agg: dict = {}
     for r in sorted(insider, key=lambda r: r["date"]):
-        if r["date"] < batas:
+        # Catatan pertama KSEI 0% tanpa keterbukaan IDX bukan pembelian (mis. pengendali lama REAL).
+        if r["date"] < batas or not masuk_terverifikasi(r, insider):
             continue
         a = agg.setdefault(r["name"], {"nama": r["name"], "chg": 0.0, "n": 0, "role": r.get("role") or "", "nilai": 0.0,
                                        "lembar": 0.0, "awal": r["date"], "akhir": r["date"], "sisa": None, "sisaPct": None, "tujuan": ""})

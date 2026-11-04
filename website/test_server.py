@@ -687,6 +687,8 @@ class PovDalamTest(unittest.TestCase):
         self.assertIsNone(enam["lewat"])                                          # bukan pengendali baru
         cep = next(x for x in r if x["nama"].startswith("CENTRAL"))
         self.assertEqual(cep["lewat"], 20)                                        # masuk baru terverifikasi IDX
+        ins180 = {x["nama"]: x for x in povdalam._insider180(ins, datetime(2026, 11, 4))}
+        self.assertLess(ins180["ENAM BERLIAN SINERGI"]["chg"], 0)               # penjualan, bukan pembelian +46%
 
     def test_keluarga(self):
         import povdalam
