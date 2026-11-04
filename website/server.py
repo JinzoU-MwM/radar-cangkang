@@ -3332,11 +3332,11 @@ def _pd_jalan(t: str) -> None:
 
 
 # ------------------------------------------------- Pemindai calon cangkang ----
-# Tiap malam (01.30 WIB) analisa mendalam mode ringan untuk ~70 saham yang paling lama belum dipindai dari universe
-# Kandidat + radar + Saham 50 (bergiliran). Hasil ringkas di .pindai.json; turunannya: alarm penjual cangkang
+# Tiap malam (01.30 WIB) analisa mendalam mode ringan untuk seluruh universe Kandidat + radar + Saham 50
+# (yang paling lama belum dipindai lebih dulu). Hasil ringkas di .pindai.json; turunannya: alarm penjual cangkang
 # (feed keterbukaan pasar), alarm broker market maker, peta grup pengendali, dan ringkasan harian.
 PINDAI_PATH = ROOT / ".pindai.json"
-PINDAI_PER_MALAM = 70
+PINDAI_PER_MALAM = 400   # praktis seluruh universe tiap malam (± 2-3 jam, dini hari)
 _pindai_lock = threading.Lock()
 _pindai_jalan = {"aktif": False, "selesai": 0, "total": 0}
 
@@ -3361,7 +3361,7 @@ def pindai_universe() -> list[str]:
     except Exception:
         pass
     try:
-        uni += [r["t"] for r in sorted(saham50_api().get("rows") or [], key=lambda r: -r.get("skor", 0))[:80]]
+        uni += [r["t"] for r in sorted(saham50_api().get("rows") or [], key=lambda r: -r.get("skor", 0))]
     except Exception:
         pass
     return [t for t in dict.fromkeys(uni) if TICKER_RE.match(t)]
