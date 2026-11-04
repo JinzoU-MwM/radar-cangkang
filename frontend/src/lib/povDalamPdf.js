@@ -114,6 +114,16 @@ export async function povDalamPdf(a, jsPDF) {
   sub('Keterbukaan aksi korporasi (1 tahun)')
   if (!a.aksi.length) teks('Tidak ada keterbukaan aksi korporasi yang terbaca dalam 1 tahun.', 9, MUTED)
   butir(a.aksi.slice(0, 14).map(x => `${tgl(x.date)}: ${x.judul}${x.inti ? ' — ' + potong(x.inti, 200) : ''}`), { size: 8.5 })
+  if (a.kinerjaQ?.length) {
+    sub('Kinerja per kuartal (Key Stats)')
+    butir(a.kinerjaQ.map(q => `${q.q}: laba Rp${(q.laba / 1e9).toFixed(2).replace('.', ',')} M`
+      + (q.yoy != null ? `, YoY ${q.yoy > 0 ? '+' : ''}${String(q.yoy).replace('.', ',')}%` : '') + (q.qoq != null ? `, QoQ ${q.qoq > 0 ? '+' : ''}${String(q.qoq).replace('.', ',')}%` : '')
+      + (q.pendapatan != null ? `; pendapatan Rp${(q.pendapatan / 1e9).toFixed(1).replace('.', ',')} M` : '') + (q.catatan ? ` (${q.catatan})` : '')), { size: 8.4 })
+  }
+  if (a.tokoh?.length) {
+    sub('Profil tokoh (UBO, pemegang perorangan, komut, dirut)')
+    for (const o of a.tokoh) butir([`${o.nama}: ` + (o.berita.length ? o.berita.slice(0, 4).map(b => `${b.judul} (${b.sumber}${b.date ? ', ' + tgl(b.date) : ''})`).join(' | ') : 'tidak ada pemberitaan publik yang memuat nama ini.')], { size: 8.3 })
+  }
   const kn = a.kinerja, kw = kn.kuartal
   sub('Kinerja dan valuasi')
   butir([kn.judul ? `Laporan ${kn.periode}: ${kn.judul}` : 'Laporan keuangan terbaru belum terbaca.',

@@ -147,6 +147,7 @@ def arah(c: dict) -> dict:
             (25, bool(c.get("rights")), "Ada rencana penambahan modal/HMETD/inbreng dalam 180 hari."),
             (15, bool(c.get("kbli")), "Ada perubahan kegiatan usaha/nama."),
             (15, "inbreng" in pres_txt or "penambahan modal" in pres_txt, "Pemegang yang sama pernah menambah modal/injeksi di emiten lain."),
+            (15, "perubahan pengendali" in pres_txt, "Pemegang yang sama baru terlibat perubahan pengendali/akuisisi di emiten lain (pola backdoor berulang)."),
             (10, (c.get("mcap") or 9e18) < 1e12, "Kapitalisasi di bawah Rp1 T: cangkang murah untuk dimasuki aset."),
             (10, akum, "Bandar mengumpulkan barang (1-3 bulan)."),
         ], ["Keterbukaan rencana transaksi material/inbreng", "Jadwal RUPSLB dan HMETD", "Penunjukan penilai independen atas aset target"]),

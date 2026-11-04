@@ -166,6 +166,25 @@ async function unduh() {
         <b :class="x.chg > 0 ? 'c-good' : 'c-strong'">{{ x.chg > 0 ? '+' : '' }}{{ fmt(x.chg, 2) }} poin</b>, {{ x.n }} transaksi, terakhir {{ fmtDate(x.akhir) }}<template v-if="x.lembar">; {{ fmt(x.lembar / 1e6, 1) }} juta lembar<template v-if="x.harga"> @ ±Rp{{ fmt(x.harga, 0) }}</template></template><template v-if="x.sisa">;
           sisa {{ fmt(x.sisa / 1e6, 1) }} juta lembar ({{ p2(x.sisaPct) }})</template><b v-if="x.habisBulan">; habis ± {{ Math.round(x.habisBulan) }} bulan lagi bila laju sama</b></li></ul>
 
+      <template v-if="hasil.kinerjaQ?.length">
+        <h3>Kinerja per kuartal (Key Stats)</h3>
+        <table class="ledger small">
+          <thead><tr><th>Kuartal</th><th class="num">Laba bersih</th><th class="num">YoY</th><th class="num">QoQ</th><th class="num">Pendapatan</th><th></th></tr></thead>
+          <tbody><tr v-for="q in hasil.kinerjaQ" :key="q.q"><td>{{ q.q }}</td>
+            <td class="num" :class="q.laba > 0 ? '' : 'c-strong'">Rp{{ fmt(q.laba / 1e9, 2) }} M</td>
+            <td class="num">{{ q.yoy == null ? '–' : (q.yoy > 0 ? '+' : '') + fmt(q.yoy, 1) + '%' }}</td>
+            <td class="num">{{ q.qoq == null ? '–' : (q.qoq > 0 ? '+' : '') + fmt(q.qoq, 1) + '%' }}</td>
+            <td class="num">{{ q.pendapatan == null ? '–' : 'Rp' + fmt(q.pendapatan / 1e9, 1) + ' M' }}</td><td class="muted">{{ q.catatan }}</td></tr></tbody>
+        </table>
+      </template>
+
+      <template v-if="hasil.tokoh?.length">
+        <h3>Profil tokoh (UBO, pemegang perorangan, komut, dirut)</h3>
+        <div v-for="o in hasil.tokoh" :key="o.nama" class="dg"><b>{{ o.nama }}</b>
+          <ul class="small"><li v-for="b in o.berita" :key="b.url">{{ b.date ? fmtDate(b.date) : '–' }} · <a :href="b.url" target="_blank" rel="noopener">{{ b.judul }}</a> <span class="muted">— {{ b.sumber }}</span></li>
+            <li v-if="!o.berita.length" class="muted">Tidak ada pemberitaan publik yang memuat nama ini.</li></ul></div>
+      </template>
+
       <template v-if="hasil.kronologi?.length">
         <h3>Kronologi</h3>
         <ul class="small kr"><li v-for="k in hasil.kronologi" :key="k.date + k.teks"><b>{{ fmtDate(k.date) }}</b> <span class="tag" :class="k.jenis === 'aksi' ? 't-calm' : 't-warn'">{{ k.jenis }}</span> {{ k.teks }}</li></ul>

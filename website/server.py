@@ -3234,6 +3234,11 @@ def pd_kumpul(t: str, job: dict) -> dict:
     posts, kat = pd_posts(t, 10 if sisa() > 120 else 3)
     if not posts:
         catatan.append("Posting publik tidak ditemukan atau tidak dapat diambil.")
+    try:
+        keystats = lks_parse((sb_fetch(f"/keystats/ratio/v1/{t}?year_limit=3").get("data") or {}))
+    except Exception as e:
+        keystats = {}
+        catatan.append(f"Key Stats kuartalan gagal: {e}"[:160])
     tahap(8, "Berita di luar Stockbit (Google News)")
     nama_e = re.sub(r"\s*Tbk\.?$", "", nama_semua().get(t, ""), flags=re.I).strip()
     kueri = [f'"{nama_e}"' if nama_e else t, f"saham {t}"]
@@ -3254,6 +3259,17 @@ def pd_kumpul(t: str, job: dict) -> dict:
     # Kode saham atau nama emiten (dua kata pertama sebagai frasa, mis. "Indo Straits", "Argha Karya").
     frasa = " ".join(nama_e.split()[:2]) if len(nama_e.split()) >= 2 else nama_e
     wajib = re.compile(r"\b(" + "|".join([t] + ([re.escape(frasa)] if frasa else [])) + r")\b", re.I)
+    # Profil tokoh: UBO, pemegang perorangan >= 5%, komisaris utama, direktur utama (nama orang cukup khas).
+    orang = list(prof.get("beneficiary") or [])
+    orang += [s["name"] for s in prof.get("shareholders") or [] if not PD.BADAN_RX.search(s["name"]) and PD._pct(s.get("pct")) >= 5]
+    orang += [re.sub(r"\s*\(.*\)$", "", x) for x in (prof.get("commissioners") or [])[:1] + (prof.get("directors") or [])[:1]]
+    tokoh = []
+    for n in list(dict.fromkeys(o.title() for o in orang if len(o.split()) >= 2))[:4]:
+        if sisa() < 45:
+            break
+        kata = [w for w in n.split() if len(w) >= 3]
+        hasil_n = [b for b in pd_berita_luar([f'"{n}"']) if sum(1 for w in kata if re.search(rf"\b{re.escape(w)}\b", b["judul"], re.I)) >= 2]
+        tokoh.append({"nama": n, "berita": hasil_n[:8]})
     berita_luar = [b for b in berita_luar if relevan.search(b["judul"]) and (
         (wajib and wajib.search(b["judul"])) or sum(1 for w in pihak if re.search(rf"\b{re.escape(w)}\b", b["judul"], re.I)) >= 2)]
     tahap(9, "Bandarmologi (broker 5/30/90 hari), jejak volume, dan preseden grup")
@@ -3291,7 +3307,8 @@ def pd_kumpul(t: str, job: dict) -> dict:
     hasil = PD.analyze({"t": t, "nama": nama_semua().get(t, ""), "profil": prof, "insider": insider, "jaringan": jaringan,
                         "laporan": laporan, "berita": berita, "posts": posts, "lk": lk, "catatan": catatan, "broker": bk,
                         "pandangan": _json_berkas("pandangan-analis.json").get(t), "beritaLuar": berita_luar,
-                        "brokers": {k: v for k, v in brokers.items() if v}, "bars": bars, "grupAksi": grup_aksi})
+                        "brokers": {k: v for k, v in brokers.items() if v}, "bars": bars, "grupAksi": grup_aksi,
+                        "keystats": keystats, "tokoh": tokoh})
     hasil["grup"] = list(grup.values())
     hasil["radar"] = t in radar_tickers()
     hasil["durasi"] = int(time.time() - mulai)

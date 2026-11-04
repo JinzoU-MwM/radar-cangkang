@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import povarah as PA
 
 # Naikkan bila isi analisa berubah: hasil tersimpan versi lama ditarik ulang saat dibuka.
-VERSI = 8
+VERSI = 9
 PUBLIK_RX = re.compile(r"MASYARAKAT|PUBLIK|PUBLIC|SCRIPLESS|SCRIP\b", re.I)
 # Kata kunci posting yang membahas struktur kepemilikan/aksi korporasi (dipakai mengurutkan relevansi).
 TOPIK_RX = re.compile(r"pengendali|akuisisi|diakuisisi|pemilik|grup|group|konsorsium|backdoor|inbreng|rights|hmetd|tender|"
@@ -98,11 +98,15 @@ def _jaringan(t: str, pemegang: list[dict], jar: dict) -> tuple[list[dict], list
 def _riwayat(insider: list[dict], kini: datetime) -> list[dict]:
     """Peristiwa kepemilikan penting 3 tahun terakhir: pihak melewati 20%/50% (naik/turun) atau berubah >= 5 poin."""
     batas = (kini - timedelta(days=3 * 365)).strftime("%Y-%m-%d")
-    out = []
+    out, ada = [], set()
     for r in sorted(insider, key=lambda r: r["date"]):
         if r["date"] < batas:
             continue
         prev, cur = r.get("prev") or 0, r.get("cur") or 0
+        kunci = (_kunci(r["name"]), round(prev, 1), round(cur, 1))
+        if kunci in ada:
+            continue
+        ada.add(kunci)
         lewat = next((b for b in (50, 20) if (prev < b <= cur) or (cur < b <= prev)), None)
         if lewat or abs(cur - prev) >= 5:
             arah = "naik" if cur > prev else "turun"
@@ -111,6 +115,24 @@ def _riwayat(insider: list[dict], kini: datetime) -> list[dict]:
                 teks += f"; tujuan: {r['purpose'][:120]}"
             out.append({"date": r["date"], "nama": r["name"], "prev": prev, "cur": cur, "lewat": lewat, "teks": teks})
     return out[-15:]
+
+
+def kinerja_kuartal(ks: dict) -> list[dict]:
+    """Laba bersih & pendapatan 8 kuartal terakhir dari Key Stats (Stockbit), dengan YoY dan QoQ laba."""
+    ni = (ks.get("kuartal") or {}).get("Net Income") or {}
+    rev = (ks.get("kuartal") or {}).get("Revenue") or {}
+    kode = sorted(ni, key=lambda k: (k[-2:], k[1]))[-8:]
+    out = []
+    for k in kode:
+        q, yy = int(k[1]), int(k[-2:])
+        lalu = ni.get(f"Q{q}{yy - 1:02d}")
+        sb = ni.get(f"Q{q - 1}{yy:02d}" if q > 1 else f"Q4{yy - 1:02d}")
+        v = ni[k]
+        yoy = round((v / lalu - 1) * 100, 1) if lalu and lalu > 0 else None
+        qoq = round((v / sb - 1) * 100, 1) if sb and sb > 0 else None
+        out.append({"q": k, "laba": v, "pendapatan": rev.get(k), "yoy": yoy, "qoq": qoq,
+                    "catatan": "berbalik laba" if v > 0 and lalu is not None and lalu <= 0 else "rugi" if v <= 0 else ""})
+    return out[::-1]
 
 
 def _insider180(insider: list[dict], kini: datetime) -> list[dict]:
@@ -181,7 +203,9 @@ def relasi_kalimat(teks: str, t: str = "") -> list[tuple[str, str]]:
                 bdn.append(w.upper())
                 if len(bdn) == 5:
                     break
-            if len(org) >= 2 and len([w for w in bdn if w != "PT"]) >= 1 and len(" ".join(bdn)) >= 5:
+            istilah = {"BACKDOOR", "LISTING", "SKEMA", "AKSI", "RIGHTS", "TENDER", "PASAR", "HARGA", "SAHAM", "BURSA", "IPO",
+                       "MTO", "HMETD", "BROKER", "BANDAR", "TRANSAKSI", "SEKTOR", "PROYEK"}
+            if len(org) >= 2 and len([w for w in bdn if w != "PT"]) >= 1 and len(" ".join(bdn)) >= 5 and not set(bdn) & istilah:
                 out.append((" ".join(org), " ".join(bdn)))
     return out
 
@@ -215,7 +239,7 @@ def cek_klaim(posts: list[dict], data: dict) -> list[dict]:
             if not 12 <= len(kal) <= 260 or (len(p["txt"]) < 150 and not p.get("likes")) \
                     or re.search(r"wk(wk)+|haha|hehe|gas+ ?(pol|keun)?\b|to the moon|🚀{2,}", kal, re.I):
                 continue
-            if any(c["klaim"] == kal for c in out):
+            if any(c["klaim"] == kal for c in out) or re.search(r"…|\.\.\.\s*(sebanyak|seharga|oleh|lembar)|oleh\s*…", kal):
                 continue
             for jenis, rx in KLAIM:
                 if (jenis, p.get("user")) in ada or not rx.search(kal):
@@ -520,7 +544,13 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
     # Kronologi gabungan: perubahan kepemilikan dan aksi korporasi (terbaru dulu).
     kron = [{"date": r["date"], "jenis": "kepemilikan", "teks": r["teks"]} for r in riwayat]
     kron += [{"date": a["date"], "jenis": "aksi", "teks": a["judul"] + (f" — {a['inti'][:160]}" if a["inti"] else "")} for a in aksi]
-    kron = sorted((k for k in kron if k["date"]), key=lambda k: k["date"], reverse=True)[:25]
+    RUTIN = re.compile(r"registrasi pemegang|bukti iklan|laporan bulanan|pemanggilan rapat|jadwal|laporan keuangan|"
+                       r"penyampaian laporan|public expose|volatilitas", re.I)
+    sudah_k = {k["teks"][:60] for k in kron}
+    kron += [{"date": u.get("date"), "jenis": "keterbukaan", "teks": u.get("title", "") + (f" — {u['inti'][:160]}" if u.get("inti") else "")}
+             for u in d.get("laporan") or [] if not u.get("jenis") and not RUTIN.search(u.get("title", "")) and u.get("title", "")[:60] not in sudah_k]
+    kron += [{"date": b.get("date"), "jenis": "berita", "teks": f"{b['judul']} ({b.get('sumber')})"} for b in (d.get("beritaLuar") or [])[:12]]
+    kron = sorted((k for k in kron if k["date"]), key=lambda k: k["date"], reverse=True)[:35]
 
     # ---- Membaca arah pengendali: bandarmologi, jejak volume, preseden grup, sudut yang terlewat, skenario & target.
     bars = d.get("bars") or []
@@ -586,6 +616,8 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
                         "ubo": prof.get("beneficiary") or [], "direksi": prof.get("directors") or [], "komisaris": prof.get("commissioners") or []},
         "jaringan": jar_rows, "bersama": bersama[:10], "riwayat": riwayat, "insider": ins, "aksi": aksi,
         "berita": [{"date": u.get("date"), "judul": u.get("title"), "url": u.get("url")} for u in (d.get("berita") or [])[:10]],
+        "kinerjaQ": kinerja_kuartal(d.get("keystats") or {}),
+        "tokoh": d.get("tokoh") or [],
         "kinerja": {"periode": lk.get("periode"), "judul": lk.get("judul"), "kuartal": kw or None, "pbv": pbv, "per": met.get("per"),
                     "laba": met.get("netIncomeTtm"), "pendapatan": met.get("revenueTtm"), "ekuitas": met.get("equity"), "bvps": met.get("bvps")},
         "komunitas": kom, "dugaan": dugaan, "selidiki": selidiki, "skenario": skenario, "kronologi": kron, "broker": bk, "klaim": klaim, "beritaLuar": (d.get("beritaLuar") or [])[:25],
