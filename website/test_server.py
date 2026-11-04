@@ -614,6 +614,19 @@ class PovDalamTest(unittest.TestCase):
         self.assertEqual(st["likuid"], "didukung data")      # free float efektif 40% tidak, tetapi ff 9% < 10
         self.assertNotIn("fokusPosts", r["komunitas"])
 
+    def test_arah_pengendali(self):
+        import povarah
+        bm = povarah.bandarmologi({30: {"bandar": 2e9, "akum": ["YP", "PD"], "dist": ["MG"], "avgAkum": 480, "konsentrasi": 70, "asing": 0},
+                                   90: {"bandar": 5e9, "akum": ["YP"], "dist": ["KK"], "avgAkum": 450, "konsentrasi": 55, "asing": 0}},
+                                  [{"d": "2026-01-01", "c": 500, "v": 1}] * 100, 500)
+        self.assertIn("akumulasi diam-diam", bm["fase"][0]["arti"])
+        self.assertTrue(any("YP" in x for x in bm["catatan"]))
+        a = povarah.arah({"ff": 4.3, "ffEfektif": 4.3, "afiliasi": 95.7, "insiderJual": [1], "habisBulan": True, "bandar": bm})
+        self.assertEqual(a["skenario"][0]["nama"], "Distribusi untuk memenuhi free float / menjual ke publik")
+        t = povarah.target_harga({"harga": 500, "bvps": 3160, "high52": 800})
+        self.assertEqual([x["harga"] for x in t], [800, 3160])
+        self.assertEqual(t[1]["potensi"], 532.0)
+
     def test_keluarga(self):
         import povdalam
         pm = [{"name": n, "pct": 1.7} for n in ("AMIRSYAH RISJAD", "DINA RISJAD", "DEDEY RISJAD", "SELVIYA RISJAD DANANTO")]

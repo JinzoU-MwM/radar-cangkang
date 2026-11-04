@@ -48,6 +48,32 @@ export async function povDalamPdf(a, jsPDF) {
   })
 
   // ---- Kepemilikan dan jaringan pengendali.
+  // ---- Membaca arah pengendali (halaman utama analisa).
+  if (a.arah) {
+    judulKini = 'Membaca arah pengendali'; halaman(judulKini)
+    for (const n of a.arah.narasi) { teks(n, 9); y += 1 }
+    sub('Skenario ke mana saham dibawa', GOLD)
+    a.arah.skenario.forEach((s, i) => {
+      ruang(14)
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(i === 0 ? GOOD : PRIMER)
+      doc.text(pdfText(`${i + 1}. ${s.nama} (skor ${s.skor})`), 18, y); y += 5
+      butir(s.bukti, { size: 8.4, tanda: '›', x: 22, w: 174 })
+      butir([`Konfirmasi yang ditunggu: ${s.konfirmasi.join('; ')}`], { size: 8, color: MUTED, tanda: '', x: 22, w: 174 })
+    })
+    if (a.target?.length) {
+      sub('Skenario target harga (distribusi) — bukan rekomendasi', GOLD)
+      butir(a.target.map(x => `${x.label}: Rp${Math.round(x.harga)} (${x.potensi > 0 ? '+' : ''}${String(x.potensi).replace('.', ',')}%) — ${x.dasar}`), { size: 8.5 })
+    }
+    if (a.sudut?.length) { sub('Sudut yang sering terlewat'); butir(a.sudut, { size: 8.5 }) }
+    if (a.bandarmologi?.fase?.length) {
+      sub('Bandarmologi')
+      butir(a.bandarmologi.fase.map(f => `${f.periode}: ${f.arti}; net Rp${(f.bandar / 1e9).toFixed(2).replace('.', ',')} M; harga ${f.harga ?? '-'}%; pembeli ${f.akum.join(', ')}; penjual ${f.dist.join(', ')}${f.avgAkum ? '; modal pembeli Rp' + Math.round(f.avgAkum) : ''}`), { size: 8.4 })
+      butir(a.bandarmologi.catatan, { size: 8.4, color: PRIMER, tanda: '›' })
+    }
+    if (a.volume?.length) { sub('Jejak lonjakan volume (1 tahun)'); butir(a.volume.slice(0, 8).map(v => `${tgl(v.d)}: ${v.kali}x rata-rata, harga ${v.ubah}%${v.sebelum ? ' — sebelum: ' + v.sebelum : ''}`), { size: 8.3 }) }
+    if (a.preseden?.length) { sub('Preseden grup (2 tahun)'); butir(a.preseden, { size: 8.3 }) }
+  }
+
   judulKini = 'Kepemilikan dan jaringan'; halaman(judulKini)
   if (a.ringkas.length) teks(a.ringkas.join('. ') + '.', 9.5)
   if (idn.latar) teks(potong(idn.latar, 600), 8.5, MUTED)

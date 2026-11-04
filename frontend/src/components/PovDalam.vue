@@ -67,6 +67,51 @@ async function unduh() {
       </div>
       <ul class="small rk"><li v-for="r in hasil.ringkas" :key="r">{{ r }}</li></ul>
 
+      <template v-if="hasil.arah">
+        <h3>Membaca arah pengendali</h3>
+        <p v-for="n in hasil.arah.narasi" :key="n" class="small nar">{{ n }}</p>
+        <h4>Skenario ke mana saham dibawa</h4>
+        <div v-for="(s, i) in hasil.arah.skenario" :key="s.nama" class="sk">
+          <div class="skh"><b>{{ i + 1 }}. {{ s.nama }}</b><span class="skb"><i :style="{ width: s.skor + '%' }"></i></span><span class="small">skor {{ s.skor }}</span></div>
+          <ul class="small"><li v-for="b in s.bukti" :key="b">{{ b }}</li></ul>
+          <p class="small muted">Konfirmasi yang ditunggu: {{ s.konfirmasi.join('; ') }}</p>
+        </div>
+      </template>
+
+      <template v-if="hasil.target?.length">
+        <h3>Skenario target harga (distribusi)</h3>
+        <ul class="small"><li v-for="x in hasil.target" :key="x.label"><b>{{ x.label }}: Rp{{ fmt(x.harga, 0) }}</b>
+          <span :class="x.potensi >= 0 ? 'c-good' : 'c-strong'">({{ x.potensi > 0 ? '+' : '' }}{{ fmt(x.potensi, 1) }}%)</span> — {{ x.dasar }}</li></ul>
+        <p class="small muted">Skenario dari data, bukan rekomendasi atau janji harga.</p>
+      </template>
+
+      <template v-if="hasil.sudut?.length">
+        <h3>Sudut yang sering terlewat</h3>
+        <ul class="small"><li v-for="x in hasil.sudut" :key="x">{{ x }}</li></ul>
+      </template>
+
+      <template v-if="hasil.bandarmologi?.fase?.length">
+        <h3>Bandarmologi</h3>
+        <table class="ledger small">
+          <thead><tr><th>Periode</th><th class="num">Net bandar</th><th class="num">Harga</th><th>Pembeli utama</th><th>Penjual utama</th><th class="num">Modal pembeli</th><th>Arti</th></tr></thead>
+          <tbody><tr v-for="f in hasil.bandarmologi.fase" :key="f.hari">
+            <td>{{ f.periode }}</td><td class="num" :class="f.bandar > 0 ? 'c-good' : 'c-strong'">Rp{{ fmt(f.bandar / 1e9, 2) }} M</td>
+            <td class="num">{{ f.harga == null ? '–' : (f.harga > 0 ? '+' : '') + fmt(f.harga, 1) + '%' }}</td>
+            <td>{{ f.akum.join(', ') }}</td><td>{{ f.dist.join(', ') }}</td>
+            <td class="num">{{ f.avgAkum ? 'Rp' + fmt(f.avgAkum, 0) : '–' }}</td><td>{{ f.arti }}</td></tr></tbody>
+        </table>
+        <ul class="small"><li v-for="x in hasil.bandarmologi.catatan" :key="x">{{ x }}</li></ul>
+      </template>
+
+      <template v-if="hasil.volume?.length">
+        <h4>Jejak lonjakan volume (1 tahun)</h4>
+        <ul class="small"><li v-for="v in hasil.volume" :key="v.d">{{ fmtDate(v.d) }}: {{ v.kali }}x rata-rata, harga {{ (v.ubah > 0 ? '+' : '') + v.ubah }}%<b v-if="v.sebelum"> — sebelum: {{ v.sebelum }}</b></li></ul>
+      </template>
+      <template v-if="hasil.preseden?.length">
+        <h4>Preseden grup (2 tahun)</h4>
+        <ul class="small"><li v-for="x in hasil.preseden" :key="x">{{ x }}</li></ul>
+      </template>
+
       <template v-if="hasil.klaim?.length">
         <h3>Cek kebenaran klaim publik</h3>
         <div v-for="c in hasil.klaim" :key="c.jenis + c.user" class="dg" :class="c.status === 'didukung data' ? 'pos' : ''">
@@ -164,4 +209,8 @@ async function unduh() {
 .bar{height:6px;background:var(--rule);border-radius:3px;margin:6px 0}.bar i{display:block;height:100%;background:var(--now-ink);border-radius:3px;transition:width .4s}
 .dg{border-left:3px solid var(--rule);padding:2px 0 2px 10px;margin:6px 0}.dg.pos{border-left-color:var(--now-ink)}
 .rk{margin:6px 0}
+.nar{margin:4px 0;line-height:1.55}
+.sk{margin:6px 0;padding:4px 0 4px 10px;border-left:3px solid var(--now-ink)}
+.skh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.skb{flex:0 0 120px;height:6px;background:var(--rule);border-radius:3px}
+.skb i{display:block;height:100%;background:var(--now-ink);border-radius:3px}
 </style>
