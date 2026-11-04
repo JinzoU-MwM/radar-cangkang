@@ -3261,7 +3261,8 @@ def pd_kumpul(t: str, job: dict) -> dict:
     wajib = re.compile(r"\b(" + "|".join([t] + ([re.escape(frasa)] if frasa else [])) + r")\b", re.I)
     # Profil tokoh: UBO, pemegang perorangan >= 5%, komisaris utama, direktur utama (nama orang cukup khas).
     orang = list(prof.get("beneficiary") or [])
-    orang += [s["name"] for s in prof.get("shareholders") or [] if not PD.BADAN_RX.search(s["name"]) and PD._pct(s.get("pct")) >= 5]
+    orang += [s["name"] for s in prof.get("shareholders") or [] if not PD.BADAN_RX.search(s["name"]) and not PD.PUBLIK_RX.search(s["name"])
+              and not re.search(r"warkat|lainnya|others", s["name"], re.I) and PD._pct(s.get("pct")) >= 5]
     orang += [re.sub(r"\s*\(.*\)$", "", x) for x in (prof.get("commissioners") or [])[:1] + (prof.get("directors") or [])[:1]]
     tokoh = []
     for n in list(dict.fromkeys(o.title() for o in orang if len(o.split()) >= 2))[:4]:
