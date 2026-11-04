@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import povarah as PA
 
 # Naikkan bila isi analisa berubah: hasil tersimpan versi lama ditarik ulang saat dibuka.
-VERSI = 6
+VERSI = 7
 PUBLIK_RX = re.compile(r"MASYARAKAT|PUBLIK|PUBLIC|SCRIPLESS|SCRIP\b", re.I)
 # Kata kunci posting yang membahas struktur kepemilikan/aksi korporasi (dipakai mengurutkan relevansi).
 TOPIK_RX = re.compile(r"pengendali|akuisisi|diakuisisi|pemilik|grup|group|konsorsium|backdoor|inbreng|rights|hmetd|tender|"
@@ -212,7 +212,10 @@ def cek_klaim(posts: list[dict], data: dict) -> list[dict]:
     for p in posts:
         for kal in re.split(r"(?<=[.!?\n])\s+|\n", p["txt"]):
             kal = kal.strip(" -•*")
-            if not 12 <= len(kal) <= 260:
+            if not 12 <= len(kal) <= 260 or (len(p["txt"]) < 150 and not p.get("likes")) \
+                    or re.search(r"wk(wk)+|haha|hehe|gas+ ?(pol|keun)?\b|to the moon|🚀{2,}", kal, re.I):
+                continue
+            if any(c["klaim"] == kal for c in out):
                 continue
             for jenis, rx in KLAIM:
                 if (jenis, p.get("user")) in ada or not rx.search(kal):
@@ -233,7 +236,8 @@ def nama_klaim(kal: str, rx: re.Pattern) -> list[str]:
                         kal[m.end():], flags=re.I)[0]
         for bagian in re.split(r",|\bdan\b|\band\b|&|/", ekor, flags=re.I):
             n = re.sub(r"^(oleh|pak|bu|bapak|ibu|grup|group|keluarga|the)\s+", "", bagian.strip(), flags=re.I).strip(" -")
-            if 2 <= len(n) <= 40 and len(n.split()) <= 4:
+            umum = {"secara", "pribadi", "sendiri", "sekitar", "lebih", "sebesar", "lagi", "juga", "masih", "semua", "para", "orang"}
+            if 2 <= len(n) <= 40 and len(n.split()) <= 4 and not set(n.lower().split()) & umum:
                 out.append(n)
     return list(dict.fromkeys(out))[:5]
 
@@ -381,7 +385,8 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
         pmg[_kunci(s["name"])] = {"name": s["name"], "pct": _pct(s.get("pct")), "pengendali": bool(s.get("pengendali"))}
     for s in prof.get("holders1") or []:
         k = _kunci(s["name"])
-        if k not in pmg:
+        if k not in pmg and not any(_cocok_nama(s["name"], p["name"]) or abs(_pct(s.get("pct")) - p["pct"]) < 0.02
+                                    and set(k.split()) & set(_kunci(p["name"]).split()) for p in pmg.values()):
             pmg[k] = {"name": s["name"], "pct": _pct(s.get("pct")), "pengendali": False}
     semua = sorted(pmg.values(), key=lambda p: -p["pct"])
     non_publik = [p for p in semua if not PUBLIK_RX.search(p["name"])]
@@ -393,7 +398,7 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
     for p in non_publik:
         p["keluarga"] = anggota_kel.get(p["name"], "")
     # Terafiliasi (bukan free float menurut BEI): >= 5%, pengendali, pengurus, dan anggota keluarga pemegang tersebut.
-    total_np = round(sum(p["pct"] for p in non_publik if p["pct"] >= 5 or p["pengendali"] or p["pengurus"] or p["keluarga"]), 2)
+    total_np = min(100.0, round(sum(p["pct"] for p in non_publik if p["pct"] >= 5 or p["pengendali"] or p["pengurus"] or p["keluarga"]), 2))
     ff_efektif = round(max(0.0, 100 - total_np), 2)
     # Jaringan: pemegang saham + orang dalam aktif yang ikut ditelusuri server (nama ada di data jaringan).
     sasaran = non_publik[:10] + [{"name": n, "pct": 0.0} for n in (d.get("jaringan") or {})
@@ -522,7 +527,14 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
     volume = PA.jejak_volume(bars, kron)
     pres = PA.preseden(d.get("grupAksi") or [])
     p0 = non_publik[0] if non_publik else None
-    konglo = [n for n in nama_terkait if PA.KONGLO_NAMA.search(n)]
+    konglo = []
+    for n in [p["name"] for p in non_publik] + list(prof.get("beneficiary") or []) + pengurus:
+        m = PA.KONGLO_NAMA.search(n)
+        if m:
+            kel_n = next((k["nama"] for k in kel if n in k["anggota"]), "")
+            label = f"keluarga {kel_n}" if kel_n else n
+            if label not in konglo:
+                konglo.append(label)
     pengendali_teks = ""
     if p0:
         pengendali_teks = (f"Siapa pengendalinya: {p0['name']} ({p0['pct']:.2f}%)"
@@ -540,7 +552,7 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
         vol_teks = (f"Jejak volume: {len(volume)} hari lonjakan >= 3x rata-rata dalam setahun; terbesar {v['kali']}x pada {v['d']}"
                     + (f", sebelum: {v['sebelum']}" if v["sebelum"] else "") + ".")
     terv = [r for r in kom.get("relasi") or [] if r["terverifikasi"]]
-    didukung = [k for k in klaim if k["status"] == "didukung data"]
+    didukung = [k for k in klaim if k["status"] == "didukung data" and k["jenis"] in ("pemilik", "relasi", "konglo", "akuisisi", "aset")]
     publik_teks = ""
     if terv or didukung:
         publik_teks = "Info publik yang terbukti: " + "; ".join(
