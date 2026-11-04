@@ -5833,7 +5833,6 @@ def main() -> int:
     threading.Thread(target=kandidat_loop, daemon=True).start()
     threading.Thread(target=news_loop, daemon=True).start()
     threading.Thread(target=pov_loop, daemon=True).start()
-    threading.Thread(target=pindai_loop, daemon=True, name="pindai").start()
     threading.Thread(target=season_loop, daemon=True).start()
     threading.Thread(target=ihsg_loop, daemon=True).start()
     threading.Thread(target=live_loop, daemon=True).start()

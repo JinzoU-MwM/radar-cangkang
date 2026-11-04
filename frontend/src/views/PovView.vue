@@ -1,14 +1,11 @@
 <script setup>
-// POV: pola pikir akun Stockbit prioritas + trending (dari posting ide publik), konsensus saham yang diincar,
-// dicocokkan dengan sikap analis radar; ditambah ringkasan metode KakdrWay (kakdr.com).
+// POV: analisa mendalam per saham (cari kode BEI), pola pikir akun Stockbit prioritas + trending (dari posting ide
+// publik), dan ringkasan metode KakdrWay (kakdr.com).
 import { computed, onMounted, ref, watch } from 'vue'
 import { api, loadJson } from '../api.js'
-import { store } from '../store.js'
 import { fmt, fmtDate } from '../lib/domain.js'
-import SikapTag from '../components/SikapTag.vue'
 import PovDetail from '../components/PovDetail.vue'
 import PovDalam from '../components/PovDalam.vue'
-import PovPindai from '../components/PovPindai.vue'
 
 const data = ref(null), err = ref(''), kd = ref(null)
 // Analisa KakdrWay disembunyikan sampai tombolnya diklik.
@@ -18,16 +15,6 @@ onMounted(() => {
   api.get('/api/pov').then(v => { data.value = v }, e => { err.value = e.message })
   loadJson('kakdrway.json').then(v => { kd.value = v }, () => {})
 })
-const sikap = t => store.pandangan?.[t]?.sikap || ''
-// Rekomendasi cara membaca konsensus terhadap sikap analis radar.
-function saran(a) {
-  const s = sikap(a.t)
-  if (!a.radar || !s) return a.nada === 'bullish' ? 'Ramai dibahas bullish: cek fundamental dan dokumen sebelum ikut.' : 'Pantau; belum ada analisa radar.'
-  if (/hindari/i.test(s) && a.nada === 'bullish') return 'Waspada euforia: banyak yang bullish, tetapi analisa radar menilai Hindari.'
-  if (/asimetri/i.test(s) && a.nada === 'bullish') return 'Konfirmasi: pandangan akun sejalan dengan analisa radar.'
-  if (a.nada === 'bearish') return 'Sentimen akun bearish: tunggu konfirmasi sebelum masuk.'
-  return 'Bandingkan alasan akun dengan analisa radar.'
-}
 // Ringkasan pola pikir satu akun (kalimat baku dari data posting).
 function pola(u) {
   const [s1, s2] = u.styles
@@ -57,12 +44,6 @@ const saranCari = computed(() => {
   return cocok.sort((a, b) => (b.t.toLowerCase() === s) - (a.t.toLowerCase() === s) || a.t.localeCompare(b.t)).slice(0, 8)
 })
 const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.value)?.nama || '')
-// Dari pemindai/alarm/peta grup: buka analisa mendalam saham itu di panel atas.
-function bukaDariPindai(t) {
-  pilih.value = t
-  if (kodeBei.value === null) { kodeBei.value = []; api.get('/api/kode-bei').then(r => { kodeBei.value = r.kode || [] }, () => {}) }
-  document.querySelector('.cari-dalam')?.scrollIntoView({ behavior: 'smooth' })
-}
 </script>
 
 <template>
@@ -84,30 +65,9 @@ function bukaDariPindai(t) {
       </section>
     </section>
 
-    <PovPindai @pilih="bukaDariPindai" />
-
     <p v-if="err" class="muted">Gagal memuat POV: {{ err }}</p>
     <p v-else-if="!data" class="muted">Memuat…</p>
     <p v-else-if="!users.length" class="muted">Data POV sedang disiapkan server; coba lagi beberapa menit lagi.</p>
-
-    <section v-if="data?.consensus?.length" class="rule-top">
-      <h2>Konsensus saham yang diincar</h2>
-      <div class="scroll">
-        <table class="ledger">
-          <thead><tr><th>Saham</th><th class="num">Akun</th><th class="num">Sebutan</th><th>Nada</th><th>Analisa radar</th><th>Rekomendasi analisa</th></tr></thead>
-          <tbody>
-            <tr v-for="a in data.consensus" :key="a.t">
-              <td><RouterLink v-if="a.radar" :to="'/emiten/' + a.t" class="ticker">{{ a.t }}</RouterLink><b v-else>{{ a.t }}</b></td>
-              <td class="num" :title="a.users.join(', ')">{{ a.users.length }}</td>
-              <td class="num">{{ a.n }}</td>
-              <td><span class="tag" :class="a.nada === 'bullish' ? 't-good' : a.nada === 'bearish' ? 't-strong' : 't-calm'">{{ a.nada }}</span></td>
-              <td><SikapTag v-if="sikap(a.t)" :sikap="sikap(a.t)" /><span v-else class="muted small">bukan radar</span></td>
-              <td class="small">{{ saran(a) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
 
     <section v-if="users.length" class="rule-top">
       <h2>Pola pikir per akun</h2>
