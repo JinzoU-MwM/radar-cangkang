@@ -559,6 +559,23 @@ class BeritaSahamTest(unittest.TestCase):
         server._berita_cache.clear()
 
 
+class KakdrScreenTest(unittest.TestCase):
+    def test_screening(self):
+        ks = {"AAAA": {"hargaKira": 400, "rasio": {"Current Price to Book Value": 0.6, "Debt to Equity Ratio (Quarter)": 0.4,
+                                                   "Return on Equity (TTM)": 12.0, "Dividend Yield": 5.0, "52 Week High": 1000}},
+              "BBBB": {"hargaKira": 900, "rasio": {"Current Price to Book Value": 3.0, "Debt to Equity Ratio (Quarter)": 2.5,
+                                                   "Return on Equity (TTM)": -4.0, "Dividend Yield": 0, "52 Week High": 1000}}}
+        with unittest.mock.patch.object(server, "lks_load", return_value=ks), \
+                unittest.mock.patch.object(server, "harga_semua", return_value={}), \
+                unittest.mock.patch.object(server, "sektor_load", return_value={}), \
+                unittest.mock.patch.object(server, "nama_semua", return_value={}), \
+                unittest.mock.patch.object(server, "_kakdr_memo", (0.0, None)):
+            r = server.kakdr_screen()
+        self.assertEqual([x["t"] for x in r["rows"]], ["AAAA"])
+        self.assertEqual(r["rows"][0]["skor"], 10.0)
+        self.assertTrue(all(r["rows"][0]["lolos"].values()))
+
+
 class PovDalamTest(unittest.TestCase):
     """povdalam.analyze: contoh AKPI (pendiri 95,72%, jaringan Risjad/Henry Pribadi, posting komunitas)."""
 

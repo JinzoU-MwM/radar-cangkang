@@ -2465,6 +2465,11 @@ def _lks_angka(s) -> float | None:
     return -v if neg else v
 
 
+# Rasio tambahan untuk screening KakdrWay (nama item Key Stats Stockbit; dicocokkan longgar).
+KS_KAKDR_RX = re.compile(r"debt to equity|return on equity|dividend|52 week (high|low)|book value per share|payout", re.I)
+LKS_VERSI = 2   # Key Stats lama (tanpa rasio KakdrWay) diambil ulang
+
+
 def lks_parse(k: dict) -> dict:
     """JSON keystats -> {"kuartal": {"Net Income"|"EPS"|"Revenue": {"Q326": nilai}}, "terbaru": "Q326", "rasio": {...}, "mata"}."""
     out, terbaru = {}, ""
@@ -2486,13 +2491,14 @@ def lks_parse(k: dict) -> dict:
             fi = f.get("fitem") or {}
             if fi.get("name") in ("Current PE Ratio (TTM)", "Current PE Ratio (Annualised)", "IHSG PE Ratio TTM (Median)",
                                   "Current Price to Book Value", "Current EPS (TTM)", "Current EPS (Annualised)",
-                                  "Net Income (Quarter YoY Growth)", "Revenue (Quarter YoY Growth)", "Net Profit Margin (Quarter)"):
+                                  "Net Income (Quarter YoY Growth)", "Revenue (Quarter YoY Growth)", "Net Profit Margin (Quarter)") \
+                    or KS_KAKDR_RX.search(str(fi.get("name") or "")):
                 rasio[fi["name"]] = _lks_angka(fi.get("value"))
     cur = k.get("financial_report_currency") or []
     st = k.get("stats") or {}
     mcap, saham = _lks_angka(st.get("market_cap")), _lks_angka(st.get("current_share_outstanding"))
     # Grup financial_year_groups selalu dalam Rupiah (versi USD ada di financial_year_groups_usd).
-    return {"kuartal": out, "terbaru": terbaru, "rasio": rasio, "mata": "Rp", "mataLaporan": "USD" if "USD" in cur else "Rp",
+    return {"v": LKS_VERSI, "kuartal": out, "terbaru": terbaru, "rasio": rasio, "mata": "Rp", "mataLaporan": "USD" if "USD" in cur else "Rp",
             "mcap": mcap, "saham": saham, "freeFloat": _lks_angka(st.get("free_float")),
             "hargaKira": round(mcap / saham, 1) if mcap and saham else None}
 
@@ -2808,7 +2814,7 @@ def s50_kandidat_universe(ks: dict) -> set[str]:
     Seluruh kode BEI (.bei-kode.json) yang belum punya Key Stats atau Key Stats-nya lebih dari 7 hari diambil dulu
     (perkiraan harga ikut mutakhir mingguan)."""
     seminggu = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
-    kurang = [t for t in bei_kode_load() if t not in ks or ks[t].get("at", "") < seminggu]
+    kurang = [t for t in bei_kode_load() if t not in ks or ks[t].get("at", "") < seminggu or ks[t].get("v") != LKS_VERSI]
     if kurang:
         sync_lk_keystats(target=kurang)
         ks.update(lks_load())
@@ -2875,6 +2881,60 @@ def s50_riwayat(rows: list[dict], hari_ini: date) -> None:
     tmp = S50_RIWAYAT_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(rw, ensure_ascii=False), encoding="utf-8")
     tmp.replace(S50_RIWAYAT_PATH)
+
+
+_kakdr_memo: tuple = (0.0, None)
+
+
+def kakdr_screen() -> dict:
+    """Screening KakdrWay (kakdr.com) atas Key Stats seluruh emiten BEI:
+    A pisau jatuh (harga >= 50% di bawah tertinggi 52 minggu), B1 PBV < 1 (atau dividend yield >= 2x PBV),
+    B2 DER < 1 (atau ROE >= 10x DER; tidak berlaku bank/asuransi), B3 ROE positif, C dividen. Skor 0-10 (aman > 6,5)."""
+    global _kakdr_memo
+    if _kakdr_memo[1] and time.time() - _kakdr_memo[0] < 3600:
+        return _kakdr_memo[1]
+    ks = lks_load()
+    try:
+        harga = harga_semua()
+    except Exception:
+        harga = {}
+    sk = sektor_load()
+    nama = nama_semua()
+
+    def ambil(rs, *pola):
+        for p in pola:
+            for k, v in rs.items():
+                if v is not None and re.search(p, k, re.I):
+                    return v
+        return None
+    rows, ada_data = [], 0
+    for t, k in ks.items():
+        rs = k.get("rasio") or {}
+        der = ambil(rs, r"debt to equity")
+        roe = ambil(rs, r"return on equity.*ttm", r"return on equity")
+        dy = ambil(rs, r"dividend yield")
+        tinggi = ambil(rs, r"52 week high")
+        pbv = rs.get("Current Price to Book Value")
+        if der is None and roe is None and dy is None:
+            continue
+        ada_data += 1
+        h = (harga.get(t) or {}).get("h") or k.get("hargaKira")
+        turun = round((1 - h / tinggi) * 100, 1) if h and tinggi else None
+        finansial = re.search(r"bank|asuransi|insurance", " ".join(str(v) for v in (sk.get(t) or {}).values()), re.I)
+        a = turun is not None and turun >= 50
+        b1 = pbv is not None and 0 < pbv < 1 or (pbv is not None and dy is not None and dy >= 2 * pbv)
+        b2 = bool(finansial) or (der is not None and 0 <= der < 1) or (der is not None and roe is not None and roe >= 10 * der)
+        b3 = roe is not None and roe > 0
+        c = dy is not None and dy > 0
+        skor = round(2 * a + 2.5 * b1 + 2 * b2 + 1.5 * b3 + 2 * c, 1)
+        rows.append({"t": t, "nama": nama.get(t, ""), "skor": skor, "harga": h, "turun": turun, "pbv": pbv, "der": der, "roe": roe, "dy": dy,
+                     "lolos": {"A": a, "B1": b1, "B2": b2, "B3": b3, "C": c}})
+    rows.sort(key=lambda r: (-r["skor"], -(r["turun"] or 0)))
+    hasil = {"updated": datetime.now().strftime("%Y-%m-%d %H:%M"), "dinilai": ada_data,
+             "rows": [r for r in rows if r["skor"] > 6.5][:80],
+             "catatan": "" if ada_data else "Data rasio KakdrWay (DER, ROE, dividen) sedang diambil server dari Key Stats; muat ulang beberapa jam lagi."}
+    _kakdr_memo = (time.time(), hasil)
+    return hasil
 
 
 def saham50_build() -> dict:
@@ -5464,6 +5524,8 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "api/kode-bei":
             nama = nama_semua()
             self.reply_json({"kode": [{"t": t, "nama": nama.get(t, "")} for t in sorted(set(bei_kode_load()) | radar_tickers())]})
+        elif path == "api/kakdr-screen":
+            self.reply_json(kakdr_screen())
         elif path == "api/pindai":
             self.reply_json(pindai_api())
         elif path == "api/pov-dalam":
