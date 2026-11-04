@@ -81,6 +81,11 @@ function onFs() { if (!document.fullscreenElement && penuh.value) penuh.value = 
 // Muat ulang ke versi terbaru (mempertahankan halaman yang sedang dibuka).
 function reloadApp() { location.reload() }
 const jump = ref(false)
+// Kosongkan daftar saham yang dibandingkan (tray Bandingkan hilang).
+function kosongkanBanding() {
+  store.compare = []
+  try { localStorage.setItem('radar-cangkang.compare', '[]') } catch {}
+}
 function onKey(e) {
   // Ctrl/⌘ K: lompat ke emiten dari halaman mana pun.
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); jump.value = true; return }
@@ -151,9 +156,11 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
       <RouterView v-else />
     </main>
     <TickerJump v-if="jump" @close="jump = false" />
-    <RouterLink v-if="store.compare.length && $route.name !== 'bandingkan'" class="cmp-tray" :to="{ path: '/bandingkan', query: { t: store.compare.join(',') } }">
-      Bandingkan <b>{{ store.compare.join(' · ') }}</b> →
-    </RouterLink>
+    <!-- Bandingkan hanya tampil di halaman emiten (tempat memilih saham pembanding); × mengosongkan daftar. -->
+    <div v-if="store.compare.length && $route.name === 'emiten'" class="cmp-tray">
+      <RouterLink :to="{ path: '/bandingkan', query: { t: store.compare.join(',') } }">Bandingkan <b>{{ store.compare.join(' · ') }}</b> →</RouterLink>
+      <button type="button" class="cmp-x" title="Kosongkan daftar bandingkan" aria-label="Kosongkan daftar bandingkan" @click="kosongkanBanding">×</button>
+    </div>
     <div class="toasts" aria-live="polite">
       <div v-for="t in store.toasts" :key="t.id" class="toast" :class="{ warn: t.warn }">{{ t.text }}</div>
     </div>
@@ -198,6 +205,8 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
 .newver{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:8px 12px;background:var(--now-bg, var(--sheet-2));border:1px solid var(--rule);font-weight:600;font-size:13px;border-radius:3px}
 .cmp-tray{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:45;display:flex;gap:8px;align-items:center;padding:10px 16px;border-radius:999px;background:var(--accent);color:var(--accent-ink);text-decoration:none;font-weight:600;box-shadow:var(--shadow)}
 .cmp-tray b{font-family:var(--f-display);letter-spacing:.03em}
+.cmp-tray a{color:inherit;text-decoration:none}.cmp-x{background:none;border:0;color:inherit;font-size:18px;line-height:1;cursor:pointer;padding:0 0 0 4px;opacity:.8}
+.cmp-x:hover{opacity:1}
 .cmp-tray ~ .toasts{bottom:76px}
 @media (max-width:760px){.cmp-tray{left:14px;right:14px;transform:none;justify-content:center;font-size:14px}}
 .toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:50;max-width:380px}
