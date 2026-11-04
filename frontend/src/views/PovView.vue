@@ -52,9 +52,15 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
   <div class="pov">
     <header>
       <h1>POV</h1>
-      <p class="muted small">Pola pikir akun Stockbit prioritas dan trending dari posting ide publik {{ data?.asOf ? '· diperbarui ' + fmtDate(String(data.asOf).slice(0, 10)) : '' }}. Bukan rekomendasi beli/jual.</p>
+      <p class="muted small">Membaca <b>pikiran pengendali</b> di balik sebuah saham: siapa pemilik dan pihak terafiliasinya, apakah ada tanda
+        <b>backdoor atau ganti pengendali</b>, ke mana saham akan dibawa, dan jejak <b>bandar/market maker</b>, lalu membandingkannya dengan
+        pandangan akun Stockbit yang paling diperhatikan{{ data?.asOf ? ' (diperbarui ' + fmtDate(String(data.asOf).slice(0, 10)) + ')' : '' }}.
+        Bukan rekomendasi beli/jual.</p>
     </header>
     <section class="cari-dalam">
+      <p class="small ket"><b>Analisa mendalam</b> — untuk mengetahui tujuan pengendali satu saham sebelum orang lain: struktur kepemilikan & afiliasi,
+        rekam jejak pemegang di emiten lain (termasuk penjual cangkang), potensi backdoor, sinyal konversi saham ke scripless, bandarmologi,
+        jawaban 5 pertanyaan kunci, dan PDF. Cari kode atau nama saham BEI mana pun, lalu klik <i>Analisa mendalam</i>.</p>
       <input v-model="q" type="search" class="cari" placeholder="Cari saham BEI untuk analisa mendalam (kode atau nama)" aria-label="Cari saham untuk analisa mendalam" />
       <div v-if="saranCari.length" class="sar-wrap">
         <button v-for="k in saranCari" :key="k.t" type="button" class="sar" :class="{ on: pilih === k.t }" :title="k.nama" @click="pilih = k.t">
@@ -76,6 +82,8 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
       <button type="button" class="btn kdbtn" :aria-expanded="String(polaOpen)" aria-controls="pola-isi" @click="polaOpen = !polaOpen">
         Pola pikir per akun <span class="muted">({{ users.length }} akun)</span> <span aria-hidden="true">{{ polaOpen ? '▴' : '▾' }}</span>
       </button>
+      <p class="small ket">Untuk mengetahui cara berpikir akun Stockbit prioritas dan trending: gaya analisa (aksi korporasi, bandarmologi,
+        momentum, fundamental), horizon, saham incaran, dan tingkat ketepatan sinyalnya, sebagai pembanding analisa mendalam.</p>
       <div v-if="polaOpen" id="pola-isi" class="cards">
         <article v-for="u in users" :key="u.username" class="card klik" tabindex="0" role="button" :aria-label="'Detail akun ' + u.username" @click="buka = u" @keydown.enter.self="buka = u">
           <div class="ch">
@@ -120,6 +128,8 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
       <button type="button" class="btn kdbtn" :aria-expanded="String(kdOpen)" aria-controls="kd-isi" @click="kdOpen = !kdOpen">
         Analisa KakdrWay <span class="muted">({{ kd.julukan }})</span> <span aria-hidden="true">{{ kdOpen ? '▴' : '▾' }}</span>
       </button>
+      <p class="small ket">Untuk menyaring saham dengan metode KakdrWay (kakdr.com): kriteria screening, cara masuk bertahap, dan disiplin dana
+        untuk menangkap saham yang jatuh tanpa cut loss.</p>
       <div v-if="kdOpen" id="kd-isi">
       <div class="kd">
         <div>
@@ -144,6 +154,7 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
 </template>
 
 <style scoped>
+.ket{margin:4px 0 8px;color:var(--ink-2);max-width:880px;line-height:1.5}
 .cari-dalam{margin:8px 0 14px}
 .cari-dalam .cari{width:100%;max-width:520px;padding:8px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--sheet);color:inherit;font:inherit}
 .sar-wrap{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
