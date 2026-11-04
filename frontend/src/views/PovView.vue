@@ -48,6 +48,11 @@ const saranCari = computed(() => {
   const cocok = kodeBei.value.filter(k => k.t.toLowerCase().startsWith(s) || (s.length >= 3 && (k.nama || '').toLowerCase().includes(s)))
   return cocok.sort((a, b) => (b.t.toLowerCase() === s) - (a.t.toLowerCase() === s) || a.t.localeCompare(b.t)).slice(0, 8)
 })
+// Tombol "Analisa" di screening KakdrWay: buka analisa mendalam saham itu di bagian atas halaman.
+function analisa(t) {
+  pilih.value = t
+  document.querySelector('.cari-dalam')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.value)?.nama || '')
 </script>
 
@@ -134,9 +139,10 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
         <div v-if="kdScr.rows.length" class="scroll">
           <table class="ledger small">
             <thead><tr><th>Saham</th><th class="num">Skor</th><th class="num">Harga</th><th class="num">Turun dari puncak</th><th class="num">PBV</th>
-              <th class="num">DER</th><th class="num">ROE</th><th class="num">Div. yield</th><th>Lolos</th></tr></thead>
+              <th class="num">DER</th><th class="num">ROE</th><th class="num">Div. yield</th><th>Lolos</th><th></th></tr></thead>
             <tbody><tr v-for="r in kdScr.rows" :key="r.t">
-              <td><b>{{ r.t }}</b><div class="muted">{{ r.nama }}</div></td>
+              <td><b>{{ r.t }}</b> <span v-if="r.baru" class="tag t-now">baru</span><span v-if="r.radar" class="tag t-warn">radar</span><span v-if="r.backdoor != null" class="tag" :class="r.backdoor >= 40 ? 't-warn' : 't-calm'" title="Skor potensi backdoor dari analisa mendalam terakhir">backdoor {{ r.backdoor }}</span>
+                <div class="muted">{{ r.nama }}</div></td>
               <td class="num"><b>{{ fmt(r.skor, 1) }}</b></td>
               <td class="num">{{ r.harga ? fmt(r.harga, 0) : '–' }}</td>
               <td class="num">{{ r.turun == null ? '–' : '−' + fmt(r.turun, 1) + '%' }}</td>
@@ -145,9 +151,12 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
               <td class="num">{{ r.roe == null ? '–' : fmt(r.roe, 1) + '%' }}</td>
               <td class="num">{{ r.dy == null ? '–' : fmt(r.dy, 1) + '%' }}</td>
               <td><span v-for="(ok, k) in r.lolos" :key="k" class="tag" :class="ok ? 't-good' : 't-calm'">{{ k }}</span></td>
+              <td><button type="button" class="btn" :aria-label="'Analisa mendalam ' + r.t" @click="analisa(r.t)">Analisa</button></td>
             </tr></tbody>
           </table>
         </div>
+        <p v-if="kdScr.keluar?.length" class="small muted">Keluar dari daftar sejak pembaruan hari sebelumnya: {{ kdScr.keluar.map(x => x.t).join(', ') }}.</p>
+        <p class="small muted">Tanda: <b>baru</b> = baru lolos dibanding hari sebelumnya · <b>radar</b> = ada di radar backdoor · <b>backdoor</b> = skor potensi backdoor dari analisa mendalam terakhir. Klik <b>Analisa</b> untuk analisa mendalam.</p>
       </template>
       <div class="kd">
         <div>

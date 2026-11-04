@@ -81,6 +81,45 @@ export async function povDalamPdf(a, jsPDF) {
       if (a.jejakCangkang?.length) { sub('Rekam jejak penjual cangkang', GOOD); butir(a.jejakCangkang.map(j => j.teks), { size: 8.6 }) }
       if (a.backdoor.rups?.length) { sub('Agenda RUPS / keterbukaan perubahan'); butir(a.backdoor.rups, { size: 8.3 }) }
     }
+    // Galian lanjutan (versi analisa >= 21).
+    const g = a.galian
+    if (g) {
+      sub('Kalender tahapan backdoor', GOLD)
+      teks(`${g.kalender.ringkas} ${g.kalender.berikut}`, 8.8)
+      butir(g.kalender.tahap.map(x => `${x.n}. ${x.nama}: ${x.status === 'terjadi' ? 'terjadi' + (x.tgl ? ' (' + tgl(x.tgl) + ')' : '') : 'belum terlihat'}`
+        + (x.bukti.length ? ' — ' + x.bukti.slice(0, 2).join(' | ') : '')), { size: 8.3, tanda: '›' })
+      if (g.harga.rows.length || g.harga.dokumen.length) {
+        sub('Harga pengalihan vs harga pasar')
+        butir(g.harga.rows.slice(0, 8).map(r => `${tgl(r.date)}: ${r.nama} ${r.arah}${r.chg != null ? ' ' + r.chg.toFixed(2).replace('.', ',') + ' poin' : ''} di Rp${Math.round(r.harga)}`
+          + (r.pasar ? ` vs pasar Rp${Math.round(r.pasar)} (${r.selisih > 0 ? '+' : ''}${String(r.selisih).replace('.', ',')}%)` : '')), { size: 8.3 })
+        butir(g.harga.dokumen.map(d => `${tgl(d.date)}: ${d.judul} — Rp${Math.round(d.harga)}`), { size: 8.3, links: g.harga.dokumen.map(d => d.url) })
+        butir(g.harga.catatan, { size: 8.4, color: PRIMER, tanda: '›' })
+      }
+      if (g.rekam.emiten.length || g.rekam.berita.length) {
+        sub('Rekam jejak UBO & emiten jaringannya', GOLD)
+        butir(g.rekam.catatan, { size: 8.4, color: PRIMER, tanda: '›' })
+        butir(g.rekam.emiten.map(e => e.teks), { size: 8.3 })
+        butir(g.rekam.berita.slice(0, 8).map(b => `[${b.kategori.join(', ')}] ${b.date ? tgl(b.date) + ': ' : ''}${b.judul} (${b.sumber})`), { size: 8.2, links: g.rekam.berita.slice(0, 8).map(b => b.url) })
+      }
+      if (g.pengurus.length || g.alamat.length) {
+        sub('Jejak pengurus, pemegang, dan alamat lintas emiten')
+        butir([...g.pengurus.map(x => `${x.nama} (${x.peran}) juga: ${x.emiten.map(e => `${e.t} ${e.sebagai}`).join(', ')}`),
+          ...g.alamat.map(x => `${x.t}: ${x.dasar} — ${x.alamat}`)], { size: 8.3 })
+      }
+      if (g.broker.rows.length) {
+        sub('Identitas broker & sekuritas grup')
+        butir(g.broker.catatan, { size: 8.4, color: PRIMER, tanda: '›' })
+        butir(g.broker.rows.map(r => `${r.b} ${r.nama || '(nama belum dipetakan)'} · ${r.jenis}${r.grup ? ' · grup ' + r.grup + (r.satuGrup ? ' (satu grup dengan struktur)' : '') : ''}: ${r.peran.join('; ')}`), { size: 8.2 })
+      }
+      if (g.nominee.length) {
+        sub('Deteksi nominee (indikasi)')
+        butir(g.nominee.map(n => `${n.nama} ${p2(n.pct)}${n.kuat ? ' [indikasi kuat]' : ''}: ${n.tanda.join('; ')}`), { size: 8.3 })
+      }
+      if (g.ritel.seri.length) {
+        sub('Tren jumlah pemegang saham (KSEI)')
+        butir(g.ritel.catatan.length ? g.ritel.catatan : [`Terakhir ${Math.round(g.ritel.seri.at(-1).n)} pemegang (${tgl(g.ritel.seri.at(-1).d)}).`], { size: 8.4 })
+      }
+    }
     if (a.afiliasi?.kelompok?.length) {
       sub(`Peta afiliasi (terhubung ${p2(a.afiliasi.totalTerhubung)})`)
       butir(a.afiliasi.kelompok.map(k => `[${k.jenis}] ${p2(k.pct)} · ${k.dasar}: ${k.anggota.join(', ')}`), { size: 8.4 })

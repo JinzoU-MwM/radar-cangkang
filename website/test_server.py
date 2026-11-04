@@ -559,6 +559,89 @@ class BeritaSahamTest(unittest.TestCase):
         server._berita_cache.clear()
 
 
+class GalianTest(unittest.TestCase):
+    """Galian lanjutan POV (povgali): delapan analisa lintas emiten, harga, tahapan, broker, nominee, ritel, rekam jejak."""
+
+    def test_kalender_backdoor(self):
+        import povgali
+        from datetime import datetime
+        lap = [{"date": "2026-08-01", "title": "Penandatanganan PPJB saham pengendali"},
+               {"date": "2026-09-10", "title": "Pengumuman penawaran tender wajib"},
+               {"date": "2026-10-01", "title": "Laporan Keuangan Interim"}]
+        k = povgali.kalender_backdoor({"kini": datetime(2026, 11, 4), "laporan": lap, "konversi": ["2026-05-01: ENAM BERLIAN 46.72%"]})
+        self.assertEqual(k["posisi"], 4)
+        self.assertEqual([x["status"] for x in k["tahap"][:4]], ["terjadi", "belum", "terjadi", "terjadi"])
+        self.assertIn("RUPSLB", k["berikut"])
+        self.assertEqual(povgali.kalender_backdoor({"kini": datetime(2026, 11, 4)})["posisi"], 0)
+
+    def test_harga_pengalihan(self):
+        import povgali
+        ins = [{"date": "2026-09-02", "name": "PT BARU", "chg": 25.0, "price": 150, "estPrice": False, "value": 5e10},
+               {"date": "2026-09-03", "name": "TUAN KECIL", "chg": 0.01, "price": 90, "estPrice": False, "value": 1e6}]
+        bars = [{"d": "2026-09-01", "c": 100}, {"d": "2026-09-02", "c": 100}]
+        lap = [{"date": "2026-10-01", "title": "Keterbukaan tender", "summary": "Harga penawaran tender Rp 1.250 per saham"}]
+        h = povgali.harga_pengalihan(ins, bars, lap, 120)
+        self.assertEqual(len(h["rows"]), 1)
+        self.assertEqual(h["rows"][0]["selisih"], 50.0)
+        self.assertEqual(h["dokumen"][0]["harga"], 1250)
+        self.assertEqual(h["acuan"]["harga"], 1250)
+        self.assertTrue(any("premi" in x for x in h["catatan"]))
+
+    def test_pengurus_alamat_nominee(self):
+        import povgali
+        idx = {"AAAA": {"pengurus": ["Ir. Budi Santoso, MBA"], "alamat": "Menara Satu Lt. 12, Jl. Sudirman Kav. 5, Jakarta", "telp": "021-5551234",
+                        "pemegang": []},
+               "BBBB": {"pengurus": ["BUDI SANTOSO"], "alamat": "Menara Satu Lantai 12 Jl Sudirman Kav 5 Jakarta Selatan", "telp": "(021) 555 1234",
+                        "pemegang": [["SITI AMINAH", 7.5, "INDONESIA", "Individual"]]},
+               "CCCC": {"pengurus": ["ANDI"], "alamat": "Jl. Lain No. 9 Surabaya", "telp": "031-1112222", "pemegang": []}}
+        p = povgali.pengurus_lintas("AAAA", ["BUDI SANTOSO (Direktur Utama)"], ["SITI AMINAH"], idx)
+        self.assertEqual({x["nama"] for x in p}, {"BUDI SANTOSO", "SITI AMINAH"})
+        self.assertEqual([x["t"] for x in povgali.alamat_sama("AAAA", idx)], ["BBBB"])
+        pm = [{"name": "GOLDEN SPV LTD", "pct": 12.0}, {"name": "SITI AMINAH", "pct": 6.0}, {"name": "PT INDUK", "pct": 50.0, "pengendali": True}]
+        det = {povgali.kunci_orang("GOLDEN SPV LTD"): {"dom": "BRITISH VIRGIN ISLANDS", "kls": "Corporate"},
+               povgali.kunci_orang("SITI AMINAH"): {"dom": "INDONESIA", "kls": "Individual"}}
+        nm = {x["nama"]: x for x in povgali.nominee(pm, det, [], [], [], [], [])}
+        self.assertIn("GOLDEN SPV LTD", nm)
+        self.assertIn("SITI AMINAH", nm)
+        self.assertNotIn("PT INDUK", nm)
+
+    def test_broker_ritel_rekam(self):
+        import povgali
+        bandar = {"fase": [{"hari": 30, "periode": "1 bulan", "bandar": 5e9, "akum": ["DH", "MG"], "dist": ["XL", "YP"]}]}
+        b = povgali.broker_grup(bandar, [], ["PT SINAR MAS MULTIARTHA"])
+        self.assertTrue(b["rows"][0]["satuGrup"])
+        self.assertTrue(any("Sinar Mas" in x for x in b["catatan"]))
+        self.assertTrue(any("lokal non-ritel" in x for x in b["catatan"]))
+        r = povgali.tren_ritel([("2026-06-30", 1000), ("2026-07-31", 1100), ("2026-08-31", 1300), ("2026-09-30", 1500)],
+                               [{"d": "2026-06-30", "c": 200}, {"d": "2026-09-30", "c": 150}])
+        self.assertIn("distribusi", r["catatan"][0])
+        harga = [{"d": f"2024-{(i % 12) + 1:02d}-01", "v": v} for i, v in enumerate([100] * 10 + [500] * 10 + [40] * 10)]
+        nb = povgali.nasib_emiten(harga, "2025-01-01")
+        self.assertIn("gocap", nb["pola"])
+        rj = povgali.rekam_jejak([{"nama": "PT X", "emiten": [], "keluar": [{"t": "ZZZZ"}]}], {"ZZZZ": nb},
+                                 [{"judul": "Bos PT X jadi tersangka korupsi", "url": "u"}, {"judul": "PT X raih penghargaan", "url": "v"}])
+        self.assertEqual(len(rj["emiten"]), 1)
+        self.assertEqual([x["kategori"] for x in rj["berita"]], [["hukum"]])
+        self.assertTrue(rj["catatan"])
+
+    def test_kakdr_riwayat(self):
+        with tempfile.TemporaryDirectory() as d, unittest.mock.patch.object(server, "KAKDR_RIWAYAT_PATH", Path(d) / "r.json"):
+            (Path(d) / "r.json").write_text(json.dumps({"2000-01-01": ["AAAA", "BBBB"]}))
+            baru, keluar = server.kakdr_riwayat(["BBBB", "CCCC"])
+        self.assertEqual((baru, keluar), (["CCCC"], ["AAAA"]))
+
+    def test_profil_ringkas(self):
+        p = {"key_executive": {"director": [{"value": "ANDI"}], "commissioner": [{"value": "BUDI"}]},
+             "address": [{"office": "Jl. A\nNo. 1", "phone": "021-1"}],
+             "shareholder_one_percent": {"shareholder": [{"name": "X LTD", "percentage": "12.5%", "domicile": "SEYCHELLES", "classification": "Corporate"}]},
+             "shareholder_numbers": [{"shareholder_date": "30 Sep 2026", "total_share": "5,996"}]}
+        r = server.profil_ringkas(p)
+        self.assertEqual(r["pengurus"], ["ANDI", "BUDI"])
+        self.assertEqual(r["alamat"], "Jl. A No. 1")
+        self.assertEqual(r["pemegang"][0][:3], ["X LTD", 12.5, "SEYCHELLES"])
+        self.assertEqual(r["jumlah"], [["2026-09-30", 5996]])
+
+
 class KakdrScreenTest(unittest.TestCase):
     def test_screening(self):
         ks = {"AAAA": {"hargaKira": 400, "rasio": {"Current Price to Book Value": 0.6, "Debt to Equity Ratio (Quarter)": 0.4,
