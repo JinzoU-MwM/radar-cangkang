@@ -151,7 +151,9 @@ def arah(c: dict) -> dict:
             (25, "kandidat cangkang berikutnya" in pres_txt, "Pemegang yang sama pernah melepas emiten lain saat emiten itu di-backdoor."),
             (10, (c.get("mcap") or 9e18) < 1e12, "Kapitalisasi di bawah Rp1 T: cangkang murah untuk dimasuki aset."),
             (10, akum, "Bandar mengumpulkan barang (1-3 bulan)."),
-        ], ["Keterbukaan rencana transaksi material/inbreng", "Jadwal RUPSLB dan HMETD", "Penunjukan penilai independen atas aset target"]),
+            (20, bool(c.get("konversi")), "Pemegang besar mengonversi saham warkat ke scripless: saham siap dialihkan ke calon pengendali baru."),
+        ], ["Keterbukaan rencana transaksi material/inbreng", "Jadwal RUPSLB dan HMETD", "Penunjukan penilai independen atas aset target",
+            "PPJB/pengalihan saham pengendali ke pihak baru"]),
         ("Go private / tender offer sukarela", [
             (40, af >= 90, f"Pihak terafiliasi sudah {af:.1f}% saham."),
             (20, bool(c.get("insiderBeli")), "Pemegang utama terus menambah saham."),
@@ -168,6 +170,7 @@ def arah(c: dict) -> dict:
             (20, bool(c.get("habisBulan")), "Dengan laju jual sekarang kepemilikan akan habis dalam beberapa bulan."),
             (20, dist, "Bandar distribusi."),
             (15, bool(c.get("lepas")), "Ada pihak yang turun melewati 20%/50%."),
+            (25, bool(c.get("konversi")), "Pemegang besar mengonversi saham warkat ke scripless: persiapan menjual di pasar atau ke pengendali baru."),
         ], ["Keterbukaan PPJB penjualan saham pengendali", "Calon pembeli (investor strategis) diumumkan"]),
         ("Konsolidasi / sinergi dalam grup", [
             (30, bool(c.get("bersama")), "Emiten lain dimiliki bersama oleh pemegang yang sama."),
@@ -390,6 +393,8 @@ def potensi_backdoor(c: dict) -> dict:
         (5, bool(c.get("pengurusBaru")), "Pengurus berganti."),
         (5, (c.get("mcap") or 9e18) < 5e11, "Kapitalisasi di bawah Rp500 M (cangkang murah)."),
         (5, bool(c.get("akum")), "Bandar mengumpulkan barang (1-3 bulan)."),
+        (20, bool(c.get("konversi")), "Pemegang besar mengonversi saham warkat ke scripless dalam 12 bulan (saham siap dijual/dialihkan): "
+                                      + "; ".join(c.get("konversi") or [])),
     ]
     bukti = [t for v, ok, t in tanda if ok]
     total = sum(v for v, ok, _ in tanda if ok)
@@ -459,6 +464,9 @@ def pertanyaan_kunci(c: dict) -> list[dict]:
         bandar_dist = max(-f["bandar"] for f in dist)
         if bandar_dist > lapor:
             jaw += f" Perkiraan distribusi yang tidak tercatat di keterbukaan: ±Rp{(bandar_dist - lapor) / 1e9:.2f} M (distribusi bandar Rp{bandar_dist / 1e9:.2f} M vs penjualan dilaporkan Rp{lapor / 1e9:.2f} M)."
+    if c.get("konversi"):
+        jaw += (" Pasokan potensial: pemegang besar baru mengonversi saham warkat ke scripless (" + "; ".join(c["konversi"])
+                + "), sehingga saham itu kini bisa dijual di pasar atau dialihkan ke pengendali baru.")
     out.append({"q": "Apakah masih ada distribusi yang belum terlihat?", "a": jaw,
                 "bukti": [f"{f['periode']}: {f['arti']} (net Rp{f['bandar'] / 1e9:.2f} M; jual {', '.join(f['dist'])})" for f in fase.values()]})
     # 3. Tujuan pembeli jangka panjang?
