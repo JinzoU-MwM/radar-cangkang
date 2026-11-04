@@ -52,7 +52,7 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
   <div class="pov">
     <header>
       <h1>POV</h1>
-      <p class="muted small">Membaca <b>pikiran pengendali</b> di balik sebuah saham: siapa pemilik dan pihak terafiliasinya, apakah ada tanda
+      <p class="small ket">Membaca <b>pikiran pengendali</b> di balik sebuah saham: siapa pemilik dan pihak terafiliasinya, apakah ada tanda
         <b>backdoor atau ganti pengendali</b>, ke mana saham akan dibawa, dan jejak <b>bandar/market maker</b>, lalu membandingkannya dengan
         pandangan akun Stockbit yang paling diperhatikan{{ data?.asOf ? ' (diperbarui ' + fmtDate(String(data.asOf).slice(0, 10)) + ')' : '' }}.
         Bukan rekomendasi beli/jual.</p>
@@ -109,20 +109,19 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
           </details>
         </article>
       </div>
+      <template v-if="polaOpen">
+        <h3 class="rek-j">Cara membaca pola pikir akun</h3>
+        <ol class="small rek">
+          <li>Jadikan saham yang ramai dibahas akun sebagai <b>radar ide</b>, bukan alasan membeli: saham yang ramai dibahas sering sudah naik lebih dulu.</li>
+          <li>Akun bergaya momentum/scalping cocok untuk membaca arus jangka pendek; akun bergaya aksi korporasi lebih relevan untuk saham backdoor yang bergantung pada dokumen.</li>
+          <li>Cocokkan nada akun dengan <b>analisa mendalam</b> di atas: bila akun bullish tetapi data kepemilikan menunjukkan pengendali melepas saham, perlakukan sebagai tanda euforia.</li>
+          <li>Perhatikan ketika beberapa akun prioritas berbalik bearish bersamaan pada saham yang sama: sering menjadi tanda distribusi.</li>
+          <li>Terapkan disiplin dana ala KakdrWay: uang dingin, semampu siap hilang, dan masuk bertahap.</li>
+        </ol>
+      </template>
     </section>
 
     <PovDetail v-if="buka" :u="buka" @close="buka = null" />
-
-    <section class="rule-top">
-      <h2>Rekomendasi analisa terbaik</h2>
-      <ol class="small rek">
-        <li>Jadikan konsensus akun sebagai <b>radar ide</b>, bukan alasan membeli: saham yang ramai dibahas sering sudah naik lebih dulu.</li>
-        <li>Akun bergaya momentum/scalping cocok untuk membaca arus jangka pendek; akun bergaya fundamental dan aksi korporasi lebih relevan untuk saham backdoor yang bergantung pada dokumen.</li>
-        <li>Untuk saham radar, cocokkan nada akun dengan <b>kewajaran aset dan dokumen keterbukaan</b> di tab Analisa: bila akun bullish tetapi analisa radar Hindari, perlakukan sebagai tanda euforia.</li>
-        <li>Perhatikan ketika beberapa akun prioritas berbalik bearish bersamaan pada saham yang sama: sering menjadi tanda distribusi.</li>
-        <li>Terapkan disiplin dana ala KakdrWay: uang dingin, semampu siap hilang, dan masuk bertahap.</li>
-      </ol>
-    </section>
 
     <section v-if="kd" class="rule-top">
       <button type="button" class="btn kdbtn" :aria-expanded="String(kdOpen)" aria-controls="kd-isi" @click="kdOpen = !kdOpen">
@@ -154,8 +153,11 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
 </template>
 
 <style scoped>
-.ket{margin:4px 0 8px;color:var(--ink-2);max-width:880px;line-height:1.5}
-.cari-dalam{margin:8px 0 14px}
+/* Semua keterangan bagian: lebar, warna, jarak baris, dan jarak bawah yang sama. */
+.ket{margin:6px 0 10px;color:var(--ink-2);max-width:110ch;line-height:1.55}
+.cari-dalam{margin:0}
+/* Jarak antarbagian cukup dari gap .pov (14px): keterangan pertama/terakhir tanpa margin tambahan. */
+header .ket{margin-bottom:0}.cari-dalam > .ket:first-child{margin-top:0}
 .cari-dalam .cari{width:100%;max-width:520px;padding:8px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--sheet);color:inherit;font:inherit}
 .sar-wrap{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 .sar{display:inline-flex;align-items:baseline;gap:8px;padding:8px 14px;border:1px solid var(--rule);border-left:4px solid var(--now-ink);
@@ -178,6 +180,7 @@ header h1{margin:0}
 .tk{display:flex;flex-wrap:wrap;gap:5px}
 h4{margin:6px 0 2px;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
 .num{text-align:right}
+.rek-j{margin:14px 0 4px;font-size:15px}
 .rek{padding-left:20px;display:flex;flex-direction:column;gap:4px;max-width:100ch}
 .kdbtn{font-weight:700;margin-bottom:8px}
 .kd{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
