@@ -279,10 +279,22 @@ GENERIK = {"INDONESIA", "INTERNATIONAL", "INTERNASIONAL", "INVESTAMA", "INVESTIN
            "CORPORATION", "LIMITED", "INVESTMENT", "INVESTMENTS", "MULIA", "PERKASA", "BERSAMA", "SUKSES", "LESTARI", "TBK", "PTE", "LTD"}
 
 
+KUSTODIAN_RX = re.compile(r"\b(UOB|DBS|HSBC|CITIBANK|CITI|STANDARD CHARTERED|JPMORGAN|J\.?P\.? MORGAN|BNY|MELLON|STATE STREET|"
+                          r"DEUTSCHE|NOMINEES?|CUSTOD|KUSTODIAN|SECURITIES|SEKURITAS|KAY HIAN|MAYBANK|CGS|PHILLIP|MORGAN STANLEY|"
+                          r"GOLDMAN|CREDIT SUISSE|UBS|NOMURA|ASABRI|TASPEN|BPJS|DANA PENSIUN|DAPEN|ASURANSI|INSURANCE|BANK|"
+                          r"REKSA ?DANA|FUND|CLIENT|NON[- ]?WARKAT|SCRIPLESS)\b", re.I)
+
+
+def bukan_kustodian(nama: str) -> bool:
+    return not KUSTODIAN_RX.search(nama or "")
+
+
 def afiliasi(pemegang: list[dict], insider: list[dict], keluarga: list[dict], bersama: list[dict]) -> dict:
     """Peta afiliasi: kelompok nama mirip, pihak yang bergerak di tanggal sama (acting in concert), pengurus-pemegang,
     keluarga, kepemilikan bersama di emiten lain. Tiap kelompok dengan total persen."""
     kel = []
+    pemegang = [p for p in pemegang if bukan_kustodian(p["name"])]
+    insider = [r for r in insider if bukan_kustodian(r["name"])]
     # Nama mirip: kata khas yang sama (mis. RELIFE PROPERTY & RELIFE REALTY INDONESIA).
     kata: dict = {}
     for p in pemegang:
@@ -346,7 +358,7 @@ def jejak_cangkang(jaringan: list[dict], grup_aksi: list[dict], t: str) -> list[
         if "akuisisi" in (a.get("jenis") or []):
             ubah.setdefault(a["t"], []).append(a)
     out = []
-    for r in jaringan:
+    for r in [r for r in jaringan if bukan_kustodian(r["nama"])]:
         for e in (r.get("keluar") or []) + [x for x in r.get("emiten") or [] if str(x.get("aksi") or "").upper() in ("SELL", "JUAL")]:
             ev = ubah.get(e["t"]) or []
             tgl = str(e.get("tgl") or "")[:10]
@@ -363,20 +375,24 @@ def jejak_cangkang(jaringan: list[dict], grup_aksi: list[dict], t: str) -> list[
 
 def potensi_backdoor(c: dict) -> dict:
     """Skor potensi backdoor / ganti pengendali (0-100) dari tanda-tanda yang biasa mendahului."""
+    baru = [r for r in c.get("ambil") or [] if r.get("date", "") >= c.get("batas12", "")]
     tanda = [
-        (25, bool(c.get("ambil")), "Ada pihak yang melewati 20%/50% (pengendali baru/menguat)."),
-        (20, bool(c.get("masukBersama")), "Beberapa pihak masuk/naik di tanggal yang sama (acting in concert)."),
-        (15, bool(c.get("pemainBaru")), "Pemegang >= 5% baru muncul dalam 3 tahun."),
-        (15, bool(c.get("rupsBerubah")), "Agenda RUPS/keterbukaan: perubahan anggaran dasar, kegiatan usaha, atau pengurus."),
-        (10, bool(c.get("pengurusBaru")), "Pengurus berganti."),
-        (10, bool(c.get("rights")), "Rencana penambahan modal/HMETD/inbreng."),
-        (10, (c.get("mcap") or 9e18) < 5e11, "Kapitalisasi di bawah Rp500 M (cangkang murah)."),
-        (15, "perubahan pengendali" in " ".join(c.get("preseden") or []).lower(), "Pemegang yang sama terlibat perubahan pengendali di emiten lain."),
-        (10, bool(c.get("akum")), "Bandar mengumpulkan barang."),
+        # Inti (kejadian nyata, 12 bulan terakhir bila bertanggal).
         (30, bool(c.get("jejakCangkang")), "Rekam jejak: pemegang yang sama pernah melepas emiten lain saat emiten itu berganti pengendali (penjual cangkang)."),
+        (25, bool(baru), "Ada pihak yang melewati 20%/50% dalam 12 bulan (pengendali baru/menguat)."),
+        (20, bool(c.get("masukBersama")), "Beberapa pihak masuk/naik di tanggal yang sama dalam 12 bulan (acting in concert)."),
+        (15, bool(c.get("rupsBerubah")), "Agenda RUPS/keterbukaan: perubahan anggaran dasar, kegiatan usaha, pengurus, atau pengendali."),
+        (15, bool(c.get("rights")), "Rencana penambahan modal/HMETD/inbreng (180 hari)."),
+        (10, "perubahan pengendali" in " ".join(c.get("preseden") or []).lower(), "Pemegang yang sama terlibat perubahan pengendali di emiten lain."),
+        # Pendukung (umum; bobot kecil).
+        (5, bool(c.get("pemainBaru")), "Pemegang >= 5% baru muncul dalam 3 tahun."),
+        (5, bool(c.get("pengurusBaru")), "Pengurus berganti."),
+        (5, (c.get("mcap") or 9e18) < 5e11, "Kapitalisasi di bawah Rp500 M (cangkang murah)."),
+        (5, bool(c.get("akum")), "Bandar mengumpulkan barang (1-3 bulan)."),
     ]
     bukti = [t for v, ok, t in tanda if ok]
-    return {"skor": min(100, sum(v for v, ok, _ in tanda if ok)), "bukti": bukti}
+    total = sum(v for v, ok, _ in tanda if ok)
+    return {"skor": min(100, round(total * 100 / 110)), "bukti": bukti}
 
 
 

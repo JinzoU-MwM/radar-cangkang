@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import povarah as PA
 
 # Naikkan bila isi analisa berubah: hasil tersimpan versi lama ditarik ulang saat dibuka.
-VERSI = 15
+VERSI = 16
 PUBLIK_RX = re.compile(r"MASYARAKAT|PUBLIK|PUBLIC|SCRIPLESS|SCRIP\b", re.I)
 # Kata kunci posting yang membahas struktur kepemilikan/aksi korporasi (dipakai mengurutkan relevansi).
 TOPIK_RX = re.compile(r"pengendali|akuisisi|diakuisisi|pemilik|grup|group|konsorsium|backdoor|inbreng|rights|hmetd|tender|"
@@ -609,12 +609,13 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
     target = PA.target_harga(c)
     # Fokus: peta afiliasi, potensi backdoor / ganti pengendali, market maker.
     afil = PA.afiliasi(non_publik, d.get("insider") or [], kel, bersama)
-    masuk_bersama = [k for k in afil["kelompok"] if k["jenis"] == "bergerak bersamaan"]
+    batas12 = (kini - timedelta(days=365)).strftime("%Y-%m-%d")
+    masuk_bersama = [k for k in afil["kelompok"] if k["jenis"] == "bergerak bersamaan" and k["dasar"][:10] >= batas12]
     RUPS_RX = re.compile(r"anggaran dasar|kegiatan usaha|maksud dan tujuan|perubahan (susunan )?(direksi|komisaris|pengurus)|"
                          r"pengendali|pengambilalihan|nama perseroan", re.I)
     rups = [f"{u.get('date')}: {u.get('title')}" for u in d.get("laporan") or []
             if RUPS_RX.search(f"{u.get('title', '')} {u.get('summary') or ''}")][:5]
-    bd = PA.potensi_backdoor({**c, "jejakCangkang": jejak, "masukBersama": masuk_bersama, "rupsBerubah": rups,
+    bd = PA.potensi_backdoor({**c, "batas12": batas12, "jejakCangkang": jejak, "masukBersama": masuk_bersama, "rupsBerubah": rups,
                               "akum": any(f["bandar"] > 0 for f in bandar.get("fase") or [] if f["hari"] >= 30)})
     bd["rups"] = rups
     mm = PA.market_maker(d.get("insider") or [], bandar)
