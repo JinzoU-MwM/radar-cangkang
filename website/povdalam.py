@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import povarah as PA
 
 # Naikkan bila isi analisa berubah: hasil tersimpan versi lama ditarik ulang saat dibuka.
-VERSI = 16
+VERSI = 17
 PUBLIK_RX = re.compile(r"MASYARAKAT|PUBLIK|PUBLIC|SCRIPLESS|SCRIP\b", re.I)
 # Kata kunci posting yang membahas struktur kepemilikan/aksi korporasi (dipakai mengurutkan relevansi).
 TOPIK_RX = re.compile(r"pengendali|akuisisi|diakuisisi|pemilik|grup|group|konsorsium|backdoor|inbreng|rights|hmetd|tender|"
@@ -99,8 +99,20 @@ def _jaringan(t: str, pemegang: list[dict], jar: dict) -> tuple[list[dict], list
     return rows, bersama
 
 
+def masuk_terverifikasi(r: dict, insider: list[dict]) -> bool:
+    """Baris 0% -> X% hanya dianggap MASUK BARU bila ada keterbukaan IDX pihak yang sama <= 10 hari di sekitarnya.
+    Baris KSEI saja dengan sebelum 0% sering hanya catatan pertama pemegang lama (mis. pengendali REAL, Enam Berlian)."""
+    if (r.get("prev") or 0) > 0 or r.get("source") != "KSEI":
+        return True
+    d0 = datetime.strptime(r["date"][:10], "%Y-%m-%d")
+    k = _kunci(r["name"])
+    return any(x.get("source") == "IDX" and _kunci(x["name"]) == k and (x.get("cur") or 0) > (x.get("prev") or 0)
+               and abs((datetime.strptime(x["date"][:10], "%Y-%m-%d") - d0).days) <= 10 for x in insider)
+
+
 def _riwayat(insider: list[dict], kini: datetime) -> list[dict]:
-    """Peristiwa kepemilikan penting 3 tahun terakhir: pihak melewati 20%/50% (naik/turun) atau berubah >= 5 poin."""
+    """Peristiwa kepemilikan penting 3 tahun terakhir: pihak melewati 20%/50% (naik/turun) atau berubah >= 5 poin.
+    0% -> X% tanpa keterbukaan IDX ditandai 'pertama tercatat' dan tidak dihitung sebagai pengendali/pemain baru."""
     batas = (kini - timedelta(days=3 * 365)).strftime("%Y-%m-%d")
     out, ada = [], set()
     for r in sorted(insider, key=lambda r: r["date"]):
@@ -113,6 +125,10 @@ def _riwayat(insider: list[dict], kini: datetime) -> list[dict]:
         ada.add(kunci)
         lewat = next((b for b in (50, 20) if (prev < b <= cur) or (cur < b <= prev)), None)
         if lewat or abs(cur - prev) >= 5:
+            if not masuk_terverifikasi(r, insider):
+                out.append({"date": r["date"], "nama": r["name"], "prev": prev, "cur": cur, "lewat": None, "pertama": True,
+                            "teks": f"{r['name']} pertama tercatat di KSEI {cur:.2f}% (tanpa keterbukaan IDX; bisa pemegang lama)"})
+                continue
             arah = "naik" if cur > prev else "turun"
             teks = f"{r['name']} {arah} {prev:.2f}% -> {cur:.2f}%" + (f" (melewati {lewat}%)" if lewat else "")
             if r.get("purpose"):
@@ -600,7 +616,7 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
          "aktivitasTeks": ("Yang sedang dilakukan: " + "; ".join(akt) + ".") if akt else "", "volumeTeks": vol_teks, "publikTeks": publik_teks,
          "harga": harga, "insider": ins, "ekuitas": met.get("equity"), "insiderRaw": d.get("insider") or [], "bvps": bvps, "high52": hi,
          "aksi": aksi, "pengurusBaru": next((a["date"] for a in aksi if "direksi" in a["jenis"]), ""),
-         "pemainBaru": [f"{r['nama']} masuk {r['cur']:.2f}% ({r['date']})" for r in riwayat if r["prev"] == 0 and r["cur"] >= 5]}
+         "pemainBaru": [f"{r['nama']} masuk {r['cur']:.2f}% ({r['date']})" for r in riwayat if r["prev"] == 0 and r["cur"] >= 5 and not r.get("pertama")]}
     # Rekam jejak penjual cangkang dihitung sebelum skenario arah agar ikut menentukan skor.
     jejak = PA.jejak_cangkang(jar_rows, d.get("grupAksi") or [], t)
     c["preseden"] = pres + [j["teks"] for j in jejak]
