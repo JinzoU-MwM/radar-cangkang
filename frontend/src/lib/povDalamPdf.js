@@ -19,8 +19,9 @@ export async function povDalamPdf(a, jsPDF) {
   // Pindah halaman bila sisa ruang kurang dari h (judul halaman lanjutan diberi "(lanjutan)").
   let judulKini = ''
   const ruang = h => { if (y + h > BAWAH) halaman(`${judulKini} (lanjutan)`) }
+  // Judul bagian tidak boleh tertinggal sendirian di dasar halaman: pastikan muat judul + ±2 baris isi.
   const sub = (text, color = PRIMER) => {
-    ruang(12)
+    ruang(26)
     doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(color); doc.text(pdfText(text), 14, y)
     doc.setDrawColor(color); doc.setLineWidth(0.4); doc.line(14, y + 1.6, 196, y + 1.6); y += 7
   }
