@@ -3382,7 +3382,7 @@ def pindai_jalan(batas: int = PINDAI_PER_MALAM) -> int:
         # Saham yang dipindai < 20 jam lalu dilewati (mis. server restart di tengah pemindaian).
         segar = (datetime.now() - timedelta(hours=20)).strftime("%Y-%m-%d %H:%M")
         urut = [t for t in sorted(pindai_universe(), key=lambda t: (rows.get(t) or {}).get("dibuat") or "")
-                if ((rows.get(t) or {}).get("dibuat") or "") < segar][:batas]
+                if ((rows.get(t) or {}).get("dibuat") or "") < segar or (rows.get(t) or {}).get("versi") != PD.VERSI][:batas]
         _pindai_jalan["total"] = len(urut)
 
         def satu(t):
@@ -3436,7 +3436,8 @@ def pindai_loop() -> None:
         try:
             jam = datetime.now(WIB)
             d = pindai_load()
-            if not d.get("updated") or (jam.hour == 1 and jam.minute >= 30 and not str(d.get("updated", "")).startswith(jam.strftime("%Y-%m-%d"))):
+            lama = any(r.get("versi") != PD.VERSI for r in (d.get("rows") or {}).values())
+            if not d.get("updated") or lama or (jam.hour == 1 and jam.minute >= 30 and not str(d.get("updated", "")).startswith(jam.strftime("%Y-%m-%d"))):
                 n = pindai_jalan()
                 print(f"[pindai] {n} saham dipindai", file=sys.stderr)
         except Exception as e:

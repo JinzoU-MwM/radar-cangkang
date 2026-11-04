@@ -6,6 +6,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timedelta
 
+import povarah as PA
 import povdalam as PD
 
 
@@ -21,7 +22,7 @@ def baris(h: dict, kini: datetime | None = None) -> dict:
     bersamaan = [k for k in afil.get("kelompok") or [] if k["jenis"] == "bergerak bersamaan" and k["dasar"][:10] >= b30]
     ganti = [r for r in h.get("riwayat") or [] if r.get("lewat") and r["date"] >= b30]
     return {
-        "t": h["t"], "nama": h.get("nama") or "", "dibuat": h.get("dibuat"), "skor": bd.get("skor", 0), "bukti": (bd.get("bukti") or [])[:4],
+        "t": h["t"], "versi": h.get("versi"), "nama": h.get("nama") or "", "dibuat": h.get("dibuat"), "skor": bd.get("skor", 0), "bukti": (bd.get("bukti") or [])[:4],
         "arah": sk[0]["nama"] if sk else "", "skorArah": sk[0]["skor"] if sk else 0,
         "pengendali": p0.get("name", ""), "pctPengendali": p0.get("pct"), "terafiliasi": (h.get("kepemilikan") or {}).get("nonPublik"),
         "ffEfektif": (h.get("kepemilikan") or {}).get("ffEfektif"), "terhubung": afil.get("totalTerhubung"),
@@ -46,7 +47,7 @@ def alarm_broker(rows: dict) -> list[dict]:
     for t, r in rows.items():
         for m in r.get("mm") or []:
             b = m.split()[1].rstrip(",") if m.startswith("Broker ") else ""
-            if b and b in (r.get("akum5") or []):
+            if b and b in (r.get("akum5") or []) and (r.get("bandar5") or 0) >= 1e8:
                 out.append({"jenis": "broker market maker", "t": t, "teks": f"{t}: broker {b} (dipakai orang dalam saat transaksi) kembali menjadi "
                                                                             f"pembeli utama 1 minggu terakhir; net bandar 1 minggu Rp{(r.get('bandar5') or 0) / 1e9:.2f} M."})
     return out
@@ -70,6 +71,8 @@ def alarm_penjual(penjual: dict, feed: list[dict]) -> list[dict]:
         if (r.get("cur") or 0) <= (r.get("prev") or 0):
             continue
         for nama, asal in penjual.items():
+            if not PA.bukan_kustodian(nama):
+                continue
             if PD._cocok_nama(nama, r["name"]) and r["ticker"] not in {a["t"] for a in asal}:
                 out.append({"jenis": "penjual cangkang", "t": r["ticker"], "tanggal": r["date"],
                             "teks": f"{r['date']}: {r['name']} {'masuk' if not r.get('prev') else 'menambah'} {r['ticker']} "
@@ -84,6 +87,8 @@ def peta_grup(rows: dict) -> list[dict]:
     peta: dict = {}
     for t, r in rows.items():
         for j in r.get("jaringan") or []:
+            if not PA.bukan_kustodian(j["nama"]):
+                continue
             k = PD._kunci(j["nama"])
             e = peta.setdefault(k, {"nama": j["nama"], "aktif": {}, "keluar": {}})
             if j.get("pct"):

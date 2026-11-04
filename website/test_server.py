@@ -638,8 +638,12 @@ class PovDalamTest(unittest.TestCase):
         self.assertTrue({"nama mirip", "bergerak bersamaan", "pemegang = pengurus"} <= jenis, jenis)
         mm = povarah.market_maker(ins, {"fase": [{"periode": "1 bulan", "akum": ["IU"], "dist": []}]})
         self.assertIn("kemungkinan broker", mm[0])
-        bd = povarah.potensi_backdoor({"masukBersama": [1], "pemainBaru": [1], "mcap": 1.5e11})
-        self.assertGreaterEqual(bd["skor"], 45)
+        # Tanda umum saja (pemain baru, kapitalisasi kecil) bernilai kecil; tanda inti menaikkan skor tajam.
+        self.assertLess(povarah.potensi_backdoor({"pemainBaru": [1], "mcap": 1.5e11})["skor"], 15)
+        bd = povarah.potensi_backdoor({"masukBersama": [1], "jejakCangkang": [1], "batas12": "2026-01-01",
+                                       "ambil": [{"date": "2026-10-01"}], "pemainBaru": [1], "mcap": 1.5e11})
+        self.assertGreaterEqual(bd["skor"], 70)
+        self.assertFalse(povarah.bukan_kustodian("UOB KAY HIAN PRIVATE LIMITED"))
 
     def test_pemegang_ganda_dan_keluarga(self):
         import povdalam
