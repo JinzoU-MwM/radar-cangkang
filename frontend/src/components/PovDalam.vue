@@ -24,6 +24,13 @@ const rumor = computed(() => {
     ...(k.klaim || []).slice(0, 8).map(c => ({ k: c.teks, teks: `${c.teks} (@${c.user}, ${fmtDate(c.d)})`, url: c.url }))]
 })
 const p2 = v => v == null ? '–' : fmt(v, 2) + '%'
+// Galian lanjutan (server povgali); analisa tersimpan versi lama tidak memilikinya.
+const g = computed(() => hasil.value?.galian || null)
+// Tinggi batang diskalakan min–maks agar perubahan jumlah pemegang terlihat.
+const ritelTinggi = computed(() => {
+  const n = (g.value?.ritel?.seri || []).map(s => s.n), lo = Math.min(...n), hi = Math.max(...n)
+  return v => hi > lo ? Math.round(12 + 88 * (v - lo) / (hi - lo)) : 60
+})
 const menit = s => s >= 90 ? `± ${Math.round(s / 60)} menit` : `± ${Math.max(10, Math.round(s / 10) * 10)} detik`
 
 async function tanya(mulai = false) {
@@ -100,6 +107,70 @@ async function unduh() {
         <template v-if="hasil.backdoor.rups?.length">
           <h4>Agenda RUPS / keterbukaan perubahan</h4>
           <ul class="small"><li v-for="r in hasil.backdoor.rups" :key="r">{{ r }}</li></ul>
+        </template>
+      </template>
+
+      <!-- Galian lanjutan: tahapan backdoor, harga pengalihan, rekam jejak, lintas emiten, broker, nominee, ritel. -->
+      <template v-if="g">
+        <h3>Kalender tahapan backdoor</h3>
+        <p class="small nar"><b>{{ g.kalender.ringkas }}</b> {{ g.kalender.berikut }}</p>
+        <ol class="small tahap">
+          <li v-for="x in g.kalender.tahap" :key="x.n" :class="{ ok: x.status === 'terjadi', kini: x.n === g.kalender.posisi }">
+            <b>{{ x.nama }}</b> <span class="tag" :class="x.status === 'terjadi' ? 't-good' : 't-calm'">{{ x.status === 'terjadi' ? 'terjadi ' + (x.tgl || '') : 'belum terlihat' }}</span>
+            <div class="muted">{{ x.arti }}</div>
+            <ul v-if="x.bukti.length"><li v-for="b in x.bukti" :key="b">{{ b }}</li></ul>
+          </li>
+        </ol>
+
+        <template v-if="g.harga.rows.length || g.harga.dokumen.length">
+          <h3>Harga pengalihan vs harga pasar</h3>
+          <div class="scroll"><table v-if="g.harga.rows.length" class="ledger small">
+            <thead><tr><th>Tanggal</th><th>Pihak</th><th>Arah</th><th class="num">Poin</th><th class="num">Harga transaksi</th><th class="num">Harga pasar</th><th class="num">Selisih</th></tr></thead>
+            <tbody><tr v-for="r in g.harga.rows" :key="r.date + r.nama">
+              <td>{{ fmtDate(r.date) }}</td><td>{{ r.nama }}</td><td>{{ r.arah }}</td><td class="num">{{ r.chg == null ? '–' : fmt(r.chg, 2) }}</td>
+              <td class="num">Rp{{ fmt(r.harga, 0) }}</td><td class="num">{{ r.pasar ? 'Rp' + fmt(r.pasar, 0) : '–' }}</td>
+              <td class="num" :class="(r.selisih || 0) >= 0 ? 'c-good' : 'c-strong'">{{ r.selisih == null ? '–' : (r.selisih > 0 ? '+' : '') + fmt(r.selisih, 1) + '%' }}</td></tr></tbody>
+          </table></div>
+          <ul v-if="g.harga.dokumen.length" class="small"><li v-for="d in g.harga.dokumen" :key="d.url + d.harga">{{ fmtDate(d.date) }} · <a :href="d.url" target="_blank" rel="noopener">{{ d.judul }}</a>: <b>Rp{{ fmt(d.harga, 0) }}</b> <span class="muted">({{ d.konteks }})</span></li></ul>
+          <ul class="small"><li v-for="x in g.harga.catatan" :key="x"><b>{{ x }}</b></li></ul>
+        </template>
+
+        <template v-if="g.rekam.emiten.length || g.rekam.berita.length">
+          <h3>Rekam jejak UBO & emiten jaringannya</h3>
+          <ul class="small"><li v-for="x in g.rekam.catatan" :key="x"><b>{{ x }}</b></li></ul>
+          <ul class="small"><li v-for="e in g.rekam.emiten" :key="e.t">{{ e.teks }}</li></ul>
+          <ul v-if="g.rekam.berita.length" class="small"><li v-for="b in g.rekam.berita" :key="b.url">{{ b.date ? fmtDate(b.date) : '–' }} <span v-for="k in b.kategori" :key="k" class="tag t-warn">{{ k }}</span>
+            <a :href="b.url" target="_blank" rel="noopener">{{ b.judul }}</a> <span class="muted">— {{ b.sumber }}</span></li></ul>
+        </template>
+
+        <template v-if="g.pengurus.length || g.alamat.length">
+          <h3>Jejak pengurus, pemegang, dan alamat lintas emiten</h3>
+          <ul class="small">
+            <li v-for="x in g.pengurus" :key="x.nama"><b>{{ x.nama }}</b> <span class="muted">({{ x.peran }})</span> juga:
+              <template v-for="(e, i) in x.emiten" :key="e.t"><span v-if="i">, </span>{{ e.t }} <span class="muted">{{ e.sebagai }}</span></template></li>
+            <li v-for="a in g.alamat" :key="'a' + a.t"><b>{{ a.t }}</b> <span class="tag t-calm">{{ a.dasar }}</span> <span class="muted">{{ a.alamat }}</span></li>
+          </ul>
+        </template>
+
+        <template v-if="g.broker.rows.length">
+          <h3>Identitas broker & sekuritas grup</h3>
+          <ul class="small"><li v-for="x in g.broker.catatan" :key="x"><b>{{ x }}</b></li></ul>
+          <ul class="small"><li v-for="r in g.broker.rows" :key="r.b"><b>{{ r.b }}</b> {{ r.nama || 'nama belum dipetakan' }} <span class="tag t-calm">{{ r.jenis }}</span>
+            <span v-if="r.grup" class="tag" :class="r.satuGrup ? 't-warn' : 't-calm'">grup {{ r.grup }}{{ r.satuGrup ? ' · satu grup' : '' }}</span> <span class="muted">{{ r.peran.join('; ') }}</span></li></ul>
+        </template>
+
+        <template v-if="g.nominee.length">
+          <h3>Deteksi nominee (indikasi)</h3>
+          <ul class="small"><li v-for="n in g.nominee" :key="n.nama"><b>{{ n.nama }}</b> {{ p2(n.pct) }} <span v-if="n.kuat" class="tag t-warn">indikasi kuat</span>: {{ n.tanda.join('; ') }}</li></ul>
+        </template>
+
+        <template v-if="g.ritel.seri.length">
+          <h3>Tren jumlah pemegang saham (KSEI)</h3>
+          <ul class="small"><li v-for="x in g.ritel.catatan" :key="x"><b>{{ x }}</b></li></ul>
+          <div class="ritel" role="img" :aria-label="'Jumlah pemegang saham ' + g.ritel.seri.length + ' bulan'">
+            <span v-for="s in g.ritel.seri" :key="s.d" :title="fmtDate(s.d) + ': ' + fmt(s.n, 0) + ' pemegang'"><i :style="{ height: ritelTinggi(s.n) + '%' }"></i></span>
+          </div>
+          <p class="small muted">{{ fmtDate(g.ritel.seri[0].d) }} – {{ fmtDate(g.ritel.seri.at(-1).d) }} · terakhir {{ fmt(g.ritel.seri.at(-1).n, 0) }} pemegang.</p>
         </template>
       </template>
 
@@ -257,5 +328,9 @@ async function unduh() {
 .nar{margin:4px 0;line-height:1.55}
 .sk{margin:6px 0;padding:4px 0 4px 10px;border-left:3px solid var(--now-ink)}
 .skh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.skb{flex:0 0 120px;height:6px;background:var(--rule);border-radius:3px}
+.tahap li{margin:4px 0}.tahap li.ok>b{color:var(--good-ink,inherit)}.tahap li.kini{background:var(--sheet);outline:1px solid var(--now-ink);padding:2px 6px}
+.scroll{overflow-x:auto}
+.ritel{display:flex;align-items:flex-end;gap:2px;height:60px;max-width:420px;margin:6px 0}
+.ritel span{flex:1;height:100%;display:flex;align-items:flex-end}.ritel i{display:block;width:100%;background:var(--now-ink);border-radius:2px 2px 0 0}
 .skb.wide{flex:0 0 240px}.skb i{display:block;height:100%;background:var(--now-ink);border-radius:3px}
 </style>

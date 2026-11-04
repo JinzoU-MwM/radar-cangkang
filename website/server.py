@@ -39,6 +39,7 @@ import brokerpola as BP
 import povdalam as PD
 import povarah as PA
 import povpindai as PP
+import povgali as PG
 import beritapasar as BN
 import ihsg as IH
 import astro as AS
@@ -2637,6 +2638,98 @@ def sektor_load() -> dict:
         return {}
 
 
+PROFIL_IDX_PATH = ROOT / ".profil-indeks.json"
+_pidx: dict | None = None
+_pidx_lock = threading.Lock()
+_pidx_tulis = [0.0]
+
+
+def profil_ringkas(p: dict) -> dict:
+    """Profil Stockbit -> ringkas untuk indeks lintas emiten (jejak pengurus, alamat sama, nominee, tren pemegang)."""
+    ke = p.get("key_executive") or {}
+    pengurus = list(dict.fromkeys(str(x.get("value") or "").strip() for v in ke.values() if isinstance(v, list)
+                                  for x in v if isinstance(x, dict) and str(x.get("value") or "").strip()))
+    adr = (p.get("address") or [{}])[0] or {}
+    pem = [[str(s.get("name") or "").strip(), to_num(str(s.get("percentage") or "").rstrip("%")) or 0.0,
+            str(s.get("domicile") or ""), str(s.get("classification") or "")]
+           for s in ((p.get("shareholder_one_percent") or {}).get("shareholder") or [])[:15] if s.get("name")]
+    jml = []
+    for x in p.get("shareholder_numbers") or []:
+        try:
+            d = datetime.strptime(str(x.get("shareholder_date") or ""), "%d %b %Y").strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+        n = to_num(str(x.get("total_share") or "").replace(",", ""))
+        if n:
+            jml.append([d, n])
+    return {"at": datetime.now().strftime("%Y-%m-%d"), "pengurus": pengurus[:20],
+            "alamat": re.sub(r"\s+", " ", str(adr.get("office") or adr.get("value") or ""))[:220], "telp": str(adr.get("phone") or "")[:40],
+            "pemegang": pem, "jumlah": jml[:24]}
+
+
+def profil_indeks() -> dict:
+    """Indeks profil per kode (.profil-indeks.json); saat pertama dimuat diisi juga dari profil di cache HTTP."""
+    global _pidx
+    with _pidx_lock:
+        if _pidx is None:
+            try:
+                _pidx = json.loads(PROFIL_IDX_PATH.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                _pidx = {}
+            con = db()
+            if con:
+                with _db_lock:
+                    rows = con.execute("SELECT url, body FROM http_cache WHERE url LIKE '%/emitten/%/profile'").fetchall()
+                for url, body in rows:
+                    m = re.search(r"/emitten/([A-Z0-9]+)/profile$", url)
+                    if m and m.group(1) not in _pidx:
+                        try:
+                            _pidx[m.group(1)] = profil_ringkas(json.loads(body).get("data") or {})
+                        except (ValueError, AttributeError):
+                            pass
+        return _pidx
+
+
+def profil_indeks_isi(t: str, p: dict, simpan: bool = True) -> None:
+    if not p:
+        return
+    idx = profil_indeks()
+    with _pidx_lock:
+        idx[t] = profil_ringkas(p)
+        if simpan and time.time() - _pidx_tulis[0] > 60:
+            _pidx_tulis[0] = time.time()
+            tmp = PROFIL_IDX_PATH.with_suffix(".tmp")
+            tmp.write_text(json.dumps(idx, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(PROFIL_IDX_PATH)
+
+
+def sync_profil_indeks(batas: int = 150) -> int:
+    """Lengkapi indeks profil seluruh BEI (yang belum ada atau > 30 hari), maks. `batas` emiten per putaran."""
+    if not (get_token() and not token_expired()):
+        return 0
+    idx = profil_indeks()
+    lama = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    target = [t for t in bei_kode_load() if t not in idx or idx[t].get("at", "") < lama][:batas]
+    tok, n = get_token(), 0
+    for t in target:
+        try:
+            p = json.loads(http_get_api(SB + f"/emitten/{t}/profile", tok)).get("data") or {}
+            profil_indeks_isi(t, p, simpan=False)
+            n += 1
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                time.sleep(30)
+        except Exception:
+            pass
+        time.sleep(0.8)
+    if n:
+        with _pidx_lock:
+            tmp = PROFIL_IDX_PATH.with_suffix(".tmp")
+            tmp.write_text(json.dumps(idx, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(PROFIL_IDX_PATH)
+    return n
+
+
 def sync_sektor(batas: int = 300) -> int:
     """Ambil klasifikasi untuk emiten di daftar LK yang belum punya (maks. `batas` per putaran)."""
     if not (get_token() and not token_expired()):
@@ -2740,6 +2833,9 @@ def lk_loop() -> None:
                 n = sync_sektor()
                 if n:
                     print(f"[lk] klasifikasi sektor untuk {n} emiten", file=sys.stderr)
+                n = sync_profil_indeks()
+                if n:
+                    print(f"[lk] indeks profil (pengurus/alamat/pemegang) untuk {n} emiten", file=sys.stderr)
             except Exception as e:
                 print(f"[lk] gagal: {e}", file=sys.stderr)
         time.sleep(1800)
@@ -2884,6 +2980,27 @@ def s50_riwayat(rows: list[dict], hari_ini: date) -> None:
 
 
 _kakdr_memo: tuple = (0.0, None)
+KAKDR_RIWAYAT_PATH = ROOT / ".kakdr-riwayat.json"
+
+
+def kakdr_riwayat(kode: list[str]) -> tuple[list[str], list[str]]:
+    """Simpan daftar lolos hari ini; kembalikan (baru masuk, keluar) dibanding hari sebelumnya yang tercatat."""
+    try:
+        r = json.loads(KAKDR_RIWAYAT_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        r = {}
+    hari = datetime.now().strftime("%Y-%m-%d")
+    r[hari] = kode
+    r = dict(sorted(r.items())[-14:])
+    try:
+        KAKDR_RIWAYAT_PATH.write_text(json.dumps(r), encoding="utf-8")
+    except OSError:
+        pass
+    lalu = [d for d in r if d < hari]
+    if not lalu:
+        return [], []
+    sebelum = set(r[lalu[-1]])
+    return [k for k in kode if k not in sebelum], sorted(sebelum - set(kode))
 
 
 def kakdr_screen() -> dict:
@@ -2930,8 +3047,17 @@ def kakdr_screen() -> dict:
         rows.append({"t": t, "nama": nama.get(t, ""), "skor": skor, "harga": h, "turun": turun, "pbv": pbv, "der": der, "roe": roe, "dy": dy,
                      "lolos": {"A": a, "B1": b1, "B2": b2, "B3": b3, "C": c}})
     rows.sort(key=lambda r: (-r["skor"], -(r["turun"] or 0)))
+    lolos = [r for r in rows if r["skor"] > 6.5][:80]
+    radar = radar_tickers()
+    pov = {k: ((v.get("hasil") or {}).get("backdoor") or {}).get("skor") for k, v in pd_load().items()}
+    for r in lolos:
+        r["radar"] = r["t"] in radar
+        r["backdoor"] = pov.get(r["t"])
+    baru, keluar = kakdr_riwayat([r["t"] for r in lolos]) if ada_data >= 300 else ([], [])
+    for r in lolos:
+        r["baru"] = r["t"] in baru
     hasil = {"updated": datetime.now().strftime("%Y-%m-%d %H:%M"), "dinilai": ada_data,
-             "rows": [r for r in rows if r["skor"] > 6.5][:80],
+             "rows": lolos, "keluar": [{"t": x, "nama": nama.get(x, "")} for x in keluar],
              "catatan": "" if ada_data else "Data rasio KakdrWay (DER, ROE, dividen) sedang diambil server dari Key Stats; muat ulang beberapa jam lagi."}
     _kakdr_memo = (time.time(), hasil)
     return hasil
@@ -3230,6 +3356,10 @@ def pd_kumpul(t: str, job: dict, ringan: bool = False) -> dict:
     cfg = (load_config() or {}).get("reports") or {}
     tahap(1, "Profil, pemegang saham, dan valuasi")
     prof = get_profile(t)
+    praw = sb_fetch(f"/emitten/{t}/profile").get("data") or {}   # dari cache (baru diambil get_profile)
+    profil_indeks_isi(t, praw)
+    rk = profil_ringkas(praw)
+    detail_pmg = {PG.kunci_orang(n): {"dom": dom, "kls": kls} for n, _, dom, kls in rk["pemegang"]}
     tahap(2, "Riwayat keterbukaan pemegang saham (KSEI/IDX)")
     try:
         insider = get_insider_rows(t)["rows"]
@@ -3272,6 +3402,7 @@ def pd_kumpul(t: str, job: dict, ringan: bool = False) -> dict:
             break
         try:
             p = sb_fetch(f"/emitten/{s}/profile").get("data") or {}
+            profil_indeks_isi(s, p)
             grup[s] = {"t": s, "nama": nama_semua().get(s, ""), "sektor": ((p.get("classification") or {}).get("industry") or {}).get("name", ""),
                        "pemegang": [{"name": x.get("name"), "pct": x.get("percentage")} for x in (p.get("shareholder") or [])[:5]]}
         except Exception:
@@ -3366,13 +3497,44 @@ def pd_kumpul(t: str, job: dict, ringan: bool = False) -> dict:
                     grup_aksi.append({"t": s, "date": u.get("date"), "judul": u.get("title"), "jenis": j})
         except Exception as e:
             catatan.append(f"Preseden {s} gagal: {e}"[:120])
+    nasib: dict = {}
+    if not ringan:
+        job["label"] = "Rekam jejak emiten jaringan (harga 3 tahun) dan UBO di berita lama"
+        emiten_jar: dict[str, str] = {}
+        for hs in jaringan.values():
+            for h in hs:
+                s = h.get("symbol")
+                if s and s != t:
+                    lepas = PD._pct(h.get("pct")) <= 0 or str(h.get("lastAction") or "").upper() in ("SELL", "JUAL")
+                    emiten_jar.setdefault(s, str(h.get("lastDate") or "") if lepas else "")
+        for s in list(emiten_jar)[:10]:
+            if sisa() < 50:
+                break
+            try:
+                nasib[s] = PG.nasib_emiten(chart_prices(s), emiten_jar[s])
+            except Exception:
+                pass
+    rekam_berita = []
+    if not ringan and sisa() > 45:
+        UMUM_N = {"PT", "TBK", "LTD", "PTE", "LIMITED", "INVESTAMA", "INDONESIA", "GROUP", "HOLDINGS", "HOLDING", "CAPITAL", "INTERNATIONAL"}
+        nama_rj = list(dict.fromkeys([re.sub(r"\s*\(.*\)$", "", u) for u in prof.get("beneficiary") or []] + bersih[:2]))[:4]
+        for n in nama_rj:
+            kata = [w for w in re.findall(r"[A-Za-z]{3,}", n) if w.upper() not in UMUM_N]
+            if not kata:
+                continue
+            q = f'"{n}" (suspensi OR delisting OR tersangka OR pailit OR PKPU OR gugatan OR sanksi OR akuisisi OR backdoor OR gocap)'
+            for b in pd_berita_luar([q]):
+                if sum(1 for w in kata if re.search(rf"\b{re.escape(w)}\b", b["judul"], re.I)) >= min(2, len(kata)):
+                    rekam_berita.append({**b, "nama": n})
     tahap(10, "Menyusun analisa")
     lk = next((r for r in lk_api_cache().get("rows") or [] if r["t"] == t), {})
     hasil = PD.analyze({"t": t, "nama": nama_semua().get(t, ""), "profil": prof, "insider": insider, "jaringan": jaringan,
                         "laporan": laporan, "berita": berita, "posts": posts, "lk": lk, "catatan": catatan, "broker": bk,
                         "pandangan": _json_berkas("pandangan-analis.json").get(t), "beritaLuar": berita_luar,
                         "brokers": {k: v for k, v in brokers.items() if v}, "bars": bars, "grupAksi": grup_aksi,
-                        "keystats": keystats, "tokoh": tokoh, "grupInfo": list(grup.values())})
+                        "keystats": keystats, "tokoh": tokoh, "grupInfo": list(grup.values()),
+                        "indeks": profil_indeks(), "detailPemegang": detail_pmg, "jumlahPemegang": rk["jumlah"],
+                        "nasib": nasib, "rekamBerita": rekam_berita})
     hasil["grup"] = list(grup.values())
     hasil["radar"] = t in radar_tickers()
     hasil["durasi"] = int(time.time() - mulai)
