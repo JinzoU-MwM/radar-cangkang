@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import povarah as PA
 
 # Naikkan bila isi analisa berubah: hasil tersimpan versi lama ditarik ulang saat dibuka.
-VERSI = 7
+VERSI = 8
 PUBLIK_RX = re.compile(r"MASYARAKAT|PUBLIK|PUBLIC|SCRIPLESS|SCRIP\b", re.I)
 # Kata kunci posting yang membahas struktur kepemilikan/aksi korporasi (dipakai mengurutkan relevansi).
 TOPIK_RX = re.compile(r"pengendali|akuisisi|diakuisisi|pemilik|grup|group|konsorsium|backdoor|inbreng|rights|hmetd|tender|"
@@ -385,8 +385,9 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
         pmg[_kunci(s["name"])] = {"name": s["name"], "pct": _pct(s.get("pct")), "pengendali": bool(s.get("pengendali"))}
     for s in prof.get("holders1") or []:
         k = _kunci(s["name"])
+        # Ejaan berbeda untuk pihak yang sama; anggota keluarga (nama belakang sama, porsi sama) tetap dihitung terpisah.
         if k not in pmg and not any(_cocok_nama(s["name"], p["name"]) or abs(_pct(s.get("pct")) - p["pct"]) < 0.02
-                                    and set(k.split()) & set(_kunci(p["name"]).split()) for p in pmg.values()):
+                                    and len(set(k.split()) & set(_kunci(p["name"]).split())) >= 2 for p in pmg.values()):
             pmg[k] = {"name": s["name"], "pct": _pct(s.get("pct")), "pengendali": False}
     semua = sorted(pmg.values(), key=lambda p: -p["pct"])
     non_publik = [p for p in semua if not PUBLIK_RX.search(p["name"])]

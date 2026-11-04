@@ -627,6 +627,18 @@ class PovDalamTest(unittest.TestCase):
         self.assertEqual([x["harga"] for x in t], [800, 3160])
         self.assertEqual(t[1]["potensi"], 532.0)
 
+    def test_pemegang_ganda_dan_keluarga(self):
+        import povdalam
+        from datetime import datetime
+        d = {"t": "XXXX", "profil": {"stats": {}, "metrics": {},
+             "shareholders": [{"name": "STRAITS CORPORATION PTE. LTD.", "pct": "81.82", "pengendali": True}],
+             "holders1": [{"name": "Straits Corporation Pte Ltd", "pct": 81.82}, {"name": "AMIRSYAH RISJAD", "pct": 1.7},
+                          {"name": "DINA RISJAD", "pct": 1.7}, {"name": "DEDEY RISJAD", "pct": 1.7}]}}
+        r = povdalam.analyze(d, datetime(2026, 11, 4))
+        self.assertEqual(len(r["kepemilikan"]["pemegang"]), 4)                    # Straits sekali, 3 Risjad
+        self.assertEqual(r["kepemilikan"]["keluarga"][0]["anggota"].__len__(), 3)
+        self.assertLessEqual(r["kepemilikan"]["nonPublik"], 100)
+
     def test_keluarga(self):
         import povdalam
         pm = [{"name": n, "pct": 1.7} for n in ("AMIRSYAH RISJAD", "DINA RISJAD", "DEDEY RISJAD", "SELVIYA RISJAD DANANTO")]
