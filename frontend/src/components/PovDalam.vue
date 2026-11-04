@@ -10,6 +10,8 @@ const props = defineProps({ ticker: { type: String, required: true } })
 const st = ref(null), err = ref(''), busyPdf = ref(false)
 let timer = null
 const hasil = computed(() => st.value?.status === 'selesai' ? st.value.hasil : null)
+// Hanya klaim yang didukung data yang ditampilkan.
+const klaimValid = computed(() => (hasil.value?.klaim || []).filter(c => c.status === 'didukung data'))
 // Informasi publik: yang cocok dengan data kepemilikan dulu, lalu rumor/klaim beserta sumbernya.
 const verif = computed(() => {
   const k = hasil.value?.komunitas || {}
@@ -148,9 +150,9 @@ async function unduh() {
         <ul class="small"><li v-for="x in hasil.preseden" :key="x">{{ x }}</li></ul>
       </template>
 
-      <template v-if="hasil.klaim?.length">
-        <h3>Cek kebenaran klaim publik</h3>
-        <div v-for="c in hasil.klaim" :key="c.jenis + c.user" class="dg" :class="c.status === 'didukung data' ? 'pos' : ''">
+      <template v-if="klaimValid.length">
+        <h3>Klaim publik yang terbukti data</h3>
+        <div v-for="c in klaimValid" :key="c.jenis + c.user" class="dg" :class="c.status === 'didukung data' ? 'pos' : ''">
           <span class="tag" :class="c.status === 'didukung data' ? 't-good' : c.status === 'tidak didukung' ? 't-strong' : 't-calm'">{{ c.status }}</span>
           “{{ c.klaim }}” <a :href="c.url" target="_blank" rel="noopener" class="small">@{{ c.user }} · {{ fmtDate(c.d) }}</a>
           <ul class="small"><li v-for="b in c.bukti" :key="b">{{ b }}</li></ul>
@@ -212,6 +214,11 @@ async function unduh() {
       <h3>Aksi korporasi (1 tahun)</h3>
       <p v-if="!hasil.aksi.length" class="small muted">Tidak ada keterbukaan aksi korporasi yang terbaca.</p>
       <ul class="small"><li v-for="x in hasil.aksi" :key="x.url + x.judul">{{ fmtDate(x.date) }} · <a :href="x.url" target="_blank" rel="noopener">{{ x.judul }}</a><span v-if="x.inti" class="muted"> — {{ x.inti }}</span></li></ul>
+
+      <template v-if="hasil.berita?.length">
+        <h3>Berita terbaru (Stockbit)</h3>
+        <ul class="small"><li v-for="b in hasil.berita" :key="b.url + b.judul">{{ b.date ? fmtDate(b.date) : '–' }} · <a :href="b.url" target="_blank" rel="noopener">{{ b.judul }}</a></li></ul>
+      </template>
 
       <template v-if="hasil.beritaLuar?.length">
         <h3>Berita di luar Stockbit ({{ hasil.beritaLuar.length }})</h3>

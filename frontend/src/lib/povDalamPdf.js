@@ -1,7 +1,7 @@
 // Analisa mendalam POV (PDF, A4 tegak) dengan format riset yang sama dengan Berita/Seasonality:
 // sampul berpita; kepemilikan & jaringan; riwayat & aksi korporasi; komunitas, dugaan tujuan, dan yang perlu diselidiki.
 // Data dari /api/pov-dalam (server povdalam.analyze). Tanpa warna merah; faktor negatif memakai oranye.
-import { MUTED, GOOD, BAD, INK, PRIMER, GOLD, LINE, frame, heading, para } from './ihsgPdf.js'
+import { MUTED, GOOD, BAD, INK, PRIMER, GOLD, LINE, TEAL, frame, heading, para } from './ihsgPdf.js'
 import { sampul } from './ihsgModelPdf.js'
 import { pdfText } from './deckPdf.js'
 
@@ -24,16 +24,20 @@ export async function povDalamPdf(a, jsPDF) {
     doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(color); doc.text(pdfText(text), 14, y)
     doc.setDrawColor(color); doc.setLineWidth(0.4); doc.line(14, y + 1.6, 196, y + 1.6); y += 7
   }
-  const butir = (rows, { size = 8.8, color = INK, tanda = '•', x = 18, w = 178 } = {}) => {
-    for (const r of rows) {
+  // links: URL sejajar dengan rows; butir dengan URL ditulis biru dan seluruh areanya bisa diklik.
+  const butir = (rows, { size = 8.8, color = INK, tanda = '•', x = 18, w = 178, links = [] } = {}) => {
+    rows.forEach((r, i) => {
       doc.setFont('helvetica', 'normal'); doc.setFontSize(size)
       const lines = doc.splitTextToSize(pdfText(`${tanda} ${r}`), w)
       const h = lines.length * size * 0.3528 * 1.4 + 1.4
       ruang(h)
       // Halaman baru mengganti font (judul); set ulang sebelum menulis agar ukuran tidak terbawa.
       doc.setFont('helvetica', 'normal'); doc.setFontSize(size)
-      doc.setTextColor(color); doc.text(lines, x, y, { lineHeightFactor: 1.4 }); y += h
-    }
+      const url = links[i]
+      doc.setTextColor(url ? TEAL : color); doc.text(lines, x, y, { lineHeightFactor: 1.4 })
+      if (url) doc.link(x, y - size * 0.3528, w, h - 1, { url })
+      y += h
+    })
   }
   const teks = (s, size = 9, color = INK) => { ruang(10); y = para(doc, s, 18, y, 178, size, color) }
 
@@ -131,19 +135,25 @@ export async function povDalamPdf(a, jsPDF) {
   }
   sub('Keterbukaan aksi korporasi (1 tahun)')
   if (!a.aksi.length) teks('Tidak ada keterbukaan aksi korporasi yang terbaca dalam 1 tahun.', 9, MUTED)
-  butir(a.aksi.slice(0, 14).map(x => `${tgl(x.date)}: ${x.judul}${x.inti ? ' — ' + potong(x.inti, 200) : ''}`), { size: 8.5 })
+  butir(a.aksi.slice(0, 14).map(x => `${tgl(x.date)}: ${x.judul}${x.inti ? ' — ' + potong(x.inti, 200) : ''}`), { size: 8.5, links: a.aksi.slice(0, 14).map(x => x.url) })
   if (a.tokoh?.length) {
     sub('Profil tokoh (UBO, pemegang perorangan, komut, dirut)')
     for (const o of a.tokoh) butir([`${o.nama}: ` + (o.berita.length ? o.berita.slice(0, 4).map(b => `${b.judul} (${b.sumber}${b.date ? ', ' + tgl(b.date) : ''})`).join(' | ') : 'tidak ada pemberitaan publik yang memuat nama ini.')], { size: 8.3 })
   }
-  if (a.berita.length) { sub('Berita terbaru (Stockbit)'); butir(a.berita.slice(0, 6).map(b => `${tgl(b.date)}: ${b.judul}`), { size: 8.3 }) }
-  if (a.beritaLuar?.length) { sub('Berita di luar Stockbit (media nasional)'); butir(a.beritaLuar.slice(0, 15).map(b => `${b.date ? tgl(b.date) : '-'}: ${b.judul} (${b.sumber})`), { size: 8.3 }) }
+  if (a.berita.length) {
+    sub('Berita terbaru (Stockbit) — klik judul untuk membuka')
+    butir(a.berita.slice(0, 8).map(b => `${tgl(b.date)}: ${b.judul}`), { size: 8.3, links: a.berita.slice(0, 8).map(b => b.url) })
+  }
+  if (a.beritaLuar?.length) {
+    sub('Berita di luar Stockbit (media nasional) — klik judul untuk membuka')
+    butir(a.beritaLuar.slice(0, 15).map(b => `${b.date ? tgl(b.date) : '-'}: ${b.judul} (${b.sumber})`), { size: 8.3, links: a.beritaLuar.slice(0, 15).map(b => b.url) })
+  }
 
   // ---- Komunitas, dugaan, dan penyelidikan.
   judulKini = 'Dugaan dan penyelidikan'; halaman(judulKini)
-  if (a.klaim?.length) {
+  if (a.klaim?.some(c => c.status === 'didukung data')) {
     sub('Cek kebenaran klaim publik', PRIMER)
-    for (const c of a.klaim) {
+    for (const c of a.klaim.filter(c => c.status === 'didukung data')) {
       ruang(14)
       doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(c.status === 'didukung data' ? GOOD : c.status === 'tidak didukung' ? BAD : MUTED)
       const h = doc.splitTextToSize(pdfText(`[${c.status}] "${potong(c.klaim, 200)}" (@${c.user}, ${tgl(c.d)})`), 178); doc.text(h, 18, y, { lineHeightFactor: 1.3 }); y += h.length * 4.2 + 0.6
