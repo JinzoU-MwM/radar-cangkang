@@ -3445,11 +3445,16 @@ def _pov_posts_token(user: str, fresh: bool = False) -> list[dict]:
     return [p for p in out if str(p.get("created_at") or "")[:10] >= cutoff]
 
 
+_pov_prof_gagal: dict[str, float] = {}
+
+
 def pov_user(user: str, radar: set, fresh: bool = False) -> dict:
-    try:
-        prof = stockbit_api(f"https://exodus.stockbit.com/user/profile/{user}", fresh).get("data") or {}
-    except Exception:
-        prof = {}
+    prof = {}
+    if time.time() - _pov_prof_gagal.get(user, 0) > 86400:
+        try:
+            prof = stockbit_api(f"https://exodus.stockbit.com/user/profile/{user}", fresh).get("data") or {}
+        except Exception:
+            _pov_prof_gagal[user] = time.time()   # mis. HTTP 404: pengikut diambil dari daftar trending bila ada
     posts = pov_posts(user, fresh)
     style = {k: 0 for k, _ in POV_STYLE}
     hor = {k: 0 for k, _ in POV_HORIZON}
@@ -5087,7 +5092,7 @@ class Handler(BaseHTTPRequestHandler):
                 deals = [d.split(":")[0] for d in self.qs("deals").upper().split(",") if d]
                 wanted = ([t] if t else []) + deals
                 _req.public_fetch = all(x in radar_tickers() for x in wanted) or (
-                    path in ("api/berita-saham", "api/pov-dalam") and bool(t) and t in bei_kode_load())
+                    path in ("api/berita-saham", "api/pov-dalam", "api/quote") and bool(t) and t in bei_kode_load())
             if path.startswith("api/"):
                 self.handle_api(path, fresh)
                 return

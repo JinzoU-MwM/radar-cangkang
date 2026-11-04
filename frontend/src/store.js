@@ -174,8 +174,11 @@ export async function init() {
   store.ready = true
   setInterval(loadStatus, 5 * 60e3)
   // Ambil ulang data tim saat tab kembali aktif, supaya suntingan anggota lain terlihat.
+  let terakhir = Date.now()
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') { loadData().catch(() => {}); loadStatus() }
+    if (document.visibilityState !== 'visible' || Date.now() - terakhir < 3 * 60e3) return
+    terakhir = Date.now()
+    loadData().catch(() => {}); loadStatus()
   })
 }
 
