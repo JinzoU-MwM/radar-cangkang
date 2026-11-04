@@ -1,5 +1,5 @@
 <script setup>
-// Pemindai calon cangkang (server, tiap malam 01.30 WIB, bergiliran) + alarm penjual cangkang & broker market maker,
+// Pemindai calon cangkang (server, tiap malam 01.30 WIB, seluruh daftar) + alarm penjual cangkang & broker market maker,
 // peta grup pengendali, dan ringkasan harian siap salin. Klik saham -> buka analisa mendalam (emit 'pilih').
 import { computed, ref } from 'vue'
 import { api } from '../api.js'
@@ -27,7 +27,7 @@ async function salin() {
 <template>
   <section class="pp rule-top">
     <h2>Radar calon cangkang</h2>
-    <p class="small muted">Analisa mendalam otomatis (kepemilikan, afiliasi, backdoor, bandar) untuk saham Kandidat, radar, dan Saham 50, bergiliran tiap malam
+    <p class="small muted">Analisa mendalam otomatis (kepemilikan, afiliasi, backdoor, bandar) untuk saham Kandidat, radar, dan Saham 50, seluruhnya tiap malam
       pukul 01.30 WIB<template v-if="data?.updated"> · terakhir {{ data.updated }}</template><template v-if="data?.jalan?.aktif"> · sedang memindai {{ data.jalan.selesai }}/{{ data.jalan.total }}</template>.</p>
     <p v-if="err" class="small c-strong">{{ err }}</p>
     <p v-else-if="!data" class="small muted">Memuat…</p>
