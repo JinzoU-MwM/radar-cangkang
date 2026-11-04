@@ -678,8 +678,8 @@ class PovDalamTest(unittest.TestCase):
     def test_masuk_terverifikasi(self):
         import povdalam
         from datetime import datetime
-        ins = [{"date": "2026-09-11", "name": "ENAM BERLIAN SINERGI", "prev": 0, "cur": 46.72, "source": "KSEI"},
-               {"date": "2026-09-17", "name": "ENAM BERLIAN SINERGI", "prev": 46.72, "cur": 45.22, "source": "IDX"},
+        ins = [{"date": "2026-09-11", "name": "ENAM BERLIAN SINERGI", "prev": 0, "cur": 46.72, "chg": 46.72, "source": "KSEI"},
+               {"date": "2026-09-17", "name": "ENAM BERLIAN SINERGI", "prev": 46.72, "cur": 45.22, "chg": -1.5, "source": "IDX"},
                {"date": "2026-10-23", "name": "CENTRAL ENERGI PRATAMA", "prev": 0, "cur": 49.73, "source": "IDX"}]
         r = povdalam._riwayat(ins, datetime(2026, 11, 4))
         enam = next(x for x in r if x["nama"].startswith("ENAM"))
