@@ -10,6 +10,9 @@ import PovDalam from '../components/PovDalam.vue'
 const data = ref(null), err = ref(''), kd = ref(null)
 // Analisa KakdrWay disembunyikan sampai tombolnya diklik.
 const kdOpen = ref(false)
+// Hasil screening KakdrWay dimuat saat bagian dibuka pertama kali.
+const kdScr = ref(null)
+watch(kdOpen, v => { if (v && !kdScr.value) api.get('/api/kakdr-screen').then(r => { kdScr.value = r }, () => { kdScr.value = { rows: [], dinilai: 0, catatan: 'Screening gagal dimuat.' } }) })
 // Pola pikir per akun juga disembunyikan sampai diklik.
 const polaOpen = ref(false)
 // POV dan KakdrWay dimuat paralel: tombol KakdrWay tidak menunggu data POV.
@@ -121,6 +124,31 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
       <button type="button" class="more" :aria-expanded="String(kdOpen)" aria-controls="kd-isi" @click="kdOpen = !kdOpen">
         {{ kdOpen ? 'Tutup' : 'More…' }}<span v-if="kdOpen" class="muted"> · Analisa KakdrWay ({{ kd.julukan }})</span></button>
       <div v-if="kdOpen" id="kd-isi">
+      <!-- Screening KakdrWay otomatis atas Key Stats seluruh BEI (skor > 6,5). -->
+      <h3 class="rek-j">Saham lolos screening KakdrWay</h3>
+      <p v-if="!kdScr" class="small muted">Memuat screening…</p>
+      <template v-else>
+        <p class="small muted">{{ kdScr.dinilai }} emiten dinilai · {{ kdScr.rows.length }} lolos (skor &gt; 6,5) · diperbarui {{ kdScr.updated }}.
+          A pisau jatuh (≥50% dari tertinggi 52 minggu), B1 PBV &lt; 1, B2 DER &lt; 1, B3 ROE positif, C dividen.</p>
+        <p v-if="kdScr.catatan" class="small c-strong">{{ kdScr.catatan }}</p>
+        <div v-if="kdScr.rows.length" class="scroll">
+          <table class="ledger small">
+            <thead><tr><th>Saham</th><th class="num">Skor</th><th class="num">Harga</th><th class="num">Turun dari puncak</th><th class="num">PBV</th>
+              <th class="num">DER</th><th class="num">ROE</th><th class="num">Div. yield</th><th>Lolos</th></tr></thead>
+            <tbody><tr v-for="r in kdScr.rows" :key="r.t">
+              <td><b>{{ r.t }}</b><div class="muted">{{ r.nama }}</div></td>
+              <td class="num"><b>{{ fmt(r.skor, 1) }}</b></td>
+              <td class="num">{{ r.harga ? fmt(r.harga, 0) : '–' }}</td>
+              <td class="num">{{ r.turun == null ? '–' : '−' + fmt(r.turun, 1) + '%' }}</td>
+              <td class="num">{{ r.pbv == null ? '–' : fmt(r.pbv, 2) + '×' }}</td>
+              <td class="num">{{ r.der == null ? '–' : fmt(r.der, 2) + '×' }}</td>
+              <td class="num">{{ r.roe == null ? '–' : fmt(r.roe, 1) + '%' }}</td>
+              <td class="num">{{ r.dy == null ? '–' : fmt(r.dy, 1) + '%' }}</td>
+              <td><span v-for="(ok, k) in r.lolos" :key="k" class="tag" :class="ok ? 't-good' : 't-calm'">{{ k }}</span></td>
+            </tr></tbody>
+          </table>
+        </div>
+      </template>
       <div class="kd">
         <div>
           <h4>Screening standar</h4>
