@@ -3238,7 +3238,8 @@ def pd_kumpul(t: str, job: dict) -> dict:
     nama_e = re.sub(r"\s*Tbk\.?$", "", nama_semua().get(t, ""), flags=re.I).strip()
     kueri = [f'"{nama_e}"' if nama_e else t, f"saham {t}"]
     bersih = [re.sub(r"^PT\s+|\s+(PT|TBK)$", "", n, flags=re.I).strip() for n in nama_pmg[:3]]
-    kueri += [f'"{n}"' for n in bersih if n]
+    jangkar0 = f'"{nama_e}"' if nama_e else t
+    kueri += [f'"{n}" {jangkar0}' for n in bersih if n]
     # Nama dari klaim publik dicari bersama nama emiten agar tidak tercampur orang/berita lain bernama sama.
     jangkar = f'"{nama_e}"' if nama_e else t
     kueri += [f'"{n}" {jangkar}' for n in PD.nama_dari_posts(posts, t)]
@@ -3247,7 +3248,14 @@ def pd_kumpul(t: str, job: dict) -> dict:
     kunci = [w for w in re.findall(r"[A-Za-z]{4,}", nama_e) if w.lower() not in ("indonesia", "internasional", "nusantara")][:2]
     relevan = re.compile(r"\b(" + "|".join([t] + [re.escape(w) for w in kunci]) + r")\b|saham|tbk|emiten|bursa|bisnis|grup|group|"
                          r"perusahaan|investasi|akuisisi|direksi|komisaris|kontrak|tambang|batu ?bara|pengendali|konglomerat|taipan", re.I)
-    berita_luar = [b for b in berita_luar if relevan.search(b["judul"])]
+    UMUM = {"corporation", "group", "investama", "indonesia", "holdings", "holding", "international", "capital", "persada", "abadi",
+            "mandiri", "sejahtera", "global", "resources", "family"}
+    pihak = {w.lower() for n in bersih + PD.nama_dari_posts(posts, t) for w in re.findall(r"[A-Za-z]{4,}", n) if w.lower() not in UMUM}
+    # Kode saham atau nama emiten (dua kata pertama sebagai frasa, mis. "Indo Straits", "Argha Karya").
+    frasa = " ".join(nama_e.split()[:2]) if len(nama_e.split()) >= 2 else nama_e
+    wajib = re.compile(r"\b(" + "|".join([t] + ([re.escape(frasa)] if frasa else [])) + r")\b", re.I)
+    berita_luar = [b for b in berita_luar if relevan.search(b["judul"]) and (
+        (wajib and wajib.search(b["judul"])) or sum(1 for w in pihak if re.search(rf"\b{re.escape(w)}\b", b["judul"], re.I)) >= 2)]
     tahap(9, "Bandarmologi (broker 5/30/90 hari), jejak volume, dan preseden grup")
     bk, brokers = None, {}
     for hari in (5, 30, 90):
