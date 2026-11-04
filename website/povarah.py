@@ -148,14 +148,14 @@ def arah(c: dict) -> dict:
             (15, bool(c.get("kbli")), "Ada perubahan kegiatan usaha/nama."),
             (15, "inbreng" in pres_txt or "penambahan modal" in pres_txt, "Pemegang yang sama pernah menambah modal/injeksi di emiten lain."),
             (15, "perubahan pengendali" in pres_txt, "Pemegang yang sama baru terlibat perubahan pengendali/akuisisi di emiten lain (pola backdoor berulang)."),
+            (25, "kandidat cangkang berikutnya" in pres_txt, "Pemegang yang sama pernah melepas emiten lain saat emiten itu di-backdoor."),
             (10, (c.get("mcap") or 9e18) < 1e12, "Kapitalisasi di bawah Rp1 T: cangkang murah untuk dimasuki aset."),
             (10, akum, "Bandar mengumpulkan barang (1-3 bulan)."),
         ], ["Keterbukaan rencana transaksi material/inbreng", "Jadwal RUPSLB dan HMETD", "Penunjukan penilai independen atas aset target"]),
         ("Go private / tender offer sukarela", [
             (40, af >= 90, f"Pihak terafiliasi sudah {af:.1f}% saham."),
             (20, bool(c.get("insiderBeli")), "Pemegang utama terus menambah saham."),
-            (15, (c.get("pbv") or 9) < 1, "Harga di bawah nilai buku: murah bagi pengendali untuk membeli sisa saham publik."),
-            (10, akum, "Bandar mengumpulkan barang."),
+            (15, akum, "Bandar mengumpulkan barang."),
         ], ["Pengumuman penawaran tender sukarela / rencana delisting", "Pembelian kembali saham (buyback) besar"]),
         ("Distribusi untuk memenuhi free float / menjual ke publik", [
             (40, ff is not None and ff < 7.5, f"Free float {ff}% di bawah 7,5%." if ff is not None else ""),
@@ -175,12 +175,6 @@ def arah(c: dict) -> dict:
             (20, bool(c.get("konglo")), "Ada nama grup/konglomerat besar di struktur kepemilikan."),
             (15, "akuisisi" in pres_txt or "pengendali" in pres_txt, "Grup pernah melakukan akuisisi/pengalihan pengendali di emiten lain."),
         ], ["Transaksi afiliasi antar emiten grup", "Merger/penggabungan usaha", "Pengurus yang sama di emiten grup"]),
-        ("Pertumbuhan organik (bisnis membaik)", [
-            (35, bool(c.get("tumbuh")), "Laba kuartal murni naik dari tahun lalu dan kuartal sebelumnya."),
-            (20, bool(c.get("insiderBeli")), "Orang dalam menambah saham."),
-            (15, (c.get("pbv") or 9) < 1, "Valuasi di bawah nilai buku."),
-            (15, akum, "Bandar mengumpulkan barang."),
-        ], ["Laporan kuartal berikutnya tetap tumbuh", "Pembagian dividen", "Kontrak/ekspansi baru"]),
     ]
     for nama, poin, konf in rules:
         bukti = [t for v, ok, t in poin if ok and t]
@@ -277,6 +271,108 @@ def target_harga(c: dict) -> list[dict]:
     f90 = next((f for f in (c.get("bandar") or {}).get("fase") or [] if f["hari"] == 90 and f.get("avgAkum")), None)
     if f90 and f90["bandar"] > 0:
         tambah("Modal bandar + margin distribusi 30%", f90["avgAkum"] * 1.3, f"Modal rata-rata pembeli utama 3 bulan Rp{rp(f90['avgAkum'])} ditambah ruang untung untuk dibagikan.")
-    if c.get("high52"):
-        tambah("Tertinggi 52 minggu", c["high52"], "Batas atas yang pernah dicapai setahun terakhir.")
     return sorted(out, key=lambda x: x["harga"])
+
+
+GENERIK = {"INDONESIA", "INTERNATIONAL", "INTERNASIONAL", "INVESTAMA", "INVESTINDO", "GROUP", "GRUP", "HOLDING", "HOLDINGS", "CAPITAL",
+           "PERSADA", "SEJAHTERA", "MANDIRI", "ABADI", "GLOBAL", "PRIMA", "UTAMA", "JAYA", "MAKMUR", "SENTOSA", "NUSANTARA", "ASIA",
+           "CORPORATION", "LIMITED", "INVESTMENT", "INVESTMENTS", "MULIA", "PERKASA", "BERSAMA", "SUKSES", "LESTARI", "TBK", "PTE", "LTD"}
+
+
+def afiliasi(pemegang: list[dict], insider: list[dict], keluarga: list[dict], bersama: list[dict]) -> dict:
+    """Peta afiliasi: kelompok nama mirip, pihak yang bergerak di tanggal sama (acting in concert), pengurus-pemegang,
+    keluarga, kepemilikan bersama di emiten lain. Tiap kelompok dengan total persen."""
+    kel = []
+    # Nama mirip: kata khas yang sama (mis. RELIFE PROPERTY & RELIFE REALTY INDONESIA).
+    kata: dict = {}
+    for p in pemegang:
+        for w in set(re.findall(r"[A-Z]{5,}", p["name"].upper())) - GENERIK:
+            kata.setdefault(w, []).append(p)
+    for w, ps in kata.items():
+        if len(ps) >= 2 and not all(p.get("keluarga") for p in ps):
+            kel.append({"jenis": "nama mirip", "dasar": f"kata '{w}' di nama", "anggota": [p["name"] for p in ps],
+                        "pct": round(sum(p["pct"] for p in ps), 2)})
+    # Bergerak di tanggal yang sama (masuk/naik/keluar bersamaan).
+    tgl: dict = {}
+    for r in insider:
+        if abs((r.get("cur") or 0) - (r.get("prev") or 0)) >= 1:
+            tgl.setdefault(r["date"], {})[r["name"]] = r
+    for d, rs in sorted(tgl.items(), reverse=True):
+        if len(rs) >= 2:
+            arah_ = {("masuk" if (x.get("prev") or 0) == 0 else "naik" if x["cur"] > x["prev"] else "keluar" if x["cur"] == 0 else "turun") for x in rs.values()}
+            kel.append({"jenis": "bergerak bersamaan", "dasar": f"{d}: {', '.join(sorted(arah_))} di tanggal yang sama",
+                        "anggota": list(rs), "pct": round(sum(x.get("cur") or 0 for x in rs.values()), 2)})
+    for p in pemegang:
+        if p.get("pengurus"):
+            kel.append({"jenis": "pemegang = pengurus", "dasar": f"juga {p['pengurus']}", "anggota": [p["name"]], "pct": p["pct"]})
+    for k in keluarga:
+        kel.append({"jenis": "keluarga", "dasar": f"nama belakang {k['nama']}", "anggota": k["anggota"], "pct": k["pct"]})
+    for b in bersama:
+        kel.append({"jenis": "kepemilikan bersama", "dasar": f"bersama-sama memegang {b['t']}", "anggota": b["pemegang"],
+                    "pct": round(sum(p["pct"] for p in pemegang if p["name"] in b["pemegang"]), 2)})
+    semua = {n for k in kel for n in k["anggota"]}
+    return {"kelompok": kel[:12], "totalTerhubung": round(sum(p["pct"] for p in pemegang if p["name"] in semua), 2)}
+
+
+def market_maker(insider: list[dict], bandar: dict) -> list[str]:
+    """Broker yang dipakai pemegang utama/orang dalam saat bertransaksi (keterbukaan), dicocokkan dengan broker bandar teratas."""
+    pakai: dict = {}
+    for r in insider:
+        if r.get("broker"):
+            pakai.setdefault(r["broker"], []).append(r)
+    top = {}
+    for f in bandar.get("fase") or []:
+        for b in f["akum"]:
+            top.setdefault(b, []).append(f"beli {f['periode']}")
+        for b in f["dist"]:
+            top.setdefault(b, []).append(f"jual {f['periode']}")
+    out = []
+    for b, rs in sorted(pakai.items(), key=lambda kv: -len(kv[1])):
+        nama = sorted({r["name"] for r in rs})
+        if b in top:
+            out.append(f"Broker {b} dipakai {', '.join(nama[:3])} ({len(rs)} transaksi) dan juga tercatat {', '.join(top[b])}: "
+                       "kemungkinan broker yang dipakai pihak pengendali untuk menggerakkan harga.")
+        else:
+            out.append(f"Broker {b} dipakai {', '.join(nama[:3])} ({len(rs)} transaksi keterbukaan); belum tampak di broker bandar teratas.")
+    return out[:6]
+
+
+def jejak_cangkang(jaringan: list[dict], grup_aksi: list[dict], t: str) -> list[dict]:
+    """Pemegang saham ini yang melepas/keluar dari emiten lain di sekitar (<= 6 bulan) perubahan pengendali emiten itu:
+    pola membangun cangkang lalu menjualnya ke pembeli backdoor. Saham ini berpola sama -> calon cangkang berikutnya."""
+    ubah = {}
+    for a in grup_aksi:
+        if "akuisisi" in (a.get("jenis") or []):
+            ubah.setdefault(a["t"], []).append(a)
+    out = []
+    for r in jaringan:
+        for e in (r.get("keluar") or []) + [x for x in r.get("emiten") or [] if str(x.get("aksi") or "").upper() in ("SELL", "JUAL")]:
+            ev = ubah.get(e["t"]) or []
+            tgl = str(e.get("tgl") or "")[:10]
+            dekat = [a for a in ev if not tgl or abs((datetime.strptime(a["date"][:10], "%Y-%m-%d")
+                                                     - datetime.strptime(tgl, "%Y-%m-%d")).days) <= 183]
+            if dekat:
+                a = sorted(dekat, key=lambda a: a["date"])[-1]
+                out.append({"pemegang": r["nama"], "t": e["t"], "tgl": tgl, "sisa": e.get("pct"), "peristiwa": a["judul"], "tglPeristiwa": a["date"],
+                            "teks": f"{r['nama']} melepas {e['t']}{' (' + tgl + ')' if tgl else ''}, sisa {e.get('pct') or 0:.2f}%, "
+                                    f"bersamaan dengan perubahan pengendali di {e['t']} ({a['date'][:10]}: {a['judul'][:90]}). "
+                                    f"Pola membangun lalu menjual cangkang; {t} dipegang pihak yang sama: kandidat cangkang berikutnya."})
+    return out[:6]
+
+
+def potensi_backdoor(c: dict) -> dict:
+    """Skor potensi backdoor / ganti pengendali (0-100) dari tanda-tanda yang biasa mendahului."""
+    tanda = [
+        (25, bool(c.get("ambil")), "Ada pihak yang melewati 20%/50% (pengendali baru/menguat)."),
+        (20, bool(c.get("masukBersama")), "Beberapa pihak masuk/naik di tanggal yang sama (acting in concert)."),
+        (15, bool(c.get("pemainBaru")), "Pemegang >= 5% baru muncul dalam 3 tahun."),
+        (15, bool(c.get("rupsBerubah")), "Agenda RUPS/keterbukaan: perubahan anggaran dasar, kegiatan usaha, atau pengurus."),
+        (10, bool(c.get("pengurusBaru")), "Pengurus berganti."),
+        (10, bool(c.get("rights")), "Rencana penambahan modal/HMETD/inbreng."),
+        (10, (c.get("mcap") or 9e18) < 5e11, "Kapitalisasi di bawah Rp500 M (cangkang murah)."),
+        (15, "perubahan pengendali" in " ".join(c.get("preseden") or []).lower(), "Pemegang yang sama terlibat perubahan pengendali di emiten lain."),
+        (10, bool(c.get("akum")), "Bandar mengumpulkan barang."),
+        (30, bool(c.get("jejakCangkang")), "Rekam jejak: pemegang yang sama pernah melepas emiten lain saat emiten itu berganti pengendali (penjual cangkang)."),
+    ]
+    bukti = [t for v, ok, t in tanda if ok]
+    return {"skor": min(100, sum(v for v, ok, _ in tanda if ok)), "bukti": bukti}

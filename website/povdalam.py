@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import povarah as PA
 
 # Naikkan bila isi analisa berubah: hasil tersimpan versi lama ditarik ulang saat dibuka.
-VERSI = 9
+VERSI = 12
 PUBLIK_RX = re.compile(r"MASYARAKAT|PUBLIK|PUBLIC|SCRIPLESS|SCRIP\b", re.I)
 # Kata kunci posting yang membahas struktur kepemilikan/aksi korporasi (dipakai mengurutkan relevansi).
 TOPIK_RX = re.compile(r"pengendali|akuisisi|diakuisisi|pemilik|grup|group|konsorsium|backdoor|inbreng|rights|hmetd|tender|"
@@ -87,8 +87,12 @@ def _jaringan(t: str, pemegang: list[dict], jar: dict) -> tuple[list[dict], list
     for p in pemegang:
         hold = [h for h in (jar.get(p["name"]) or []) if h.get("symbol") and h["symbol"] != t and _pct(h.get("pct")) > 0]
         hold.sort(key=lambda h: -_pct(h.get("pct")))
-        rows.append({"nama": p["name"], "pct": p["pct"], "emiten": [{"t": h["symbol"], "pct": _pct(h.get("pct")), "sejak": h.get("since")}
-                                                                    for h in hold[:15]]})
+        keluar = [h for h in (jar.get(p["name"]) or []) if h.get("symbol") and h["symbol"] != t and _pct(h.get("pct")) <= 0
+                  or str(h.get("lastAction") or "").upper() in ("SELL", "JUAL") and h.get("symbol") != t]
+        rows.append({"nama": p["name"], "pct": p["pct"], "emiten": [{"t": h["symbol"], "pct": _pct(h.get("pct")), "sejak": h.get("since"),
+                                                                     "aksi": h.get("lastAction"), "tgl": h.get("lastDate")} for h in hold[:15]],
+                     "keluar": [{"t": h["symbol"], "pct": _pct(h.get("pct")), "aksi": h.get("lastAction"), "tgl": h.get("lastDate"), "sejak": h.get("since")}
+                                for h in sorted(keluar, key=lambda h: str(h.get("lastDate") or ""), reverse=True)[:10]]})
         for h in hold:
             per_emiten.setdefault(h["symbol"], []).append(p["name"])
     bersama = sorted(({"t": s, "pemegang": ns} for s, ns in per_emiten.items() if len(ns) >= 2), key=lambda x: -len(x["pemegang"]))
@@ -242,7 +246,7 @@ def cek_klaim(posts: list[dict], data: dict) -> list[dict]:
             if any(c["klaim"] == kal for c in out) or re.search(r"…|\.\.\.\s*(sebanyak|seharga|oleh|lembar)|oleh\s*…", kal):
                 continue
             for jenis, rx in KLAIM:
-                if (jenis, p.get("user")) in ada or not rx.search(kal):
+                if jenis in ("murah", "laba") or (jenis, p.get("user")) in ada or not rx.search(kal):
                     continue
                 status, bukti = data_klaim(jenis, data, kal)
                 ada.add((jenis, p.get("user")))
@@ -597,9 +601,23 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
          "harga": harga, "insider": ins, "ekuitas": met.get("equity"), "insiderRaw": d.get("insider") or [], "bvps": bvps, "high52": hi,
          "aksi": aksi, "pengurusBaru": next((a["date"] for a in aksi if "direksi" in a["jenis"]), ""),
          "pemainBaru": [f"{r['nama']} masuk {r['cur']:.2f}% ({r['date']})" for r in riwayat if r["prev"] == 0 and r["cur"] >= 5]}
+    # Rekam jejak penjual cangkang dihitung sebelum skenario arah agar ikut menentukan skor.
+    jejak = PA.jejak_cangkang(jar_rows, d.get("grupAksi") or [], t)
+    c["preseden"] = pres + [j["teks"] for j in jejak]
     arah_ = PA.arah(c)
-    sudut = PA.sudut_lain(c)
+    sudut = [x for x in PA.sudut_lain(c) if not x.startswith("Pasar menilai")]   # tanpa sudut fundamental
     target = PA.target_harga(c)
+    # Fokus: peta afiliasi, potensi backdoor / ganti pengendali, market maker.
+    afil = PA.afiliasi(non_publik, d.get("insider") or [], kel, bersama)
+    masuk_bersama = [k for k in afil["kelompok"] if k["jenis"] == "bergerak bersamaan"]
+    RUPS_RX = re.compile(r"anggaran dasar|kegiatan usaha|maksud dan tujuan|perubahan (susunan )?(direksi|komisaris|pengurus)|"
+                         r"pengendali|pengambilalihan|nama perseroan", re.I)
+    rups = [f"{u.get('date')}: {u.get('title')}" for u in d.get("laporan") or []
+            if RUPS_RX.search(f"{u.get('title', '')} {u.get('summary') or ''}")][:5]
+    bd = PA.potensi_backdoor({**c, "jejakCangkang": jejak, "masukBersama": masuk_bersama, "rupsBerubah": rups,
+                              "akum": any(f["bandar"] > 0 for f in bandar.get("fase") or [] if f["hari"] >= 30)})
+    bd["rups"] = rups
+    mm = PA.market_maker(d.get("insider") or [], bandar)
     ringkas = [f"{t} · {d.get('nama') or ''}".strip(" ·"),
                " / ".join(x for x in (prof.get("sector"), prof.get("industry")) if x)]
     if non_publik:
@@ -621,7 +639,7 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
         "kinerja": {"periode": lk.get("periode"), "judul": lk.get("judul"), "kuartal": kw or None, "pbv": pbv, "per": met.get("per"),
                     "laba": met.get("netIncomeTtm"), "pendapatan": met.get("revenueTtm"), "ekuitas": met.get("equity"), "bvps": met.get("bvps")},
         "komunitas": kom, "dugaan": dugaan, "selidiki": selidiki, "skenario": skenario, "kronologi": kron, "broker": bk, "klaim": klaim, "beritaLuar": (d.get("beritaLuar") or [])[:25],
-        "arah": arah_, "bandarmologi": bandar, "volume": volume, "preseden": pres, "sudut": sudut, "target": target,
+        "arah": arah_, "bandarmologi": bandar, "afiliasi": afil, "backdoor": bd, "marketMaker": mm, "jejakCangkang": jejak, "volume": volume, "preseden": pres, "sudut": sudut, "target": target,
         "radarSikap": {"sikap": pa.get("sikap"), "ringkas": (pa.get("ringkas") or "")[:400], "nilaiWajar": pa.get("nilaiWajar")} if pa.get("sikap") else None,
         "sumber": {"pemegang": len(semua), "jaringan": sum(len(r["emiten"]) for r in jar_rows), "keterbukaan": len(d.get("laporan") or []),
                    "berita": len(d.get("berita") or []), "posting": kom["jumlah"], "insider": len(d.get("insider") or [])},

@@ -610,7 +610,7 @@ class PovDalamTest(unittest.TestCase):
         r = povdalam.analyze(d, datetime(2026, 11, 3))
         st = {c["jenis"]: c["status"] for c in r["klaim"]}
         self.assertEqual(st["konglo"], "didukung data")      # pemegang bernama Salim
-        self.assertEqual(st["murah"], "didukung data")       # PBV 0,4x
+        self.assertNotIn("murah", st)                         # valuasi (fundamental) tidak dicek lagi
         self.assertEqual(st["likuid"], "didukung data")      # free float efektif 40% tidak, tetapi ff 9% < 10
         self.assertNotIn("fokusPosts", r["komunitas"])
 
@@ -624,8 +624,22 @@ class PovDalamTest(unittest.TestCase):
         a = povarah.arah({"ff": 4.3, "ffEfektif": 4.3, "afiliasi": 95.7, "insiderJual": [1], "habisBulan": True, "bandar": bm})
         self.assertEqual(a["skenario"][0]["nama"], "Distribusi untuk memenuhi free float / menjual ke publik")
         t = povarah.target_harga({"harga": 500, "bvps": 3160, "high52": 800})
-        self.assertEqual([x["harga"] for x in t], [800, 3160])
-        self.assertEqual(t[1]["potensi"], 532.0)
+        self.assertEqual([x["harga"] for x in t], [3160])          # tanpa titik teknikal 52 minggu
+        self.assertEqual(t[0]["potensi"], 532.0)
+
+    def test_afiliasi_dan_market_maker(self):
+        import povarah
+        pm = [{"name": "PT RELIFE PROPERTY", "pct": 19.44}, {"name": "PT RELIFE REALTY INDONESIA", "pct": 9.43},
+              {"name": "GHOFAR ROZAQ NAZILA", "pct": 10.77, "pengurus": "GHOFAR ROZAQ NAZILA"}]
+        ins = [{"date": "2026-03-10", "name": n, "prev": 0, "cur": c, "broker": "IU"} for n, c in
+               (("RELIFE PROPERTY", 19.44), ("RELIFE REALTY INDONESIA", 9.43), ("GHOFAR ROZAQ NAZILA", 10.77))]
+        a = povarah.afiliasi(pm, ins, [], [])
+        jenis = {k["jenis"] for k in a["kelompok"]}
+        self.assertTrue({"nama mirip", "bergerak bersamaan", "pemegang = pengurus"} <= jenis, jenis)
+        mm = povarah.market_maker(ins, {"fase": [{"periode": "1 bulan", "akum": ["IU"], "dist": []}]})
+        self.assertIn("kemungkinan broker", mm[0])
+        bd = povarah.potensi_backdoor({"masukBersama": [1], "pemainBaru": [1], "mcap": 1.5e11})
+        self.assertGreaterEqual(bd["skor"], 45)
 
     def test_pemegang_ganda_dan_keluarga(self):
         import povdalam
