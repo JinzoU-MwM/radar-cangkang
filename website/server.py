@@ -38,6 +38,7 @@ from pathlib import Path
 import brokerpola as BP
 import povdalam as PD
 import povarah as PA
+import povpindai as PP
 import beritapasar as BN
 import ihsg as IH
 import astro as AS
@@ -3155,7 +3156,9 @@ def pd_berita_luar(kueri: list[str]) -> list[dict]:
     return sorted(out, key=lambda x: x["date"], reverse=True)
 
 
-def pd_kumpul(t: str, job: dict) -> dict:
+def pd_kumpul(t: str, job: dict, ringan: bool = False) -> dict:
+    """ringan=True (pemindai malam): fokus kepemilikan/afiliasi/backdoor/bandar; tanpa berita, posting, Google News,
+    profil tokoh; jaringan & preseden lebih sedikit agar Stockbit tidak terbebani."""
     mulai = time.time()
     catatan: list[str] = []
 
@@ -3175,7 +3178,7 @@ def pd_kumpul(t: str, job: dict) -> dict:
         catatan.append(f"Riwayat pemegang saham gagal diambil: {e}"[:160])
     pmg = [s for s in (prof.get("shareholders") or []) + (prof.get("holders1") or [])
            if s.get("name") and not PD.PUBLIK_RX.search(s["name"])]
-    nama_pmg = list(dict.fromkeys(s["name"] for s in sorted(pmg, key=lambda s: -PD._pct(s.get("pct")))))[:10]
+    nama_pmg = list(dict.fromkeys(s["name"] for s in sorted(pmg, key=lambda s: -PD._pct(s.get("pct")))))[:6 if ringan else 10]
     # Orang dalam yang aktif bertransaksi 180 hari (mis. penjual bertahap) ikut ditelusuri jaringannya.
     batas180 = (datetime.now() - timedelta(days=180)).strftime("%Y-%m-%d")
     aktif: dict[str, float] = {}
@@ -3183,7 +3186,7 @@ def pd_kumpul(t: str, job: dict) -> dict:
         if r["date"] >= batas180:
             aktif[r["name"]] = aktif.get(r["name"], 0) + abs(r.get("chg") or 0)
     sudah = {PD._kunci(n) for n in nama_pmg}
-    nama_pmg += [n for n, v in sorted(aktif.items(), key=lambda kv: -kv[1]) if v >= 0.3 and PD._kunci(n) not in sudah][:4]
+    nama_pmg += [n for n, v in sorted(aktif.items(), key=lambda kv: -kv[1]) if v >= 0.3 and PD._kunci(n) not in sudah][:2 if ringan else 4]
     # Perkiraan waktu setelah jumlah pemegang diketahui (disampaikan ke pengunjung).
     job["estimasi"] = int(min(PD_BATAS_DETIK, 60 + 25 * len(nama_pmg) + 120))
     tahap(3, f"Menelusuri jaringan {len(nama_pmg)} pemegang saham di emiten lain")
@@ -3204,7 +3207,7 @@ def pd_kumpul(t: str, job: dict) -> dict:
         for h in hs:
             if h.get("symbol") and h["symbol"] != t:
                 hit[h["symbol"]] = hit.get(h["symbol"], 0) + 1
-    for s in sorted(hit, key=lambda s: -hit[s])[:8]:
+    for s in sorted(hit, key=lambda s: -hit[s])[:4 if ringan else 8]:
         if sisa() < 150:
             break
         try:
@@ -3217,7 +3220,7 @@ def pd_kumpul(t: str, job: dict) -> dict:
     laporan = []
     if cfg.get("url"):
         try:
-            laporan = get_reports({**cfg, "days": 365}, t, max_pages=10)
+            laporan = get_reports({**cfg, "days": 365}, t, max_pages=5 if ringan else 10)
         except Exception as e:
             catatan.append(f"Keterbukaan informasi gagal: {e}"[:160])
     for u in laporan:
@@ -3225,17 +3228,17 @@ def pd_kumpul(t: str, job: dict) -> dict:
         u["inti"] = (re.search(r"Inti:\s*(.+?)\s*(\(Ringkasan AI Stockbit\))?$", u.get("summary") or "") or [None, ""])[1]
     tahap(6, "Berita")
     berita = []
-    if cfg.get("url") and sisa() > 90:
+    if cfg.get("url") and sisa() > 90 and not ringan:
         try:
             berita = get_sb_news(cfg, t, pages=3)
         except Exception as e:
             catatan.append(f"Berita gagal: {e}"[:160])
     tahap(7, "Posting publik Stockbit tentang saham ini")
-    posts, kat = pd_posts(t, 10 if sisa() > 120 else 3)
-    if not posts:
+    posts, kat = pd_posts(t, 10 if sisa() > 120 else 3) if not ringan else ([], "")
+    if not posts and not ringan:
         catatan.append("Posting publik tidak ditemukan atau tidak dapat diambil.")
     try:
-        keystats = lks_parse((sb_fetch(f"/keystats/ratio/v1/{t}?year_limit=3").get("data") or {}))
+        keystats = {} if ringan else lks_parse((sb_fetch(f"/keystats/ratio/v1/{t}?year_limit=3").get("data") or {}))
     except Exception as e:
         keystats = {}
         catatan.append(f"Key Stats kuartalan gagal: {e}"[:160])
@@ -3248,7 +3251,7 @@ def pd_kumpul(t: str, job: dict) -> dict:
     # Nama dari klaim publik dicari bersama nama emiten agar tidak tercampur orang/berita lain bernama sama.
     jangkar = f'"{nama_e}"' if nama_e else t
     kueri += [f'"{n}" {jangkar}' for n in PD.nama_dari_posts(posts, t)]
-    berita_luar = pd_berita_luar(list(dict.fromkeys(kueri))[:10]) if sisa() > 60 else []
+    berita_luar = pd_berita_luar(list(dict.fromkeys(kueri))[:10]) if sisa() > 60 and not ringan else []
     # Hanya berita bisnis/pasar modal yang relevan dengan emiten atau pihak terkait.
     kunci = [w for w in re.findall(r"[A-Za-z]{4,}", nama_e) if w.lower() not in ("indonesia", "internasional", "nusantara")][:2]
     relevan = re.compile(r"\b(" + "|".join([t] + [re.escape(w) for w in kunci]) + r")\b|saham|tbk|emiten|bursa|bisnis|grup|group|"
@@ -3265,7 +3268,7 @@ def pd_kumpul(t: str, job: dict) -> dict:
               and not re.search(r"warkat|lainnya|others", s["name"], re.I) and PD._pct(s.get("pct")) >= 5]
     orang += [re.sub(r"\s*\(.*\)$", "", x) for x in (prof.get("commissioners") or [])[:1] + (prof.get("directors") or [])[:1]]
     tokoh = []
-    for n in list(dict.fromkeys(o.title() for o in orang if len(o.split()) >= 2))[:4]:
+    for n in list(dict.fromkeys(o.title() for o in orang if len(o.split()) >= 2))[:0 if ringan else 4]:
         if sisa() < 45:
             break
         kata = [w for w in n.split() if len(w) >= 3]
@@ -3293,11 +3296,11 @@ def pd_kumpul(t: str, job: dict) -> dict:
         catatan.append(f"Harga & volume harian gagal: {e}"[:160])
     # Preseden: aksi korporasi 2 tahun di emiten lain milik pemegang yang sama (pola yang mungkin diulang).
     grup_aksi = []
-    for s in list(grup)[:4]:
+    for s in list(grup)[:3 if ringan else 4]:
         if sisa() < 60 or not cfg.get("url"):
             break
         try:
-            for u in get_reports({**cfg, "days": 730}, s, max_pages=3):
+            for u in get_reports({**cfg, "days": 730}, s, max_pages=2 if ringan else 3):
                 j = kandidat_sigs(u.get("title", ""))
                 if j:
                     grup_aksi.append({"t": s, "date": u.get("date"), "judul": u.get("title"), "jenis": j})
@@ -3309,7 +3312,7 @@ def pd_kumpul(t: str, job: dict) -> dict:
                         "laporan": laporan, "berita": berita, "posts": posts, "lk": lk, "catatan": catatan, "broker": bk,
                         "pandangan": _json_berkas("pandangan-analis.json").get(t), "beritaLuar": berita_luar,
                         "brokers": {k: v for k, v in brokers.items() if v}, "bars": bars, "grupAksi": grup_aksi,
-                        "keystats": keystats, "tokoh": tokoh})
+                        "keystats": keystats, "tokoh": tokoh, "grupInfo": list(grup.values())})
     hasil["grup"] = list(grup.values())
     hasil["radar"] = t in radar_tickers()
     hasil["durasi"] = int(time.time() - mulai)
@@ -3326,6 +3329,116 @@ def _pd_jalan(t: str) -> None:
     except Exception as e:
         print(f"[pov-dalam] {t} gagal: {e}", file=sys.stderr)
         job.update({"status": "gagal", "galat": str(e)[:200]})
+
+
+# ------------------------------------------------- Pemindai calon cangkang ----
+# Tiap malam (01.30 WIB) analisa mendalam mode ringan untuk ~70 saham yang paling lama belum dipindai dari universe
+# Kandidat + radar + Saham 50 (bergiliran). Hasil ringkas di .pindai.json; turunannya: alarm penjual cangkang
+# (feed keterbukaan pasar), alarm broker market maker, peta grup pengendali, dan ringkasan harian.
+PINDAI_PATH = ROOT / ".pindai.json"
+PINDAI_PER_MALAM = 70
+_pindai_lock = threading.Lock()
+_pindai_jalan = {"aktif": False, "selesai": 0, "total": 0}
+
+
+def pindai_load() -> dict:
+    try:
+        return json.loads(PINDAI_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def pindai_simpan(d: dict) -> None:
+    tmp = PINDAI_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(PINDAI_PATH)
+
+
+def pindai_universe() -> list[str]:
+    uni = [it["ticker"] for it in items_all()]
+    try:
+        uni += [x["ticker"] for x in (_kd_memo[1].get("items", []) if _kd_memo else [])]
+    except Exception:
+        pass
+    try:
+        uni += [r["t"] for r in sorted(saham50_api().get("rows") or [], key=lambda r: -r.get("skor", 0))[:80]]
+    except Exception:
+        pass
+    return [t for t in dict.fromkeys(uni) if TICKER_RE.match(t)]
+
+
+def pindai_jalan(batas: int = PINDAI_PER_MALAM) -> int:
+    """Pindai `batas` saham yang paling lama belum dipindai, lalu hitung alarm, peta grup, ringkasan."""
+    if not (get_token() and not token_expired()):
+        return 0
+    with _pindai_lock:
+        if _pindai_jalan["aktif"]:
+            return 0
+        _pindai_jalan.update({"aktif": True, "selesai": 0})
+    try:
+        d = pindai_load()
+        rows = d.get("rows") or {}
+        urut = sorted(pindai_universe(), key=lambda t: (rows.get(t) or {}).get("dibuat") or "")[:batas]
+        _pindai_jalan["total"] = len(urut)
+        for i, t in enumerate(urut):
+            try:
+                h = pd_kumpul(t, {}, ringan=True)
+                rows[t] = PP.baris(h)
+            except Exception as e:
+                print(f"[pindai] {t} gagal: {e}", file=sys.stderr)
+            _pindai_jalan["selesai"] = i + 1
+            if (i + 1) % 10 == 0:
+                d["rows"] = rows
+                pindai_simpan(d)
+            time.sleep(2)
+        hari = datetime.now().strftime("%Y-%m-%d")
+        riw = d.get("riwayat") or {}
+        lalu_tgl = max((x for x in riw if x < hari), default=None)
+        lalu = riw.get(lalu_tgl) or {}
+        riw[hari] = {t: r["skor"] for t, r in rows.items()}
+        riw = {k: v for k, v in riw.items() if k >= (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")}
+        # Alarm penjual cangkang: daftar dari pemindai + analisa mendalam tersimpan, dicocokkan dengan feed 3 hari.
+        semua = dict(rows)
+        for t, v in pd_load().items():
+            if (v.get("hasil") or {}).get("jejakCangkang"):
+                semua.setdefault(t, PP.baris(v["hasil"]))
+        penjual = PP.penjual_cangkang(semua)
+        try:
+            feed = get_insider_feed(3).get("rows") or []
+        except Exception as e:
+            feed = []
+            print(f"[pindai] feed keterbukaan gagal: {e}", file=sys.stderr)
+        alarm = PP.alarm_penjual(penjual, feed) + PP.alarm_broker(rows)
+        d.update({"updated": datetime.now().strftime("%Y-%m-%d %H:%M"), "rows": rows, "riwayat": riw, "penjual": penjual,
+                  "alarm": alarm, "peta": PP.peta_grup(semua), "ringkasan": PP.ringkasan(rows, lalu, alarm)})
+        pindai_simpan(d)
+        return len(urut)
+    finally:
+        _pindai_jalan["aktif"] = False
+
+
+def pindai_loop() -> None:
+    """Pemindaian pertama 15 menit setelah start bila belum ada data, lalu tiap malam pukul 01.30 WIB."""
+    time.sleep(900)
+    while True:
+        try:
+            jam = datetime.now(WIB)
+            d = pindai_load()
+            if not d.get("updated") or (jam.hour == 1 and jam.minute >= 30 and not str(d.get("updated", "")).startswith(jam.strftime("%Y-%m-%d"))):
+                n = pindai_jalan()
+                print(f"[pindai] {n} saham dipindai", file=sys.stderr)
+        except Exception as e:
+            print(f"[pindai] gagal: {e}", file=sys.stderr)
+        time.sleep(600)
+
+
+def pindai_api() -> dict:
+    d = pindai_load()
+    rows = sorted((d.get("rows") or {}).values(), key=lambda r: (-r["skor"], -r["skorArah"]))
+    ringan = [{k: v for k, v in r.items() if k not in ("jaringan", "jejakData")} for r in rows]
+    return {"updated": d.get("updated"), "rows": ringan, "alarm": d.get("alarm") or [], "peta": d.get("peta") or [],
+            "ringkasan": d.get("ringkasan") or {}, "penjual": d.get("penjual") or {}, "jalan": dict(_pindai_jalan),
+            "universe": len(pindai_universe())}
 
 
 def pov_dalam_api(t: str, mulai: bool) -> dict:
@@ -5338,6 +5451,8 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "api/kode-bei":
             nama = nama_semua()
             self.reply_json({"kode": [{"t": t, "nama": nama.get(t, "")} for t in sorted(set(bei_kode_load()) | radar_tickers())]})
+        elif path == "api/pindai":
+            self.reply_json(pindai_api())
         elif path == "api/pov-dalam":
             t = self.qs("ticker").upper()
             if not TICKER_RE.match(t) or t not in bei_kode_load() and t not in radar_tickers():
@@ -5705,6 +5820,7 @@ def main() -> int:
     threading.Thread(target=kandidat_loop, daemon=True).start()
     threading.Thread(target=news_loop, daemon=True).start()
     threading.Thread(target=pov_loop, daemon=True).start()
+    threading.Thread(target=pindai_loop, daemon=True, name="pindai").start()
     threading.Thread(target=season_loop, daemon=True).start()
     threading.Thread(target=ihsg_loop, daemon=True).start()
     threading.Thread(target=live_loop, daemon=True).start()

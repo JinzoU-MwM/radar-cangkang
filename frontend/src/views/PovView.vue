@@ -8,6 +8,7 @@ import { fmt, fmtDate } from '../lib/domain.js'
 import SikapTag from '../components/SikapTag.vue'
 import PovDetail from '../components/PovDetail.vue'
 import PovDalam from '../components/PovDalam.vue'
+import PovPindai from '../components/PovPindai.vue'
 
 const data = ref(null), err = ref(''), kd = ref(null)
 // Analisa KakdrWay disembunyikan sampai tombolnya diklik.
@@ -56,6 +57,12 @@ const saranCari = computed(() => {
   return cocok.sort((a, b) => (b.t.toLowerCase() === s) - (a.t.toLowerCase() === s) || a.t.localeCompare(b.t)).slice(0, 8)
 })
 const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.value)?.nama || '')
+// Dari pemindai/alarm/peta grup: buka analisa mendalam saham itu di panel atas.
+function bukaDariPindai(t) {
+  pilih.value = t
+  if (kodeBei.value === null) { kodeBei.value = []; api.get('/api/kode-bei').then(r => { kodeBei.value = r.kode || [] }, () => {}) }
+  document.querySelector('.cari-dalam')?.scrollIntoView({ behavior: 'smooth' })
+}
 </script>
 
 <template>
@@ -76,6 +83,8 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
         <PovDalam :key="pilih" :ticker="pilih" />
       </section>
     </section>
+
+    <PovPindai @pilih="bukaDariPindai" />
 
     <p v-if="err" class="muted">Gagal memuat POV: {{ err }}</p>
     <p v-else-if="!data" class="muted">Memuat…</p>

@@ -60,6 +60,16 @@ export async function povDalamPdf(a, jsPDF) {
       butir(s.bukti, { size: 8.4, tanda: '›', x: 22, w: 174 })
       butir([`Konfirmasi yang ditunggu: ${s.konfirmasi.join('; ')}`], { size: 8, color: MUTED, tanda: '', x: 22, w: 174 })
     })
+    if (a.pertanyaan?.length) {
+      sub('Jawaban pertanyaan kunci', GOLD)
+      for (const q of a.pertanyaan) {
+        ruang(16)
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9.3); doc.setTextColor(PRIMER)
+        const h = doc.splitTextToSize(pdfText(q.q), 178); doc.text(h, 18, y, { lineHeightFactor: 1.3 }); y += h.length * 4.3 + 0.6
+        butir([q.a], { size: 8.8, tanda: '→', x: 20, w: 176 })
+        butir(q.bukti, { size: 8, color: MUTED, tanda: '›', x: 24, w: 172 }); y += 1
+      }
+    }
     if (a.backdoor) {
       sub(`Potensi backdoor / ganti pengendali: skor ${a.backdoor.skor}`, GOLD)
       butir(a.backdoor.bukti.length ? a.backdoor.bukti : ['Belum ada tanda yang biasa mendahului backdoor.'], { size: 8.6 })

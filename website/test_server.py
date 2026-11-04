@@ -653,6 +653,24 @@ class PovDalamTest(unittest.TestCase):
         self.assertEqual(r["kepemilikan"]["keluarga"][0]["anggota"].__len__(), 3)
         self.assertLessEqual(r["kepemilikan"]["nonPublik"], 100)
 
+    def test_pertanyaan_dan_pemindai(self):
+        import povdalam, povpindai
+        from datetime import datetime
+        d, k = self.data()
+        d["insider"].append({"date": "2026-10-01", "name": "PT Tiara Intimahkota", "prev": 30, "cur": 36.11, "chg": 6.11, "broker": "YP", "purpose": "Investasi"})
+        d["brokers"] = {5: {"bandar": 1e9, "akum": ["YP"], "dist": ["MG"], "avgAkum": 480}, 30: {"bandar": -2e9, "akum": ["PD"], "dist": ["MG"], "avgAkum": 480}}
+        h = povdalam.analyze(d, k)
+        q = {x["q"][:20]: x["a"] for x in h["pertanyaan"]}
+        self.assertIn("Belum tampak selesai", q["Apakah pembelian sud"])
+        self.assertIn("tidak tercatat", q["Apakah masih ada dis"])
+        h["radar"] = True
+        rows = {"AKPI": povpindai.baris(h, k)}
+        self.assertEqual(rows["AKPI"]["t"], "AKPI")
+        feed = [{"date": "2026-11-03", "name": "PT NAWA PANDUTA", "ticker": "ZZZZ", "prev": 0, "cur": 9.5}]
+        al = povpindai.alarm_penjual({"Nawa Panduta, PT": [{"t": "NAYZ", "tgl": "2026-08-19", "dari": "AKPI"}]}, feed)
+        self.assertEqual(al[0]["t"], "ZZZZ")
+        self.assertIn("RINGKASAN", povpindai.ringkasan(rows, {"AKPI": 0}, al)["teks"])
+
     def test_keluarga(self):
         import povdalam
         pm = [{"name": n, "pct": 1.7} for n in ("AMIRSYAH RISJAD", "DINA RISJAD", "DEDEY RISJAD", "SELVIYA RISJAD DANANTO")]
