@@ -380,8 +380,12 @@ def potensi_backdoor(c: dict) -> dict:
 
 
 
-ASET_RX = re.compile(r"transaksi material|inbreng|penyertaan|akuisisi|pengambilalihan|pembelian (saham|aset)|anak usaha|"
-                     r"aset|tambang|konsesi|lahan|proyek|merger|penggabungan|injeksi|private placement|hmetd", re.I)
+ASET_RX = re.compile(r"transaksi material|inbreng|penyertaan (modal|saham)|akuisisi|pengambilalihan|pembelian (saham|aset)|"
+                     r"pengalihan aset|aset baru|anak usaha baru|pendirian anak|konsesi|tambang baru|merger|penggabungan usaha|"
+                     r"injeksi|private placement|hmetd|penambahan modal|rights issue", re.I)
+# Keterbukaan rutin bukan aksi korporasi (laporan keuangan, volatilitas, laporan bulanan, jadwal RUPS, iklan).
+RUTIN_RX = re.compile(r"laporan keuangan|volatilitas|laporan bulanan|registrasi pemegang|bukti iklan|jadwal|pemanggilan|"
+                      r"pemberitahuan rencana rapat|public expose|penggunaan dana", re.I)
 NILAI_RX = re.compile(r"(?:rp|idr|us\$|usd)\s?[\d.,]+\s?(?:miliar|milyar|triliun|juta|m|t|b|million|billion)\b", re.I)
 
 
@@ -470,7 +474,7 @@ def pertanyaan_kunci(c: dict) -> list[dict]:
         a = beli[0]
         tgl_beli = sorted({r["date"] for r in raw if r["name"] == a["nama"] and (r.get("cur") or 0) > (r.get("prev") or 0)})
         dekat = []
-        for x in c.get("aksiSemua") or []:
+        for x in [x for x in c.get("aksiSemua") or [] if not RUTIN_RX.search(x.get("judul") or "")]:
             for tb in tgl_beli:
                 if x.get("date") and abs((datetime.strptime(x["date"][:10], "%Y-%m-%d") - datetime.strptime(tb, "%Y-%m-%d")).days) <= 60:
                     dekat.append(f"{x['date']}: {x['judul'][:100]} (pembelian {tb})")
@@ -481,7 +485,7 @@ def pertanyaan_kunci(c: dict) -> list[dict]:
         out.append({"q": "Apakah pembelian tersebut berkaitan dengan aksi korporasi?", "a": jaw, "bukti": (dekat + rups)[:5]})
     # 5. Aset/bisnis yang berpotensi masuk, pemilik, nilai ekonomi.
     dok = [f"{u.get('date')}: {u.get('title')} {u.get('inti') or ''}".strip() for u in c.get("laporan") or []
-           if ASET_RX.search(f"{u.get('title')} {u.get('inti') or ''}")]
+           if not RUTIN_RX.search(u.get("title") or "") and ASET_RX.search(f"{u.get('title')} {u.get('inti') or ''}")]
     dok += [f"{b.get('date')}: {b.get('judul')} ({b.get('sumber')})" for b in c.get("beritaLuar") or [] if ASET_RX.search(b.get("judul") or "")]
     nilai = list(dict.fromkeys(m.group(0) for x in dok for m in NILAI_RX.finditer(x)))
     pemilik = [f"{p['name']} ({p['pct']:.2f}%)" for p in (c.get("pemegang") or [])[:3]] + [f"UBO {u}" for u in c.get("ubo") or []]
