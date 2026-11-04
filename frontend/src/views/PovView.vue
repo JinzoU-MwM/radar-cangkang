@@ -10,6 +10,8 @@ import PovDalam from '../components/PovDalam.vue'
 const data = ref(null), err = ref(''), kd = ref(null)
 // Analisa KakdrWay disembunyikan sampai tombolnya diklik.
 const kdOpen = ref(false)
+// Pola pikir per akun juga disembunyikan sampai diklik.
+const polaOpen = ref(false)
 // POV dan KakdrWay dimuat paralel: tombol KakdrWay tidak menunggu data POV.
 onMounted(() => {
   api.get('/api/pov').then(v => { data.value = v }, e => { err.value = e.message })
@@ -70,8 +72,11 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
     <p v-else-if="!users.length" class="muted">Data POV sedang disiapkan server; coba lagi beberapa menit lagi.</p>
 
     <section v-if="users.length" class="rule-top">
-      <h2>Pola pikir per akun</h2>
-      <div class="cards">
+      <!-- Pola pikir per akun disembunyikan sampai tombolnya diklik (sama seperti Analisa KakdrWay). -->
+      <button type="button" class="btn kdbtn" :aria-expanded="String(polaOpen)" aria-controls="pola-isi" @click="polaOpen = !polaOpen">
+        Pola pikir per akun <span class="muted">({{ users.length }} akun)</span> <span aria-hidden="true">{{ polaOpen ? '▴' : '▾' }}</span>
+      </button>
+      <div v-if="polaOpen" id="pola-isi" class="cards">
         <article v-for="u in users" :key="u.username" class="card klik" tabindex="0" role="button" :aria-label="'Detail akun ' + u.username" @click="buka = u" @keydown.enter.self="buka = u">
           <div class="ch">
             <a :href="u.url" target="_blank" rel="noopener" @click.stop><b>@{{ u.username }}</b></a>
