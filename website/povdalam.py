@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import povarah as PA
 
 # Naikkan bila isi analisa berubah: hasil tersimpan versi lama ditarik ulang saat dibuka.
-VERSI = 18
+VERSI = 19
 PUBLIK_RX = re.compile(r"MASYARAKAT|PUBLIK|PUBLIC|SCRIPLESS|SCRIP\b", re.I)
 # Kata kunci posting yang membahas struktur kepemilikan/aksi korporasi (dipakai mengurutkan relevansi).
 TOPIK_RX = re.compile(r"pengendali|akuisisi|diakuisisi|pemilik|grup|group|konsorsium|backdoor|inbreng|rights|hmetd|tender|"
@@ -127,7 +127,8 @@ def _riwayat(insider: list[dict], kini: datetime) -> list[dict]:
         if lewat or abs(cur - prev) >= 5:
             if not masuk_terverifikasi(r, insider):
                 out.append({"date": r["date"], "nama": r["name"], "prev": prev, "cur": cur, "lewat": None, "pertama": True,
-                            "teks": f"{r['name']} pertama tercatat di KSEI {cur:.2f}% (tanpa keterbukaan IDX; bisa pemegang lama)"})
+                            "teks": f"{r['name']} pertama tercatat di KSEI {cur:.2f}% tanpa keterbukaan IDX: kemungkinan konversi saham "
+                                    f"warkat ke scripless (pemegang lama; saham menjadi siap dijual di pasar atau dialihkan)"})
                 continue
             arah = "naik" if cur > prev else "turun"
             teks = f"{r['name']} {arah} {prev:.2f}% -> {cur:.2f}%" + (f" (melewati {lewat}%)" if lewat else "")
@@ -609,7 +610,10 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
     if terv or didukung:
         publik_teks = "Info publik yang terbukti: " + "; ".join(
             [f"{r['orang']} melalui {r['badan']}" for r in terv[:3]] + [f"“{k['klaim'][:90]}” (@{k['user']})" for k in didukung[:3]]) + "."
+    batas12k = (kini - timedelta(days=365)).strftime("%Y-%m-%d")
+    konversi = [r for r in riwayat if r.get("pertama") and r["cur"] >= 5 and r["date"] >= batas12k]
     c = {"ff": ff, "ffEfektif": ff_efektif, "afiliasi": total_np, "bandar": bandar, "preseden": pres, "ambil": ambil, "lepas": lepas,
+         "konversi": [f"{r['date']}: {r['nama']} {r['cur']:.2f}%" for r in konversi],
          "rights": "rights" in jenis180, "kbli": "kbli" in jenis180, "mcap": stats.get("marketCap"), "pbv": pbv, "tumbuh": kw.get("tumbuh"),
          "insiderBeli": [a for a in ins if a["chg"] > 0], "insiderJual": [a for a in ins if a["chg"] < 0],
          "habisBulan": any(a.get("habisBulan") for a in ins), "bersama": bersama, "grupN": sum(1 for r in jar_rows if len(r["emiten"]) >= 1),
@@ -640,7 +644,7 @@ def analyze(d: dict, kini: datetime | None = None) -> dict:
         "t": t, "kini": kini, "ins": ins, "insiderRaw": d.get("insider") or [], "bandar": bandar, "jaringan": jar_rows, "jejakData": jejak,
         "aksiSemua": [{"date": u.get("date"), "judul": u.get("title", "")} for u in d.get("laporan") or []], "rups": rups,
         "laporan": d.get("laporan") or [], "beritaLuar": d.get("beritaLuar") or [], "pemegang": non_publik,
-        "ubo": prof.get("beneficiary") or [], "preseden": c.get("preseden"), "grup": d.get("grupInfo") or []})
+        "ubo": prof.get("beneficiary") or [], "preseden": c.get("preseden"), "grup": d.get("grupInfo") or [], "konversi": c.get("konversi")})
     ringkas = [f"{t} · {d.get('nama') or ''}".strip(" ·"),
                " / ".join(x for x in (prof.get("sector"), prof.get("industry")) if x)]
     if non_publik:

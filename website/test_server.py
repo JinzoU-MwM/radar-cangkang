@@ -689,6 +689,10 @@ class PovDalamTest(unittest.TestCase):
         self.assertEqual(cep["lewat"], 20)                                        # masuk baru terverifikasi IDX
         ins180 = {x["nama"]: x for x in povdalam._insider180(ins, datetime(2026, 11, 4))}
         self.assertLess(ins180["ENAM BERLIAN SINERGI"]["chg"], 0)               # penjualan, bukan pembelian +46%
+        self.assertIn("scripless", enam["teks"])
+        import povarah
+        bd = povarah.potensi_backdoor({"konversi": ["2026-09-11: ENAM BERLIAN SINERGI 46.72%"]})
+        self.assertTrue(any("scripless" in b for b in bd["bukti"]))
 
     def test_keluarga(self):
         import povdalam
