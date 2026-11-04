@@ -60,6 +60,17 @@ export async function povDalamPdf(a, jsPDF) {
       butir(s.bukti, { size: 8.4, tanda: '›', x: 22, w: 174 })
       butir([`Konfirmasi yang ditunggu: ${s.konfirmasi.join('; ')}`], { size: 8, color: MUTED, tanda: '', x: 22, w: 174 })
     })
+    if (a.backdoor) {
+      sub(`Potensi backdoor / ganti pengendali: skor ${a.backdoor.skor}`, GOLD)
+      butir(a.backdoor.bukti.length ? a.backdoor.bukti : ['Belum ada tanda yang biasa mendahului backdoor.'], { size: 8.6 })
+      if (a.jejakCangkang?.length) { sub('Rekam jejak penjual cangkang', GOOD); butir(a.jejakCangkang.map(j => j.teks), { size: 8.6 }) }
+      if (a.backdoor.rups?.length) { sub('Agenda RUPS / keterbukaan perubahan'); butir(a.backdoor.rups, { size: 8.3 }) }
+    }
+    if (a.afiliasi?.kelompok?.length) {
+      sub(`Peta afiliasi (terhubung ${p2(a.afiliasi.totalTerhubung)})`)
+      butir(a.afiliasi.kelompok.map(k => `[${k.jenis}] ${p2(k.pct)} · ${k.dasar}: ${k.anggota.join(', ')}`), { size: 8.4 })
+    }
+    if (a.marketMaker?.length) { sub('Market maker: broker yang dipakai orang dalam'); butir(a.marketMaker, { size: 8.4 }) }
     if (a.target?.length) {
       sub('Skenario target harga (distribusi) — bukan rekomendasi', GOLD)
       butir(a.target.map(x => `${x.label}: Rp${Math.round(x.harga)} (${x.potensi > 0 ? '+' : ''}${String(x.potensi).replace('.', ',')}%) — ${x.dasar}`), { size: 8.5 })
@@ -78,19 +89,16 @@ export async function povDalamPdf(a, jsPDF) {
   if (a.ringkas.length) teks(a.ringkas.join('. ') + '.', 9.5)
   if (idn.latar) teks(potong(idn.latar, 600), 8.5, MUTED)
   if (a.radarSikap) { sub(`Sikap analisa radar: ${a.radarSikap.sikap}`, GOOD); teks(potong(a.radarSikap.ringkas, 360), 8.8) }
-  sub('Skenario nilai')
-  butir([`Harga terakhir ${idn.harga ? 'Rp' + Math.round(idn.harga) : '-'}${idn.mcap ? ' · kapitalisasi Rp' + Math.round(idn.mcap / 1e9) + ' M' : ''}`,
-    ...a.skenario.map(s => `${s.label}: Rp${Math.round(s.harga)} (${s.selisih > 0 ? '+' : ''}${String(s.selisih).replace('.', ',')}% dari harga sekarang)`),
-    ...(a.broker ? [`Broker 30 hari: ${a.broker.bandar > 0 ? 'akumulasi' : 'distribusi'} Rp${(Math.abs(a.broker.bandar) / 1e9).toFixed(2).replace('.', ',')} M; pembeli ${a.broker.akum.join(', ') || '-'}; penjual ${a.broker.dist.join(', ') || '-'}`] : [])])
   sub(`Pemegang saham (terafiliasi ${p2(k.nonPublik)} · free float efektif ${p2(k.ffEfektif)})`)
   butir(k.pemegang.map(p => `${p.name} ${p2(p.pct)}${p.pengendali ? ' · pengendali' : ''}${p.pengurus ? ' · juga pengurus (' + p.pengurus + ')' : ''}${p.keluarga ? ' · keluarga ' + p.keluarga : ''}`))
   if (k.keluarga?.length) butir(k.keluarga.map(x => `Keluarga ${x.nama}: ${x.anggota.length} anggota, total ${p2(x.pct)}`), { color: PRIMER })
   if (k.ubo.length) butir([`Pemilik manfaat akhir (UBO): ${k.ubo.join(', ')}`], { color: PRIMER })
   if (k.direksi.length || k.komisaris.length) butir([`Direksi: ${k.direksi.join(', ') || '-'}`, `Komisaris: ${k.komisaris.join(', ') || '-'}`], { size: 8.2, color: MUTED })
   sub('Jaringan: kepemilikan pemegang saham di emiten lain', GOLD)
-  const jar = a.jaringan.filter(r => r.emiten.length)
+  const jar = a.jaringan.filter(r => r.emiten.length || r.keluar?.length)
   if (!jar.length) teks('Pemegang saham utama tidak tercatat memiliki emiten lain di data keterbukaan pemegang saham.', 9, MUTED)
-  butir(jar.map(r => `${r.nama} (${p2(r.pct)} di ${a.t}): ${r.emiten.map(e => `${e.t} ${p2(e.pct)}`).join(', ')}`))
+  butir(jar.map(r => `${r.nama} (${p2(r.pct)} di ${a.t}): ${r.emiten.map(e => `${e.t} ${p2(e.pct)}`).join(', ') || '-'}`
+    + (r.keluar?.length ? `; dilepas: ${r.keluar.map(e => `${e.t}${e.tgl ? ' (' + e.tgl + ')' : ''}`).join(', ')}` : '')))
   if (a.bersama.length) butir(a.bersama.map(x => `${x.t} dimiliki bersama oleh ${x.pemegang.join(', ')}`), { color: PRIMER, tanda: '›' })
   if (a.grup?.length) {
     sub('Emiten grup: pemegang utamanya')
@@ -114,21 +122,10 @@ export async function povDalamPdf(a, jsPDF) {
   sub('Keterbukaan aksi korporasi (1 tahun)')
   if (!a.aksi.length) teks('Tidak ada keterbukaan aksi korporasi yang terbaca dalam 1 tahun.', 9, MUTED)
   butir(a.aksi.slice(0, 14).map(x => `${tgl(x.date)}: ${x.judul}${x.inti ? ' — ' + potong(x.inti, 200) : ''}`), { size: 8.5 })
-  if (a.kinerjaQ?.length) {
-    sub('Kinerja per kuartal (Key Stats)')
-    butir(a.kinerjaQ.map(q => `${q.q}: laba Rp${(q.laba / 1e9).toFixed(2).replace('.', ',')} M`
-      + (q.yoy != null ? `, YoY ${q.yoy > 0 ? '+' : ''}${String(q.yoy).replace('.', ',')}%` : '') + (q.qoq != null ? `, QoQ ${q.qoq > 0 ? '+' : ''}${String(q.qoq).replace('.', ',')}%` : '')
-      + (q.pendapatan != null ? `; pendapatan Rp${(q.pendapatan / 1e9).toFixed(1).replace('.', ',')} M` : '') + (q.catatan ? ` (${q.catatan})` : '')), { size: 8.4 })
-  }
   if (a.tokoh?.length) {
     sub('Profil tokoh (UBO, pemegang perorangan, komut, dirut)')
     for (const o of a.tokoh) butir([`${o.nama}: ` + (o.berita.length ? o.berita.slice(0, 4).map(b => `${b.judul} (${b.sumber}${b.date ? ', ' + tgl(b.date) : ''})`).join(' | ') : 'tidak ada pemberitaan publik yang memuat nama ini.')], { size: 8.3 })
   }
-  const kn = a.kinerja, kw = kn.kuartal
-  sub('Kinerja dan valuasi')
-  butir([kn.judul ? `Laporan ${kn.periode}: ${kn.judul}` : 'Laporan keuangan terbaru belum terbaca.',
-    kw ? `Laba Q${kw.q} murni ${kw.status === 'berbalik' ? 'berbalik dari rugi' : (kw.yoy ?? '-') + '% YoY'}, QoQ ${kw.berbalikQoq ? 'berbalik dari rugi' : (kw.qoq ?? '-') + '%'}${kw.tumbuh ? ' (naik dari tahun lalu dan kuartal sebelumnya)' : ''}` : '',
-    `PBV ${kn.pbv ?? '-'}x · PER ${kn.per ?? '-'}x`].filter(Boolean))
   if (a.berita.length) { sub('Berita terbaru (Stockbit)'); butir(a.berita.slice(0, 6).map(b => `${tgl(b.date)}: ${b.judul}`), { size: 8.3 }) }
   if (a.beritaLuar?.length) { sub('Berita di luar Stockbit (media nasional)'); butir(a.beritaLuar.slice(0, 15).map(b => `${b.date ? tgl(b.date) : '-'}: ${b.judul} (${b.sumber})`), { size: 8.3 }) }
 

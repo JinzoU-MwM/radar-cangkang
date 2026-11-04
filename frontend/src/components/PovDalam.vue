@@ -78,6 +78,33 @@ async function unduh() {
         </div>
       </template>
 
+      <template v-if="hasil.backdoor">
+        <h3>Potensi backdoor / ganti pengendali: skor {{ hasil.backdoor.skor }}</h3>
+        <div class="skh"><span class="skb wide"><i :style="{ width: hasil.backdoor.skor + '%' }"></i></span></div>
+        <ul class="small"><li v-for="b in hasil.backdoor.bukti" :key="b">{{ b }}</li><li v-if="!hasil.backdoor.bukti.length" class="muted">Belum ada tanda yang biasa mendahului backdoor.</li></ul>
+        <template v-if="hasil.jejakCangkang?.length">
+          <h4>Rekam jejak penjual cangkang</h4>
+          <ul class="small"><li v-for="j in hasil.jejakCangkang" :key="j.t + j.pemegang"><b>{{ j.teks }}</b></li></ul>
+        </template>
+        <template v-if="hasil.backdoor.rups?.length">
+          <h4>Agenda RUPS / keterbukaan perubahan</h4>
+          <ul class="small"><li v-for="r in hasil.backdoor.rups" :key="r">{{ r }}</li></ul>
+        </template>
+      </template>
+
+      <template v-if="hasil.afiliasi?.kelompok?.length">
+        <h3>Peta afiliasi · terhubung {{ p2(hasil.afiliasi.totalTerhubung) }}</h3>
+        <div v-for="k in hasil.afiliasi.kelompok" :key="k.jenis + k.dasar" class="dg pos">
+          <span class="tag t-calm">{{ k.jenis }}</span> <b>{{ p2(k.pct) }}</b> · {{ k.dasar }}
+          <div class="small">{{ k.anggota.join(', ') }}</div>
+        </div>
+      </template>
+
+      <template v-if="hasil.marketMaker?.length">
+        <h3>Market maker: broker yang dipakai orang dalam</h3>
+        <ul class="small"><li v-for="m in hasil.marketMaker" :key="m">{{ m }}</li></ul>
+      </template>
+
       <template v-if="hasil.target?.length">
         <h3>Skenario target harga (distribusi)</h3>
         <ul class="small"><li v-for="x in hasil.target" :key="x.label"><b>{{ x.label }}: Rp{{ fmt(x.harga, 0) }}</b>
@@ -133,12 +160,6 @@ async function unduh() {
         <p class="small">{{ hasil.radarSikap.ringkas }}<template v-if="hasil.radarSikap.nilaiWajar?.atas"> · nilai wajar Rp{{ hasil.radarSikap.nilaiWajar.bawah || '–' }}–{{ hasil.radarSikap.nilaiWajar.atas }}</template></p>
       </template>
 
-      <h3>Skenario nilai</h3>
-      <p class="small muted">Harga terakhir {{ hasil.identitas.harga ? 'Rp' + fmt(hasil.identitas.harga, 0) : '–' }}<template v-if="hasil.identitas.mcap"> · kapitalisasi Rp{{ fmt(hasil.identitas.mcap / 1e9, 0) }} M</template></p>
-      <ul class="small"><li v-for="s in hasil.skenario" :key="s.label">{{ s.label }}: Rp{{ fmt(s.harga, 0) }} (<b :class="s.selisih >= 0 ? 'c-good' : 'c-strong'">{{ s.selisih > 0 ? '+' : '' }}{{ fmt(s.selisih, 1) }}%</b> dari harga sekarang)</li>
-        <li v-if="hasil.broker">Broker 30 hari: <b :class="hasil.broker.bandar > 0 ? 'c-good' : 'c-strong'">{{ hasil.broker.bandar > 0 ? 'akumulasi' : 'distribusi' }} Rp{{ fmt(Math.abs(hasil.broker.bandar) / 1e9, 2) }} M</b>
-          · pembeli {{ hasil.broker.akum.join(', ') || '–' }} · penjual {{ hasil.broker.dist.join(', ') || '–' }}</li></ul>
-
       <h3>Kepemilikan · terafiliasi {{ p2(hasil.kepemilikan.nonPublik) }} · free float efektif {{ p2(hasil.kepemilikan.ffEfektif) }} · free float Stockbit {{ p2(hasil.identitas.freeFloat) }}</h3>
       <ul class="small">
         <li v-for="p in hasil.kepemilikan.pemegang" :key="p.name"><b>{{ p.name }}</b> {{ p2(p.pct) }}<span v-if="p.pengendali" class="tag t-warn">pengendali</span><span v-if="p.pengurus" class="tag t-calm">pengurus: {{ p.pengurus }}</span><span v-if="p.keluarga" class="tag t-calm">keluarga {{ p.keluarga }}</span></li>
@@ -148,10 +169,11 @@ async function unduh() {
       <p class="small muted">Direksi: {{ hasil.kepemilikan.direksi.join(', ') || '–' }} · Komisaris: {{ hasil.kepemilikan.komisaris.join(', ') || '–' }}</p>
 
       <h3>Jaringan pemegang saham di emiten lain</h3>
-      <p v-if="!hasil.jaringan.some(r => r.emiten.length)" class="small muted">Pemegang saham utama tidak tercatat memiliki emiten lain.</p>
+      <p v-if="!hasil.jaringan.some(r => r.emiten.length || r.keluar?.length)" class="small muted">Pemegang saham utama tidak tercatat memiliki emiten lain.</p>
       <ul class="small">
-        <li v-for="r in hasil.jaringan.filter(r => r.emiten.length)" :key="r.nama"><b>{{ r.nama }}</b> ({{ p2(r.pct) }}):
-          <template v-for="(e, i) in r.emiten" :key="e.t"><span v-if="i">, </span><RouterLink :to="'/emiten/' + e.t">{{ e.t }}</RouterLink> {{ p2(e.pct) }}</template></li>
+        <li v-for="r in hasil.jaringan.filter(r => r.emiten.length || r.keluar?.length)" :key="r.nama"><b>{{ r.nama }}</b> ({{ p2(r.pct) }}):
+          <template v-for="(e, i) in r.emiten" :key="e.t"><span v-if="i">, </span><RouterLink :to="'/emiten/' + e.t">{{ e.t }}</RouterLink> {{ p2(e.pct) }}</template>
+          <template v-if="r.keluar?.length"> · <span class="c-strong">dilepas:</span> <template v-for="(e, i) in r.keluar" :key="'k' + e.t"><span v-if="i">, </span>{{ e.t }}<span class="muted"> ({{ e.tgl || '–' }})</span></template></template></li>
         <li v-for="x in hasil.bersama" :key="'b' + x.t"><b>{{ x.t }}</b> dimiliki bersama oleh {{ x.pemegang.join(', ') }}</li>
       </ul>
       <template v-if="hasil.grup?.length">
@@ -165,18 +187,6 @@ async function unduh() {
       <ul v-if="hasil.insider.length" class="small"><li v-for="x in hasil.insider" :key="x.nama">{{ x.nama }}<span v-if="x.role"> ({{ x.role }})</span>:
         <b :class="x.chg > 0 ? 'c-good' : 'c-strong'">{{ x.chg > 0 ? '+' : '' }}{{ fmt(x.chg, 2) }} poin</b>, {{ x.n }} transaksi, terakhir {{ fmtDate(x.akhir) }}<template v-if="x.lembar">; {{ fmt(x.lembar / 1e6, 1) }} juta lembar<template v-if="x.harga"> @ ±Rp{{ fmt(x.harga, 0) }}</template></template><template v-if="x.sisa">;
           sisa {{ fmt(x.sisa / 1e6, 1) }} juta lembar ({{ p2(x.sisaPct) }})</template><b v-if="x.habisBulan">; habis ± {{ Math.round(x.habisBulan) }} bulan lagi bila laju sama</b></li></ul>
-
-      <template v-if="hasil.kinerjaQ?.length">
-        <h3>Kinerja per kuartal (Key Stats)</h3>
-        <table class="ledger small">
-          <thead><tr><th>Kuartal</th><th class="num">Laba bersih</th><th class="num">YoY</th><th class="num">QoQ</th><th class="num">Pendapatan</th><th></th></tr></thead>
-          <tbody><tr v-for="q in hasil.kinerjaQ" :key="q.q"><td>{{ q.q }}</td>
-            <td class="num" :class="q.laba > 0 ? '' : 'c-strong'">Rp{{ fmt(q.laba / 1e9, 2) }} M</td>
-            <td class="num">{{ q.yoy == null ? '–' : (q.yoy > 0 ? '+' : '') + fmt(q.yoy, 1) + '%' }}</td>
-            <td class="num">{{ q.qoq == null ? '–' : (q.qoq > 0 ? '+' : '') + fmt(q.qoq, 1) + '%' }}</td>
-            <td class="num">{{ q.pendapatan == null ? '–' : 'Rp' + fmt(q.pendapatan / 1e9, 1) + ' M' }}</td><td class="muted">{{ q.catatan }}</td></tr></tbody>
-        </table>
-      </template>
 
       <template v-if="hasil.tokoh?.length">
         <h3>Profil tokoh (UBO, pemegang perorangan, komut, dirut)</h3>
@@ -231,5 +241,5 @@ async function unduh() {
 .nar{margin:4px 0;line-height:1.55}
 .sk{margin:6px 0;padding:4px 0 4px 10px;border-left:3px solid var(--now-ink)}
 .skh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.skb{flex:0 0 120px;height:6px;background:var(--rule);border-radius:3px}
-.skb i{display:block;height:100%;background:var(--now-ink);border-radius:3px}
+.skb.wide{flex:0 0 240px}.skb i{display:block;height:100%;background:var(--now-ink);border-radius:3px}
 </style>
