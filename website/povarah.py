@@ -318,8 +318,9 @@ def market_maker(insider: list[dict], bandar: dict) -> list[str]:
     """Broker yang dipakai pemegang utama/orang dalam saat bertransaksi (keterbukaan), dicocokkan dengan broker bandar teratas."""
     pakai: dict = {}
     for r in insider:
-        if r.get("broker"):
-            pakai.setdefault(r["broker"], []).append(r)
+        # Satu keterbukaan bisa memuat beberapa kode broker ("IU, AN"): dihitung per broker.
+        for b in {x.strip() for x in re.split(r"[,/;\s]+", r.get("broker") or "") if x.strip()}:
+            pakai.setdefault(b, []).append(r)
     top = {}
     for f in bandar.get("fase") or []:
         for b in f["akum"]:
@@ -351,7 +352,7 @@ def jejak_cangkang(jaringan: list[dict], grup_aksi: list[dict], t: str) -> list[
             tgl = str(e.get("tgl") or "")[:10]
             dekat = [a for a in ev if not tgl or abs((datetime.strptime(a["date"][:10], "%Y-%m-%d")
                                                      - datetime.strptime(tgl, "%Y-%m-%d")).days) <= 183]
-            if dekat:
+            if dekat and not any(o["pemegang"] == r["nama"] and o["t"] == e["t"] for o in out):
                 a = sorted(dekat, key=lambda a: a["date"])[-1]
                 out.append({"pemegang": r["nama"], "t": e["t"], "tgl": tgl, "sisa": e.get("pct"), "peristiwa": a["judul"], "tglPeristiwa": a["date"],
                             "teks": f"{r['nama']} melepas {e['t']}{' (' + tgl + ')' if tgl else ''}, sisa {e.get('pct') or 0:.2f}%, "
