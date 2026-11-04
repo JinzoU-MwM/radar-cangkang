@@ -306,8 +306,9 @@ def afiliasi(pemegang: list[dict], insider: list[dict], keluarga: list[dict], be
                         "pct": round(sum(p["pct"] for p in ps), 2)})
     # Bergerak di tanggal yang sama (masuk/naik/keluar bersamaan).
     tgl: dict = {}
+    import povdalam as _PD
     for r in insider:
-        if abs((r.get("cur") or 0) - (r.get("prev") or 0)) >= 1:
+        if abs((r.get("cur") or 0) - (r.get("prev") or 0)) >= 1 and _PD.masuk_terverifikasi(r, insider):
             tgl.setdefault(r["date"], {})[r["name"]] = r
     for d, rs in sorted(tgl.items(), reverse=True):
         if len(rs) >= 2:
