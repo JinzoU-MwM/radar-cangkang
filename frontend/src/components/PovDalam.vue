@@ -78,6 +78,15 @@ async function unduh() {
         </div>
       </template>
 
+      <template v-if="hasil.pertanyaan?.length">
+        <h3>Jawaban pertanyaan kunci</h3>
+        <div v-for="q in hasil.pertanyaan" :key="q.q" class="dg pos">
+          <b>{{ q.q }}</b>
+          <p class="small nar">{{ q.a }}</p>
+          <ul v-if="q.bukti.length" class="small muted"><li v-for="b in q.bukti" :key="b">{{ b }}</li></ul>
+        </div>
+      </template>
+
       <template v-if="hasil.backdoor">
         <h3>Potensi backdoor / ganti pengendali: skor {{ hasil.backdoor.skor }}</h3>
         <div class="skh"><span class="skb wide"><i :style="{ width: hasil.backdoor.skor + '%' }"></i></span></div>

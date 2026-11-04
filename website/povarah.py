@@ -377,3 +377,120 @@ def potensi_backdoor(c: dict) -> dict:
     ]
     bukti = [t for v, ok, t in tanda if ok]
     return {"skor": min(100, sum(v for v, ok, _ in tanda if ok)), "bukti": bukti}
+
+
+
+ASET_RX = re.compile(r"transaksi material|inbreng|penyertaan|akuisisi|pengambilalihan|pembelian (saham|aset)|anak usaha|"
+                     r"aset|tambang|konsesi|lahan|proyek|merger|penggabungan|injeksi|private placement|hmetd", re.I)
+NILAI_RX = re.compile(r"(?:rp|idr|us\$|usd)\s?[\d.,]+\s?(?:miliar|milyar|triliun|juta|m|t|b|million|billion)\b", re.I)
+
+
+def _k(s: str) -> str:
+    return " ".join(sorted(re.sub(r"[^A-Z0-9]+", " ", re.sub(r"\b(PT|TBK|LTD|PTE)\b", " ", (s or "").upper())).split()))
+
+
+def pertanyaan_kunci(c: dict) -> list[dict]:
+    """Jawaban berbasis data untuk lima pertanyaan inti: pembelian selesai?, distribusi tersembunyi?, tujuan pembeli?,
+    kaitan aksi korporasi?, aset/bisnis yang berpotensi masuk (pemilik & nilai)."""
+    t, out = c.get("t", ""), []
+    ins, raw = c.get("ins") or [], c.get("insiderRaw") or []
+    fase = {f["hari"]: f for f in (c.get("bandar") or {}).get("fase") or []}
+    beli = sorted([a for a in ins if a["chg"] > 0], key=lambda a: -a["chg"])
+    kini = c.get("kini") or datetime.now()
+    brk_of = lambda nama: {x.strip() for r in raw if r["name"] == nama for x in re.split(r"[,/;\s]+", r.get("broker") or "") if x.strip()}
+    # 1. Pembelian sudah selesai?
+    if beli:
+        a = beli[0]
+        hari = (kini - datetime.strptime(a["akhir"], "%Y-%m-%d")).days
+        brk = brk_of(a["nama"])
+        masih = brk & set((fase.get(5) or {}).get("akum") or [])
+        jaw = (f"Belum tampak selesai: broker {', '.join(sorted(masih))} yang dipakai {a['nama']} masih menjadi pembeli utama 1 minggu terakhir."
+               if masih else f"Tampak melambat/berhenti: pembelian terakhir {a['nama']} {hari} hari lalu ({a['akhir']})"
+               + (", dan broker yang dipakainya tidak lagi muncul sebagai pembeli utama." if brk else "."))
+        kini_pct = a.get("sisaPct") or 0
+        ambang = next((b for b in (20, 25, 50) if kini_pct < b), None)
+        if ambang and ambang - kini_pct <= 5:
+            jaw += (f" Kepemilikan {kini_pct:.2f}% tinggal {ambang - kini_pct:.2f} poin dari ambang {ambang}%"
+                    + (" (wajib penawaran tender bila melewati 50%)." if ambang == 50 else " (ambang pengendali)."))
+        f5 = fase.get(5)
+        if f5:
+            jaw += f" Bandar 1 minggu: {f5['arti']}."
+        out.append({"q": "Apakah pembelian sudah selesai?", "a": jaw,
+                    "bukti": [f"{a['nama']} +{a['chg']:.2f} poin dalam {a['n']} transaksi (180 hari), kini {kini_pct:.2f}%"
+                              + (f", rata-rata ±Rp{a['harga']}" if a.get("harga") else "") + (f", laju {a['laju'] / 1e6:.1f} juta lembar/bulan" if a.get("laju") else ""),
+                              f"Broker yang dipakai: {', '.join(sorted(brk)) or 'tidak tercatat'}; pembeli utama 1 minggu: {', '.join((fase.get(5) or {}).get('akum') or []) or '-'}"]})
+    else:
+        out.append({"q": "Apakah pembelian sudah selesai?", "a": "Tidak ada pembelian orang dalam/pemegang utama yang tercatat dalam 180 hari.", "bukti": []})
+    # 2. Distribusi yang belum terlihat?
+    jual_kt = [a for a in ins if a["chg"] < 0]
+    dist = [f for f in (fase.get(30), fase.get(90)) if f and f["bandar"] < 0]
+    if dist and not jual_kt:
+        jaw = ("Ya, kemungkinan: bandar mendistribusikan barang di pasar (" + "; ".join(f"{f['periode']} Rp{f['bandar'] / 1e9:.2f} M via {', '.join(f['dist'])}" for f in dist)
+               + ") padahal tidak ada penjualan pemegang besar di keterbukaan; penjual bisa pemegang < 5%, nominee, atau pihak terafiliasi yang tidak wajib lapor.")
+    elif dist:
+        jaw = "Distribusi terlihat dan sejalan dengan penjualan yang dilaporkan: " + "; ".join(f"{a['nama']} {a['chg']:.2f} poin" for a in jual_kt[:3]) + "."
+    elif fase:
+        jaw = "Tidak tampak: net bandar 1-3 bulan " + ("akumulasi." if any(f["bandar"] > 0 for f in fase.values()) else "seimbang.")
+    else:
+        jaw = "Data broker belum tersedia."
+    if dist:
+        lapor = sum(a.get("nilai") or 0 for a in jual_kt)
+        bandar_dist = max(-f["bandar"] for f in dist)
+        if bandar_dist > lapor:
+            jaw += f" Perkiraan distribusi yang tidak tercatat di keterbukaan: ±Rp{(bandar_dist - lapor) / 1e9:.2f} M (distribusi bandar Rp{bandar_dist / 1e9:.2f} M vs penjualan dilaporkan Rp{lapor / 1e9:.2f} M)."
+    out.append({"q": "Apakah masih ada distribusi yang belum terlihat?", "a": jaw,
+                "bukti": [f"{f['periode']}: {f['arti']} (net Rp{f['bandar'] / 1e9:.2f} M; jual {', '.join(f['dist'])})" for f in fase.values()]})
+    # 3. Tujuan pembeli jangka panjang?
+    if beli:
+        a = beli[0]
+        tuj = [r.get("purpose") for r in raw if r["name"] == a["nama"] and r.get("purpose")]
+        jar = next((r for r in c.get("jaringan") or [] if _k(r["nama"]) == _k(a["nama"])), None)
+        keluar = (jar or {}).get("keluar") or []
+        bukti = [f"Tujuan yang dilaporkan: {tuj[-1][:140]}"] if tuj else ["Tujuan transaksi tidak dicantumkan di keterbukaan."]
+        if jar and jar.get("emiten"):
+            bukti.append("Masih memegang: " + ", ".join(f"{e['t']} sejak {str(e.get('sejak') or '-')[:7]}" for e in jar["emiten"][:5]))
+        if keluar:
+            def bulan(e):
+                try:
+                    return round((datetime.strptime(str(e["tgl"])[:10], "%Y-%m-%d") - datetime.strptime(str(e["sejak"])[:10], "%Y-%m-%d")).days / 30.4)
+                except (KeyError, TypeError, ValueError):
+                    return None
+            bukti.append("Pernah melepas: " + ", ".join(f"{e['t']} ({e.get('tgl') or '-'}" + (f", dipegang ±{bulan(e)} bulan" if bulan(e) is not None else "") + ")" for e in keluar[:5]))
+        if any(_k(a["nama"]) == _k(j.get("pemegang", "")) for j in c.get("jejakData") or []):
+            jaw = "Cenderung bukan jangka panjang: pihak ini pernah melepas emiten saat emiten itu berganti pengendali (pola membangun lalu menjual cangkang)."
+        elif tuj and re.search(r"pengendali|jangka panjang|strategis", " ".join(tuj), re.I):
+            jaw = "Dilaporkan sebagai investasi strategis/pengendalian: indikasi jangka panjang."
+        elif keluar:
+            jaw = "Belum pasti: pihak ini punya riwayat keluar dari emiten lain; perhatikan lama kepemilikannya."
+        else:
+            jaw = "Indikasi jangka panjang: tidak ada riwayat melepas emiten lain di data keterbukaan."
+        out.append({"q": "Apakah pembeli memiliki tujuan investasi jangka panjang?", "a": jaw, "bukti": bukti})
+    # 4. Berkaitan dengan aksi korporasi?
+    if beli:
+        a = beli[0]
+        tgl_beli = sorted({r["date"] for r in raw if r["name"] == a["nama"] and (r.get("cur") or 0) > (r.get("prev") or 0)})
+        dekat = []
+        for x in c.get("aksiSemua") or []:
+            for tb in tgl_beli:
+                if x.get("date") and abs((datetime.strptime(x["date"][:10], "%Y-%m-%d") - datetime.strptime(tb, "%Y-%m-%d")).days) <= 60:
+                    dekat.append(f"{x['date']}: {x['judul'][:100]} (pembelian {tb})")
+                    break
+        rups = c.get("rups") or []
+        jaw = ("Ya, berdekatan (<= 60 hari) dengan keterbukaan aksi korporasi." if dekat else
+               "Ada agenda RUPS/perubahan yang perlu dicocokkan waktunya." if rups else "Belum tampak kaitan dengan aksi korporasi yang sudah diumumkan.")
+        out.append({"q": "Apakah pembelian tersebut berkaitan dengan aksi korporasi?", "a": jaw, "bukti": (dekat + rups)[:5]})
+    # 5. Aset/bisnis yang berpotensi masuk, pemilik, nilai ekonomi.
+    dok = [f"{u.get('date')}: {u.get('title')} {u.get('inti') or ''}".strip() for u in c.get("laporan") or []
+           if ASET_RX.search(f"{u.get('title')} {u.get('inti') or ''}")]
+    dok += [f"{b.get('date')}: {b.get('judul')} ({b.get('sumber')})" for b in c.get("beritaLuar") or [] if ASET_RX.search(b.get("judul") or "")]
+    nilai = list(dict.fromkeys(m.group(0) for x in dok for m in NILAI_RX.finditer(x)))
+    pemilik = [f"{p['name']} ({p['pct']:.2f}%)" for p in (c.get("pemegang") or [])[:3]] + [f"UBO {u}" for u in c.get("ubo") or []]
+    usaha = [f"{r['nama']}: {', '.join(e['t'] for e in r['emiten'][:4])}" for r in c.get("jaringan") or [] if r.get("emiten")]
+    usaha += [f"{g['t']} ({g.get('sektor') or 'sektor ?'})" for g in (c.get("grup") or [])[:4]]
+    jaw = ("Dokumen/berita menyebut rencana aset atau transaksi" + (f" senilai {', '.join(nilai[:3])}" if nilai else " (nilai belum disebut)") + "."
+           if dok else "Belum ada dokumen yang menyebut aset/bisnis yang akan masuk. Kandidat paling mungkin: usaha milik pemegang utama atau grupnya"
+           + (f" ({'; '.join(usaha[:3])})" if usaha else "") + ".")
+    out.append({"q": f"Apa aset atau bisnis yang berpotensi masuk ke {t}, siapa pemiliknya, dan berapa nilai ekonominya?", "a": jaw,
+                "bukti": dok[:5] + [f"Pemilik yang menentukan: {', '.join(pemilik)}"]
+                + ([f"Preseden grup: {' | '.join((c.get('preseden') or [])[:3])}"] if c.get("preseden") else [])})
+    return out
