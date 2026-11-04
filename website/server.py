@@ -3336,7 +3336,8 @@ def _pd_jalan(t: str) -> None:
 # (yang paling lama belum dipindai lebih dulu). Hasil ringkas di .pindai.json; turunannya: alarm penjual cangkang
 # (feed keterbukaan pasar), alarm broker market maker, peta grup pengendali, dan ringkasan harian.
 PINDAI_PATH = ROOT / ".pindai.json"
-PINDAI_PER_MALAM = 400   # praktis seluruh universe tiap malam (± 2-3 jam, dini hari)
+PINDAI_PER_MALAM = 400   # praktis seluruh universe tiap malam
+PINDAI_PARALEL = 3       # saham dipindai bersamaan (± 45-60 menit per putaran)
 _pindai_lock = threading.Lock()
 _pindai_jalan = {"aktif": False, "selesai": 0, "total": 0}
 
@@ -3378,19 +3379,30 @@ def pindai_jalan(batas: int = PINDAI_PER_MALAM) -> int:
     try:
         d = pindai_load()
         rows = d.get("rows") or {}
-        urut = sorted(pindai_universe(), key=lambda t: (rows.get(t) or {}).get("dibuat") or "")[:batas]
+        # Saham yang dipindai < 20 jam lalu dilewati (mis. server restart di tengah pemindaian).
+        segar = (datetime.now() - timedelta(hours=20)).strftime("%Y-%m-%d %H:%M")
+        urut = [t for t in sorted(pindai_universe(), key=lambda t: (rows.get(t) or {}).get("dibuat") or "")
+                if ((rows.get(t) or {}).get("dibuat") or "") < segar][:batas]
         _pindai_jalan["total"] = len(urut)
-        for i, t in enumerate(urut):
+
+        def satu(t):
             try:
                 h = pd_kumpul(t, {}, ringan=True)
-                rows[t] = PP.baris(h)
+                return t, PP.baris(h)
             except Exception as e:
                 print(f"[pindai] {t} gagal: {e}", file=sys.stderr)
-            _pindai_jalan["selesai"] = i + 1
-            if (i + 1) % 10 == 0:
-                d["rows"] = rows
-                pindai_simpan(d)
-            time.sleep(2)
+                return t, None
+            finally:
+                time.sleep(0.5)
+        # Tiga saham sekaligus: ±3x lebih cepat tanpa membanjiri Stockbit (cache bersama mengurangi panggilan ulang).
+        with ThreadPoolExecutor(max_workers=PINDAI_PARALEL) as ex:
+            for i, (t, r) in enumerate(ex.map(satu, urut)):
+                if r:
+                    rows[t] = r
+                _pindai_jalan["selesai"] = i + 1
+                if (i + 1) % 10 == 0:
+                    d["rows"] = rows
+                    pindai_simpan(d)
         hari = datetime.now().strftime("%Y-%m-%d")
         riw = d.get("riwayat") or {}
         lalu_tgl = max((x for x in riw if x < hari), default=None)
