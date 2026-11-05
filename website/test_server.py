@@ -361,6 +361,54 @@ class LiveTertahanTest(unittest.TestCase):
             server.SB_LIVE.clear(); server.SB_LIVE.update(lama[0]); server.token_exp = lama[1]
 
 
+class HargaRadarTest(unittest.TestCase):
+    def wib(self, *a):
+        return datetime(*a, tzinfo=server.WIB)
+
+    def test_jadwal(self):
+        kamis_siang = self.wib(2026, 11, 5, 10, 0)
+        self.assertTrue(server.harga_perlu(kamis_siang, None))
+        self.assertFalse(server.harga_perlu(kamis_siang, kamis_siang.timestamp() - 600))
+        self.assertTrue(server.harga_perlu(kamis_siang, kamis_siang.timestamp() - server.HARGA_GAP))
+        # Sesudah tutup: sekali lagi bila terakhir diambil sebelum penutupan, lalu berhenti.
+        kamis_malam = self.wib(2026, 11, 5, 19, 0)
+        self.assertTrue(server.harga_perlu(kamis_malam, self.wib(2026, 11, 5, 16, 20).timestamp()))
+        self.assertFalse(server.harga_perlu(kamis_malam, self.wib(2026, 11, 5, 16, 40).timestamp()))
+        # Pagi sebelum buka dan akhir pekan: patokannya penutupan hari bursa terakhir.
+        jumat_pagi = self.wib(2026, 11, 6, 7, 0)
+        self.assertFalse(server.harga_perlu(jumat_pagi, self.wib(2026, 11, 5, 16, 40).timestamp()))
+        self.assertTrue(server.harga_perlu(jumat_pagi, self.wib(2026, 11, 5, 15, 0).timestamp()))
+        minggu = self.wib(2026, 11, 8, 12, 0)
+        self.assertFalse(server.harga_perlu(minggu, self.wib(2026, 11, 6, 16, 45).timestamp()))
+        self.assertTrue(server.harga_perlu(minggu, self.wib(2026, 11, 6, 14, 0).timestamp()))
+
+    def test_gabung(self):
+        it = {"ticker": "ULTJ", "name": "Ultra Jaya", "price": 2020, "mcap": 20000, "float": 30,
+              "ctrlName": "PT X", "flags": {"akuisisi": True, "volume": True}, "notes": "catatan tim"}
+        q = {"price": 2100.0, "pctChange": 1.45, "volume": 100.0, "avgVolume": 200.0, "uma": True, "name": "lain"}
+        new = server.harga_gabung(it, q)
+        self.assertEqual((new["price"], new["chgPct"], new["volRatio"]), (2100.0, 1.45, 0.5))
+        self.assertEqual(new["flags"], {"akuisisi": True, "volume": True, "uma": True})  # volume tidak dimatikan
+        self.assertEqual((new["name"], new["ctrlName"], new["notes"], new["mcap"]), ("Ultra Jaya", "PT X", "catatan tim", 20000))
+        self.assertEqual(it["price"], 2020)  # input tidak dimutasi
+        o = {"marketCap": 20.79e12, "freeFloat": 31.5, "controllerName": "PT Y"}
+        new = server.harga_gabung(it, {"price": None}, o)
+        self.assertEqual((new["price"], new["mcap"], new["float"], new["ctrlName"]), (2020, 20790.0, 31.5, "PT X"))
+
+    def test_segarkan_baca_ulang(self):
+        disimpan = []
+        baris = [{"ticker": "ULTJ", "price": 2020, "notes": "lama"}]
+        terbaru = {"ticker": "ULTJ", "price": 2020, "notes": "diubah tim"}
+        with unittest.mock.patch.object(server, "items_all", return_value=baris), \
+                unittest.mock.patch.object(server, "get_token", return_value=None), \
+                unittest.mock.patch.object(server, "page_quote", return_value={"price": 2100.0}), \
+                unittest.mock.patch.object(server, "data_rows", return_value=[(json.dumps(terbaru),)]), \
+                unittest.mock.patch.object(server, "item_put", side_effect=disimpan.append):
+            self.assertEqual(server.segarkan_harga(delay=0), 1)
+        self.assertEqual((disimpan[0]["price"], disimpan[0]["notes"]), (2100.0, "diubah tim"))
+        self.assertIn("updatedAt", disimpan[0])
+
+
 class LkTest(unittest.TestCase):
     """Laporan keuangan seluruh BEI dari akun StockbitReports: urai ringkasan AI menjadi angka dan kategori."""
 
