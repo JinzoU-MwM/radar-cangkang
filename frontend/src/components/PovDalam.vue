@@ -1,14 +1,17 @@
 <script setup>
-// Analisa mendalam satu emiten (POV): data ditarik server saat tombol diklik (pekerjaan latar, maks. 15 menit),
-// lalu dipantau tiap beberapa detik. Isi: kepemilikan & jaringan pengendali di emiten lain, emiten grup,
-// riwayat kepemilikan, orang dalam, aksi korporasi, kinerja, diskusi komunitas, dugaan tujuan, dan yang diselidiki.
+// Analisa mendalam satu emiten (POV). Server menarik seluruh saham BEI bertahap di latar dan menyimpan hasilnya;
+// analisa tersimpan langsung tampil dan ditarik ulang bila ada data baru (keterbukaan informasi atau perubahan
+// pemegang saham). Saham yang belum dianalisa ditarik saat tombol diklik (maks. 15 menit), dipantau tiap beberapa detik.
+// Isi: kepemilikan & jaringan pengendali di emiten lain, emiten grup, riwayat kepemilikan, orang dalam, aksi korporasi,
+// kinerja, diskusi komunitas, dugaan tujuan, dan yang diselidiki.
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { api } from '../api.js'
 import { fmt, fmtDate } from '../lib/domain.js'
+import { pdPerluTarikUlang, pdPerluPantau, pdCakupan } from '../lib/povDalamStatus.js'
 
 const props = defineProps({ ticker: { type: String, required: true } })
 const st = ref(null), err = ref(''), busyPdf = ref(false)
-let timer = null
+let timer = null, diminta = false
 const hasil = computed(() => st.value?.status === 'selesai' ? st.value.hasil : null)
 // Hanya klaim yang didukung data yang ditampilkan.
 const klaimValid = computed(() => (hasil.value?.klaim || []).filter(c => c.status === 'didukung data'))
@@ -39,7 +42,11 @@ async function tanya(mulai = false) {
     err.value = ''
   } catch (e) { err.value = e.message || String(e) }
   clearTimeout(timer)
-  if (st.value?.status === 'jalan') timer = setTimeout(() => tanya(), 4000)
+  if (pdPerluTarikUlang(st.value, diminta)) {
+    diminta = true
+    return tanya(true)
+  }
+  if (pdPerluPantau(st.value)) timer = setTimeout(() => tanya(), 4000)
 }
 tanya()
 onBeforeUnmount(() => clearTimeout(timer))
@@ -59,13 +66,14 @@ async function unduh() {
     <template v-if="!st || st.status === 'kosong' || st.status === 'gagal' || st.status === 'antre'">
       <p v-if="st?.galat" class="small c-strong">{{ st.galat }}</p>
       <button type="button" class="btn" :disabled="!st" @click="tanya(true)">🔎 Analisa mendalam {{ ticker }}</button>
-      <p class="small muted">Server menarik profil, pemegang saham, jaringan kepemilikan di emiten lain, keterbukaan 1 tahun, berita, kinerja, dan posting publik Stockbit.
+      <p class="small muted">Analisa {{ ticker }} belum tersimpan. Server menarik profil, pemegang saham, jaringan kepemilikan di emiten lain, keterbukaan 1 tahun, berita, kinerja, dan posting publik Stockbit.
         Lama proses bergantung banyaknya data (umumnya 2–5 menit, paling lama 15 menit); perkiraannya ditampilkan setelah diklik.</p>
+      <p v-if="pdCakupan(st?.cakupan)" class="small muted">{{ pdCakupan(st.cakupan) }}</p>
     </template>
     <div v-else-if="st.status === 'jalan'" class="prog" role="status">
       <b>Menarik data {{ ticker }}…</b> perkiraan {{ menit(st.estimasi || 180) }} · berjalan {{ menit(st.berjalan || 0).replace('± ', '') }}
       <div class="bar"><i :style="{ width: Math.min(100, Math.round(((st.langkah || 0) / (st.total || 8)) * 100)) + '%' }"></i></div>
-      <span class="small muted">Tahap {{ st.langkah || 0 }}/{{ st.total || 8 }} · {{ st.label }}. Halaman boleh ditinggal; hasil disimpan 12 jam.</span>
+      <span class="small muted">Tahap {{ st.langkah || 0 }}/{{ st.total || 8 }} · {{ st.label }}. Halaman boleh ditinggal; hasil disimpan dan ditarik ulang otomatis bila ada data baru.</span>
     </div>
 
     <template v-if="hasil">
@@ -74,6 +82,12 @@ async function unduh() {
           {{ hasil.sumber.pemegang }} pemegang, {{ hasil.sumber.jaringan }} emiten jaringan, {{ hasil.sumber.keterbukaan }} keterbukaan, {{ hasil.sumber.posting }} posting</span>
         <button type="button" class="btn" :disabled="busyPdf" @click="unduh">{{ busyPdf ? 'Menyiapkan PDF…' : '⬇ Unduh analisa mendalam (PDF)' }}</button>
       </div>
+      <div v-if="st.segarkan" class="prog" role="status">
+        <b>Menarik ulang {{ ticker }}…</b> <span class="small">{{ st.basi || 'Ada data baru.' }} Analisa di bawah masih versi sebelumnya.</span>
+        <div class="bar"><i :style="{ width: Math.min(100, Math.round(((st.segarkan.langkah || 0) / (st.segarkan.total || 10)) * 100)) + '%' }"></i></div>
+        <span class="small muted">Tahap {{ st.segarkan.langkah || 0 }}/{{ st.segarkan.total || 10 }} · {{ st.segarkan.label }}</span>
+      </div>
+      <p v-else-if="st.basi" class="small muted">{{ st.basi }} {{ st.galatSegar || '' }}</p>
       <ul class="small rk"><li v-for="r in hasil.ringkas" :key="r">{{ r }}</li></ul>
 
       <template v-if="hasil.arah">

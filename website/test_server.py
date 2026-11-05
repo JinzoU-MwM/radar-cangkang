@@ -13,7 +13,7 @@ import urllib.request
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import server
 
 # Data contoh tradersaham untuk tes (file asli tsa-*.json tidak dilacak git).
@@ -407,6 +407,103 @@ class HargaRadarTest(unittest.TestCase):
             self.assertEqual(server.segarkan_harga(delay=0), 1)
         self.assertEqual((disimpan[0]["price"], disimpan[0]["notes"]), (2100.0, "diubah tim"))
         self.assertIn("updatedAt", disimpan[0])
+
+
+class PovDalamLatarTest(unittest.TestCase):
+    """Analisa mendalam tersimpan per saham, ditarik ulang hanya bila ada data baru atau umurnya lewat batas."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        d = Path(self.tmp.name)
+        self.patches = [unittest.mock.patch.object(server, k, v) for k, v in (
+            ("PD_DIR", d / ".pov-dalam"), ("PD_LAMA", d / ".pov-dalam.json"), ("PD_PEMICU_PATH", d / ".pov-dalam-pemicu.json"),
+            ("_pd_indeks", None), ("_pd_jobs", {}), ("_pd_gagal_latar", {}), ("_pd_mulai", []))]
+        for p in self.patches:
+            p.start()
+        self.v = server.PD.VERSI
+
+    def tearDown(self):
+        for p in self.patches:
+            p.stop()
+        self.tmp.cleanup()
+
+    def test_pecah_format_lama(self):
+        server.PD_LAMA.write_text(json.dumps({"AAAA": {"at": 100.0, "hasil": {"versi": self.v}}, "bad": {}}), encoding="utf-8")
+        self.assertEqual(server.pd_indeks(), {"AAAA": {"at": 100.0, "versi": self.v}})
+        self.assertFalse(server.PD_LAMA.exists())
+        self.assertEqual(server.pd_baca("AAAA")["hasil"]["versi"], self.v)
+
+    def test_pemicu_dan_basi(self):
+        kemarin = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        hari = datetime.now().strftime("%Y-%m-%d")
+        # Pencatatan pertama memakai awal tanggal baris: analisa yang dibuat sesudahnya tetap berlaku.
+        server.pd_pemicu_catat([("AAAA", "u1", kemarin, "Hasil RUPS")])
+        server.pd_simpan("AAAA", {"versi": self.v})
+        simpan = server.pd_baca("AAAA")
+        self.assertEqual(server.pd_basi("AAAA", simpan), "")
+        # Baris yang sama tidak dicatat dua kali; baris baru sesudah analisa membuatnya basi.
+        self.assertEqual(server.pd_pemicu_catat([("AAAA", "u1", kemarin, "Hasil RUPS")]), 0)
+        self.assertEqual(server.pd_pemicu_catat([("AAAA", "u2", hari, "Pengambilalihan")], now=simpan["at"] + 60), 1)
+        self.assertIn("Pengambilalihan", server.pd_basi("AAAA", simpan))
+        # Tanpa data baru, analisa berumur > PD_MAKS_UMUR tetap ditarik ulang.
+        self.assertIn("hari", server.pd_basi("BBBB", {"at": 1.0}, {}, now=server.PD_MAKS_UMUR + 10))
+
+    def test_urutan_latar(self):
+        now = time.time()
+        for t in ("AAAA", "BBBB", "DDDD", "EEEE"):
+            server.pd_simpan(t, {"versi": self.v})
+        server._pd_indeks["DDDD"]["at"] = now - server.PD_MAKS_UMUR - 10
+        server._pd_indeks["EEEE"]["versi"] = "lama"
+        server.PD_PEMICU_PATH.write_text(json.dumps({"BBBB": [{"k": "x", "waktu": now + 5, "tgl": "2026-11-05", "teks": "RUPS"}]}))
+        server._pd_gagal_latar["FFFF"] = now
+        with unittest.mock.patch.object(server, "items_all", return_value=[{"ticker": "ZZZZ"}]), \
+                unittest.mock.patch.object(server, "radar_tickers", return_value={"ZZZZ"}), \
+                unittest.mock.patch.object(server, "bei_kode_load",
+                                           return_value={t: "" for t in ("AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF")}):
+            # data baru > belum ada/versi lama (radar dulu) > terlalu lama; AAAA masih berlaku, FFFF baru gagal.
+            self.assertEqual(server.pd_urutan(now + 10), ["BBBB", "ZZZZ", "CCCC", "EEEE", "DDDD"])
+
+    def test_api_tampil_lama_sambil_tarik_ulang(self):
+        server.pd_simpan("AAAA", {"versi": self.v, "t": "AAAA"})
+        at = server.pd_baca("AAAA")["at"]
+        server.PD_PEMICU_PATH.write_text(json.dumps({"AAAA": [{"k": "x", "waktu": at + 5, "tgl": "2026-11-05", "teks": "PPJB"}]}))
+        with unittest.mock.patch.object(server, "bei_kode_load", return_value={"AAAA": ""}):
+            r = server.pov_dalam_api("AAAA", False)
+            self.assertEqual((r["status"], r["hasil"]["t"], r["cakupan"]["tersimpan"]), ("selesai", "AAAA", 1))
+            self.assertIn("PPJB", r["basi"])
+            self.assertNotIn("segarkan", r)
+            with unittest.mock.patch.object(server, "get_token", return_value="x"), \
+                    unittest.mock.patch.object(server, "token_expired", return_value=False), \
+                    unittest.mock.patch.object(server.threading, "Thread") as th:
+                r = server.pov_dalam_api("AAAA", True)
+            th.return_value.start.assert_called_once()
+            self.assertEqual((r["status"], r["segarkan"]["langkah"]), ("selesai", 0))
+            # Pekerjaan latar tidak menghabiskan jatah pengunjung.
+            server._pd_jobs["AAAA"]["latar"] = True
+            self.assertIn("segarkan", server.pov_dalam_api("AAAA", False))
+            self.assertEqual(server.pov_dalam_api("BBBB", False)["status"], "kosong")
+
+    def test_folder_titik_tidak_disajikan(self):
+        root = Path(self.tmp.name)
+        (root / ".pov-dalam").mkdir(exist_ok=True)
+        (root / ".pov-dalam" / "AAAA.json").write_text("{}")
+        (root / "data.json").write_text("{}")
+        srv = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        base = f"http://127.0.0.1:{srv.server_address[1]}"
+        kode = {}
+        try:
+            with unittest.mock.patch.object(server, "ROOT", root), unittest.mock.patch.object(server, "DIST", root / "dist"):
+                for p in ("/.pov-dalam/AAAA.json", "/data.json"):
+                    try:
+                        with urllib.request.urlopen(base + p) as r:
+                            kode[p] = r.status
+                    except urllib.error.HTTPError as e:
+                        kode[p] = e.code
+        finally:
+            srv.shutdown()
+            srv.server_close()
+        self.assertEqual(kode, {"/.pov-dalam/AAAA.json": 404, "/data.json": 200})
 
 
 class LkTest(unittest.TestCase):

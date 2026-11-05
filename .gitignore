@@ -63,6 +63,9 @@ website/tsa-*.json
 # analisa mendalam POV (runtime)
 **/.pov-dalam.json
 **/.pov-dalam.tmp
+**/.pov-dalam/
+**/.pov-dalam-pemicu.json
+**/.pov-dalam-pemicu.tmp
 # pemindai calon cangkang (runtime)
 **/.pindai.json
 **/.pindai.tmp
