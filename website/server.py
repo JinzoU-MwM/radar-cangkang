@@ -44,6 +44,7 @@ import beritapasar as BN
 import ihsg as IH
 import astro as AS
 import recovery as RC
+import harmonik as HM
 import runtun as TS
 import seasonality as SZ
 
@@ -4849,9 +4850,52 @@ def saham_detail(t: str, month: int) -> dict:
     return out
 
 
+HARMONIK_PATH = ROOT / ".harmonik.json"
+
+
+def harmonik_build(delay: float = 0.25) -> None:
+    """Screening Harmonic Pattern (POV) atas universe Recovery memakai bar harian 1 tahun yang sama (cache), sehingga
+    dijalankan tepat setelah recovery_build hampir tanpa panggilan Stockbit tambahan."""
+    rows, dinilai = [], 0
+    for t in recovery_universe():
+        try:
+            bars = get_ohlc(t, "1y")
+        except Exception as e:
+            if "401" in str(e):
+                raise
+            continue
+        if bars:
+            dinilai += 1
+            rows += [{"t": t, **r} for r in HM.cari(bars)]
+        time.sleep(delay)
+    if not dinilai:
+        raise RuntimeError("data harga kosong")
+    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "dinilai": dinilai, "rows": rows}
+    tmp = HARMONIK_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(HARMONIK_PATH)
+    print(f"[harmonik] {len(rows)} pola dari {dinilai} saham", file=sys.stderr)
+
+
+def harmonik_api() -> dict:
+    try:
+        d = json.loads(HARMONIK_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        d = {}
+    nama, radar = nama_semua(), radar_tickers()
+    urut = {"prz": 0, "berbalik": 1, "menuju": 2}
+    rows = sorted(d.get("rows") or [], key=lambda r: (urut.get(r["status"], 3), r.get("jarak") or 0))
+    for r in rows:
+        r["nama"] = nama.get(r["t"], "")
+        r["radar"] = r["t"] in radar
+    return {"updated": d.get("updated"), "dinilai": d.get("dinilai", 0), "rows": rows, "pola": HM.ringkas_pola(),
+            "minNilai": HM.MIN_NILAI}
+
+
 def daily_builds() -> None:
-    """Pembaruan terjadwal: Seasonality, Pola Broker, lalu Recovery; masing-masing dicoba ulang tiap 30 menit (maks. 3 jam)."""
-    for fn in (season_build, broker_build, recovery_build):
+    """Pembaruan terjadwal: Seasonality, Pola Broker, Recovery, lalu Harmonic Pattern; masing-masing dicoba ulang
+    tiap 30 menit (maks. 3 jam)."""
+    for fn in (season_build, broker_build, recovery_build, harmonik_build):
         for _ in range(6):
             try:
                 fn()
@@ -5553,7 +5597,8 @@ def season_loop() -> None:
     except Exception as e:
         print(f"[recovery] bangun ulang skema gagal: {e}", file=sys.stderr)
     # Belum ada data sama sekali: bangun sekarang agar halaman tidak kosong, lalu ikuti jadwal.
-    for path, fn in ((SEASON_PATH, season_build), (BROKER_PATH, broker_build), (RECOVERY_PATH, recovery_build)):
+    for path, fn in ((SEASON_PATH, season_build), (BROKER_PATH, broker_build), (RECOVERY_PATH, recovery_build),
+                     (HARMONIK_PATH, harmonik_build)):
         while not path.exists():
             try:
                 if get_token():
@@ -6005,6 +6050,8 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json({"kode": [{"t": t, "nama": nama.get(t, "")} for t in sorted(set(bei_kode_load()) | radar_tickers())]})
         elif path == "api/kakdr-screen":
             self.reply_json(kakdr_screen())
+        elif path == "api/harmonik":
+            self.reply_json(harmonik_api())
         elif path == "api/pindai":
             self.reply_json(pindai_api())
         elif path == "api/pov-dalam":

@@ -6,6 +6,7 @@ import { api, loadJson } from '../api.js'
 import { fmt, fmtDate } from '../lib/domain.js'
 import PovDetail from '../components/PovDetail.vue'
 import PovDalam from '../components/PovDalam.vue'
+import PovHarmonik from '../components/PovHarmonik.vue'
 
 const data = ref(null), err = ref(''), kd = ref(null)
 // Analisa KakdrWay disembunyikan sampai tombolnya diklik.
@@ -15,6 +16,8 @@ const kdScr = ref(null)
 watch(kdOpen, v => { if (v && !kdScr.value) api.get('/api/kakdr-screen').then(r => { kdScr.value = r }, () => { kdScr.value = { rows: [], dinilai: 0, catatan: 'Screening gagal dimuat.' } }) })
 // Pola pikir per akun juga disembunyikan sampai diklik.
 const polaOpen = ref(false)
+// Harmonic Pattern (materi + screening) juga disembunyikan sampai diklik; data dimuat saat dibuka.
+const hmOpen = ref(false)
 // POV dan KakdrWay dimuat paralel: tombol KakdrWay tidak menunggu data POV.
 onMounted(() => {
   api.get('/api/pov').then(v => { data.value = v }, e => { err.value = e.message })
@@ -121,6 +124,14 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
           <li>Terapkan disiplin dana ala KakdrWay: uang dingin, semampu siap hilang, dan masuk bertahap.</li>
         </ol>
       </template>
+    </section>
+
+    <section class="rule-top">
+      <button type="button" class="btn kdbtn" :aria-expanded="String(hmOpen)" aria-controls="hm-isi" @click="hmOpen = !hmOpen">
+        Harmonic Pattern <span class="muted">(materi, studi kasus, screening)</span> <span aria-hidden="true">{{ hmOpen ? '▴' : '▾' }}</span>
+      </button>
+      <p class="small ket">Belajar pola XABCD dan rasio Fibonacci, lalu lihat saham BEI yang sedang membentuk pola harmonik.</p>
+      <PovHarmonik v-if="hmOpen" id="hm-isi" @analisa="analisa" />
     </section>
 
     <PovDetail v-if="buka" :u="buka" @close="buka = null" />

@@ -409,6 +409,59 @@ class HargaRadarTest(unittest.TestCase):
         self.assertIn("updatedAt", disimpan[0])
 
 
+class HarmonikTest(unittest.TestCase):
+    """Screening Harmonic Pattern: Gartley bullish sintetis X 100, A 200, B 138,2 (0,618), C 175,3, D 121,4 (0,786)."""
+
+    @staticmethod
+    def bars(titik, ekor=(), vol=1e5, n=10):
+        cl = [a + (b - a) * k / n for a, b in zip(titik, titik[1:]) for k in range(n)] + [titik[-1], *ekor]
+        return [{"d": f"2026-{1 + i // 28:02d}-{1 + i % 28:02d}", "o": c, "h": c * 1.004, "l": c * 0.996, "c": c, "v": vol}
+                for i, c in enumerate(cl)]
+
+    def test_gartley_di_prz(self):
+        import harmonik
+        r = harmonik.cari(self.bars([150, 100, 200, 138.2, 175.3, 121.4]))
+        g = next(x for x in r if x["pola"] == "gartley")
+        self.assertEqual((g["arah"], g["status"]), ("bullish", "prz"))
+        self.assertTrue(g["prz"][0] <= 121.4 <= g["prz"][1])
+        self.assertEqual([x["n"] for x in g["titik"]], list("XABCD"))
+        self.assertEqual(g["stop"], 100)                                      # sedikit di balik X
+        self.assertTrue(121.4 < g["target"][0] < g["target"][1] < 200)        # 0,382 lalu 0,618 kaki AD
+        self.assertEqual(g["targetCA"], [176, 201])                          # titik C lalu A
+
+    def test_menuju_dan_tidak_likuid(self):
+        import harmonik
+        r = harmonik.cari(self.bars([150, 100, 200, 138.2, 175.3, 135]))
+        g = next(x for x in r if x["pola"] == "gartley")
+        self.assertEqual(g["status"], "menuju")
+        self.assertGreater(g["jarak"], 0)
+        # Nilai transaksi rata-rata < Rp1 miliar: tidak disaring.
+        self.assertEqual(harmonik.cari(self.bars([150, 100, 200, 138.2, 175.3, 121.4], vol=10)), [])
+        # D menembus X: bukan Gartley lagi.
+        self.assertFalse([x for x in harmonik.cari(self.bars([150, 100, 200, 138.2, 175.3, 95])) if x["pola"] == "gartley"])
+
+    def test_candle_balik(self):
+        import harmonik
+        pin = [{"o": 10, "h": 10.2, "l": 9.8, "c": 9.9}, {"o": 10, "h": 10.1, "l": 9.0, "c": 10.05}]
+        self.assertEqual(harmonik.candle_balik(pin, 1, True), "pin bar")
+        eng = [{"o": 10, "h": 10.1, "l": 9.4, "c": 9.5}, {"o": 9.45, "h": 10.3, "l": 9.4, "c": 10.2}]
+        self.assertEqual(harmonik.candle_balik(eng, 1, True), "bullish engulfing")
+        self.assertEqual(harmonik.candle_balik(eng, 1, False), "")
+
+    def test_api_urut_dan_nama(self):
+        tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        f = Path(tmp.name) / ".harmonik.json"
+        f.write_text(json.dumps({"updated": "2026-11-05 00:40", "dinilai": 2, "rows": [
+            {"t": "BBBB", "status": "menuju", "jarak": 4.0}, {"t": "AAAA", "status": "prz", "jarak": 0}]}))
+        with unittest.mock.patch.object(server, "HARMONIK_PATH", f), \
+                unittest.mock.patch.object(server, "nama_semua", return_value={"AAAA": "Aaaa Tbk"}), \
+                unittest.mock.patch.object(server, "radar_tickers", return_value={"BBBB"}):
+            r = server.harmonik_api()
+        tmp.cleanup()
+        self.assertEqual([(x["t"], x["nama"], x["radar"]) for x in r["rows"]], [("AAAA", "Aaaa Tbk", False), ("BBBB", "", True)])
+        self.assertEqual({p["k"] for p in r["pola"]}, {"gartley", "bat", "butterfly", "crab", "cypher"})
+
+
 class PovDalamLatarTest(unittest.TestCase):
     """Analisa mendalam tersimpan per saham, ditarik ulang hanya bila ada data baru atau umurnya lewat batas."""
 
