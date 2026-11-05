@@ -2,11 +2,11 @@
 // Harmonic Pattern (POV): materi belajar bergaya presentasi riset (sampul, anatomi XABCD interaktif, jenis pola,
 // strategi, studi kasus, screening harian saham BEI, analisa per saham, bukti & sumber). Materi diringkas dari
 // artikel Astronacci (2), Maxco, dan FOREXimf; screening dari /api/harmonik (dihitung server tiap malam).
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { api } from '../api.js'
-import { HM_STATUS, saringHarmonik, hitungHarmonik, rentang, przTeks, polaDiagram, skalaSvg, rencanaHarmonik, cekRasio } from '../lib/harmonik.js'
+import { HM_STATUS, saringHarmonik, hitungHarmonik, rentang, przTeks, polaDiagram, skalaSvg } from '../lib/harmonik.js'
+import HarmonikAnalisa from './HarmonikAnalisa.vue'
 
-const emit = defineEmits(['analisa'])
 const data = ref(null), err = ref('')
 onMounted(() => api.get('/api/harmonik').then(v => { data.value = v }, e => { err.value = e.message || String(e) }))
 const rows = computed(() => data.value?.rows || [])
@@ -113,17 +113,29 @@ const contohBei = computed(() => rows.value.find(r => r.status !== 'menuju') || 
 // ------------------------------------------------------- screening & analisa ----
 const fStatus = ref('semua'), fArah = ref('semua')
 const tampil = computed(() => saringHarmonik(rows.value, fStatus.value, fArah.value))
-const pilih = ref(null)
-function buka(r) { pilih.value = r; ke(6) }
-const rc = computed(() => rencanaHarmonik(pilih.value))
-const cek = computed(() => cekRasio(pilih.value, pola.value))
-const dSaham = computed(() => {
-  const r = pilih.value
-  if (!r) return null
-  const y = Object.fromEntries(r.titik.map(t => [t.n, t.p]))
-  const b = bentuk(y, [...r.prz, r.stop, ...(r.target || [])], r.harga)
-  return { ...b, r }
+// Analisa tampil di tempat: baris screening yang diklik membuka analisanya tepat di bawahnya.
+const kunci = r => r.t + r.pola + r.titik[0].d
+const terbuka = ref('')
+const togel = r => { terbuka.value = terbuka.value === kunci(r) ? '' : kunci(r) }
+const kasusBuka = ref(false)
+
+// Slide Analisa: saham BEI mana pun (kode/nama dari /api/kode-bei) atau pilihan cepat dari screening.
+const q = ref(''), kodeBei = ref(null), saham = ref(null)
+watch(q, v => {
+  if (v.trim() && kodeBei.value === null) {
+    kodeBei.value = []
+    api.get('/api/kode-bei').then(r => { kodeBei.value = r.kode || [] }, () => { kodeBei.value = [] })
+  }
 })
+const saran = computed(() => {
+  const x = q.value.trim().toLowerCase()
+  if (x.length < 2 || !kodeBei.value) return []
+  return kodeBei.value.filter(k => k.t.toLowerCase().startsWith(x) || (x.length >= 3 && (k.nama || '').toLowerCase().includes(x)))
+    .sort((a, b) => (b.t.toLowerCase() === x) - (a.t.toLowerCase() === x) || a.t.localeCompare(b.t)).slice(0, 8)
+})
+const cepat = computed(() => rows.value.slice(0, 10))
+function analisaSaham(t, pola = '') { saham.value = { t, pola }; q.value = '' }
+const sahamAktif = computed(() => saham.value || (rows.value[0] ? { t: rows.value[0].t, pola: rows.value[0].pola } : null))
 </script>
 
 <template>
@@ -272,9 +284,10 @@ const dSaham = computed(() => {
       </div>
       <div v-if="contohBei" class="kartu lebar">
         <span class="ik">Dari screening hari ini</span>
-        <p><b>{{ contohBei.t }}</b><span v-if="contohBei.nama"> {{ contohBei.nama }}</span>: pola {{ (pola.find(p => p.k === contohBei.pola) || {}).nama }} {{ contohBei.arah }},
+        <p><b>{{ contohBei.t }}</b>{{ contohBei.nama ? ' · ' + contohBei.nama : '' }}: pola {{ (pola.find(p => p.k === contohBei.pola) || {}).nama }} {{ contohBei.arah }},
           status {{ HM_STATUS[contohBei.status][0].toLowerCase() }}, PRZ {{ przTeks(contohBei) }}.</p>
-        <button type="button" class="pill sm" @click="buka(contohBei)">Bedah di slide Analisa</button>
+        <button type="button" class="pill sm" :aria-expanded="String(kasusBuka)" @click="kasusBuka = !kasusBuka">{{ kasusBuka ? 'Tutup analisa' : 'Bedah ' + contohBei.t + ' di sini' }}</button>
+        <HarmonikAnalisa v-if="kasusBuka" :ticker="contohBei.t" :pola="contohBei.pola" />
       </div>
     </section>
 
@@ -296,8 +309,9 @@ const dSaham = computed(() => {
         <table class="ledger">
           <thead><tr><th>Saham</th><th>Pola</th><th>Status</th><th class="num">Harga</th><th class="num">PRZ</th><th class="num">Jarak</th><th class="num">Stop</th><th class="num">Target 1 / 2</th><th>Konfirmasi</th></tr></thead>
           <tbody>
-            <tr v-for="r in tampil" :key="r.t + r.pola + r.titik[0].d" class="row" tabindex="0" @click="buka(r)" @keydown.enter="buka(r)">
-              <td><b>{{ r.t }}</b> <span v-if="r.radar" class="tag t-calm">radar</span><div class="small muted nm">{{ r.nama }}</div></td>
+            <template v-for="r in tampil" :key="kunci(r)">
+            <tr class="row" :class="{ open: terbuka === kunci(r) }" tabindex="0" :aria-expanded="String(terbuka === kunci(r))" @click="togel(r)" @keydown.enter="togel(r)">
+              <td><span class="car">{{ terbuka === kunci(r) ? '▾' : '▸' }}</span><b>{{ r.t }}</b> <span v-if="r.radar" class="tag t-calm">radar</span><div class="small muted nm">{{ r.nama }}</div></td>
               <td><span class="tag" :class="r.arah === 'bullish' ? 't-good' : 't-strong'">{{ r.arah }}</span> {{ (pola.find(p => p.k === r.pola) || {}).nama || r.pola }}</td>
               <td><span class="tag" :class="HM_STATUS[r.status][1]">{{ HM_STATUS[r.status][0] }}</span></td>
               <td class="num">{{ rp(r.harga) }}</td>
@@ -307,52 +321,28 @@ const dSaham = computed(() => {
               <td class="num">{{ rp(r.target?.[0]) }} / {{ rp(r.target?.[1]) }}</td>
               <td class="small">{{ r.konfirmasi?.length ? r.konfirmasi.join('; ') : (r.status === 'menuju' ? 'menunggu D' : 'belum ada') }}</td>
             </tr>
+            <tr v-if="terbuka === kunci(r)" class="detail"><td colspan="9"><HarmonikAnalisa :ticker="r.t" :pola="r.pola" /></td></tr>
+            </template>
           </tbody>
         </table>
       </div>
-      <p class="small muted note">Jarak = sisa gerak harga ke tepi PRZ (menuju) atau reaksi harga dari D (berbalik). Klik baris untuk analisa.</p>
+      <p class="small muted note">Jarak = sisa gerak harga ke tepi PRZ (menuju) atau reaksi harga dari D (berbalik). Klik baris untuk membuka chart dan analisa harmonik di bawahnya.</p>
     </section>
 
     <!-- 07 Analisa -->
     <section v-else-if="s === 6" class="slide">
-      <header class="sh"><span class="no">07</span><div><h3>{{ pilih ? `Analisa ${pilih.t}` : 'Analisa per saham' }}</h3>
-        <p class="small muted">{{ pilih ? `${pilih.nama || ''} · ${(pola.find(p => p.k === pilih.pola) || {}).nama} ${pilih.arah}` : 'Pilih saham dari slide Screening.' }}</p></div></header>
-      <p v-if="!pilih"><button type="button" class="pill sm" @click="ke(5)">Buka Screening</button></p>
-      <template v-else>
-        <div class="dua">
-          <svg :viewBox="`0 0 ${W} ${H}`" class="dg" role="img" :aria-label="'Pola ' + pilih.t">
-            <rect :x="dSaham.xD - 34" :width="68" :y="dSaham.fy(pilih.prz[1]) - 4" :height="dSaham.fy(pilih.prz[0]) - dSaham.fy(pilih.prz[1]) + 8" class="przb on" />
-            <line :x1="PAD" :x2="W - PAD" :y1="dSaham.fy(pilih.stop)" :y2="dSaham.fy(pilih.stop)" class="ln stop" /><text :x="W - PAD" :y="dSaham.fy(pilih.stop) - 5" class="kl end">stop {{ rp(pilih.stop) }}</text>
-            <template v-for="(t, i) in pilih.target" :key="'t' + i"><line :x1="dSaham.xD - 60" :x2="W - PAD" :y1="dSaham.fy(t)" :y2="dSaham.fy(t)" class="ln tgt" /><text :x="W - PAD" :y="dSaham.fy(t) - 5" class="kl end">T{{ i + 1 }} {{ rp(t) }}</text></template>
-            <path :d="garis(dSaham.pts)" class="jalur" />
-            <line v-if="pilih.status === 'menuju'" :x1="dSaham.pts[3].x" :y1="dSaham.pts[3].y" :x2="dSaham.xD" :y2="dSaham.fy(pilih.harga)" class="bantu" />
-            <circle :cx="dSaham.xD + (pilih.status === 'menuju' ? 0 : 30)" :cy="dSaham.fy(pilih.harga)" r="5" class="kini" />
-            <text :x="dSaham.xD + (pilih.status === 'menuju' ? 0 : 30)" :y="dSaham.fy(pilih.harga) - 10" class="kl mid">kini {{ rp(pilih.harga) }}</text>
-            <g v-for="p in dSaham.pts" :key="p.n" class="tt"><circle :cx="p.x" :cy="p.y" r="6" /><text :x="p.x" :y="p.puncak ? p.y - 13 : p.y + 22">{{ p.n }} {{ rp(p.v) }}</text></g>
-          </svg>
-          <div class="kartu pilih">
-            <span class="ik"><span class="tag" :class="HM_STATUS[pilih.status][1]">{{ HM_STATUS[pilih.status][0] }}</span></span>
-            <p class="small">{{ HM_STATUS[pilih.status][2] }}</p>
-            <h4>Validasi rasio</h4>
-            <ul class="cek small"><li v-for="c in cek" :key="c.label" :class="c.ok ? 'ok' : 'no'">{{ c.label }}: {{ rp(c.nilai) }} (kriteria {{ rentang(c.kriteria) }})</li>
-              <li class="ok">PRZ: retracement XA bertemu extension BC</li></ul>
-            <h4>Konfirmasi di PRZ</h4>
-            <ul class="cek small"><li v-for="k in pilih.konfirmasi" :key="k" class="ok">{{ k }}</li>
-              <li v-if="!pilih.konfirmasi?.length" class="no">{{ pilih.status === 'menuju' ? 'Titik D belum terbentuk' : 'Belum ada candle pembalikan, divergence, atau tembus struktur minor' }}</li></ul>
-          </div>
-        </div>
-        <div class="grid4">
-          <div class="kartu"><span class="ik">Area entry</span><b class="bn">{{ przTeks(pilih) }}</b><p class="small muted">{{ pilih.status === 'berbalik' ? 'Harga sudah berbalik; kini ' + rp(pilih.harga) : 'Setelah konfirmasi di PRZ' }}</p></div>
-          <div class="kartu"><span class="ik">Stop loss</span><b class="bn c-strong">{{ rp(pilih.stop) }}</b><p class="small muted">risiko {{ rp(rc?.risikoPct) }}% dari entry</p></div>
-          <div class="kartu"><span class="ik">Target (0,382 / 0,618 AD)</span><b class="bn c-good">{{ rp(rc?.t1) }} / {{ rp(rc?.t2) }}</b><p class="small muted">R:R {{ rp(rc?.rr1) }} / {{ rp(rc?.rr2) }}</p></div>
-          <div class="kartu"><span class="ik">Target alternatif (C / A)</span><b class="bn">{{ pilih.targetCA ? rp(pilih.targetCA[0]) + ' / ' + rp(pilih.targetCA[1]) : '–' }}</b><p class="small muted">versi Maxco<sup>3</sup></p></div>
-        </div>
-        <p class="small muted note">Titik: {{ pilih.titik.map(t => `${t.n} ${rp(t.p)} (${t.d})`).join(' · ') }} · skala swing {{ Math.round(pilih.skala * 100) }}%</p>
-        <div class="seg">
-          <button type="button" class="btn" @click="emit('analisa', pilih.t)">Analisa mendalam {{ pilih.t }}</button>
-          <RouterLink class="pill sm" :to="{ path: '/emiten/' + pilih.t, query: { tab: 'analisa' } }">Buka chart {{ pilih.t }}</RouterLink>
-        </div>
-      </template>
+      <header class="sh"><span class="no">07</span><div><h3>Analisa Harmonic Pattern per saham</h3>
+        <p class="small muted">Cari saham BEI mana pun; chart dan analisa tampil di sini.</p></div></header>
+      <div class="cari">
+        <input v-model="q" type="search" class="inp" placeholder="Kode atau nama saham BEI, mis. CLEO" aria-label="Cari saham untuk analisa harmonik"
+          @keydown.enter="saran[0] && analisaSaham(saran[0].t)" />
+        <ul v-if="saran.length" class="saran"><li v-for="k in saran" :key="k.t"><button type="button" @click="analisaSaham(k.t)"><b>{{ k.t }}</b> <span class="muted">{{ k.nama }}</span></button></li></ul>
+      </div>
+      <div v-if="cepat.length" class="seg"><span class="small muted">Dari screening:</span>
+        <button v-for="r in cepat" :key="kunci(r)" type="button" class="pill sm" :aria-pressed="String(sahamAktif?.t === r.t && sahamAktif?.pola === r.pola)" @click="analisaSaham(r.t, r.pola)">
+          {{ r.t }} <span class="muted">{{ (pola.find(p => p.k === r.pola) || {}).nama }}</span></button></div>
+      <HarmonikAnalisa v-if="sahamAktif" :key="sahamAktif.t" :ticker="sahamAktif.t" :pola="sahamAktif.pola" />
+      <p v-else class="small muted">Ketik kode saham untuk memulai.</p>
     </section>
 
     <!-- 08 Bukti & sumber -->
@@ -431,7 +421,7 @@ const dSaham = computed(() => {
 sup{font-size:10px;color:var(--accent);margin-left:1px}
 .note{margin:8px 0}
 /* Diagram */
-.dg{width:100%;height:auto;background:var(--sheet);border:1px solid var(--rule)}
+.dg{width:100%;height:auto;max-height:340px;background:var(--sheet);border:1px solid var(--rule)}
 .jalur,.kaki{fill:none;stroke:var(--accent);stroke-width:3;stroke-linejoin:round}
 .kaki{cursor:pointer;stroke-linecap:round}.kaki:hover,.kaki.on{stroke:var(--now-ink);stroke-width:6}
 .bantu{stroke:var(--ink-2);stroke-dasharray:4 4;stroke-width:1.2;opacity:.7}
@@ -451,7 +441,14 @@ sup{font-size:10px;color:var(--accent);margin-left:1px}
 .alur li.on .bul{background:var(--accent);color:var(--sheet)}.alur li.on button{color:var(--ink)}
 .cek{list-style:none;padding:0}.cek li{padding-left:20px;position:relative;margin:3px 0}
 .cek li::before{position:absolute;left:0;font-weight:800}.cek li.ok::before{content:'✓';color:var(--good)}.cek li.no::before{content:'–';color:var(--ink-2)}
-.scroll{overflow-x:auto}.row{cursor:pointer}.row:hover{background:var(--zebra)}.nm{max-width:180px}
+.scroll{overflow-x:auto}.row{cursor:pointer}.row:hover,.row.open{background:var(--zebra)}.nm{max-width:180px}
+.car{display:inline-block;width:14px;color:var(--ink-2)}
+.detail>td{background:var(--sheet);padding:4px 8px 14px}
+.cari{position:relative;max-width:460px;margin:6px 0}
+.inp{width:100%;padding:8px 10px;border:1px solid var(--rule);background:var(--sheet);font:14px var(--f-body);color:var(--ink)}
+.saran{position:absolute;z-index:3;left:0;right:0;list-style:none;margin:2px 0 0;padding:0;background:var(--sheet);border:1px solid var(--rule)}
+.saran button{width:100%;text-align:left;background:none;border:0;padding:6px 10px;cursor:pointer;font:13px var(--f-body);color:var(--ink)}
+.saran button:hover{background:var(--zebra)}
 .sumber{padding-left:20px;margin:10px 0}.sumber li{margin:3px 0}
 .kaki-nav{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 20px 14px;border-top:1px solid var(--rule)}
 @media (max-width:760px){

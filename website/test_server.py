@@ -461,6 +461,25 @@ class HarmonikTest(unittest.TestCase):
         self.assertEqual([(x["t"], x["nama"], x["radar"]) for x in r["rows"]], [("AAAA", "Aaaa Tbk", False), ("BBBB", "", True)])
         self.assertEqual({p["k"] for p in r["pola"]}, {"gartley", "bat", "butterfly", "crab", "cypher"})
 
+    def test_saham_live_dan_cadangan(self):
+        bars = self.bars([150, 100, 200, 138.2, 175.3, 121.4])
+        tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        f = Path(tmp.name) / ".harmonik.json"
+        f.write_text(json.dumps({"rows": [], "bars": {"AAAA": bars}}))
+        with unittest.mock.patch.object(server, "HARMONIK_PATH", f), \
+                unittest.mock.patch.object(server, "nama_semua", return_value={"AAAA": "Aaaa Tbk"}):
+            with unittest.mock.patch.object(server, "get_ohlc", return_value=bars):
+                r = server.harmonik_saham("AAAA")
+            self.assertEqual((r["sumber"], r["nama"], r["likuid"]), ("harga harian Stockbit", "Aaaa Tbk", True))
+            self.assertIn("gartley", [x["pola"] for x in r["rows"]])
+            self.assertTrue(r["pivot"] and r["pivot"][-1]["tentatif"])
+            # Cache kosong (mis. pengunjung publik): pakai salinan dari screening malam.
+            with unittest.mock.patch.object(server, "get_ohlc", side_effect=server.PublicNoCache("kosong")):
+                self.assertEqual(server.harmonik_saham("AAAA")["sumber"], "salinan screening malam")
+                with self.assertRaises(server.PublicNoCache):
+                    server.harmonik_saham("BBBB")
+        tmp.cleanup()
+
 
 class PovDalamLatarTest(unittest.TestCase):
     """Analisa mendalam tersimpan per saham, ditarik ulang hanya bila ada data baru atau umurnya lewat batas."""
