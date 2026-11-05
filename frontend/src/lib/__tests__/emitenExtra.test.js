@@ -1,6 +1,18 @@
 import { describe, it, expect } from 'vitest'
 import { kjppStatus, mechOf, flowOf, annualFactor, reservesOf, peerMultiples, simDefaults, simKjpp, dilusi,
-  analysisProsCons, ctrlProsCons, clip, relationTone, deepView, storyValuation, radarGeom, injSteps } from '../emitenExtra.js'
+  analysisProsCons, ctrlProsCons, clip, relationTone, deepView, storyValuation, radarGeom, injSteps, peerNote } from '../emitenExtra.js'
+
+describe('peerNote', () => {
+  it('hanya menyebut pembanding yang datanya terbaca', () => {
+    expect(peerNote({ peers: ['CMRY', 'ICBP'], peersOk: ['CMRY', 'ICBP'] })).toBe('Kelipatan pembanding: median 2 emiten (CMRY, ICBP).')
+    expect(peerNote({ peers: ['CMRY', 'ICBP', 'MYOR'], peersOk: ['ICBP'] })).toBe('Kelipatan pembanding: median 1 emiten (ICBP); data CMRY, MYOR tidak tersedia.')
+  })
+  it('tidak menulis "median 0 emiten" saat data kosong (versi publik)', () => {
+    expect(peerNote({ peers: ['CMRY', 'ICBP', 'MYOR'], peersOk: [] })).toBe('Kelipatan pembanding: data CMRY, ICBP, MYOR tidak tersedia, jadi tidak dipakai.')
+    expect(peerNote({ peers: [] })).toBe('Kelipatan pembanding: belum ditentukan.')
+    expect(peerNote()).toBe('Kelipatan pembanding: belum ditentukan.')
+  })
+})
 
 describe('kjppStatus & storyValuation', () => {
   it('memetakan status', () => {
