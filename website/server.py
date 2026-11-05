@@ -3142,10 +3142,9 @@ def kakdr_screen() -> dict:
     rows.sort(key=lambda r: (-r["skor"], -(r["turun"] or 0)))
     lolos = [r for r in rows if r["skor"] > 6.5][:80]
     radar = radar_tickers()
-    pov = {k: ((v.get("hasil") or {}).get("backdoor") or {}).get("skor") for k, v in pd_load().items()}
     for r in lolos:
         r["radar"] = r["t"] in radar
-        r["backdoor"] = pov.get(r["t"])
+        r["backdoor"] = (((pd_baca(r["t"]) or {}).get("hasil") or {}).get("backdoor") or {}).get("skor")
     baru, keluar = kakdr_riwayat([r["t"] for r in lolos]) if ada_data >= 300 else ([], [])
     for r in lolos:
         r["baru"] = r["t"] in baru
@@ -3357,30 +3356,143 @@ def saham50_loop() -> None:
 # Satu emiten BEI mana pun, ditarik saat tombol "Analisa mendalam" diklik (pekerjaan latar, maks. 15 menit):
 # profil & pemegang saham, jaringan tiap pemegang di emiten lain (+ pemegang emiten grup), riwayat keterbukaan
 # pemegang saham, keterbukaan informasi 1 tahun, berita, kinerja, dan posting publik Stockbit. Disusun aturan
-# otomatis oleh povdalam.analyze(); hasil disimpan 12 jam di .pov-dalam.json.
-PD_PATH = ROOT / ".pov-dalam.json"
-PD_TTL, PD_BATAS_DETIK, PD_MAKS_JALAN, PD_MAKS_JAM = 12 * 3600, 15 * 60, 2, 30
+# otomatis oleh povdalam.analyze(). Seluruh saham BEI juga ditarik bertahap di latar (pd_latar_loop); hasil disimpan
+# satu berkas per saham di .pov-dalam/ dan dipakai terus sampai ada data baru (keterbukaan informasi atau perubahan
+# pemegang saham di feed seluruh BEI) atau umurnya lewat PD_MAKS_UMUR.
+PD_DIR = ROOT / ".pov-dalam"
+PD_LAMA = ROOT / ".pov-dalam.json"          # format lama (satu berkas, maks. 200 saham), dipecah sekali
+PD_PEMICU_PATH = ROOT / ".pov-dalam-pemicu.json"
+PD_BATAS_DETIK, PD_MAKS_JALAN, PD_MAKS_JAM = 15 * 60, 2, 30
+PD_MAKS_UMUR = 14 * 86400    # tanpa data baru pun, analisa ditarik ulang paling lama tiap 14 hari
+PD_LATAR_JEDA = 15           # detik antar-saham di latar
+PD_GAGAL_JEDA = 24 * 3600    # saham yang gagal di latar dicoba lagi sehari kemudian
 PD_AKUN_RESMI = {"stockbitreports", "stockbitnews", "stockbit", "stockbitofficial"}
+# Keterbukaan rutin tidak mengubah isi analisa (registrasi bulanan sudah tercermin di data KSEI).
+PD_RUTIN_RX = re.compile(r"registrasi pemegang efek|bukti iklan|obligasi|sukuk|efek bersifat utang|kupon|"
+                         r"bunga (obligasi|mtn)|medium term note|\bmtn\b", re.I)
 _pd_jobs: dict[str, dict] = {}
 _pd_lock = threading.Lock()
+_pd_idx_lock = threading.RLock()
 _pd_mulai: list[float] = []
+_pd_indeks: dict[str, dict] | None = None    # {t: {"at", "versi"}}, dibangun dari berkas saat pertama dipakai
+_pd_gagal_latar: dict[str, float] = {}
+PD_LATAR = {"aktif": False, "t": None, "selesai": 0, "gagal": 0, "antre": None, "pantau": None, "terakhir": None}
 
 
-def pd_load() -> dict:
+def _pd_berkas(t: str) -> Path:
+    return PD_DIR / f"{t}.json"
+
+
+def _pd_tulis(f: Path, d) -> None:
+    tmp = f.with_suffix(".tmp")
+    tmp.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(f)
+
+
+def pd_baca(t: str) -> dict | None:
+    """Analisa tersimpan satu saham: {"at", "hasil"} atau None."""
     try:
-        return json.loads(PD_PATH.read_text(encoding="utf-8"))
+        return json.loads(_pd_berkas(t).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def pd_indeks() -> dict:
+    """{t: {"at", "versi"}} seluruh analisa tersimpan. Format lama .pov-dalam.json dipecah dulu (sekali)."""
+    global _pd_indeks
+    with _pd_idx_lock:
+        if _pd_indeks is None:
+            PD_DIR.mkdir(exist_ok=True)
+            try:
+                lama = json.loads(PD_LAMA.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                lama = None
+            if lama is not None:
+                for t, v in lama.items():
+                    if TICKER_RE.match(t) and isinstance(v, dict) and not _pd_berkas(t).exists():
+                        _pd_tulis(_pd_berkas(t), v)
+                PD_LAMA.unlink(missing_ok=True)
+            idx = {}
+            for f in PD_DIR.glob("*.json"):
+                v = pd_baca(f.stem) if TICKER_RE.match(f.stem) else None
+                if v:
+                    idx[f.stem] = {"at": v.get("at") or 0, "versi": (v.get("hasil") or {}).get("versi")}
+            _pd_indeks = idx
+        return _pd_indeks
+
+
+def pd_simpan(t: str, hasil: dict) -> None:
+    with _pd_idx_lock:
+        idx = pd_indeks()
+        at = time.time()
+        _pd_tulis(_pd_berkas(t), {"at": at, "hasil": hasil})
+        idx[t] = {"at": at, "versi": hasil.get("versi")}
+
+
+def pd_pemicu_load() -> dict:
+    """{t: [{"k", "waktu", "tgl", "teks"}]}: data baru per saham dari feed seluruh BEI (30 hari)."""
+    try:
+        return json.loads(PD_PEMICU_PATH.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
 
 
-def pd_simpan(t: str, hasil: dict) -> None:
-    with _pd_lock:
-        d = pd_load()
-        d[t] = {"at": time.time(), "hasil": hasil}
-        d = dict(sorted(d.items(), key=lambda kv: -kv[1]["at"])[:200])
-        tmp = PD_PATH.with_suffix(".tmp")
-        tmp.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
-        tmp.replace(PD_PATH)
+def pd_pemicu_catat(rows: list[tuple[str, str, str, str]], now: float | None = None) -> int:
+    """Catat baris feed (ticker, kunci, tanggal, teks) yang belum pernah terlihat. Waktu catat = saat pertama
+    terlihat; pada pencatatan pertama kali (berkas belum ada) memakai awal tanggal baris agar analisa yang dibuat
+    setelahnya tidak dianggap ketinggalan. Mengembalikan jumlah baris baru."""
+    now = now or time.time()
+    awal = not PD_PEMICU_PATH.exists()
+    d = pd_pemicu_load()
+    batas = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    baru = 0
+    for t, k, tgl, teks in rows:
+        if not TICKER_RE.match(t or "") or not tgl or tgl < batas:
+            continue
+        ada = d.setdefault(t, [])
+        if any(x["k"] == k for x in ada):
+            continue
+        try:
+            w = datetime.strptime(tgl, "%Y-%m-%d").timestamp() if awal else now
+        except ValueError:
+            w = now
+        ada.append({"k": k, "waktu": w, "tgl": tgl, "teks": teks[:160]})
+        baru += 1
+    d = {t: sorted([x for x in v if x["tgl"] >= batas], key=lambda x: -x["waktu"])[:15] for t, v in d.items()}
+    _pd_tulis(PD_PEMICU_PATH, {t: v for t, v in d.items() if v})
+    return baru
+
+
+def pd_pantau() -> int:
+    """Baca keterbukaan informasi dan perubahan pemegang saham seluruh BEI (3 hari) lalu catat sebagai pemicu."""
+    rows: list[tuple[str, str, str, str]] = []
+    try:
+        rows += [(r["ticker"], r["url"], r["date"], r["title"]) for r in market_reports(days=3, pages=10, fresh=True)
+                 if not PD_RUTIN_RX.search(r["title"])]
+    except Exception as e:
+        print(f"[pov-dalam] pantau keterbukaan: {e}", file=sys.stderr)
+    try:
+        rows += [(r["ticker"], f"{r['name']}|{r['date']}|{r['cur']}", r["date"],
+                  f"{r['name'].title()}: {r['prev']:g}% → {r['cur']:g}% ({r['source']})")
+                 for r in get_insider_feed(3, fresh=True).get("rows") or []]
+    except Exception as e:
+        print(f"[pov-dalam] pantau pemegang saham: {e}", file=sys.stderr)
+    n = pd_pemicu_catat(rows)
+    PD_LATAR["pantau"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+    return n
+
+
+def pd_basi(t: str, simpan: dict, pemicu: dict | None = None, now: float | None = None) -> str:
+    """Alasan analisa tersimpan perlu ditarik ulang, atau '' bila masih berlaku."""
+    now = now or time.time()
+    at = simpan.get("at") or 0
+    baru = [x for x in (pemicu if pemicu is not None else pd_pemicu_load()).get(t, []) if x["waktu"] > at]
+    if baru:
+        teks = "; ".join(f"{x['teks']} ({x['tgl']})" for x in baru[:2])
+        return f"Ada data baru sejak analisa ini: {teks}" + (f" dan {len(baru) - 2} lainnya" if len(baru) > 2 else "") + "."
+    if now - at > PD_MAKS_UMUR:
+        return f"Analisa berumur lebih dari {PD_MAKS_UMUR // 86400} hari."
+    return ""
 
 
 def pd_posts(t: str, halaman: int = 10) -> tuple[list[dict], str]:
@@ -3635,15 +3747,102 @@ def pd_kumpul(t: str, job: dict, ringan: bool = False) -> dict:
     return hasil
 
 
-def _pd_jalan(t: str) -> None:
+def _pd_jalan(t: str) -> bool:
+    """Jalankan satu pekerjaan terdaftar di _pd_jobs. Hasil hanya disimpan di berkas (tidak ditahan di memori)."""
     job = _pd_jobs[t]
     try:
         hasil = pd_kumpul(t, job)
         pd_simpan(t, hasil)
-        job.update({"status": "selesai", "hasil": hasil})
+        with _pd_lock:
+            _pd_jobs.pop(t, None)
+        return True
     except Exception as e:
         print(f"[pov-dalam] {t} gagal: {e}", file=sys.stderr)
-        job.update({"status": "gagal", "galat": str(e)[:200]})
+        with _pd_lock:
+            if job.get("latar"):
+                _pd_jobs.pop(t, None)
+                _pd_gagal_latar[t] = time.time()
+            else:
+                job.update({"status": "gagal", "galat": str(e)[:200]})
+        return False
+
+
+def pd_urutan(now: float | None = None) -> list[str]:
+    """Antrean latar: (0) ada data baru sejak analisa, (1) belum dianalisa / versi lama, (2) umur > PD_MAKS_UMUR.
+    Di tiap kelompok emiten radar didahulukan, lalu Kandidat, lalu yang paling lama dianalisa."""
+    now = now or time.time()
+    idx, pem = pd_indeks(), pd_pemicu_load()
+    radar = {i["ticker"] for i in items_all()}
+    kd = radar_tickers()
+    semua = [t for t in dict.fromkeys(sorted(radar) + sorted(kd) + sorted(bei_kode_load())) if TICKER_RE.match(t)]
+    out = []
+    for t in semua:
+        v = idx.get(t)
+        if (_pd_jobs.get(t) or {}).get("status") == "jalan" or now - _pd_gagal_latar.get(t, 0) < PD_GAGAL_JEDA:
+            continue
+        if not v or v.get("versi") != PD.VERSI:
+            k = 1
+        elif pd_basi(t, v, pem, now):
+            k = 0 if any(x["waktu"] > v["at"] for x in pem.get(t, [])) else 2
+        else:
+            continue
+        out.append((k, t not in radar, t not in kd, (v or {}).get("at") or 0, t))
+    return [x[-1] for x in sorted(out)]
+
+
+def pd_latar_satu(t: str) -> bool:
+    with _pd_lock:
+        if t in _pd_jobs:
+            return False
+        _pd_jobs[t] = {"status": "jalan", "mulai": time.time(), "langkah": 0, "total": 10, "label": "Memulai",
+                       "estimasi": 180, "latar": True}
+    PD_LATAR["t"] = t
+    try:
+        ok = _pd_jalan(t)
+    finally:
+        PD_LATAR["t"] = None
+    PD_LATAR["selesai" if ok else "gagal"] += 1
+    PD_LATAR["terakhir"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+    return ok
+
+
+def pd_latar_loop() -> None:
+    """Analisa mendalam seluruh saham BEI satu per satu di latar. Tiap 30 menit feed seluruh BEI dibaca untuk mencari
+    data baru; saham yang terkena ditarik ulang lebih dulu. Analisa yang diminta pengunjung didahulukan."""
+    time.sleep(600)
+    pantau = 0.0
+    while True:
+        try:
+            if not (get_token() and not token_expired()):
+                PD_LATAR["aktif"] = False
+                time.sleep(600)
+                continue
+            PD_LATAR["aktif"] = True
+            if time.time() - pantau > 1800:
+                pantau = time.time()
+                n = pd_pantau()
+                if n:
+                    print(f"[pov-dalam] {n} data baru di feed seluruh BEI", file=sys.stderr)
+            if any(j["status"] == "jalan" and not j.get("latar") for j in list(_pd_jobs.values())):
+                time.sleep(30)
+                continue
+            antre = pd_urutan()
+            PD_LATAR["antre"] = len(antre)
+            if not antre:
+                time.sleep(600)
+                continue
+            pd_latar_satu(antre[0])
+        except Exception as e:
+            print(f"[pov-dalam] latar: {e}", file=sys.stderr)
+            time.sleep(60)
+        time.sleep(PD_LATAR_JEDA)
+
+
+def pd_cakupan() -> dict:
+    """Jumlah saham BEI yang sudah punya analisa versi terbaru (untuk tampilan dan /api/status)."""
+    idx = _pd_indeks or {}
+    return {"tersimpan": sum(1 for v in idx.values() if v.get("versi") == PD.VERSI), "total": len(bei_kode_load()),
+            **{k: PD_LATAR[k] for k in ("aktif", "t", "antre", "selesai", "gagal", "pantau", "terakhir")}}
 
 
 # ------------------------------------------------- Pemindai calon cangkang ----
@@ -3726,7 +3925,8 @@ def pindai_jalan(batas: int = PINDAI_PER_MALAM) -> int:
         riw = {k: v for k, v in riw.items() if k >= (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")}
         # Alarm penjual cangkang: daftar dari pemindai + analisa mendalam tersimpan, dicocokkan dengan feed 3 hari.
         semua = dict(rows)
-        for t, v in pd_load().items():
+        for t in list(pd_indeks()):
+            v = pd_baca(t) or {}
             if (v.get("hasil") or {}).get("jejakCangkang"):
                 semua.setdefault(t, PP.baris(v["hasil"]))
         penjual = PP.penjual_cangkang(semua)
@@ -3770,29 +3970,50 @@ def pindai_api() -> dict:
 
 
 def pov_dalam_api(t: str, mulai: bool) -> dict:
-    """Status/hasil analisa mendalam. mulai=True memulai pekerjaan latar bila belum ada hasil segar."""
-    simpan = pd_load().get(t)
+    """Status/hasil analisa mendalam. Analisa tersimpan selalu ditampilkan; bila ada data baru sejak analisa itu
+    (field "basi"), mulai=True menarik ulang di latar sementara hasil lama tetap tampil (field "segarkan").
+    Tanpa analisa tersimpan, mulai=True memulai pekerjaan seperti biasa."""
+    pd_indeks()   # memecah format lama bila perlu
+    simpan = pd_baca(t)
+    if simpan and (simpan.get("hasil") or {}).get("versi") != PD.VERSI:
+        simpan = None
+    cakupan = pd_cakupan()
     with _pd_lock:
         job = _pd_jobs.get(t)
-        if job and job["status"] == "jalan":
-            return {"status": "jalan", **{k: job.get(k) for k in ("langkah", "total", "label", "estimasi")},
-                    "berjalan": int(time.time() - job["mulai"])}
-        if job and job["status"] == "gagal" and not mulai:
-            return {"status": "gagal", "galat": job.get("galat")}
-        if simpan and time.time() - simpan["at"] < PD_TTL and simpan["hasil"].get("versi") == PD.VERSI:
-            return {"status": "selesai", "hasil": simpan["hasil"], "umur": int(time.time() - simpan["at"])}
-        if not mulai:
-            return {"status": "kosong"}
+        prog = ({**{k: job.get(k) for k in ("langkah", "total", "label", "estimasi")}, "berjalan": int(time.time() - job["mulai"])}
+                if job and job["status"] == "jalan" else None)
+        out = None
+        if simpan:
+            out = {"status": "selesai", "hasil": simpan["hasil"], "umur": int(time.time() - simpan["at"]), "cakupan": cakupan}
+            alasan = pd_basi(t, simpan)
+            if alasan:
+                out["basi"] = alasan
+            if prog:
+                return {**out, "segarkan": prog}
+            if job and job["status"] == "gagal":
+                out["galatSegar"] = job.get("galat")
+            if not (alasan and mulai):
+                return out
+        elif prog:
+            return {"status": "jalan", **prog, "cakupan": cakupan}
+        elif job and job["status"] == "gagal" and not mulai:
+            return {"status": "gagal", "galat": job.get("galat"), "cakupan": cakupan}
+        elif not mulai:
+            return {"status": "kosong", "cakupan": cakupan}
         if not (get_token() and not token_expired()):
-            return {"status": "gagal", "galat": "Token Stockbit server belum aktif; analisa belum bisa ditarik."}
+            galat = "Token Stockbit server belum aktif; analisa belum bisa ditarik."
+            return {**out, "galatSegar": galat} if out else {"status": "gagal", "galat": galat, "cakupan": cakupan}
         now = time.time()
         _pd_mulai[:] = [x for x in _pd_mulai if now - x < 3600]
-        if sum(1 for j in _pd_jobs.values() if j["status"] == "jalan") >= PD_MAKS_JALAN or len(_pd_mulai) >= PD_MAKS_JAM:
-            return {"status": "antre", "galat": "Sedang ada analisa lain berjalan; coba lagi beberapa menit lagi."}
+        if (sum(1 for j in _pd_jobs.values() if j["status"] == "jalan" and not j.get("latar")) >= PD_MAKS_JALAN
+                or len(_pd_mulai) >= PD_MAKS_JAM):
+            galat = "Sedang ada analisa lain berjalan; coba lagi beberapa menit lagi."
+            return {**out, "galatSegar": galat} if out else {"status": "antre", "galat": galat, "cakupan": cakupan}
         _pd_mulai.append(now)
         _pd_jobs[t] = {"status": "jalan", "mulai": now, "langkah": 0, "total": 10, "label": "Memulai", "estimasi": 180}
     threading.Thread(target=_pd_jalan, args=(t,), daemon=True, name=f"pov-dalam-{t}").start()
-    return {"status": "jalan", "langkah": 0, "total": 10, "label": "Memulai", "estimasi": 180, "berjalan": 0}
+    prog = {"langkah": 0, "total": 10, "label": "Memulai", "estimasi": 180, "berjalan": 0}
+    return {**out, "segarkan": prog} if out else {"status": "jalan", **prog, "cakupan": cakupan}
 
 
 # ------------------------------------------------------------------- POV ----
@@ -5625,16 +5846,17 @@ class Handler(BaseHTTPRequestHandler):
         # Hasil build Vue (dist/) didahulukan; file data JSON tetap dari ROOT.
         if path == "":
             path = "index.html"
-        f = None
+        f, rel = None, ()
         for base in (DIST, ROOT):
             cand = (base / path).resolve()
             if cand.is_relative_to(base) and cand.is_file():
-                f = cand
+                f, rel = cand, cand.relative_to(base).parts
                 break
         name = f.name if f else ""
         # Kode server/skrip (.py, .ps1), dotfile (token, kredensial, DB), dan config tidak pernah disajikan.
         # tsa-*.json tidak disajikan mentah; datanya lewat /api/tsa/<sumber> dan /api/tsa/summary.
-        blocked = (not f or name.startswith(".") or f.suffix.lower() in (".py", ".ps1", ".pyc")
+        # Folder titik (mis. .pov-dalam/) ikut diblokir, bukan hanya nama berkasnya.
+        blocked = (not f or any(x.startswith(".") for x in rel) or f.suffix.lower() in (".py", ".ps1", ".pyc")
                    or name == "stockbit.config.json" or (name.startswith("tsa-") and name.endswith(".json")))
         if blocked:
             self.reply(b"", 404)
@@ -5706,6 +5928,7 @@ class Handler(BaseHTTPRequestHandler):
                 "readOnly": is_public_request(),
                 "newsAt": NEWS_STATE["at"],
                 "hargaRadar": HARGA_STATE,
+                "povDalam": pd_cakupan(),
             })
         elif path == "api/tenders":
             self.api_tenders(cfg, fresh)
@@ -6150,6 +6373,7 @@ def main() -> int:
     daemon.start()
     threading.Thread(target=kandidat_loop, daemon=True).start()
     threading.Thread(target=harga_loop, daemon=True).start()
+    threading.Thread(target=pd_latar_loop, daemon=True, name="pov-dalam-latar").start()
     threading.Thread(target=news_loop, daemon=True).start()
     threading.Thread(target=pov_loop, daemon=True).start()
     threading.Thread(target=season_loop, daemon=True).start()
