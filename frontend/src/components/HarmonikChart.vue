@@ -1,7 +1,7 @@
 <script setup>
 // Chart candlestick harian untuk analisa Harmonic Pattern (POV): candle + volume, garis XABCD, pita PRZ, stop,
 // target, dan crosshair OHLC saat diarahkan. Tanpa pola: garis swing (pivot zigzag) terakhir.
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { idxTanggal } from '../lib/harmonik.js'
 
 const props = defineProps({
@@ -9,8 +9,24 @@ const props = defineProps({
   row: { type: Object, default: null },
   pivot: { type: Array, default: () => [] },
 })
-const W = 760, HP = 270, HV = 60, PAD_L = 8, PAD_R = 78, PAD_T = 14
+const HP = 270, HV = 60, PAD_L = 8, PAD_R = 84, PAD_T = 14
 const H = HP + HV + 18
+// Lebar viewBox = lebar kotak (piksel) agar chart mengisi penuh tanpa teks ikut membesar di layar lebar.
+// Lebar 0 (elemen belum tampil) diabaikan; ukur ulang saat kotak atau jendela berubah ukuran.
+const wrap = ref(null), lebarKotak = ref(760)
+let ro = null
+const ukur = () => {
+  const w = Math.round(wrap.value?.clientWidth || 0)
+  if (w >= 100) lebarKotak.value = Math.max(420, w)
+}
+onMounted(() => {
+  ukur()
+  requestAnimationFrame?.(ukur)
+  if (typeof ResizeObserver !== 'undefined') { ro = new ResizeObserver(ukur); ro.observe(wrap.value) }
+  window.addEventListener('resize', ukur)
+})
+onBeforeUnmount(() => { ro?.disconnect(); window.removeEventListener('resize', ukur) })
+const W = computed(() => lebarKotak.value)
 const rp = v => v == null ? '–' : Number(v).toLocaleString('id-ID', { maximumFractionDigits: 2 })
 
 // Rentang tampil: dari 15 bar sebelum X (atau pivot pertama) sampai bar terakhir, minimal 90 bar.
@@ -21,7 +37,7 @@ const awal = computed(() => {
 })
 const vis = computed(() => props.bars.slice(awal.value))
 const n = computed(() => vis.value.length)
-const lebar = computed(() => (W - PAD_L - PAD_R) / Math.max(1, n.value))
+const lebar = computed(() => (W.value - PAD_L - PAD_R) / Math.max(1, n.value))
 const x = i => PAD_L + (i + 0.5) * lebar.value
 
 const tambahan = computed(() => {
@@ -39,7 +55,7 @@ const yv = v => HP + 18 + HV * (1 - v / vMaks.value)
 
 // Titik pola (atau pivot) pada indeks bar yang tampil.
 const titik = computed(() => {
-  const src = props.row?.titik?.length ? props.row.titik : props.pivot.map((p, i) => ({ n: p.tentatif ? '•' : String(i + 1), d: p.d, p: p.p }))
+  const src = props.row?.titik?.length ? props.row.titik : props.pivot.map(p => ({ n: '', d: p.d, p: p.p }))
   return src.map(t => ({ ...t, i: idxTanggal(props.bars, t.d) - awal.value })).filter(t => t.i >= 0)
 })
 const jalur = computed(() => titik.value.map((t, k) => `${k ? 'L' : 'M'}${x(t.i).toFixed(1)},${y(t.p).toFixed(1)}`).join(' '))
@@ -65,7 +81,7 @@ const garis = computed(() => {
 const svg = ref(null), hov = ref(null)
 function gerak(e) {
   const b = svg.value.getBoundingClientRect()
-  const px = (e.clientX - b.left) / b.width * W
+  const px = (e.clientX - b.left) / b.width * W.value
   const i = Math.floor((px - PAD_L) / lebar.value)
   hov.value = i >= 0 && i < n.value ? i : null
 }
@@ -73,7 +89,7 @@ const info = computed(() => hov.value == null ? vis.value[n.value - 1] : vis.val
 </script>
 
 <template>
-  <figure class="hc">
+  <figure ref="wrap" class="hc">
     <figcaption class="small">
       <b>{{ String(info?.d || '').slice(0, 10) }}</b> · O {{ rp(info?.o) }} · H {{ rp(info?.h) }} · L {{ rp(info?.l) }} · C {{ rp(info?.c) }} ·
       Vol {{ rp(info ? info.v : null) }} lot
@@ -93,19 +109,33 @@ const info = computed(() => hov.value == null ? vis.value[n.value - 1] : vis.val
       <path :d="jalur" class="pola" :class="{ pivot: !row }" />
       <g v-for="t in titik" :key="t.n + t.d">
         <circle :cx="x(t.i)" :cy="y(t.p)" r="4.5" class="tt" />
-        <text :x="x(t.i)" :y="puncak(t) ? y(t.p) - 9 : y(t.p) + 18" class="tl">{{ t.n }} {{ rp(t.p) }}</text>
+        <text :x="x(t.i)" :y="puncak(t) ? y(t.p) - 9 : y(t.p) + 18" class="tl">{{ t.n ? t.n + ' ' : '' }}{{ rp(t.p) }}</text>
       </g>
       <line v-if="hov != null" :x1="x(hov)" :x2="x(hov)" :y1="PAD_T" :y2="H" class="ch" />
       <line :x1="PAD_L" :x2="W - PAD_R" :y1="HP + 10" :y2="HP + 10" class="pisah" />
       <text :x="W - PAD_R + 4" :y="y(vis[n - 1].c) + 4" class="lbl now">{{ rp(vis[n - 1].c) }}</text>
     </svg>
+    <ul class="lg small" aria-label="Keterangan chart">
+      <li><i class="k up"></i>Candle naik</li><li><i class="k dn"></i>Candle turun</li>
+      <li v-if="row"><i class="k pola"></i>Garis pola XABCD</li><li v-else><i class="k swing"></i>Swing terakhir (pivot ≥6%)</li>
+      <li v-if="row"><i class="k prz"></i>PRZ: zona potensi pembalikan</li>
+      <li v-if="row"><i class="k stop"></i>Stop loss (pola batal bila tembus)</li>
+      <li v-if="row"><i class="k tgt"></i>Target 1 &amp; 2 (0,382 / 0,618 kaki AD)</li>
+      <li><i class="k vol"></i>Volume (lot)</li><li><b class="now">angka tebal</b> harga terakhir</li>
+    </ul>
   </figure>
 </template>
 
 <style scoped>
 .hc{margin:0}
 .hc figcaption{font-family:var(--f-data);color:var(--ink-2);margin-bottom:4px;min-height:1.4em}
-.cv{width:100%;height:auto;max-height:420px;background:var(--sheet);border:1px solid var(--rule);display:block}
+.cv{width:100%;height:auto;background:var(--sheet);border:1px solid var(--rule);display:block}
+.lg{list-style:none;display:flex;flex-wrap:wrap;gap:4px 14px;padding:0;margin:6px 0 0;color:var(--ink-2)}
+.lg li{display:flex;align-items:center;gap:5px}.lg .now{color:var(--now-ink)}
+.k{display:inline-block;width:14px;height:10px}.k.up{background:var(--good)}.k.dn{background:var(--strong)}
+.k.pola{height:3px;background:var(--accent)}.k.swing{height:0;border-top:2px dashed var(--accent)}
+.k.prz{background:var(--warn-bg);border:1px dashed var(--warn)}.k.stop{height:0;border-top:2px dashed var(--strong)}
+.k.tgt{height:0;border-top:2px dashed var(--good)}.k.vol{background:var(--good);opacity:.35}
 .sumbu{stroke-width:1}.sumbu.up,.bd.up{stroke:var(--good);fill:var(--good)}.sumbu.dn,.bd.dn{stroke:var(--strong);fill:var(--strong)}
 .vol{opacity:.35}.vol.up{fill:var(--good)}.vol.dn{fill:var(--strong)}
 .prz{fill:var(--warn-bg);stroke:var(--warn);stroke-dasharray:3 3;opacity:.9}

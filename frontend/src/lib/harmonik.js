@@ -153,3 +153,58 @@ export function analisaHarmonik(r, bars = [], pola = [], likuid = true) {
   return { kaki, simetri, tren, searah, e50, e200, rsi, volD, rincian, skor, label, narasi, skenario, rencana: rc, ix }
 }
 const fmtR = v => v == null ? '–' : Number(v).toLocaleString('id-ID', { maximumFractionDigits: 2 })
+
+// ------------------------------------------------------------- keterangan ----
+export const PERAN_TITIK = {
+  X: 'Awal dorongan; acuan semua rasio',
+  A: 'Ujung dorongan pertama (kaki XA)',
+  B: 'Ujung koreksi XA; menentukan jenis pola',
+  C: 'Ujung kaki BC (koreksi dari AB)',
+  D: 'Titik akhir di PRZ; area potensi pembalikan',
+}
+const mid = r => r ? (r[0] + r[1]) / 2 : null
+const pctDari = (v, h) => v == null || !h ? null : Math.round((v / h - 1) * 1000) / 10
+
+// Rincian pola untuk keterangan: peran tiap titik, asal-usul PRZ (level rasio XA/XC dan proyeksi BC dalam harga),
+// dan jarak harga kini ke PRZ, stop, dan target.
+export function detailHarmonik(r, meta = {}, harga = r?.harga) {
+  if (!r?.titik?.length) return null
+  const p = Object.fromEntries(r.titik.map(t => [t.n, t.p]))
+  const titik = r.titik.map(t => ({ ...t, peran: PERAN_TITIK[t.n], jarak: pctDari(t.p, harga) }))
+  const prz = []
+  if (meta.dxc && p.C != null) prz.push(`D = ${rentang(meta.dxc)} kaki XC dari C: ${fmtR(Math.round(p.C - (p.C - p.X) * mid(meta.dxc)))}`)
+  if (meta.d) prz.push(`D = ${rentang(meta.d)} kaki XA dari A: ${fmtR(Math.round(p.A + (p.X - p.A) * mid(meta.d)))}`)
+  if (meta.bc && p.C != null) {
+    const a = p.C + (p.B - p.C) * meta.bc[0], b = p.C + (p.B - p.C) * meta.bc[1]
+    prz.push(`Proyeksi CD ${rentang(meta.bc)} × BC dari C: ${fmtR(Math.round(Math.min(a, b)))}–${fmtR(Math.round(Math.max(a, b)))}`)
+  }
+  prz.push(`Pertemuan keduanya (±3% kaki acuan) = PRZ ${przTeks(r)}`)
+  const level = [
+    { k: 'PRZ', v: r.prz, teks: przTeks(r), jarak: pctDari(r.arah === 'bullish' ? r.prz[1] : r.prz[0], harga) },
+    { k: 'Stop loss', v: r.stop, teks: fmtR(r.stop), jarak: pctDari(r.stop, harga) },
+    ...(r.target || []).map((v, i) => ({ k: `Target ${i + 1} (${i ? '0,618' : '0,382'})`, v, teks: fmtR(v), jarak: pctDari(v, harga) })),
+    ...(r.targetCA ? [{ k: 'Target C', v: r.targetCA[0], teks: fmtR(r.targetCA[0]), jarak: pctDari(r.targetCA[0], harga) },
+      { k: 'Target A', v: r.targetCA[1], teks: fmtR(r.targetCA[1]), jarak: pctDari(r.targetCA[1], harga) }] : []),
+  ]
+  return { titik, prz, level }
+}
+
+// Tanpa pola valid: rasio swing terakhir dibanding tiap pola, untuk menjelaskan pola terdekat dan syarat yang meleset.
+// pivot: [{d, p, k}] urut waktu (terakhir = ekstrem berjalan). Hasil: { nama, arah, cocok, total, cek[], titik[] }.
+export function kandidatTerdekat(pivot = [], pola = []) {
+  if (pivot.length < 4 || !pola.length) return null
+  const w = pivot.slice(-5), nm = ['X', 'A', 'B', 'C', 'D'].slice(0, w.length)
+  const p = Object.fromEntries(w.map((x, i) => [nm[i], x.p]))
+  const xa = Math.abs(p.A - p.X), ab = Math.abs(p.B - p.A), bc = Math.abs(p.C - p.B)
+  if (!xa || !ab || !bc) return null
+  const nilai = { b: ab / xa, c: bc / ab, cx: (p.C - p.X) / (p.A - p.X) }
+  if (p.D != null) { nilai.d = Math.abs(p.D - p.A) / xa; nilai.bc = Math.abs(p.D - p.C) / bc; nilai.dxc = Math.abs(p.C - p.D) / Math.abs(p.C - p.X) }
+  const LBL = { b: 'B / XA', c: 'C / AB', d: 'D / XA', bc: 'CD / BC', cx: 'C / XA', dxc: 'D / XC' }
+  const hasil = pola.map(m => {
+    const kunci = (m.cx ? ['b', 'cx', 'dxc'] : ['b', 'c', 'd', 'bc']).filter(k => nilai[k] != null)
+    const cek = kunci.map(k => ({ label: LBL[k], nilai: Math.round(nilai[k] * 1000) / 1000, kriteria: m[k],
+      ok: nilai[k] >= m[k][0] * 0.95 && nilai[k] <= m[k][1] * 1.05 }))
+    return { nama: m.nama, cek, cocok: cek.filter(c => c.ok).length, total: cek.length }
+  }).sort((a, b) => b.cocok / b.total - a.cocok / a.total || b.cocok - a.cocok)
+  return { ...hasil[0], arah: p.A > p.X ? 'bullish' : 'bearish', titik: w.map((x, i) => ({ n: nm[i], d: x.d, p: x.p })) }
+}

@@ -99,3 +99,27 @@ describe('rencanaHarmonik & cekRasio', () => {
   })
 })
 
+
+import { detailHarmonik, kandidatTerdekat } from '../harmonik.js'
+
+describe('detailHarmonik & kandidatTerdekat', () => {
+  const meta = { k: 'gartley', nama: 'Gartley', b: [0.618, 0.618], c: [0.382, 0.886], d: [0.786, 0.786], bc: [1.13, 1.618] }
+  const r = { arah: 'bullish', harga: 125, prz: [118, 124], stop: 100, target: [151, 170], targetCA: [175, 200],
+    titik: [{ n: 'X', d: '2026-01-01', p: 100 }, { n: 'A', d: '2026-02-01', p: 200 }, { n: 'B', d: '2026-03-01', p: 138 }, { n: 'C', d: '2026-04-01', p: 175 }, { n: 'D', d: '2026-05-01', p: 121 }] }
+  it('menjelaskan PRZ dalam harga dan jarak level dari harga kini', () => {
+    const x = detailHarmonik(r, meta)
+    expect(x.titik[0].peran).toMatch(/^Awal dorongan/)
+    expect(x.prz[0]).toBe('D = 0,786 kaki XA dari A: 121')
+    expect(x.prz[1]).toBe('Proyeksi CD 1,13–1,618 × BC dari C: 115–133')
+    expect(x.level.find(l => l.k === 'Stop loss').jarak).toBe(-20)
+    expect(detailHarmonik(null)).toBeNull()
+  })
+  it('mencari pola terdekat dari swing terakhir', () => {
+    const pv = [{ d: 'a', p: 100 }, { d: 'b', p: 200 }, { d: 'c', p: 155 }, { d: 'd', p: 190 }, { d: 'e', p: 115 }]
+    const k = kandidatTerdekat(pv, [meta, { k: 'bat', nama: 'Bat', b: [0.382, 0.5], c: [0.382, 0.886], d: [0.886, 0.886], bc: [1.618, 2.618] }])
+    expect(k.nama).toBe('Bat')                         // B 0,45 XA cocok Bat
+    expect(k.arah).toBe('bullish')
+    expect(k.cek[0]).toEqual({ label: 'B / XA', nilai: 0.45, kriteria: [0.382, 0.5], ok: true })
+    expect(kandidatTerdekat(pv.slice(0, 3), [meta])).toBeNull()
+  })
+})

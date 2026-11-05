@@ -1,11 +1,12 @@
 <script setup>
 // Analisa Harmonic Pattern satu saham, tampil di tempat (tanpa pindah halaman): chart candlestick dengan pola, skor
 // kualitas beserta rinciannya, struktur kaki, validasi rasio, konfirmasi di PRZ, rencana (entry, stop, target, R:R),
-// skenario, dan narasi. Data dari /api/harmonik?ticker= (harga harian 1 tahun; pola tanpa saringan likuiditas).
+// skenario, narasi, keterangan titik/PRZ/level, dan unduhan PDF. Data dari /api/harmonik?ticker= (harga harian 1 tahun;
+// pola tanpa saringan likuiditas). Tanpa pola valid: pola terdekat dari swing terakhir dan syarat yang meleset.
 import { computed, ref, watch } from 'vue'
 import { api } from '../api.js'
 import HarmonikChart from './HarmonikChart.vue'
-import { HM_STATUS, przTeks, rentang, cekRasio, analisaHarmonik } from '../lib/harmonik.js'
+import { HM_STATUS, przTeks, rentang, cekRasio, analisaHarmonik, detailHarmonik, kandidatTerdekat } from '../lib/harmonik.js'
 
 const props = defineProps({ ticker: { type: String, required: true }, pola: { type: String, default: '' } })
 const d = ref(null), err = ref(''), muat = ref(false), pilih = ref(0)
@@ -26,6 +27,19 @@ const meta = computed(() => (d.value?.pola || []).find(p => p.k === row.value?.p
 const a = computed(() => analisaHarmonik(row.value, d.value?.bars || [], d.value?.pola || [], d.value?.likuid))
 const cek = computed(() => cekRasio(row.value, d.value?.pola || []))
 const nada = computed(() => !a.value ? '' : a.value.skor >= 70 ? 't-good' : a.value.skor >= 45 ? 't-warn' : 't-strong')
+const det = computed(() => detailHarmonik(row.value, meta.value, d.value?.bars?.at(-1)?.c))
+const dekat = computed(() => row.value ? null : kandidatTerdekat(d.value?.pivot || [], d.value?.pola || []))
+const pctTeks = v => v == null ? '–' : `${v > 0 ? '+' : ''}${rp(v)}%`
+
+// Unduh analisa yang sedang tampil (PDF); jsPDF dimuat saat tombol ditekan.
+const busyPdf = ref(false), errPdf = ref('')
+async function unduh() {
+  busyPdf.value = true; errPdf.value = ''
+  try {
+    const [{ jsPDF }, P] = await Promise.all([import('jspdf'), import('../lib/harmonikPdf.js')])
+    ;(await P.harmonikPdf(d.value, pilih.value, jsPDF)).save(P.harmonikPdfName(d.value.t))
+  } catch (e) { errPdf.value = 'PDF gagal dibuat: ' + (e.message || e) } finally { busyPdf.value = false }
+}
 </script>
 
 <template>
@@ -37,11 +51,15 @@ const nada = computed(() => !a.value ? '' : a.value.skor >= 70 ? 't-good' : a.va
         <div><h4>{{ d.t }} <span class="muted">{{ d.nama }}</span></h4>
           <span class="small muted">Data: {{ d.sumber }} sampai {{ String(d.bars.at(-1)?.d || '').slice(0, 10) }} · nilai transaksi rata-rata 20 hari Rp{{ rp(Math.round(d.nilai / 1e6)) }} juta
             <template v-if="!d.likuid"> · di bawah batas screening (Rp{{ rp(d.minNilai / 1e9) }} miliar), struktur bisa kurang representatif</template></span></div>
-        <div v-if="d.rows.length > 1" class="seg">
-          <button v-for="(r, i) in d.rows" :key="r.pola + i" type="button" class="pill sm" :aria-pressed="String(pilih === i)" @click="pilih = i">
-            {{ (d.pola.find(p => p.k === r.pola) || {}).nama }} {{ r.arah }} <span class="muted">X {{ r.titik[0].d }}</span></button>
+        <div class="seg">
+          <button type="button" class="btn" :disabled="busyPdf" @click="unduh">{{ busyPdf ? 'Menyiapkan PDF…' : 'Unduh analisa ' + d.t + ' (PDF)' }}</button>
         </div>
       </header>
+      <p v-if="errPdf" class="small c-strong">{{ errPdf }}</p>
+      <div v-if="d.rows.length > 1" class="seg"><span class="small muted">Pola ditemukan:</span>
+          <button v-for="(r, i) in d.rows" :key="r.pola + i" type="button" class="pill sm" :aria-pressed="String(pilih === i)" @click="pilih = i">
+            {{ (d.pola.find(p => p.k === r.pola) || {}).nama }} {{ r.arah }} <span class="muted">X {{ r.titik[0].d }}</span></button>
+      </div>
 
       <HarmonikChart :bars="d.bars" :row="row" :pivot="row ? [] : d.pivot" />
 
@@ -50,6 +68,13 @@ const nada = computed(() => !a.value ? '' : a.value.skor >= 70 ? 't-good' : a.va
         <p class="small">Swing terakhir {{ d.t }} (garis putus-putus) belum memenuhi rasio Gartley, Bat, Butterfly, Crab, maupun Cypher dengan toleransi ±5%,
           atau D sudah menembus PRZ. Pola harmonik memang jarang terbentuk sempurna; jangan dipaksakan.</p>
         <p class="small muted">Swing terakhir: {{ d.pivot.map(p => `${p.k === 'H' ? 'puncak' : 'lembah'} ${rp(p.p)} (${p.d})`).join(' → ') }}</p>
+        <template v-if="dekat">
+          <span class="ik">Pola terdekat: {{ dekat.nama }} {{ dekat.arah }} ({{ dekat.cocok }} dari {{ dekat.total }} syarat terpenuhi)</span>
+          <p class="small">Lima swing terakhir dibaca sebagai {{ dekat.titik.map(t => `${t.n} ${rp(t.p)} (${t.d})`).join(', ') }}.
+            {{ dekat.titik.length < 5 ? 'Titik D belum terbentuk.' : '' }}</p>
+          <ul class="cek small"><li v-for="c in dekat.cek" :key="c.label" :class="c.ok ? 'ok' : 'no'">{{ c.label }} {{ rp(c.nilai) }}: {{ c.ok ? 'sesuai' : 'di luar' }} kriteria {{ rentang(c.kriteria) }}</li></ul>
+          <p class="small muted">Pola baru dianggap valid bila semua syarat terpenuhi dan PRZ (retracement XA bertemu extension BC) tidak ditembus. Pantau lagi setelah swing baru terbentuk.</p>
+        </template>
       </div>
 
       <template v-else>
@@ -107,6 +132,32 @@ const nada = computed(() => !a.value ? '' : a.value.skor >= 70 ? 't-good' : a.va
           </div>
         </div>
 
+        <div class="dua">
+          <div class="kartu">
+            <span class="ik">Keterangan titik</span>
+            <table class="ledger small"><thead><tr><th>Titik</th><th>Tanggal</th><th class="num">Harga</th><th class="num">vs kini</th><th>Peran</th></tr></thead>
+              <tbody><tr v-for="t in det.titik" :key="t.n"><td><b>{{ t.n }}</b></td><td>{{ t.d }}</td><td class="num">{{ rp(t.p) }}</td><td class="num">{{ pctTeks(t.jarak) }}</td><td>{{ t.peran }}</td></tr></tbody></table>
+          </div>
+          <div class="kartu">
+            <span class="ik">Asal-usul PRZ</span>
+            <ol class="small nar"><li v-for="x in det.prz" :key="x">{{ x }}</li></ol>
+            <span class="ik">Level penting vs harga kini {{ rp(d.bars.at(-1)?.c) }}</span>
+            <ul class="small kv"><li v-for="l in det.level" :key="l.k"><span>{{ l.k }}</span><b>{{ l.teks }} <small class="muted">({{ pctTeks(l.jarak) }})</small></b></li></ul>
+          </div>
+        </div>
+
+        <details class="kartu baca small">
+          <summary><b>Cara membaca analisa ini</b></summary>
+          <ul class="nar">
+            <li><b>Status</b>: "Menuju PRZ" berarti X-A-B-C sudah terbentuk dan harga masih bergerak ke zona D; "Di PRZ" berarti titik D sedang berada di zona; "Berbalik dari PRZ" berarti D terkonfirmasi dan harga mulai berbalik.</li>
+            <li><b>PRZ</b> adalah area, bukan satu harga: pertemuan retracement kaki XA dengan proyeksi extension kaki BC. Makin banyak level bertumpuk, makin kuat zonanya.</li>
+            <li><b>Skor kualitas</b> menjumlahkan presisi rasio (30), konfirmasi di PRZ (25), keselarasan dengan tren besar EMA50/EMA200 (20), simetri AB=CD (15), dan likuiditas (10). Skor bukan peluang berhasil.</li>
+            <li><b>Konfirmasi</b> yang dicari: candle pembalikan (pin bar, engulfing, outside bar), divergence RSI antara B dan D, atau penutupan yang menembus struktur minor 3 bar sebelum D.</li>
+            <li><b>Stop</b> sedikit di balik X (Gartley, Bat, Cypher) atau di luar PRZ (Butterfly, Crab). <b>Target</b> 0,382 dan 0,618 kaki AD; alternatif titik C lalu A.</li>
+            <li>R:R dihitung dari tepi PRZ (atau harga kini bila sudah berbalik) ke stop dan target.</li>
+          </ul>
+        </details>
+
         <div class="kartu">
           <span class="ik">Skenario</span>
           <ol class="sk small"><li v-for="x in a.skenario" :key="x.k"><b>{{ x.k }}.</b> {{ x.teks }}</li></ol>
@@ -128,6 +179,8 @@ const nada = computed(() => !a.value ? '' : a.value.skor >= 70 ? 't-good' : a.va
 .atas{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:10px}
 .g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .tiga{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.dua{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px}
+.baca summary{cursor:pointer}
 .besar{display:inline-block;font:800 40px/1 var(--f-display);margin:4px 8px 6px 0}.besar small{font-size:14px;color:var(--ink-2)}
 .bn{display:block;font:800 18px var(--f-display);margin-top:2px}
 .rinci{list-style:none;padding:0;margin:8px 0 0}
@@ -140,5 +193,5 @@ const nada = computed(() => !a.value ? '' : a.value.skor >= 70 ? 't-good' : a.va
 .cek li::before{position:absolute;left:0;font-weight:800}.cek li.ok::before{content:'✓';color:var(--good)}.cek li.no::before{content:'–';color:var(--ink-2)}
 .kv{list-style:none;padding:0;margin:0}.kv li{display:flex;justify-content:space-between;border-bottom:1px dotted var(--rule);padding:4px 0}
 .sk{margin:4px 0;padding-left:20px}.sk li{margin:4px 0}
-@media (max-width:860px){.atas,.tiga{grid-template-columns:1fr}.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:860px){.atas,.tiga,.dua{grid-template-columns:1fr}.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
