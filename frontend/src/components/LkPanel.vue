@@ -8,7 +8,7 @@ import { fmt, fmtDate } from '../lib/domain.js'
 import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
 import HargaSaham from './HargaSaham.vue'
 import { musimLk } from '../lib/musimLk.js'
-import { bankAsuransi, grupKonglo, komoditas, terbaikPerKelompok } from '../lib/kelompokLk.js'
+import { grupKonglo, komoditas, terbaikPerKelompok, lolosPerSektor, SEKTOR, SEMUA } from '../lib/kelompokLk.js'
 
 const data = ref(null), err = ref(''), loading = ref(true)
 api.get('/api/lk').then(r => { if (r.error) err.value = r.error; else data.value = r }, e => { err.value = e.message || String(e) }).finally(() => { loading.value = false })
@@ -80,21 +80,14 @@ const kelompok = computed(() => terbaikPerKelompok(basis.value, GAGAL).map(g => 
   return { ...g, p: g.x || d0?.r || null, gagal: d0?.g || [], dekat: d0 ? g.dekat.slice(1) : g.dekat }
 }))
 
-// 10 terbaik per sektor IDX-IC (kategori sama dengan stockbit.com/sector, dari profil emiten x.kelas.sektor):
+// Terbaik per sektor IDX-IC (kategori sama dengan stockbit.com/sector, dari profil emiten x.kelas.sektor):
 // syarat sama dengan kartu kelompok (GAGAL kosong), tanpa bank & asuransi, urut PE TTM terendah.
-const SEKTOR = ['Barang Konsumen Primer', 'Barang Konsumen Non-Primer', 'Energi', 'Teknologi', 'Kesehatan', 'Properti & Real Estat',
-  'Barang Baku', 'Transportasi & Logistik', 'Keuangan', 'Perindustrian', 'Infrastruktur']
-const sektor = ref('Energi')
-const lolosSektor = computed(() => {
-  const h = {}
-  for (const x of basis.value) {
-    const s = x.kelas?.sektor
-    if (SEKTOR.includes(s) && !bankAsuransi(x) && !GAGAL(x).length) (h[s] ||= []).push(x)
-  }
-  for (const s in h) h[s].sort((a, b) => a.kuartal.pe - b.kuartal.pe)
-  return h
-})
-const sepuluh = computed(() => (lolosSektor.value[sektor.value] || []).slice(0, 10))
+// "Semua" menggabungkan seluruh sektor; tampil 10 dulu, sisanya lewat tombol.
+const sektor = ref(SEMUA), nSektor = ref(10)
+const pilihSektor = s => { sektor.value = s; nSektor.value = 10 }
+const lolosSektor = computed(() => lolosPerSektor(basis.value, GAGAL))
+const lolosPilih = computed(() => lolosSektor.value[sektor.value] || [])
+const sepuluh = computed(() => lolosPilih.value.slice(0, nSektor.value))
 const alasan = x => [
   `Laba ${Q} murni ${x.kuartal.status === 'berbalik' ? 'berbalik dari rugi' : pct(x.kuartal.yoy) + ' YoY'}, QoQ ${qoqTeks(x.kuartal)}`,
   `Pendapatan ${pct(x.pendapatan?.pct)}${x.marginKotor ? `, margin kotor ${fmt(x.marginKotor.dari, 1)}% → ${fmt(x.marginKotor.ke, 1)}%` : ''}`,
@@ -184,18 +177,18 @@ async function unduhPdf() {
           </div>
         </div>
       </div>
-      <div class="tiga" aria-label="10 terbaik per sektor">
-        <div class="th"><h2>10 terbaik per sektor</h2>
+      <div class="tiga" aria-label="Terbaik per sektor">
+        <div class="th"><h2>Terbaik per sektor</h2>
           <span class="small muted">sektor sesuai Stockbit · syarat sama dengan kartu di atas · urut PE TTM terendah · bukan rekomendasi beli/jual</span></div>
         <div class="flt" role="tablist" aria-label="Sektor">
-          <button v-for="s in SEKTOR" :key="s" type="button" role="tab" class="pill sm" :aria-selected="String(sektor === s)" :aria-pressed="String(sektor === s)" @click="sektor = s">
+          <button v-for="s in [SEMUA, ...SEKTOR]" :key="s" type="button" role="tab" class="pill sm" :aria-selected="String(sektor === s)" :aria-pressed="String(sektor === s)" @click="pilihSektor(s)">
             {{ s }} <span class="muted">{{ (lolosSektor[s] || []).length }}</span></button>
         </div>
-        <p v-if="!sepuluh.length" class="small muted">Belum ada emiten di sektor ini yang lolos syarat.</p>
+        <p v-if="!sepuluh.length" class="small muted">Belum ada emiten {{ sektor === SEMUA ? '' : 'di sektor ini ' }}yang lolos syarat.</p>
         <div v-else class="scroll">
           <table class="ledger">
             <thead><tr><th>#</th><th>Saham</th><th class="num">Harga</th><th class="num">Laba {{ Q }} murni</th><th class="num">{{ Q }} YoY</th><th class="num">{{ Q }} QoQ</th>
-              <th class="num">Pendapatan YoY</th><th class="num">PE TTM</th><th class="num">PBV</th><th>Industri</th></tr></thead>
+              <th class="num">Pendapatan YoY</th><th class="num">PE TTM</th><th class="num">PBV</th><th>{{ sektor === SEMUA ? 'Sektor · industri' : 'Industri' }}</th></tr></thead>
             <tbody>
               <tr v-for="(x, i) in sepuluh" :key="x.id">
                 <td class="small">{{ i + 1 }}</td>
@@ -209,12 +202,13 @@ async function unduhPdf() {
                 <td class="num c-good">{{ pct(x.pendapatan?.pct) }}</td>
                 <td class="num"><b>{{ fmt(x.kuartal.pe, 1) }}×</b></td>
                 <td class="num small">{{ x.kuartal.pbv ? fmt(x.kuartal.pbv, 2) + '×' : '–' }}</td>
-                <td class="small muted">{{ x.kelas?.ind || x.kelas?.sub || '–' }}</td>
+                <td class="small muted"><template v-if="sektor === SEMUA">{{ x.kelas.sektor }} · </template>{{ x.kelas?.ind || x.kelas?.sub || '–' }}</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p v-if="sepuluh.length && sepuluh.length < 10" class="small muted">Hanya {{ sepuluh.length }} emiten di sektor ini yang lolos syarat.</p>
+        <p v-if="lolosPilih.length > nSektor" class="small"><button type="button" class="pill sm" @click="nSektor = lolosPilih.length">Tampilkan semua {{ lolosPilih.length }} emiten{{ sektor === SEMUA ? '' : ' ' + sektor }}</button></p>
+        <p v-else-if="sepuluh.length && sepuluh.length < 10" class="small muted">Hanya {{ sepuluh.length }} emiten {{ sektor === SEMUA ? '' : 'di sektor ini ' }}yang lolos syarat.</p>
       </div>
       <div class="mh"><h2>{{ KAT.find(k => k[0] === kat)[1] }}</h2>
         <span class="small muted">{{ rows.length }} emiten · {{ PERIODE.find(p => p[0] === per)[1] }} · laporan terakhir {{ data.updated ? fmtDate(data.updated) : '–' }}</span></div>
