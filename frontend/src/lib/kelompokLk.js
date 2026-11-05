@@ -103,3 +103,23 @@ export function terbaikPerKelompok(rows, gagal) {
     return { k, label, x, alt, dekat }
   })
 }
+
+// Sektor IDX-IC (kategori sama dengan stockbit.com/sector, dari profil emiten x.kelas.sektor). SEMUA = gabungan.
+export const SEMUA = 'Semua'
+export const SEKTOR = ['Barang Konsumen Primer', 'Barang Konsumen Non-Primer', 'Energi', 'Teknologi', 'Kesehatan', 'Properti & Real Estat',
+  'Barang Baku', 'Transportasi & Logistik', 'Keuangan', 'Perindustrian', 'Infrastruktur']
+
+// Emiten lolos syarat (`gagal(x)` kosong) per sektor, tanpa bank & asuransi, urut PE TTM terendah.
+// Kunci SEMUA berisi gabungan seluruh sektor dengan urutan yang sama.
+export function lolosPerSektor(rows, gagal) {
+  const h = { [SEMUA]: [] }
+  for (const x of rows) {
+    const s = x.kelas?.sektor
+    if (SEKTOR.includes(s) && !bankAsuransi(x) && !gagal(x).length) {
+      (h[s] ||= []).push(x)
+      h[SEMUA].push(x)
+    }
+  }
+  for (const s in h) h[s].sort((a, b) => a.kuartal.pe - b.kuartal.pe)
+  return h
+}
