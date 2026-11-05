@@ -131,7 +131,7 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
         Harmonic Pattern <span class="muted">(materi, studi kasus, screening)</span> <span aria-hidden="true">{{ hmOpen ? '▴' : '▾' }}</span>
       </button>
       <p class="small ket">Belajar pola XABCD dan rasio Fibonacci, lalu lihat saham BEI yang sedang membentuk pola harmonik.</p>
-      <PovHarmonik v-if="hmOpen" id="hm-isi" @analisa="analisa" />
+      <PovHarmonik v-if="hmOpen" id="hm-isi" />
     </section>
 
     <PovDetail v-if="buka" :u="buka" @close="buka = null" />

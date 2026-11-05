@@ -31,6 +31,7 @@ PRZ_LEBAR = 0.03      # lebar PRZ = ±3% panjang kaki acuan di sekitar level D
 SKALA = (0.06, 0.10, 0.15)   # ambang zigzag (pembalikan minimal) dari swing kecil ke besar
 MENUJU_MAKS = 12.0    # % jarak harga ke PRZ yang masih ditampilkan sebagai "menuju PRZ"
 BERBALIK_BAR = 20     # D terkonfirmasi paling lama sekian bar lalu
+BAR_SIMPAN = 250      # bar terakhir yang disimpan/dikirim untuk chart analisa
 MIN_NILAI = 1e9       # rata-rata nilai transaksi 20 hari (Rp); saham tidak likuid membentuk XABCD yang kurang representatif
 
 

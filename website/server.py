@@ -4856,7 +4856,7 @@ HARMONIK_PATH = ROOT / ".harmonik.json"
 def harmonik_build(delay: float = 0.25) -> None:
     """Screening Harmonic Pattern (POV) atas universe Recovery memakai bar harian 1 tahun yang sama (cache), sehingga
     dijalankan tepat setelah recovery_build hampir tanpa panggilan Stockbit tambahan."""
-    rows, dinilai = [], 0
+    rows, dinilai, simpan = [], 0, {}
     for t in recovery_universe():
         try:
             bars = get_ohlc(t, "1y")
@@ -4866,22 +4866,51 @@ def harmonik_build(delay: float = 0.25) -> None:
             continue
         if bars:
             dinilai += 1
-            rows += [{"t": t, **r} for r in HM.cari(bars)]
+            hasil = HM.cari(bars)
+            rows += [{"t": t, **r} for r in hasil]
+            if hasil:
+                # Salinan bar untuk chart analisa (dipakai bila cache harga kosong, mis. pengunjung publik).
+                simpan[t] = [{k: b[k] for k in ("d", "o", "h", "l", "c", "v")} for b in bars[-HM.BAR_SIMPAN:]]
         time.sleep(delay)
     if not dinilai:
         raise RuntimeError("data harga kosong")
-    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "dinilai": dinilai, "rows": rows}
+    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "dinilai": dinilai, "rows": rows, "bars": simpan}
     tmp = HARMONIK_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     tmp.replace(HARMONIK_PATH)
     print(f"[harmonik] {len(rows)} pola dari {dinilai} saham", file=sys.stderr)
 
 
-def harmonik_api() -> dict:
+def harmonik_load() -> dict:
     try:
-        d = json.loads(HARMONIK_PATH.read_text(encoding="utf-8"))
+        return json.loads(HARMONIK_PATH.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        d = {}
+        return {}
+
+
+def harmonik_saham(t: str) -> dict:
+    """Analisa Harmonic Pattern satu saham BEI mana pun: bar harian 1 tahun (Stockbit/cache; cadangan salinan dari
+    screening malam), pola aktif tanpa saringan likuiditas (ditandai), dan pivot swing terakhir untuk chart."""
+    simpan = (harmonik_load().get("bars") or {}).get(t)
+    try:
+        bars, sumber = get_ohlc(t, "1y"), "harga harian Stockbit"
+    except Exception:
+        if not simpan:
+            raise
+        bars, sumber = simpan, "salinan screening malam"
+    if not bars:
+        bars, sumber = simpan or [], "salinan screening malam"
+    nilai = HM.nilai_rata(bars)
+    pv = HM.zigzag(bars, HM.SKALA[0]) if bars else []
+    return {"t": t, "nama": nama_semua().get(t, ""), "sumber": sumber, "bars": bars[-HM.BAR_SIMPAN:],
+            "rows": HM.cari(bars, min_nilai=0), "nilai": round(nilai), "likuid": nilai >= HM.MIN_NILAI,
+            "minNilai": HM.MIN_NILAI, "pivot": [{"d": bars[x["i"]]["d"][:10], "p": x["p"], "k": x["k"], "tentatif": bool(x.get("tentatif"))}
+                                              for x in pv[-8:]],
+            "pola": HM.ringkas_pola()}
+
+
+def harmonik_api() -> dict:
+    d = harmonik_load()
     nama, radar = nama_semua(), radar_tickers()
     urut = {"prz": 0, "berbalik": 1, "menuju": 2}
     rows = sorted(d.get("rows") or [], key=lambda r: (urut.get(r["status"], 3), r.get("jarak") or 0))
@@ -5799,7 +5828,7 @@ class Handler(BaseHTTPRequestHandler):
                 deals = [d.split(":")[0] for d in self.qs("deals").upper().split(",") if d]
                 wanted = ([t] if t else []) + deals
                 _req.public_fetch = all(x in radar_tickers() for x in wanted) or (
-                    path in ("api/berita-saham", "api/pov-dalam", "api/quote") and bool(t) and t in bei_kode_load())
+                    path in ("api/berita-saham", "api/pov-dalam", "api/quote", "api/harmonik") and bool(t) and t in bei_kode_load())
             if path.startswith("api/"):
                 self.handle_api(path, fresh)
                 return
@@ -6051,7 +6080,13 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "api/kakdr-screen":
             self.reply_json(kakdr_screen())
         elif path == "api/harmonik":
-            self.reply_json(harmonik_api())
+            t = self.qs("ticker").upper()
+            if not t:
+                self.reply_json(harmonik_api())
+            elif not TICKER_RE.match(t) or t not in bei_kode_load() and t not in radar_tickers():
+                self.reply_json({"error": "Kode saham tidak dikenal di BEI."}, 400)
+            else:
+                self.reply_json(harmonik_saham(t))
         elif path == "api/pindai":
             self.reply_json(pindai_api())
         elif path == "api/pov-dalam":
