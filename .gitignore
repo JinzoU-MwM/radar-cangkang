@@ -69,6 +69,9 @@ website/tsa-*.json
 # pemindai calon cangkang (runtime)
 **/.pindai.json
 **/.pindai.tmp
+# screening Harmonic Pattern POV (runtime)
+**/.harmonik.json
+**/.harmonik.tmp
 # riwayat skor Saham 50 (runtime)
 **/.saham50-riwayat.json
 **/.saham50-riwayat.tmp
