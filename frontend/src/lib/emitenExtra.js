@@ -144,6 +144,15 @@ export function peerMultiples(profiles) {
   }
 }
 
+// Keterangan sumber kelipatan pembanding untuk slide simulasi. peersOk = pembanding yang profilnya terbaca;
+// di versi publik profil di luar radar ditolak, jadi daftar ini bisa kosong walau pembanding sudah ditentukan.
+export function peerNote({ peers = [], peersOk = [] } = {}) {
+  if (!peers.length) return 'Kelipatan pembanding: belum ditentukan.'
+  if (!peersOk.length) return `Kelipatan pembanding: data ${peers.join(', ')} tidak tersedia, jadi tidak dipakai.`
+  const miss = peers.filter(p => !peersOk.includes(p))
+  return `Kelipatan pembanding: median ${peersOk.length} emiten (${peersOk.join(', ')})` + (miss.length ? `; data ${miss.join(', ')} tidak tersedia.` : '.')
+}
+
 // Acuan nilai cadangan in-situ (USD per ton cadangan) dari transaksi akuisisi tambang sejenis di Indonesia.
 // Perkiraan kasar dan konservatif; dipakai otomatis agar simulasi tidak bergantung pada isian manual.
 export function autoUsdTon(aset) {

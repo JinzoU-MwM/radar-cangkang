@@ -8,6 +8,7 @@ import { mergeBoard } from './profil.js'
 import { riCalc, riVerdict, noRights, riFunding, asetDetail, riPriceNeeded, riScenarios, asetLaba, labaSebelumSesudah, riLayak, riExercise, riTrading, riRating } from './rightsIssue.js'
 import { valuasiSim, bandarView } from './valuasi.js'
 import { sentences } from './analysis.js'
+import { peerNote } from './emitenExtra.js'
 
 const W = 10, H = 5.625, M = 0.45, CW = W - 2 * M
 const TOP = 1.2, BOT = 4.6
@@ -601,7 +602,7 @@ export function buildDeck(PptxGenJS, d, th, opt = {}) {
       showTitle: true, title: 'Nilai porsi aset (Rp miliar)', titleFontSize: 11, titleColor: th.ink, titleFontFace: th.body })
     kpi(s, M + 6.2, TOP, CW - 6.2, 1.05, sm.prem != null ? pctS(sm.prem) : '–', 'Selisih harga transaksi vs median simulasi', sm.prem > 0.15 ? th.bad : th.good)
     kpi(s, M + 6.2, TOP + 1.2, CW - 6.2, 1.05, sm.mid ? bigS(sm.mid) : '–', `Median simulasi · keyakinan ${sm.conf || '–'}`)
-    T(s, `Kelipatan pembanding: median ${sm.n} emiten (${sm.peers.join(', ')}). Ini simulasi, bukan laporan KJPP.`, { x: M + 6.2, y: TOP + 2.45, w: CW - 6.2, h: 0.85, fontSize: 9, color: th.muted })
+    T(s, `${peerNote(sm)} Ini simulasi, bukan laporan KJPP.`, { x: M + 6.2, y: TOP + 2.45, w: CW - 6.2, h: 0.85, fontSize: 9, color: th.muted })
   }
 
   // ===== 12. Valuasi & dilusi (grafik batang harga) =====
