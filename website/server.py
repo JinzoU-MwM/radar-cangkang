@@ -1803,6 +1803,99 @@ def kandidat_loop() -> None:
         time.sleep(3 * 3600 + 60)
 
 
+# Harga radar di server: situs publik baca-saja tidak bisa menjalankan "Sinkron Stockbit" dari browser, jadi tanpa
+# ini harga/perubahan harian di kartu Monitor tertahan sejak sinkron manual terakhir. Sumbernya halaman publik
+# Stockbit (page_quote, tanpa token); kapitalisasi & free float ikut diperbarui bila token masih berlaku.
+HARGA_GAP = 30 * 60
+HARGA_STATE: dict = {"at": None, "n": 0, "gagal": []}
+
+
+def harga_perlu(now: datetime, last: float | None) -> bool:
+    """Tiap HARGA_GAP selama jam bursa, lalu sekali sesudah penutupan bila pembaruan terakhir lebih awal dari
+    penutupan hari bursa terakhir (harga penutupan). Libur bursa tidak dikenali; panggilannya tetap lewat cache."""
+    if last is None:
+        return True
+    if ihsg_jam_bursa(now):
+        return now.timestamp() - last >= HARGA_GAP
+    w = now.astimezone(WIB)
+    d = w if (w.hour, w.minute) > (16, 30) else w - timedelta(days=1)
+    while d.weekday() >= 5:
+        d -= timedelta(days=1)
+    return last < d.replace(hour=16, minute=31, second=0, microsecond=0).timestamp()
+
+
+def harga_gabung(it: dict, q: dict, o: dict | None = None) -> dict:
+    """Item baru dengan isian pasar dari quote (dan kepemilikan bila ada), meniru syncStockbit di frontend:
+    sinyal UMA/volume hanya dinyalakan, tidak pernah dimatikan; pengendali tidak disentuh."""
+    new = dict(it)
+    if q.get("price") is not None:
+        new["price"] = q["price"]
+    if q.get("pctChange") is not None:
+        new["chgPct"] = q["pctChange"]
+    vol, avg = q.get("volume"), q.get("avgVolume")
+    new["volRatio"] = round(vol / avg, 1) if vol and avg else None
+    if not new.get("name") and q.get("name"):
+        new["name"] = q["name"]
+    flags = dict(new.get("flags") or {})
+    if q.get("uma"):
+        flags["uma"] = True
+    if vol and avg and vol >= 3 * avg:
+        flags["volume"] = True
+    new["flags"] = flags
+    if o:
+        if o.get("marketCap"):
+            new["mcap"] = round(o["marketCap"] / 1e8) / 10  # rupiah -> Rp miliar
+        if o.get("freeFloat") is not None:
+            new["float"] = o["freeFloat"]
+    return new
+
+
+def segarkan_harga(fresh: bool = False, delay: float = 0.5) -> int:
+    """Perbarui harga semua item Monitor; mengembalikan jumlah item yang berubah."""
+    pakai_token = bool(get_token()) and not token_expired()
+    n, gagal = 0, []
+    for t in [it["ticker"] for it in items_all() if TICKER_RE.match(it["ticker"])]:
+        try:
+            q = page_quote(t, fresh)
+            o = None
+            if pakai_token:
+                try:
+                    o = get_ownership(t)
+                except Exception:
+                    pakai_token = False  # token ditolak: sisa emiten cukup harga dari halaman publik
+            # Baca ulang tepat sebelum menyimpan agar isian tim yang berubah sementara itu tidak tertimpa.
+            rows = data_rows("SELECT data FROM items WHERE ticker=?", (t,))
+            if not rows:
+                continue
+            it = json.loads(rows[0][0])
+            new = harga_gabung(it, q, o)
+            if new != it:
+                new["updatedAt"] = datetime.now(timezone.utc).isoformat()
+                item_put(new)
+                n += 1
+        except Exception as e:
+            gagal.append(f"{t}: {str(e)[:80]}")
+        time.sleep(delay)
+    HARGA_STATE.update(at=iso_now(), n=n, gagal=gagal[:5])
+    return n
+
+
+def harga_loop() -> None:
+    time.sleep(90)
+    last = None
+    while True:
+        now = datetime.now(timezone.utc)
+        if harga_perlu(now, last):
+            try:
+                # Sesudah penutupan ambil ulang (fresh) supaya salinan cache siang tidak tercatat sebagai harga penutupan.
+                n = segarkan_harga(fresh=not ihsg_jam_bursa(now))
+                print(f"[harga] {n} item radar diperbarui", file=sys.stderr)
+            except Exception as e:
+                print(f"[harga] gagal: {e}", file=sys.stderr)
+            last = now.timestamp()
+        time.sleep(300)
+
+
 # Pembaruan berita di server: situs publik bersifat baca-saja sehingga tidak bisa memicu sinkron dari browser.
 NEWS_GAP = 2 * 3600
 NEWS_STATE: dict = {"at": None, "added": 0, "addedNews": 0, "errors": []}
@@ -5612,6 +5705,7 @@ class Handler(BaseHTTPRequestHandler):
                 "galatStockbit": _galat[-8:],
                 "readOnly": is_public_request(),
                 "newsAt": NEWS_STATE["at"],
+                "hargaRadar": HARGA_STATE,
             })
         elif path == "api/tenders":
             self.api_tenders(cfg, fresh)
@@ -6055,6 +6149,7 @@ def main() -> int:
     daemon = threading.Thread(target=srv.serve_forever, daemon=False)
     daemon.start()
     threading.Thread(target=kandidat_loop, daemon=True).start()
+    threading.Thread(target=harga_loop, daemon=True).start()
     threading.Thread(target=news_loop, daemon=True).start()
     threading.Thread(target=pov_loop, daemon=True).start()
     threading.Thread(target=season_loop, daemon=True).start()
