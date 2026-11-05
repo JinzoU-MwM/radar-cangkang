@@ -6,6 +6,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { api } from '../api.js'
 import { HM_STATUS, saringHarmonik, hitungHarmonik, rentang, przTeks, polaDiagram, skalaSvg } from '../lib/harmonik.js'
 import HarmonikAnalisa from './HarmonikAnalisa.vue'
+import HarmonikBelajar from './HarmonikBelajar.vue'
 
 const data = ref(null), err = ref('')
 onMounted(() => api.get('/api/harmonik').then(v => { data.value = v }, e => { err.value = e.message || String(e) }))
@@ -25,10 +26,19 @@ const SUMBER = [
   { k: 7, teks: 'Anup Shinde, "Backtesting the four classical harmonic patterns", 30 Mei 2026.', url: 'https://www.anupshinde.com/harmonic-patterns-backtested/' },
 ]
 
-const SLIDE = [['sampul', 'Pengenalan'], ['anatomi', 'Anatomi XABCD'], ['jenis', 'Jenis pola'], ['strategi', 'Strategi'],
-  ['kasus', 'Studi kasus'], ['screening', 'Screening'], ['analisa', 'Analisa'], ['bukti', 'Bukti & sumber']]
+// Urutan untuk pemula: dasar dulu, lalu pola, konfirmasi, strategi & risiko, contoh, latihan, praktik, referensi.
+const SLIDE = [['sampul', 'Pengenalan'], ['dasar', 'Dasar: swing & Fibonacci'], ['anatomi', 'Anatomi XABCD'], ['jenis', 'Jenis pola'],
+  ['candle', 'Konfirmasi'], ['strategi', 'Strategi'], ['risiko', 'Manajemen risiko'], ['kasus', 'Studi kasus'], ['latihan', 'Latihan'],
+  ['screening', 'Screening'], ['analisa', 'Analisa'], ['glosarium', 'Glosarium & FAQ'], ['bukti', 'Bukti & sumber']]
+const BELAJAR = { dasar: ['Dasar untuk pemula: swing, tren, dan Fibonacci', 'Dua bekal sebelum mengenali pola: membaca swing dan menghitung rasio Fibonacci.'],
+  candle: ['Konfirmasi di PRZ', 'Sinyal yang ditunggu sebelum entry agar tidak menebak.'],
+  risiko: ['Manajemen risiko untuk pemula', 'Hitung jumlah lot dari batas rugi, lalu cek daftar sebelum entry.'],
+  latihan: ['Latihan: uji pemahaman', 'Kuis singkat dengan penjelasan setiap jawaban.'],
+  glosarium: ['Glosarium dan tanya jawab', 'Istilah yang sering muncul dan pertanyaan umum pemula.'] }
 const s = ref(0)
 const ke = i => { s.value = Math.max(0, Math.min(SLIDE.length - 1, i)) }
+const kini = computed(() => SLIDE[s.value][0])
+const noSlide = k => String(SLIDE.findIndex(x => x[0] === k) + 1).padStart(2, '0')
 
 // ---------------------------------------------------------------- diagram ----
 const W = 560, H = 270, PAD = 30
@@ -147,7 +157,7 @@ const sahamAktif = computed(() => saham.value || (rows.value[0] ? { t: rows.valu
     <div class="prog" aria-hidden="true"><i :style="{ width: ((s + 1) / SLIDE.length * 100) + '%' }"></i></div>
 
     <!-- 01 Sampul -->
-    <section v-if="s === 0" class="slide">
+    <section v-if="kini === 'sampul'" class="slide">
       <div class="sampul">
         <span class="kick">POV · MATERI RISET TEKNIKAL</span>
         <h2>Harmonic Pattern</h2>
@@ -169,8 +179,8 @@ const sahamAktif = computed(() => saham.value || (rows.value[0] ? { t: rows.valu
     </section>
 
     <!-- 02 Anatomi -->
-    <section v-else-if="s === 1" class="slide">
-      <header class="sh"><span class="no">02</span><div><h3>Anatomi XABCD</h3><p class="small muted">Klik titik atau kaki pada diagram.</p></div>
+    <section v-else-if="kini === 'anatomi'" class="slide">
+      <header class="sh"><span class="no">{{ noSlide('anatomi') }}</span><div><h3>Anatomi XABCD</h3><p class="small muted">Klik titik atau kaki pada diagram.</p></div>
         <div class="seg"><button v-for="a in ['bullish', 'bearish']" :key="a" type="button" class="pill sm" :aria-pressed="String(arahAnatomi === a)" @click="arahAnatomi = a">{{ a }}</button></div></header>
       <div class="dua">
         <svg :viewBox="`0 0 ${W} ${H}`" class="dg" role="img" aria-label="Diagram XABCD">
@@ -193,8 +203,8 @@ const sahamAktif = computed(() => saham.value || (rows.value[0] ? { t: rows.valu
     </section>
 
     <!-- 03 Jenis pola -->
-    <section v-else-if="s === 2" class="slide">
-      <header class="sh"><span class="no">03</span><div><h3>Lima pola utama</h3><p class="small muted">Rasio sesuai ilustrasi artikel sumber.<sup>1</sup></p></div></header>
+    <section v-else-if="kini === 'jenis'" class="slide">
+      <header class="sh"><span class="no">{{ noSlide('jenis') }}</span><div><h3>Lima pola utama</h3><p class="small muted">Rasio sesuai ilustrasi artikel sumber.<sup>1</sup></p></div></header>
       <div class="seg">
         <button v-for="p in pola" :key="p.k" type="button" class="pill sm" :aria-pressed="String(pilihPola === p.k)" @click="pilihPola = p.k">{{ p.nama }}</button>
       </div>
@@ -231,8 +241,8 @@ const sahamAktif = computed(() => saham.value || (rows.value[0] ? { t: rows.valu
     </section>
 
     <!-- 04 Strategi -->
-    <section v-else-if="s === 3" class="slide">
-      <header class="sh"><span class="no">04</span><div><h3>Kerangka eksekusi lima langkah</h3><p class="small muted">Klik setiap langkah.</p></div></header>
+    <section v-else-if="kini === 'strategi'" class="slide">
+      <header class="sh"><span class="no">{{ noSlide('strategi') }}</span><div><h3>Kerangka eksekusi lima langkah</h3><p class="small muted">Klik setiap langkah.</p></div></header>
       <ol class="alur">
         <li v-for="(l, i) in LANGKAH" :key="l[0]" :class="{ on: pilihLangkah === i }">
           <button type="button" @click="pilihLangkah = i"><span class="bul">{{ i + 1 }}</span>{{ l[0] }}</button>
@@ -256,8 +266,8 @@ const sahamAktif = computed(() => saham.value || (rows.value[0] ? { t: rows.valu
     </section>
 
     <!-- 05 Studi kasus -->
-    <section v-else-if="s === 4" class="slide">
-      <header class="sh"><span class="no">05</span><div><h3>Studi kasus: Bullish Gartley BTC/USDT, 24 Juli 2026</h3><p class="small muted">Digambar ulang dari rasio yang disebut artikel; chart aslinya dari TradingView.<sup>2</sup></p></div></header>
+    <section v-else-if="kini === 'kasus'" class="slide">
+      <header class="sh"><span class="no">{{ noSlide('kasus') }}</span><div><h3>Studi kasus: Bullish Gartley BTC/USDT, 24 Juli 2026</h3><p class="small muted">Digambar ulang dari rasio yang disebut artikel; chart aslinya dari TradingView.<sup>2</sup></p></div></header>
       <div class="dua">
         <svg :viewBox="`0 0 ${W} ${H}`" class="dg" role="img" aria-label="Diagram studi kasus Gartley">
           <rect v-if="tahapKasus >= 1" :x="dKasus.xD - 34" :width="68" :y="dKasus.fy(dKasus.prz[1]) - 6" :height="dKasus.fy(dKasus.prz[0]) - dKasus.fy(dKasus.prz[1]) + 12" class="przb on" />
@@ -292,8 +302,8 @@ const sahamAktif = computed(() => saham.value || (rows.value[0] ? { t: rows.valu
     </section>
 
     <!-- 06 Screening -->
-    <section v-else-if="s === 5" class="slide">
-      <header class="sh"><span class="no">06</span><div><h3>Screening harian saham BEI</h3>
+    <section v-else-if="kini === 'screening'" class="slide">
+      <header class="sh"><span class="no">{{ noSlide('screening') }}</span><div><h3>Screening harian saham BEI</h3>
         <p class="small muted">{{ data?.dinilai || 0 }} saham likuid dinilai{{ data?.updated ? ' · ' + data.updated + ' WIB' : '' }} · bar harian 1 tahun, tiga skala swing (6%, 10%, 15%) · toleransi rasio ±5%</p></div></header>
       <div class="seg">
         <button v-for="k in ['semua', 'prz', 'berbalik', 'menuju']" :key="k" type="button" class="pill sm" :aria-pressed="String(fStatus === k)" @click="fStatus = k">
@@ -330,8 +340,8 @@ const sahamAktif = computed(() => saham.value || (rows.value[0] ? { t: rows.valu
     </section>
 
     <!-- 07 Analisa -->
-    <section v-else-if="s === 6" class="slide">
-      <header class="sh"><span class="no">07</span><div><h3>Analisa Harmonic Pattern per saham</h3>
+    <section v-else-if="kini === 'analisa'" class="slide">
+      <header class="sh"><span class="no">{{ noSlide('analisa') }}</span><div><h3>Analisa Harmonic Pattern per saham</h3>
         <p class="small muted">Cari saham BEI mana pun; chart dan analisa tampil di sini.</p></div></header>
       <div class="cari">
         <input v-model="q" type="search" class="inp" placeholder="Kode atau nama saham BEI, mis. CLEO" aria-label="Cari saham untuk analisa harmonik"
@@ -346,8 +356,13 @@ const sahamAktif = computed(() => saham.value || (rows.value[0] ? { t: rows.valu
     </section>
 
     <!-- 08 Bukti & sumber -->
+    <section v-else-if="BELAJAR[kini]" class="slide">
+      <header class="sh"><span class="no">{{ noSlide(kini) }}</span><div><h3>{{ BELAJAR[kini][0] }}</h3><p class="small muted">{{ BELAJAR[kini][1] }}</p></div></header>
+      <HarmonikBelajar :bagian="kini" />
+    </section>
+
     <section v-else class="slide">
-      <header class="sh"><span class="no">08</span><div><h3>Kelebihan, keterbatasan, dan bukti</h3></div></header>
+      <header class="sh"><span class="no">{{ noSlide('bukti') }}</span><div><h3>Kelebihan, keterbatasan, dan bukti</h3></div></header>
       <div class="dua2">
         <div class="kartu"><span class="ik c-good">Kelebihan</span><ul class="small">
           <li>Kerangka lebih objektif dibanding membaca bentuk chart secara visual.<sup>1</sup></li>
