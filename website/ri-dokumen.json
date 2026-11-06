@@ -1261,7 +1261,7 @@
     }
   },
   "INPS": {
-    "asOf": "2026-10-23",
+    "asOf": "2026-11-04",
     "jenis": "PMTHMETD",
     "status": "rencana",
     "sahamBeredar": 650000000,
@@ -1483,7 +1483,8 @@
       "Direktur Utama Muhammad Reagy Sukmana juga Komisaris Independen PT Bhineka Inovasi Ketahanan Energi Tbk (BIKE) dan PT Menn Teknologi Indonesia Tbk (MENN) sejak Juli 2026 setelah akuisisi BIKE oleh PT Penajam Makmur Jaya (PMJ), dan pernah mewakili PMJ dalam rencana akuisisi PT Djasa Ubersakti Tbk (PTDU) yang dibatalkan; Perseroan menyatakan tidak ada hubungan kepemilikan atau usaha.",
       "Novasi seluruh utang bank Perseroan kepada anak usaha PT Ekatama Raya efektif 29 Des 2025 (transaksi afiliasi tanpa benturan kepentingan).",
       "Pemilik manfaat sebelum pengambilalihan (Feb 2026): Eddy Purwanto Winata, Lies Purwati Winata, Lies Yuliana Winata, Lies Erliawati Winata, Lies Murtiningsih.",
-      "KI penambahan kegiatan usaha dikoreksi atas penelaahan OJK: tanggal KI semula tertulis 27 Apr 2026 (sebelum studi kelayakan 5 Mei 2026) disebut salah ketik; entitas anak suku cadang direncanakan 99% INPS dan 1% pihak lain (setoran Rp9,9 M dari total Rp10 M), dibiayai pinjaman pemegang saham atau right issue; kas INPS 31 Mar 2026 Rp6,11 M berasal dari penerimaan pihak berelasi."
+      "KI penambahan kegiatan usaha dikoreksi atas penelaahan OJK: tanggal KI semula tertulis 27 Apr 2026 (sebelum studi kelayakan 5 Mei 2026) disebut salah ketik; entitas anak suku cadang direncanakan 99% INPS dan 1% pihak lain (setoran Rp9,9 M dari total Rp10 M), dibiayai pinjaman pemegang saham atau right issue; kas INPS 31 Mar 2026 Rp6,11 M berasal dari penerimaan pihak berelasi.",
+      "Keterbukaan 30 Okt dan 4 Nov 2026: PMTHMETD maks. 1,25 miliar saham @Rp100 (Rp125 M) diambil PT Graha Inti Guna Persada; dana: penyertaan modal PT Tri Satria Indah Motor Rp91,53 M dan pelunasan utang Rp33,47 M (ringkasan AI Stockbit)."
     ],
     "sumber": [
       {
@@ -1590,6 +1591,20 @@
         "file": "f-32161628-0_INPS_Keterbukaan_Informasi_terkait_Aksi_Korporasi_32161628_lamp2.pdf",
         "url": "https://emitten-announcement.stockbit.com/attachments/f-32161628-0_INPS_Keterbukaan_Informasi_terkait_Aksi_Korporasi_32161628_lamp2.pdf",
         "hal": "1-12 (isi sama dengan KI 25 Sep 2026); lamp1 hal 1"
+      },
+      {
+        "tanggal": "2026-10-30",
+        "judul": "Penambahan Modal Tanpa HMETD Perubahan dan/atau Tambahan Informasi (KOREKSI) (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37106551",
+        "hal": null
+      },
+      {
+        "tanggal": "2026-11-04",
+        "judul": "Penambahan Modal Tanpa HMETD Penempatan Terbatas (Private Placement) (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37219550",
+        "hal": null
       }
     ],
     "pengendali": {
@@ -1967,7 +1982,7 @@
     }
   },
   "ULTJ": {
-    "asOf": "2026-10-22",
+    "asOf": "2026-11-04",
     "jenis": "campuran",
     "status": "rencana",
     "sahamBeredar": 10398175200,
@@ -2138,7 +2153,8 @@
       "RUPSLB juga mengagendakan dividen tunai tambahan dari saldo laba 31 Des 2025 (besaran belum diungkap di dokumen yang dibaca).",
       "Nilai pasar 100% ekuitas ULTJ menurut KJPP RHR Rp22.338.483.000.000 (≈ Rp2.148/saham) per 31 Jul 2026.",
       "Pengendali baru ditetapkan melalui penunjukan mayoritas Direksi/Komisaris oleh FCIH, meski kepemilikan langsung SPW (32,19%) dan PPP (14,39%) lebih besar dari FCIH (30,81%).",
-      "Proforma 31 Jul 2026: ekuitas ULTJ Rp8,17 T, total aset Rp9,15 T, laba 7 bulan Rp1,22 T, pendapatan 7 bulan Rp6,42 T (audit BDO)."
+      "Proforma 31 Jul 2026: ekuitas ULTJ Rp8,17 T, total aset Rp9,15 T, laba 7 bulan Rp1,22 T, pendapatan 7 bulan Rp6,42 T (audit BDO).",
+      "Keterbukaan 4 Nov 2026: PMHMETD IV maks. 7,88 miliar saham @Rp2.150, inbreng Rp14,57 T, dilusi maks. 43,11%, RUPSLB 6 Nov 2026 (ringkasan AI Stockbit)."
     ],
     "sumber": [
       {
@@ -2168,6 +2184,13 @@
         "file": "f-32163136-0_ULTJ_Pemanggilan_RUPS_32163136_lamp1.pdf",
         "url": "https://emitten-announcement.stockbit.com/attachments/f-32163136-0_ULTJ_Pemanggilan_RUPS_32163136_lamp1.pdf",
         "hal": "3-4"
+      },
+      {
+        "tanggal": "2026-11-04",
+        "judul": "Rencana Transaksi Material Dengan Persetujuan RUPS (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37223460",
+        "hal": null
       }
     ],
     "pengendali": {
@@ -2283,7 +2306,7 @@
     }
   },
   "MKNT": {
-    "asOf": "2026-10-23",
+    "asOf": "2026-10-29",
     "jenis": "PMTHMETD",
     "status": "tereksekusi",
     "sahamBeredar": 1029990000000,
@@ -2552,7 +2575,8 @@
       "LK 31 Mei 2026 sempat mengonsolidasikan CBS dan RUM lalu ditarik dari SPE (surat 9 Jul 2026) karena konsolidasi baru sah per 30 Jun 2026 (keputusan Kemenkum 12 Jun 2026); BEI mencatat 29 kekeliruan penyajian. LK audit 31 Mar 2026 ditandatangani 15 Jun 2026 tetapi baru disampaikan 5 Jul 2026.",
       "Utang pajak proforma Rp77,40 M per 31 Mar 2026, terutama PPN Rp74,53 M dan PPh 29 Rp2,51 M.",
       "Formulir transaksi material pinjaman HBEH dan MCP (7 Jan 2026) mencantumkan tanggal pengumuman di Koran Neraca 1 Des 2025, lebih awal daripada pendirian HBEH (8 Des 2025) dan tanggal perjanjian (17 Des 2025).",
-      "Pelunasan RUM: Rp154,925 M dibayar saat AJB 29 Mei 2026 dari pinjaman MCP, sisa Rp1,565 M paling lambat 7 hari setelah RUPSLB."
+      "Pelunasan RUM: Rp154,925 M dibayar saat AJB 29 Mei 2026 dari pinjaman MCP, sisa Rp1,565 M paling lambat 7 hari setelah RUPSLB.",
+      "Transaksi afiliasi 27 Okt 2026: PT Radja Udang Malingping membeli saham PT Adinda Losari Energi dan PT Remitra Surya Abadi masing-masing Rp1 M (17,71% ekuitas Rp5,65 M per 30 Sep 2026) (ringkasan AI Stockbit, 29 Okt 2026)."
     ],
     "sumber": [
       {
@@ -2701,6 +2725,13 @@
         "file": "f-32017530-0_MKNT_Transaksi_Material_Tanpa_Persetujuan_RUPS_32017530.pdf",
         "url": "https://emitten-announcement.stockbit.com/attachments/f-32017530-0_MKNT_Transaksi_Material_Tanpa_Persetujuan_RUPS_32017530.pdf",
         "hal": "1"
+      },
+      {
+        "tanggal": "2026-10-29",
+        "judul": "Perolehan anak perusahaan tidak langsung melalui perusahaan terkendali Perseroan (KOREKSI) (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37085953",
+        "hal": null
       }
     ],
     "pengendali": {
@@ -3563,7 +3594,7 @@
     }
   },
   "EPAC": {
-    "asOf": "2026-10-23",
+    "asOf": "2026-11-05",
     "jenis": "PMHMETD",
     "status": "rencana",
     "sahamBeredar": 3303400000,
@@ -3705,7 +3736,8 @@
       "Pada pengumuman negosiasi 24 Apr 2026 Triple B menyatakan belum memiliki saham EPAC, tetapi setelah pembelian tahap I (541.666.667 saham) kepemilikannya 767.066.800 saham (23,22%), sehingga ±225,4 juta saham diperoleh di luar PJBS antara 24 Apr dan 24 Jun 2026 (hitungan turunan). BEI juga mencatat Triple B mengurangi kepemilikan 84.000.000 saham (2,54%) berdasarkan LKS 2 Jul 2026 dan meminta Perseroan berkoordinasi dengan OJK terkait penjualan di tengah rencana pengambilalihan; Triple B menyebutnya strategi portofolio investasi.",
       "Pemegang saham PT Sirkah Akselerasi Jaya (koreksi 28 Mei 2026): Nurul Kowim 62%, Sugeng Jadmoko 21%, PT Lumbung Artha Baraka 15%, Dody Taufiq Wijaya 2%; Direktur SAJ Muhammad Abdulloh. Pengumuman awal menyebut pengambilalihan dapat dilakukan oleh paling banyak dua pihak (Triple B dan/atau SAJ) sebagai kelompok terorganisasi.",
       "Modal disetor Triple B hanya Rp250.000.000 (Noprian Fadli 99 saham, Nuzwan Gufron 1 saham; dokumen menulis porsi Nuzwan 0,06%, padahal 1 dari 100 saham setara 1%) untuk akuisisi senilai Rp13,70 M.",
-      "Pada 17 Mar 2026, satu bulan sebelum negosiasi pengambilalihan diumumkan, Perseroan menyatakan belum memiliki rencana aksi korporasi dalam 12 bulan ke depan; Perseroan juga melaporkan lonjakan harga bahan baku film akibat penutupan Selat Hormuz dan menaikkan harga jual."
+      "Pada 17 Mar 2026, satu bulan sebelum negosiasi pengambilalihan diumumkan, Perseroan menyatakan belum memiliki rencana aksi korporasi dalam 12 bulan ke depan; Perseroan juga melaporkan lonjakan harga bahan baku film akibat penutupan Selat Hormuz dan menaikkan harga jual.",
+      "RUPSLB 3 Nov 2026 menyetujui (99,98%) PMHMETD I maks. 2 miliar saham, modal dasar Rp660,68 miliar, Komisaris Utama Noprian Fadli, dan kuasa penghentian operasional kemasan fleksibel (ringkasan risalah, 5 Nov 2026)."
     ],
     "sumber": [
       {
@@ -3812,6 +3844,20 @@
         "file": "f-32054585-0_EPAC_Laporan_Informasi_dan_Fakta_Material_32054585_lamp1.pdf",
         "url": "https://emitten-announcement.stockbit.com/attachments/f-32054585-0_EPAC_Laporan_Informasi_dan_Fakta_Material_32054585_lamp1.pdf",
         "hal": "1-3"
+      },
+      {
+        "tanggal": "2026-10-29",
+        "judul": "Tambahan Informasi atas Keterbukaan Informasi Rencana PMHMETD I (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37089333",
+        "hal": null
+      },
+      {
+        "tanggal": "2026-11-05",
+        "judul": "Ringkasan Risalah Rapat Umum Para Pemegang Saham Luar Biasa (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37239314",
+        "hal": null
       }
     ],
     "pengendali": {
@@ -4783,7 +4829,7 @@
     }
   },
   "MGLV": {
-    "asOf": "2026-10-23",
+    "asOf": "2026-10-29",
     "jenis": "PMHMETD",
     "status": "pernyataan pendaftaran",
     "sahamBeredar": 1904883411,
@@ -5021,7 +5067,8 @@
       "Penilai divestasi 13 anak usaha diganti: KJPP Sih Wiryadi & Rekan (laporan 2 Jul 2026, total nilai pasar Rp121,47 M) pada versi 28 Jul 2026, menjadi KJPP Yufrizal Deny Kamal & Rekan (laporan 28 Agu 2026, Rp124,57 M) pada versi 3 Sep 2026. Nilai pasar aset tetap dan persediaan yang dialihkan Rp64,07 M (KJPP FDI&R); aset dialihkan Rp77,55 M dan liabilitas Rp75,64 M.",
       "Setelah penyertaan modal 17 Sep 2026, modal disetor NAC dan NGC masing-masing Rp50 M (MGLV 49.999 saham); 1 saham NAC dipegang Glenn T Sugita dan 1 saham NGC dipegang Suriyanto, dan saham minoritas ini ikut digadaikan kepada BNI. Direktur NAC dan NGC Suriyanto, Komisaris Glenn T Sugita.",
       "Fasilitas BNI NAC juga membiayai pengambilalihan fasilitas data center di Kawasan Industri Jababeka oleh NAC; perjanjian membatasi antara lain perubahan pengendalian, penambahan utang, pelepasan aset, dan distribusi selain permitted distribution.",
-      "Asumsi harga pelaksanaan pada perubahan keterbukaan PMHMETD 3 Sep 2026 adalah Rp8.400 (dana Rp2,40 T); prospektus kemudian menetapkan Rp8.880."
+      "Asumsi harga pelaksanaan pada perubahan keterbukaan PMHMETD 3 Sep 2026 adalah Rp8.400 (dana Rp2,40 T); prospektus kemudian menetapkan Rp8.880.",
+      "PMHMETD I efektif 27 Okt 2026: maks. 285,73 juta saham @Rp8.880, rasio 100:15, dana maks. Rp2,54 T, dilusi 13,04%; cum-date reguler 4 Nov 2026, pencatatan 10 Nov 2026 (keterbukaan 28–29 Okt 2026, ringkasan AI Stockbit)."
     ],
     "sumber": [
       {
@@ -5142,6 +5189,20 @@
         "file": "f-32150706-0_MGLV_Informasi_Transaksi_Afiliasi_32150706_lamp1.pdf",
         "url": "https://emitten-announcement.stockbit.com/attachments/f-32150706-0_MGLV_Informasi_Transaksi_Afiliasi_32150706_lamp1.pdf",
         "hal": "4-11"
+      },
+      {
+        "tanggal": "2026-10-28",
+        "judul": "Keterbukaan Informasi terkait Aksi Korporasi - Rencana Penambahan Modal dengan HMETD (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37049352",
+        "hal": null
+      },
+      {
+        "tanggal": "2026-10-29",
+        "judul": "Keterbukaan Informasi terkait Aksi Korporasi - HMETD (KOREKSI) (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37074313",
+        "hal": null
       }
     ],
     "pengendali": {
@@ -6242,7 +6303,7 @@
     }
   },
   "LAPD": {
-    "asOf": "2026-10-23",
+    "asOf": "2026-11-05",
     "jenis": "campuran",
     "status": "rencana",
     "sahamBeredar": 3966350139,
@@ -6433,7 +6494,9 @@
       "Saham Layman Holdings sebanyak 72.366.328 tidak lagi tercatat atas nama Layman per DPS 9 Mar 2026 dan telah menjadi bagian saham masyarakat; Yeo Siak Ling (2,48%) dan Lay Shi Wei (4,9%) dinyatakan tidak terafiliasi dan tidak berpartisipasi dalam tender wajib.",
       "Pelepasan 57.500.000 saham oleh JSI ke pasar dilakukan untuk kebutuhan pendanaan operasional JSI; dana tender wajib berasal dari pinjaman pemegang saham JSI tanpa bunga dan tanpa jaminan.",
       "Per 30 Sep 2025 Perseroan mencatat akumulasi rugi pada ekuitas Rp451 miliar (disebut dalam pertanyaan BEI, Mar 2026).",
-      "Tanggapan BEI 25 Nov 2025: harga pengambilalihan Rp10/saham merupakan kesepakatan di pasar negosiasi yang mencerminkan defisiensi modal, dibanding harga penutupan Rp234 per 19 Nov 2025; JSI menyatakan akan menjadi pemegang saham pengendali jangka panjang dan tidak berencana delisting atau go private; refloat diwajibkan bila kepemilikan pasca tender wajib melebihi 80%."
+      "Tanggapan BEI 25 Nov 2025: harga pengambilalihan Rp10/saham merupakan kesepakatan di pasar negosiasi yang mencerminkan defisiensi modal, dibanding harga penutupan Rp234 per 19 Nov 2025; JSI menyatakan akan menjadi pemegang saham pengendali jangka panjang dan tidak berencana delisting atau go private; refloat diwajibkan bila kepemilikan pasca tender wajib melebihi 80%.",
+      "RUPSLB 29 Okt 2026 menyetujui PMHMETD II, modal dasar Rp1,6 T, Saham Seri B nominal Rp25, PT JSI Sinergi Mas sebagai pengendali, dan nama baru PT JSI Sinergi Internasional Tbk (ringkasan risalah, 2 Nov 2026).",
+      "Keterbukaan 5 Nov 2026: PMHMETD II maks. 1,98 miliar saham, rasio 2:1, harga pelaksanaan Rp30, dana maks. Rp59,5 M: Rp38,85 M untuk 87,5% PT Bersaudara Sinergi Sejahtera milik JSI dan Rp20,64 M modal kerja BSS; periode HMETD 13–20 Jan 2027 (ringkasan AI Stockbit)."
     ],
     "sumber": [
       {
@@ -6505,6 +6568,27 @@
         "file": "f-32148195-0_LAPD_Tanggapan_atas_Permintaan_Penjelasan_Bursa_32148195_lamp1.pdf",
         "url": "https://emitten-announcement.stockbit.com/attachments/f-32148195-0_LAPD_Tanggapan_atas_Permintaan_Penjelasan_Bursa_32148195_lamp1.pdf",
         "hal": "1-11 (pindaian)"
+      },
+      {
+        "tanggal": "2026-10-27",
+        "judul": "Keterbukaan Informasi terkait Aksi Korporasi - Rencana Penambahan Modal dengan HMETD (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37017762",
+        "hal": null
+      },
+      {
+        "tanggal": "2026-11-02",
+        "judul": "Ringkasan Risalah Rapat Umum Para Pemegang Saham Luar Biasa (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37161188",
+        "hal": null
+      },
+      {
+        "tanggal": "2026-11-05",
+        "judul": "Penyampaian Informasi Rencana Penerbitan Saham Tambahan melalui PMHMETD II (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37241553",
+        "hal": null
       }
     ],
     "pengendali": {
@@ -7391,7 +7475,7 @@
     "statusKeterangan": "Entri kini memuat PMHMETD II (rencana). PMHMETD I (OWK Rp100, dana Rp3,26 T untuk 34,5% KKU dan 30% KS) sudah tereksekusi Januari 2026 dan dicatat di jadwal, temuan, dan bisnis. PMHMETD II beserta akuisisi DDL (afiliasi) dan Bumanik dimintakan persetujuan RUPSLB dan RUPS Independen 30 November 2026; pernyataan pendaftaran ke OJK belum disampaikan."
   },
   "IDEA": {
-    "asOf": "2026-10-22",
+    "asOf": "2026-11-04",
     "jenis": "campuran",
     "status": "rencana",
     "sahamBeredar": 1062437500,
@@ -7501,7 +7585,8 @@
       "NNI: 50% PT Nawasena Nugra Jaya, 30% Mochamad Riandri Prasetya, sisanya 4 individu @5% (termasuk Yukki Nugrahawan Hanafi, UBO).",
       "Tanggapan BEI menyatakan tidak ada rencana perubahan bidang usaha, tetapi pada saat yang sama menyebut transformasi lewat inbreng perusahaan baru dan agenda RUPSLB mengubah Pasal 3 (KBLI).",
       "Penjual (Eko Desriyanto 37,92% dan PT Idea Asia Investama 28,66%) tidak terafiliasi dengan NNI menurut dokumen.",
-      "Kinerja inti melemah: peserta 425 (1H2026) vs 517 (1H2025); IDEA belum mencatat beban pajak interim (disorot BEI)."
+      "Kinerja inti melemah: peserta 425 (1H2026) vs 517 (1H2025); IDEA belum mencatat beban pajak interim (disorot BEI).",
+      "PJBS 2 Nov 2026: PT Nawasena Nugra Investama dengan Eko Desriyanto dan PT Idea Asia Investama (pengumuman perkembangan negosiasi, 4 Nov 2026; harga tidak disebut dalam ringkasan AI Stockbit)."
     ],
     "sumber": [
       {
@@ -7531,6 +7616,13 @@
         "file": "f-32167900-0_IDEA_Pemanggilan_RUPS_32167900_lamp1.pdf",
         "url": "https://emitten-announcement.stockbit.com/attachments/f-32167900-0_IDEA_Pemanggilan_RUPS_32167900_lamp1.pdf",
         "hal": "1-2"
+      },
+      {
+        "tanggal": "2026-11-04",
+        "judul": "Pengumuman Informasi atas Perkembangan Negosiasi Rencana Pengambilalihan (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37196009",
+        "hal": null
       }
     ],
     "pengendali": {
@@ -8676,7 +8768,7 @@
     }
   },
   "FUTR": {
-    "asOf": "2026-10-23",
+    "asOf": "2026-11-05",
     "jenis": null,
     "status": "belum ada rencana penambahan modal",
     "statusKeterangan": "Tidak ada keterbukaan PMHMETD/PMTHMETD. Transaksi yang berjalan adalah akuisisi TUNAI 51% PT Dumai Tirta Persada (CSPA 30 Sep 2026, belum efektif). Penambahan modal terakhir yang tereksekusi: konversi Waran Seri I (245.551.959 saham @Rp135 = Rp33,15 M; masa waran berakhir 2025).",
@@ -8810,7 +8902,8 @@
       "Penjelasan 28 Sep 2026: siaran pers air minum dirilis ke media sebelum disampaikan ke Bursa; Perseroan mengakui dan berjanji memperbaiki.",
       "Struktur UBO berubah 5 Mei 2026 (2 UBO menjadi 1 UBO, Dana Wijaya) tetapi baru diungkap 28 Agu 2026.",
       "Ikhtisar keuangan di dokumen MTO hanya sampai 31 Des 2024 (diaudit): total aset Rp231,80 M, ekuitas Rp189,92 M.",
-      "Status penanaman modal Perseroan berubah dari PMA menjadi PMDN pada sistem OSS 31 Jul 2026 (disetujui RUPS 30 Jun 2026, Akta No. 104), menyesuaikan pengendali baru yang berstatus pemodal dalam negeri."
+      "Status penanaman modal Perseroan berubah dari PMA menjadi PMDN pada sistem OSS 31 Jul 2026 (disetujui RUPS 30 Jun 2026, Akta No. 104), menyesuaikan pengendali baru yang berstatus pemodal dalam negeri.",
+      "Keterbukaan 5 Nov 2026: CSPA dengan PT Adhi Karya (Persero) Tbk atas 51% PT Dumai Tirta Persada (74.353 saham) senilai Rp141 M (ringkasan AI Stockbit)."
     ],
     "sumber": [
       {
@@ -8868,6 +8961,13 @@
         "file": "f-32162621-0_FUTR_Laporan_Informasi_dan_Fakta_Material_32162621.pdf",
         "url": "https://emitten-announcement.stockbit.com/attachments/f-32162621-0_FUTR_Laporan_Informasi_dan_Fakta_Material_32162621.pdf",
         "hal": "2"
+      },
+      {
+        "tanggal": "2026-11-05",
+        "judul": "Rencana Transaksi Perubahan Kegiatan Usaha (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37251076",
+        "hal": null
       }
     ],
     "pengendali": {
@@ -12282,7 +12382,7 @@
     }
   },
   "TGUK": {
-    "asOf": "2026-10-23",
+    "asOf": "2026-11-04",
     "jenis": "PMHMETD",
     "status": "rencana",
     "sahamBeredar": 3571451815,
@@ -12388,7 +12488,8 @@
       "VCG bergerak di perdagangan daging/unggas dan holding; pemegang saham VCG (Janni 85%, Antonius Bobby Siswanto, Agus Suhada, Lee Xuanhan) juga pemegang saham dan/atau pengurus TGUK.",
       "Nilai nominal saham Rp16; harga pengambilalihan Rp20 hanya 1,25 kali nominal.",
       "Studi kelayakan KJPP FDI&R (Nov 2025) memproyeksikan rugi 2026–2027 (Rp17,30 M dan Rp13,49 M) padahal kuartal I 2026 sudah membukukan pendapatan ±Rp201 M dari daging beku; proyeksi dan realisasi tidak sebanding.",
-      "Penjual PT Dinasti Kreatif Indonesia semula memegang 69,34%, sehingga setelah menjual 56,84% diperkirakan masih memegang ±12,49% (inferensi)."
+      "Penjual PT Dinasti Kreatif Indonesia semula memegang 69,34%, sehingga setelah menjual 56,84% diperkirakan masih memegang ±12,49% (inferensi).",
+      "Jawaban BEI 4 Nov 2026: Visionary Capital membeli di Rp20 (Rp40,6 miliar); rencana RUPSLB PMHMETD dalam 12 bulan; penjualan perdana daging beku Des 2025 (ringkasan AI Stockbit)."
     ],
     "sumber": [
       {
@@ -12432,6 +12533,13 @@
         "file": "f-32163390-0_TGUK_Laporan_Informasi_dan_Fakta_Material_32163390_lamp3.pdf",
         "url": "https://emitten-announcement.stockbit.com/attachments/f-32163390-0_TGUK_Laporan_Informasi_dan_Fakta_Material_32163390_lamp3.pdf",
         "hal": "1-2"
+      },
+      {
+        "tanggal": "2026-11-04",
+        "judul": "Penjelasan atas Permintaan Penjelasan Bursa (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37219949",
+        "hal": null
       }
     ],
     "pengendali": {
@@ -12637,7 +12745,7 @@
     }
   },
   "VISI": {
-    "asOf": "2026-10-23",
+    "asOf": "2026-10-30",
     "jenis": "PMTHMETD",
     "status": "disetujui RUPS",
     "sahamBeredar": 3075000000,
@@ -12824,7 +12932,8 @@
       "Pengumuman negosiasi 11 Feb 2026 menyebut Nagita Slavina pribadi sebagai calon pengendali; kendaraan akuisisi PT Harmoni Semesta Investama baru didirikan 28 Mei 2026 dengan modal Rp500 juta.",
       "Hingga 6 Feb 2026 Perseroan melaporkan pemilik manfaat perorangan adalah David Dwiputra dan mengaku belum memahami pengisian formulir E009 pemilik manfaat.",
       "VISI menjual 8 properti gudang/kantor Rp75 M (Juni 2026) kepada PT Inti Megah Putra, holding baru berumur 3 bulan yang beralamat di Kelurahan Tambak Sarioso, sama dengan kantor VISI; seluruh utang bank Rp74,93 M direncanakan lunas.",
-      "Kinerja usaha lama melemah: penjualan sembilan bulan 2025 turun Rp70,25 M (21,93%), terutama banner (turun Rp68,29 M), sementara utang bank naik Rp13,17 M."
+      "Kinerja usaha lama melemah: penjualan sembilan bulan 2025 turun Rp70,25 M (21,93%), terutama banner (turun Rp68,29 M), sementara utang bank naik Rp13,17 M.",
+      "Private placement terlaksana 120,72 juta saham @Rp994, dicatat 29 Okt 2026; fasilitas Demand Loan Rp45 M dari PT Bank Ina Perdana Tbk (TD+1,5%, jatuh tempo 28 Jan 2027), ditandatangani 28 Okt 2026 (ringkasan AI Stockbit, 30 Okt 2026)."
     ],
     "sumber": [
       {
@@ -12910,6 +13019,20 @@
         "file": "f-32167748-0_VISI_Laporan_Informasi_dan_Fakta_Material_32167748_lamp2.pdf",
         "url": "https://emitten-announcement.stockbit.com/attachments/f-32167748-0_VISI_Laporan_Informasi_dan_Fakta_Material_32167748_lamp2.pdf",
         "hal": "2"
+      },
+      {
+        "tanggal": "2026-10-30",
+        "judul": "Hasil Pelaksanaan Penambahan Modal Tanpa HMETD (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37111561",
+        "hal": null
+      },
+      {
+        "tanggal": "2026-10-30",
+        "judul": "Keterbukaan Informasi atas Transaksi Material Yang Dikecualikan (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37124745",
+        "hal": null
       }
     ],
     "pengendali": {

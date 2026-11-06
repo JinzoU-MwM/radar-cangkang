@@ -1,7 +1,7 @@
 // Pembuat presentasi analisa emiten (.pptx) dengan pptxgenjs. Prinsip: analisa dalam, teks sedikit —
 // angka besar, meteran, diagram, dan grafik PowerPoint asli (bisa diklik/diedit). Satu pesan per slide,
 // pita KESIMPULAN di bawah. Dipakai di browser (unduhan) dan di Node (uji).
-import { fmtDate, PB_NADA, PB_DASAR } from './domain.js'
+import { fmtDate, PB_NADA, PB_DASAR, tglHargaAcuan } from './domain.js'
 import { PT_STATUS, ptStatusTxt, confLvl } from './patterns.js'
 import { phaseName } from './cycle.js'
 import { mergeBoard } from './profil.js'
@@ -233,7 +233,7 @@ export function buildDeck(PptxGenJS, d, th, opt = {}) {
     T(s, topics.join('  •  '), { x: 0.7, y: 3.55, w: 5.4, h: 0.3, fontSize: 11, color: 'EAF2FA' })
     pill(s, 0.7, 4.0, d.sector?.label || 'Umum', th.accent, { size: 9 })
     T(s, `Data per ${fmtDate(d.date)}  |  Harga terakhir ${rpS(A.price)}${A.priceDate ? ' (' + fmtDate(A.priceDate) + ')' : ''}`, { x: 0.7, y: 4.95, w: 6, h: 0.25, fontSize: 9.5, color: 'DCE7F3' })
-    if (d.pa?.asOf) T(s, `Narasi analis per ${fmtDate(d.pa.asOf)}${d.pa.hargaAcuan ? ' pada harga acuan ' + rpS(d.pa.hargaAcuan) : ''}`, { x: 0.7, y: 5.2, w: 6, h: 0.22, fontSize: 8.5, color: 'DCE7F3' })
+    if (d.pa?.asOf) T(s, `Narasi analis per ${fmtDate(d.pa.asOf)}${d.pa.hargaAcuan ? ' pada harga acuan ' + rpS(d.pa.hargaAcuan) + (d.pa.hargaAsOf ? ' (' + fmtDate(tglHargaAcuan(d.pa)) + ')' : '') : ''}`, { x: 0.7, y: 5.2, w: 6, h: 0.22, fontSize: 8.5, color: 'DCE7F3' })
   }
 
   // ---------- Bagian: Ringkasan eksekutif (headline transaksi + rekomendasi di awal; rincian di bagian berikutnya) ----------

@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { store, itemOf, pandanganOf, storyOf, autoRefresh, loadStories, toggleCompare } from '../store.js'
-import { fmtDate, rp, scoreOf, statusOf, STATUS_LABEL } from '../lib/domain.js'
+import { fmtDate, rp, scoreOf, statusOf, STATUS_LABEL, tglHargaAcuan } from '../lib/domain.js'
 import SikapTag from '../components/SikapTag.vue'
 import StageTrack from '../components/StageTrack.vue'
 import OwnershipFlow from '../components/OwnershipFlow.vue'
@@ -100,10 +100,10 @@ const priceNote = computed(() => {
   }
   if (it?.price != null) {
     const at = it.updatedAt ? new Date(it.updatedAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''
-    const ref = p?.hargaAcuan != null && p.hargaAcuan !== it.price ? ` · acuan analisa ${rp(p.hargaAcuan)} (${fmtDate(p.asOf)})` : ''
+    const ref = p?.hargaAcuan != null && p.hargaAcuan !== it.price ? ` · acuan analisa ${rp(p.hargaAcuan)} (${fmtDate(tglHargaAcuan(p))})` : ''
     return `harga radar${at ? ', diperbarui ' + at : ''}${ref}`
   }
-  return p?.hargaAcuan != null ? `harga acuan analisa ${fmtDate(p.asOf)}` : 'belum ada harga'
+  return p?.hargaAcuan != null ? `harga acuan analisa ${fmtDate(tglHargaAcuan(p))}` : 'belum ada harga'
 })
 
 const score = computed(() => item.value ? scoreOf(item.value) : null)
