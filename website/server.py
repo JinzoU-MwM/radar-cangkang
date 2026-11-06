@@ -3248,6 +3248,16 @@ def kakdr_screen() -> dict:
 
 _ah_memo: tuple = (0.0, None)
 _ah_isi = threading.Lock()
+_ah_belum: list = []                                # kode yang status perdagangannya belum dicek (hitungan terakhir)
+
+
+def ah_mulai_isi() -> bool:
+    """Mulai melengkapi status di latar bila masih ada yang belum dicek. Hanya untuk permintaan bukan publik dengan token
+    berlaku; juga saat hasil diambil dari memo, supaya permintaan internal tidak menunggu memo kedaluwarsa."""
+    if _ah_belum and not _ah_isi.locked() and not is_public_request() and get_token() and not token_expired():
+        threading.Thread(target=ah_isi_status, args=(list(_ah_belum),), daemon=True).start()
+        return True
+    return False
 
 
 def ah_status(t: str) -> dict:
@@ -3295,8 +3305,9 @@ def ah_screen() -> dict:
     """Analisa AH (POV): portofolio Andry Hakim dari indeks profil KSEI >=1% + kurasi pov-ah.json, dan screening saham
     beredar sedikit / publik kecil seluruh BEI (povah.py) tanpa saham yang sedang disuspensi. Data lokal dan cache saja;
     status yang belum ada di cache dilengkapi di latar (bukan permintaan publik, token berlaku)."""
-    global _ah_memo
+    global _ah_memo, _ah_belum
     if _ah_memo[1] and time.time() - _ah_memo[0] < 3600:
+        ah_mulai_isi()
         return _ah_memo[1]
     try:
         harga = dict(harga_semua())
@@ -3320,10 +3331,9 @@ def ah_screen() -> dict:
     hasil["updated"] = datetime.now().strftime("%Y-%m-%d %H:%M")
     # Emiten yang saham beredar/free float-nya kosong: status dan harga dari info emiten (Key Stats sendiri diperbarui
     # mingguan lewat s50_kandidat_universe).
-    belum += [t for t in hasil["kurangData"] if not ah_status(t).get("dicek")]
-    if belum and not is_public_request() and get_token() and not token_expired():
-        threading.Thread(target=ah_isi_status, args=(belum,), daemon=True).start()
+    _ah_belum = belum + [t for t in hasil["kurangData"] if not ah_status(t).get("dicek")]
     _ah_memo = (time.time(), hasil)
+    ah_mulai_isi()
     return hasil
 
 

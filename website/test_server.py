@@ -1081,6 +1081,26 @@ class PovAhTest(unittest.TestCase):
         self.assertEqual(porto["AIMS"]["riwayat"]["ket"], "catatan AIMS")
 
 
+class PovAhIsiTest(unittest.TestCase):
+    """Hasil POV AH dari memo tetap memicu pengisian status di latar untuk permintaan internal, tidak untuk publik."""
+
+    def test_memo_tetap_memicu_isi(self):
+        from unittest import mock
+        lama = (server._ah_memo, server._ah_belum)
+        try:
+            server._ah_memo, server._ah_belum = (time.time(), {"rows": []}), ["CNTB"]
+            with mock.patch.object(server, "ah_isi_status") as isi, mock.patch.object(server, "get_token", return_value="t"),                     mock.patch.object(server, "token_expired", return_value=False):
+                with mock.patch.object(server, "is_public_request", return_value=True):
+                    self.assertEqual(server.ah_screen(), {"rows": []})
+                isi.assert_not_called()
+                with mock.patch.object(server, "is_public_request", return_value=False):
+                    self.assertEqual(server.ah_screen(), {"rows": []})
+                    time.sleep(0.05)
+                isi.assert_called_once_with(["CNTB"])
+        finally:
+            server._ah_memo, server._ah_belum = lama
+
+
 class PovDalamTest(unittest.TestCase):
     """povdalam.analyze: contoh AKPI (pendiri 95,72%, jaringan Risjad/Henry Pribadi, posting komunitas)."""
 
