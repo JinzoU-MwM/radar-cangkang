@@ -15,6 +15,9 @@ const a = computed(() => analisaBerita(props.u || beritaTerakhir(sumber.value, p
   items: store.items, pandangan: store.pandangan, updates: sumber.value, pengendali: store.pengendali, relasi: store.relasi, verified: store.verified,
 }))
 const busy = ref(false), err = ref('')
+// Tanpa u (analisa dokumen terbaru di tab Berita): tampil satu baris seperti daftar Stockbit Reports; isi analisa
+// muncul setelah tombol Analisa diklik. Dengan u (dibuka dari daftar laporan): langsung tampil lengkap.
+const buka = ref(!!props.u)
 async function unduh() {
   busy.value = true; err.value = ''
   try {
@@ -34,12 +37,28 @@ const NILAI = { Didukung: 't-good', 'Sebagian didukung': 't-warn', 'Belum diduku
 
 <template>
   <section v-if="a" class="bt rule-top">
-    <div class="hd">
+    <div v-if="!u" class="hd">
+      <h2 class="lbl">{{ judul }}</h2>
+      <span class="small muted">{{ a.laporan ? 'Keterbukaan resmi' : 'Berita media' }} · {{ a.jenis }}</span>
+    </div>
+    <div v-if="!u" class="baris" :class="{ on: buka }">
+      <span class="d">{{ fmtDate(a.tanggal) }}</span>
+      <a v-if="a.url" :href="a.url" target="_blank" rel="noopener" class="lt">{{ a.judul }}</a><span v-else class="lt">{{ a.judul }}</span>
+      <span class="tags"><span class="tag" :class="tag(a.sinyal.cls)">{{ a.sinyal.label }}</span>
+        <span class="tag" :class="tag(a.dampak.cls)">Dampak: {{ a.dampak.label }}</span></span>
+      <span class="act">
+        <button type="button" class="pill sm" :aria-expanded="String(buka)" @click="buka = !buka">{{ buka ? 'Tutup' : 'Analisa' }}</button>
+        <button type="button" class="pill sm" :disabled="busy" @click="unduh">{{ busy ? 'Menyiapkan…' : 'Unduh PDF' }}</button>
+      </span>
+    </div>
+    <div v-else class="hd">
       <h2 class="lbl">{{ judul }}</h2>
       <span class="small muted">{{ a.laporan ? 'Keterbukaan resmi' : 'Berita media' }} · {{ fmtDate(a.tanggal) }} · {{ a.jenis }}</span>
       <button type="button" class="btn" :disabled="busy" @click="unduh">{{ busy ? 'Menyiapkan PDF…' : '⬇ Unduh analisa (PDF)' }}</button>
     </div>
     <p v-if="err" class="small c-strong">{{ err }}</p>
+
+    <template v-if="buka">
 
     <div class="top" :class="'k-' + a.dampak.cls">
       <div class="row">
@@ -112,10 +131,16 @@ const NILAI = { Didukung: 't-good', 'Sebagian didukung': 't-warn', 'Belum diduku
       </div>
     </div>
     <p class="small muted">Dibaca otomatis dari judul, ringkasan, dan poin kunci dokumen terakhir; diperbarui setiap sinkron berita. ▲ positif bagi pemegang saham publik, ▼ negatif atau risiko.</p>
+    </template>
   </section>
 </template>
 
 <style scoped>
+.baris{display:grid;grid-template-columns:90px minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--rule-2)}
+.baris.on{background:var(--zebra)}
+.baris .d{font:600 13px var(--f-display);color:var(--ink-2)}.baris .lt{color:var(--ink);font-size:14px}
+.baris .tags{display:flex;gap:4px;flex-wrap:wrap}.baris .act{display:flex;gap:4px}
+@media (max-width:760px){.baris{grid-template-columns:80px minmax(0,1fr)}.baris .tags,.baris .act{grid-column:2}}
 .hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;margin-bottom:8px}.hd .btn{margin-left:auto}.lbl{margin:0}
 .top{border:1px solid var(--rule);border-left-width:4px;padding:10px 12px;background:var(--sheet);margin-bottom:10px}
 .top.k-good{border-left-color:var(--good)}.top.k-bad{border-left-color:var(--strong)}.top.k-calm{border-left-color:var(--ink-2)}
