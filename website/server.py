@@ -1712,7 +1712,13 @@ def rencana_cocok(t: str, teks: str) -> bool:
     if not RENCANA_RX.search(teks or "") or RENCANA_BATAL_RX.search(teks or ""):
         return False
     kode = {a or b for a, b in re.findall(r"\(([A-Z]{4})\)|\$([A-Z]{4})\b", teks or "")}
-    return not kode or t in kode
+    if kode and t not in kode:
+        return False
+    # Kode emiten disebut sebelum kata kerja aktif (bukan "di-"): emiten itulah pembelinya, mis.
+    # "Semen Baturaja (SMBR) Caplok Anak Usaha". Bentuk pasif ("Dicaplok ..., Bayan (BYAN)") tetap dihitung.
+    kerja = re.search(r"(?<![a-z])(akuisisi|caplok|membeli|beli|serap)", teks or "", re.I)
+    posisi = [m.start() for m in re.finditer(rf"\b{t}\b", teks or "")]
+    return not (kerja and posisi and min(posisi) < kerja.start())
 RENCANA_HARI, RENCANA_MAKS = 14, 5
 
 
