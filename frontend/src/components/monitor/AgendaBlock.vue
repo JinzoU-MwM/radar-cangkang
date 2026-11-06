@@ -51,13 +51,9 @@ const ringkas = u => String(u.summary || '').replace(/\s*\(Ringkasan AI Stockbit
 const due = computed(() => store.items.flatMap(d => tlEvents(d).filter(e => e.date >= today && e.date <= day(14)).map(e => ({ ...e, t: d.ticker })))
   .sort((a, b) => a.date.localeCompare(b.date)))
 
-// Tiap panel bisa diciutkan lewat judulnya; pilihan disimpan di browser ini saja (bila penyimpanan tersedia).
-const KUNCI = 'monitor-agenda-ciut'
-const ciut = reactive((() => { try { return JSON.parse(localStorage.getItem(KUNCI) || '{}') } catch { return {} } })())
-function togel(k) {
-  ciut[k] = !ciut[k]
-  try { localStorage.setItem(KUNCI, JSON.stringify(ciut)) } catch { /* penyimpanan diblokir: pilihan berlaku sampai halaman dimuat ulang */ }
-}
+// Tiap panel tampil ciut (judul + jumlah isi) saat halaman dibuka; isinya muncul setelah judul diklik.
+const ciut = reactive({ berubah: true, masuk: true, tempo: true, update: true })
+const togel = k => { ciut[k] = !ciut[k] }
 </script>
 
 <template>
