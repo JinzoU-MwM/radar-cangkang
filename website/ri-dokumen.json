@@ -10239,7 +10239,7 @@
     }
   },
   "DOOH": {
-    "asOf": "2026-10-23",
+    "asOf": "2026-11-05",
     "jenis": "PMHMETD",
     "status": "rencana",
     "sahamBeredar": 7738891036,
@@ -10426,6 +10426,16 @@
         "status": "selesai"
       },
       {
+        "tahap": "Hasil penawaran tender wajib: realisasi pembelian nihil pada Rp148; SII tetap 3,95 miliar saham (51%); penyelesaian 9 Nov 2026",
+        "waktu": "4 Nov 2026",
+        "status": "selesai"
+      },
+      {
+        "tahap": "Keterbukaan informasi tambahan/perubahan atas PMHMETD I, penambahan kegiatan usaha, perubahan penggunaan dana IPO, pengambilalihan INET, dan pinjaman SII",
+        "waktu": "5 Nov 2026",
+        "status": "selesai"
+      },
+      {
         "tahap": "RUPSLB (9 mata acara)",
         "waktu": "9 Nov 2026",
         "status": "rencana"
@@ -10452,7 +10462,10 @@
       "KSP menyumbang 38,11% pendapatan (Rp46,94 M) dan 49,07% laba bersih (Rp2,70 M) DOOH periode 9 bulan 2025, tetapi hanya 9,47% aset; nilai pasar 99% saham KSP menurut KJPP HMR Rp23,04 M (DCF dan GPTC, termasuk 70% PT Roket Kasih Karunia), ekuitas KSP Rp13,15 M per 30 Sep 2025, dan laba divestasi Rp11,51 M dicatat sebagai pendapatan lain-lain. Divestasi ini terjadi empat bulan sebelum pengendali lama menjual 51% kepada SII (inferensi: pengendali lama mengeluarkan bisnis penghasil laba ke perusahaan miliknya sebelum menjual cangkang).",
       "DOOH juga melepas seluruh saham PT Triuslive Inovasi Indonesia kepada PT Investasi Gemilang Maju (Akta 4 Mei 2026), senilai 4,95% ekuitas sehingga tidak tergolong transaksi material.",
       "Kepada BEI (Des 2025) Perseroan menegaskan Grup berfokus pada periklanan dan digital, bukan bisnis internet, serta menjelaskan lonjakan biaya dibayar di muka menjadi Rp155,09 M per 30 Jun 2025 (dari Rp81,99 M) sebagai uang muka proyek iklan; arah ini berbalik setelah SII masuk (ekosistem AI, konektivitas, dan akuisisi INET).",
-      "Kepada BEI (13 dan 27 Agu 2026) SII menyatakan belum memiliki sumber pendapatan (perusahaan induk), CNI belum bertransaksi, dan uji tuntas peluang kerja sama masih berjalan; dua minggu kemudian PPJB saham INET senilai Rp2,0 T ditandatangani (1 Sep 2026)."
+      "Kepada BEI (13 dan 27 Agu 2026) SII menyatakan belum memiliki sumber pendapatan (perusahaan induk), CNI belum bertransaksi, dan uji tuntas peluang kerja sama masih berjalan; dua minggu kemudian PPJB saham INET senilai Rp2,0 T ditandatangani (1 Sep 2026).",
+      "Tender wajib SII (5 Okt–3 Nov 2026, Rp148) berakhir dengan realisasi pembelian nihil dari maksimal 2,62 miliar saham; kepemilikan SII tetap 3,95 miliar saham (51%), penyelesaian 9 Nov 2026 (Laporan Hasil Penawaran Tender Wajib, 4 Nov 2026; ringkasan AI Stockbit).",
+      "Keterbukaan tambahan 5 Nov 2026 kembali menyebut plafon pinjaman SII Rp5 T berbunga 7,5% dengan penarikan awal Rp2 T untuk membeli 29,88% INET (6,69 miliar saham, Rp2,01 T, Rp300/saham, dari AKUN); PMHMETD I tetap maks. 154,78 miliar saham, rasio 20 saham baru per 1 saham lama (hingga 95,24% modal disetor), dananya untuk melunasi utang ke SII; sisa dana IPO Rp120 M untuk setoran modal CNI dan Rp10,5 M untuk modal kerja hingga kuartal I 2027. Angka dari ringkasan AI Stockbit; lampiran PDF 5 Nov belum dibaca. Inkonsistensi Rp8 T pada versi bahasa Inggris sebelumnya belum dijelaskan dalam ringkasan.",
+      "Laporan keuangan 30 Sep 2026: laba bersih 9 bulan Rp71,42 M (naik 954,95% dari Rp6,77 M), laba per saham Rp9,23 (EmitenNews via Stockbit, 31 Okt 2026); pendapatan kuartal III turun 64,56% menjadi sekitar Rp18 M (StockbitNews, 4 Nov 2026), sejalan dengan laba yang ditopang pos nonoperasional."
     ],
     "sumber": [
       {
@@ -10566,6 +10579,48 @@
         "file": "f-32013571-0_DOOH_Tanggapan_atas_Permintaan_Penjelasan_Bursa_32013571_lamp2.pdf",
         "url": "https://emitten-announcement.stockbit.com/attachments/f-32013571-0_DOOH_Tanggapan_atas_Permintaan_Penjelasan_Bursa_32013571_lamp2.pdf",
         "hal": "1-2"
+      },
+      {
+        "tanggal": "2026-11-04",
+        "judul": "Laporan Hasil Penawaran Tender Wajib PT Era Media Sejahtera Tbk (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37220953",
+        "hal": null
+      },
+      {
+        "tanggal": "2026-11-05",
+        "judul": "Informasi Tambahan dan/ atau Perubahan atas keterbukaan Informasi Penambahan Modal dengan Memberikan Hak Memesan Efek Terlebih Dahulu (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37250784",
+        "hal": null
+      },
+      {
+        "tanggal": "2026-11-05",
+        "judul": "Informasi Tambahan dan/ atau Perubahan atas keterbukaan Informasi Penambahan Kegiatan Usaha (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37250804",
+        "hal": null
+      },
+      {
+        "tanggal": "2026-11-05",
+        "judul": "Informasi Tambahan dan/ atau Perubahan atas keterbukaan Informasi Perubahan Penggunaan Dana (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37250812",
+        "hal": null
+      },
+      {
+        "tanggal": "2026-11-05",
+        "judul": "Informasi Tambahan dan/ atau Perubahan atas keterbukaan Informasi Pengambilalihan Saham PT Sinergi Inti Andalan Prima Tbk oleh PT Cakrawala Nexus Investama (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37250852",
+        "hal": null
+      },
+      {
+        "tanggal": "2026-11-05",
+        "judul": "Informasi Tambahan dan/ atau Perubahan atas keterbukaan Informasi Peminjaman Pemegang Saham (ringkasan AI Stockbit Reports)",
+        "file": null,
+        "url": "https://stockbit.com/post/37250899",
+        "hal": null
       }
     ],
     "pengendali": {
@@ -10817,8 +10872,8 @@
           "pihak": "SII → pemegang saham publik",
           "nilai": "Rp148/saham",
           "waktu": "5 Okt–3 Nov 2026",
-          "status": "berjalan",
-          "ket": "Harga tender (rata-rata harga tertinggi 90 hari) jauh di bawah harga pasar, sehingga hampir tidak ada publik yang menjual."
+          "status": "selesai",
+          "ket": "Harga tender (rata-rata harga tertinggi 90 hari) jauh di bawah harga pasar; hasilnya realisasi pembelian nihil, SII tetap 51% (laporan hasil tender, 4 Nov 2026)."
         },
         {
           "judul": "Pembelian 29,88% INET oleh CNI",
