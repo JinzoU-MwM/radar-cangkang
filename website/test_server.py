@@ -481,6 +481,48 @@ class HarmonikTest(unittest.TestCase):
         tmp.cleanup()
 
 
+class AutoMonitorTest(unittest.TestCase):
+    """Kandidat otomatis masuk Monitor: pergantian pengendali terkonfirmasi, atau rencana pengambilalihan (DGIK)."""
+
+    def kd(self, t, teks, d="2026-11-04", nc=None):
+        return {"ticker": t, "name": t + " Tbk", "flags": {"akuisisi": True}, **({"pengendaliBaru": nc} if nc else {}),
+                "signals": {"akuisisi": {"st": "on", "d": d, "ev": [{"d": d, "text": teks, "src": "https://stockbit.com/post/1"}]}}}
+
+    def jalan(self, items, ada=(), sembunyi=()):
+        simpan = []
+        with unittest.mock.patch.object(server, "items_all", return_value=[{"ticker": t} for t in ada]), \
+                unittest.mock.patch.object(server, "data_rows", return_value=[(t,) for t in sembunyi]), \
+                unittest.mock.patch.object(server, "item_put", side_effect=simpan.append):
+            hasil = server.auto_monitor({"items": items}, now=datetime(2026, 11, 6))
+        return hasil, simpan
+
+    def test_rencana_pengambilalihan(self):
+        hasil, simpan = self.jalan([
+            self.kd("DGIK", "Tokyu Construction Siap Caplok 25 Persen Saham Nusa Konstruksi (DGIK)"),
+            self.kd("BUMI", "BUMI Akuisisi Tambang Emas di Australia"),                        # BUMI pembeli, bukan target
+            self.kd("LAMA", "Penawaran Tender Wajib atas Saham PT Lama Tbk", d="2026-10-01"),  # lebih dari 14 hari
+            self.kd("TRSY", "Keterbukaan Informasi Pengalihan Saham Hasil Pembelian Kembali Saham"),
+        ])
+        self.assertEqual(hasil, ["DGIK"])
+        self.assertEqual((simpan[0]["stage"], simpan[0]["auto"], simpan[0]["autoJenis"]), ("radar", True, "rencana"))
+        self.assertIn("belum terkonfirmasi di KSEI", simpan[0]["notes"])
+
+    def test_terkonfirmasi_dan_lewati(self):
+        nc = {"date": "2026-11-03", "name": "Pt Baru", "pct": 30, "text": "Pt Baru masuk: 0% → 30% (KSEI)"}
+        hasil, simpan = self.jalan([self.kd("AAAA", "Perubahan Pengendali", nc=nc),
+                                    self.kd("BBBB", "Tokyu Akan Akuisisi 25% Saham BBBB"),     # sudah di Monitor
+                                    self.kd("CCCC", "X Siap Caplok 30 Persen Saham CCCC")],    # disembunyikan tim
+                                   ada=["BBBB"], sembunyi=["CCCC"])
+        self.assertEqual(hasil, ["AAAA"])
+        self.assertNotIn("autoJenis", simpan[0])
+        self.assertIn("terkonfirmasi", simpan[0]["notes"])
+
+    def test_batas_per_putaran(self):
+        items = [self.kd(f"A{c}AA", f"Investor Siap Caplok 20 Persen Saham A{c}AA") for c in "BCDEFGH"]
+        hasil, _ = self.jalan(items)
+        self.assertEqual(len(hasil), server.RENCANA_MAKS)
+
+
 class PovDalamLatarTest(unittest.TestCase):
     """Analisa mendalam tersimpan per saham, ditarik ulang hanya bila ada data baru atau umurnya lewat batas."""
 
