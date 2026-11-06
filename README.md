@@ -89,6 +89,35 @@ Mengisi refresh token (sekali, atau tiap kali rantainya putus):
 3. Simpan ke `website/.stockbit-refresh`, **tutup jendela incognito tanpa logout** (refresh token berotasi; browser yang masih terbuka akan menghanguskannya).
 4. Uji: `python3 stockbit-token-watcher.py --force`.
 
+## Sinkron laptop dan jni-server (Tailscale)
+
+Laptop dan jni-server saling memperbarui supaya tidak ada yang tertinggal, lewat jaringan pribadi Tailscale (bukan
+domain publik; versi publik tetap hanya baca). Tiap 10 menit server yang punya `website/.sinkron-peer` (cukup laptop):
+
+- **Data hasil hitungan** (analisa mendalam `.pov-dalam/`, screening Harmonic, Seasonality, Pola Broker, Recovery,
+  Saham 50, laporan keuangan, dll.; daftar di `website/sinkron.py`): berkas yang lebih baru menang. `.cache.sqlite`
+  tidak ikut.
+- **Data tim** (item radar, berita, posisi diagram, kandidat tersembunyi): digabung per item memakai waktu suntingan
+  manual, termasuk hapus. Pembaruan harga otomatis tidak menimpa suntingan tim.
+- **Token Stockbit**: token yang paling lama berlaku dipakai di kedua mesin (ganti token cukup di salah satu).
+- **Kode**: jni-server lewat CD; laptop lewat `deploy/laptop-sinkron.ps1` (Task Scheduler).
+
+Pasang sekali:
+1. Pasang Tailscale dan login dengan akun yang sama di kedua mesin. jni-server:
+   `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`; laptop: https://tailscale.com/download.
+   Catat IP jni-server: `tailscale ip -4` (100.x.y.z).
+2. jni-server: tambahkan `--lan` pada `ExecStart` unit `radar-cangkang` (`systemctl --user edit --full radar-cangkang`),
+   lalu `systemctl --user restart radar-cangkang`. Bila memakai ufw, buka port hanya untuk Tailscale:
+   `sudo ufw allow in on tailscale0 to any port 8765`.
+3. Buat satu kunci bersama: `python -c "import secrets; print(secrets.token_urlsafe(32))"`. Simpan isinya ke
+   `website/.sinkron-kunci` di **kedua** mesin (berkas rahasia, sudah di `.gitignore`).
+4. Laptop: isi `website/.sinkron-peer` dengan `http://100.x.y.z:8765` (IP Tailscale jni-server).
+5. Sinkron pertama dari laptop (data tim laptop yang berbeda mengikuti jni-server):
+   `curl "http://localhost:8765/api/sinkron/sekarang?awal=peer"`. Selanjutnya otomatis; status di `/api/status` → `sinkron`.
+6. Kode laptop otomatis (tiap 10 menit):
+   `schtasks /Create /SC MINUTE /MO 10 /TN "Radar Sinkron Kode" /TR "powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File D:\radar-cangkang-baru\deploy\laptop-sinkron.ps1"`.
+   Hanya berjalan bila laptop di cabang `main` tanpa perubahan lokal; riwayat di `website/.laptop-sinkron.log`.
+
 ## Cache SQLite
 
 Server menyimpan respons Stockbit dan sumber berita di `website/.cache.sqlite` (modul sqlite3 bawaan Python; selalu tersedia). Semua perangkat memakai salinan yang sama; Stockbit hanya dipanggil saat salinan kedaluwarsa:
