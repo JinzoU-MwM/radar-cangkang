@@ -1698,9 +1698,21 @@ def deploy_status() -> dict | None:
 PENGENDALI_RX = re.compile(r"pengendali|pengambilalihan|akuisisi", re.I)
 # Rencana pengambilalihan emiten itu sendiri (bukan emiten yang mengakuisisi pihak lain): porsi saham yang dibeli,
 # kata caplok/ambil alih, PPJB, perjanjian jual beli saham, tender wajib, atau calon pengendali.
-RENCANA_RX = re.compile(r"(akuisisi|caplok|ambil ?alih|membeli|beli|serap|jual)\D{0,40}\d+([.,]\d+)?\s*(%|persen)\s*saham|"
-                        r"pengambilalihan|caplok|ambil ?alih|pengendali baru|calon pengendali|calon investor strategis|"
+# "Pengambilalihan"/"ambil alih" saja tidak dipakai: sering emiten itu sendiri yang mengambil alih perusahaan lain
+# (mis. BUMI "Pengambilalihan Mount Margaret", IMAS "Pengambilalihan Saham dalam PT Wahana Indo Trada").
+RENCANA_RX = re.compile(r"(akuisisi|caplok|membeli|beli|serap)\D{0,40}\d+([.,]\d+)?\s*(%|persen)\s*saham|"
+                        r"caplok|pengendali baru|calon pengendali|calon investor strategis|"
                         r"penawaran tender|tender wajib|\bmto\b|\bppjb\b|perjanjian (pengikatan |bersyarat |)jual beli saham", re.I)
+RENCANA_BATAL_RX = re.compile(r"\bbatal|dibatalkan|urung|tidak jadi", re.I)
+
+
+def rencana_cocok(t: str, teks: str) -> bool:
+    """Judul menyebut rencana pengambilalihan emiten `t` sendiri: pola RENCANA_RX, tidak batal, dan bila judul
+    menyebut kode saham (mis. "(KDTN)" atau "$KDTN"), kode `t` harus termasuk."""
+    if not RENCANA_RX.search(teks or "") or RENCANA_BATAL_RX.search(teks or ""):
+        return False
+    kode = {a or b for a, b in re.findall(r"\(([A-Z]{4})\)|\$([A-Z]{4})\b", teks or "")}
+    return not kode or t in kode
 RENCANA_HARI, RENCANA_MAKS = 14, 5
 
 
@@ -1726,7 +1738,7 @@ def auto_monitor(kd: dict, now: datetime | None = None) -> list[str]:
         if t in ada:
             continue
         if not (k.get("pengendaliBaru") and lap):
-            ren = [e for e in ev if (e.get("d") or "") >= batas and RENCANA_RX.search(e.get("text") or "")]
+            ren = [e for e in ev if (e.get("d") or "") >= batas and rencana_cocok(t, e.get("text") or "")]
             if not ren or rencana >= RENCANA_MAKS:
                 continue
             rencana += 1
