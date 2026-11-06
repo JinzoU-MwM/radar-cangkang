@@ -358,7 +358,9 @@ onMounted(() => autoRefresh('stockbit'))
         <tbody>
           <tr v-for="r in rows" :key="r.t">
             <template v-if="set === 'ringkas'">
-              <td><RouterLink class="ticker" :to="'/emiten/' + r.t">{{ r.t }}</RouterLink></td>
+              <td><RouterLink class="ticker" :to="'/emiten/' + r.t">{{ r.t }}</RouterLink>
+                <!-- Masuk otomatis dari Kandidat: "rencana" = pengambilalihan diumumkan, belum terkonfirmasi KSEI. -->
+                <span v-if="r.item.auto" class="tag" :class="r.item.autoJenis === 'rencana' ? 't-warn' : 't-calm'" :title="r.item.notes">{{ r.item.autoJenis === 'rencana' ? 'rencana' : 'otomatis' }}</span></td>
               <td>
                 <StageTrack :item="r.item" />
                 <span class="pct small" :title="r.prog.est ? 'Perkiraan dari tahap; tahapan belum terisi' : 'Penyelesaian transaksi'">{{ r.prog.est ? '±' : '' }}{{ r.prog.pct }}%</span>

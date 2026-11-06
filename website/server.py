@@ -1478,13 +1478,14 @@ KANDIDAT_SIG = [
 ]
 
 
-def market_reports(days: int = 14, pages: int = 40, fresh: bool = False) -> list[dict]:
-    """Keterbukaan seluruh BEI dari akun StockbitReports (terbaru dulu) dalam `days` hari:
-    [{ticker, date, title, url}]. Dipakai Kandidat agar laporan pergantian pengendali emiten mana pun tertangkap."""
+def market_reports(days: int = 14, pages: int = 40, fresh: bool = False, akun: str = "StockbitReports") -> list[dict]:
+    """Posting seluruh BEI dari akun Stockbit `akun` (StockbitReports = keterbukaan, StockbitNews = berita; terbaru
+    dulu) dalam `days` hari: [{ticker, date, title, url}]. Dipakai Kandidat agar laporan dan berita pergantian
+    pengendali emiten mana pun tertangkap."""
     cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
     out, cursor = [], 0
     for _ in range(pages):
-        j = stockbit_post_api("https://exodus.stockbit.com/stream/v3/user/StockbitReports",
+        j = stockbit_post_api(f"https://exodus.stockbit.com/stream/v3/user/{akun}",
                               {"category": "STREAM_CATEGORY_MAIN_IDEAS", "last_stream_id": cursor, "limit": 100}, fresh)
         d = j.get("data") or {}
         page = d.get("stream") or []
@@ -1705,18 +1706,63 @@ def deploy_status() -> dict | None:
 
 
 PENGENDALI_RX = re.compile(r"pengendali|pengambilalihan|akuisisi", re.I)
+# Rencana pengambilalihan emiten itu sendiri (bukan emiten yang mengakuisisi pihak lain): porsi saham yang dibeli,
+# kata caplok/ambil alih, PPJB, perjanjian jual beli saham, tender wajib, atau calon pengendali.
+# "Pengambilalihan"/"ambil alih" saja tidak dipakai: sering emiten itu sendiri yang mengambil alih perusahaan lain
+# (mis. BUMI "Pengambilalihan Mount Margaret", IMAS "Pengambilalihan Saham dalam PT Wahana Indo Trada").
+RENCANA_RX = re.compile(r"(akuisisi|caplok|membeli|beli|serap)\D{0,40}\d+([.,]\d+)?\s*(%|persen)\s*saham|"
+                        r"caplok|pengendali baru|calon pengendali|calon investor strategis|"
+                        r"penawaran tender|tender wajib|\bmto\b|\bppjb\b|perjanjian (pengikatan |bersyarat |)jual beli saham", re.I)
+RENCANA_BATAL_RX = re.compile(r"\bbatal|dibatalkan|urung|tidak jadi", re.I)
 
 
-def auto_monitor(kd: dict) -> list[str]:
-    """Masukkan ke Monitor (tahap radar) emiten dengan pergantian pengendali terkonfirmasi: pemegang baru >= 20%
-    di KSEI/IDX dan keterbukaan BEI tentang pengendali/pengambilalihan. Data yang sudah ada tidak ditimpa."""
+def rencana_cocok(t: str, teks: str) -> bool:
+    """Judul menyebut rencana pengambilalihan emiten `t` sendiri: pola RENCANA_RX, tidak batal, dan bila judul
+    menyebut kode saham (mis. "(KDTN)" atau "$KDTN"), kode `t` harus termasuk."""
+    if not RENCANA_RX.search(teks or "") or RENCANA_BATAL_RX.search(teks or ""):
+        return False
+    kode = {a or b for a, b in re.findall(r"\(([A-Z]{4})\)|\$([A-Z]{4})\b", teks or "")}
+    if kode and t not in kode:
+        return False
+    # Kode emiten disebut sebelum kata kerja aktif (bukan "di-"): emiten itulah pembelinya, mis.
+    # "Semen Baturaja (SMBR) Caplok Anak Usaha". Bentuk pasif ("Dicaplok ..., Bayan (BYAN)") tetap dihitung.
+    kerja = re.search(r"(?<![a-z])(akuisisi|caplok|membeli|beli|serap)", teks or "", re.I)
+    posisi = [m.start() for m in re.finditer(rf"\b{t}\b", teks or "")]
+    return not (kerja and posisi and min(posisi) < kerja.start())
+RENCANA_HARI, RENCANA_MAKS = 14, 5
+
+
+def auto_monitor(kd: dict, now: datetime | None = None) -> list[str]:
+    """Masukkan ke Monitor (tahap radar) secara otomatis:
+    (1) pergantian pengendali terkonfirmasi: pemegang baru >= 20% di KSEI/IDX dan keterbukaan BEI tentang
+        pengendali/pengambilalihan;
+    (2) rencana pengambilalihan: keterbukaan atau berita Stockbit RENCANA_HARI hari terakhir yang menyebut saham
+        emiten itu akan dibeli/dicaplok/diambil alih (PPJB, tender wajib, dst.), maks. RENCANA_MAKS per putaran;
+        ditandai belum terkonfirmasi KSEI.
+    Emiten yang sudah di Monitor atau disembunyikan tim dari Kandidat dilewati; data yang sudah ada tidak ditimpa."""
     ada = {i["ticker"] for i in items_all()}
-    added = []
+    try:
+        ada |= {t for (t,) in data_rows("SELECT ticker FROM kandidat_hidden")}
+    except Exception:
+        pass
+    batas = ((now or datetime.now()) - timedelta(days=RENCANA_HARI)).strftime("%Y-%m-%d")
+    added, rencana = [], 0
     for k in kd.get("items") or []:
         t = k["ticker"]
         ev = (k.get("signals") or {}).get("akuisisi", {}).get("ev") or []
         lap = [e for e in ev if "stockbit.com/post/" in (e.get("src") or "") and PENGENDALI_RX.search(e.get("text") or "")]
-        if t in ada or not k.get("pengendaliBaru") or not lap:
+        if t in ada:
+            continue
+        if not (k.get("pengendaliBaru") and lap):
+            ren = [e for e in ev if (e.get("d") or "") >= batas and rencana_cocok(t, e.get("text") or "")]
+            if not ren or rencana >= RENCANA_MAKS:
+                continue
+            rencana += 1
+            item_put({"id": t, "ticker": t, "name": k.get("name") or "", "stage": "radar", "flags": k.get("flags") or {"akuisisi": True},
+                      "ms": {}, "signals": k.get("signals") or {}, "auto": True, "autoJenis": "rencana",
+                      "notes": f"Otomatis: rencana pengambilalihan, belum terkonfirmasi di KSEI. {ren[0]['text']} ({ren[0]['d']}).",
+                      "updatedAt": datetime.now(timezone.utc).isoformat()})
+            added.append(t)
             continue
         nc = k["pengendaliBaru"]
         item_put({"id": t, "ticker": t, "name": k.get("name") or "", "stage": "radar", "flags": k.get("flags") or {"akuisisi": True},
@@ -5743,6 +5789,16 @@ def _kandidat(cfg: dict, fresh: bool = False) -> dict:
                     add(r["ticker"], sid, r["date"], r["title"], r["url"])
     except Exception as e:
         errors.append({"source": "Keterbukaan BEI", "error": str(e)})
+
+    # 3c) Berita StockbitNews seluruh BEI: rencana pengambilalihan sering diberitakan sebelum KSEI mencatatnya
+    # (mis. DGIK 4 Nov 2026: "Tokyu Construction Siap Caplok 25 Persen Saham Nusa Konstruksi").
+    try:
+        for r in market_reports(days=14, pages=15, fresh=fresh, akun="StockbitNews"):
+            for sid in kandidat_sigs(r["title"]):
+                if sid in ("akuisisi", "rights", "kbli"):
+                    add(r["ticker"], sid, r["date"], r["title"], r["url"])
+    except Exception as e:
+        errors.append({"source": "Berita StockbitNews", "error": str(e)})
 
     # 4) Periksa keterbukaan informasi tiap calon; data harga dari halaman Stockbit.
     out = []
