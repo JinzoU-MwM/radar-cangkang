@@ -3,7 +3,7 @@ import { computed, reactive, shallowRef, ref, watch } from 'vue'
 import { api } from '../../api.js'
 import { store, getBenchmark } from '../../store.js'
 import { buildAnalysis, KURS, W } from '../../lib/analysis.js'
-import { fmt, fmtDate, rp, big, x2, pctTxt } from '../../lib/domain.js'
+import { fmt, fmtDate, rp, big, x2, pctTxt, tglHargaAcuan } from '../../lib/domain.js'
 import { riCase } from '../../lib/rightsIssue.js'
 import RightsIssue from './RightsIssue.vue'
 import RiDokumen from './RiDokumen.vue'
@@ -197,7 +197,7 @@ const hiSig = r => HI_SIGNAL.test(r.title) && !NOISE.test(r.title)
       <p v-if="A.pa.likuiditas" class="small"><b>Likuiditas:</b> {{ A.pa.likuiditas }}</p>
       <div v-if="(A.pa.pembaruan || []).length" class="small"><b>Pembaruan {{ fmtDate(A.pa.asOf || '') }}:</b>
         <ul><li v-for="x in A.pa.pembaruan" :key="x">{{ x }}</li></ul></div>
-      <p class="small muted">Pandangan analis per {{ fmtDate(A.pa.asOf || '') }}<template v-if="A.pa.hargaAcuan"> · harga acuan {{ rp(A.pa.hargaAcuan) }}</template>. Kerangka berpikir, bukan rekomendasi beli/jual.</p>
+      <p class="small muted">Pandangan analis per {{ fmtDate(A.pa.asOf || '') }}<template v-if="A.pa.hargaAcuan"> · harga acuan {{ rp(A.pa.hargaAcuan) }}<template v-if="A.pa.hargaAsOf"> per {{ fmtDate(tglHargaAcuan(A.pa)) }}</template></template>. Kerangka berpikir, bukan rekomendasi beli/jual.</p>
     </section>
 
     <section class="rule-top">

@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { itemOf, pandanganOf, store } from '../../store.js'
-import { STAGE_TRACK, fairGap, fmtDate, rp, trackIndex } from '../../lib/domain.js'
+import { STAGE_TRACK, fairGap, fmtDate, rp, trackIndex, tglHargaAcuan } from '../../lib/domain.js'
 
 const props = defineProps({ ticker: { type: String, required: true } })
 const pv = computed(() => pandanganOf(props.ticker))
@@ -82,7 +82,7 @@ const steps = computed(() => {
     <p class="lead">{{ pv.ringkas }}</p>
     <div v-if="(pv.pembaruan || []).length" class="small"><b>Pembaruan {{ fmtDate(pv.asOf) }}:</b>
       <ul><li v-for="x in pv.pembaruan" :key="x">{{ x }}</li></ul></div>
-    <p v-if="pv.asOf" class="small muted asof">Pandangan per {{ fmtDate(pv.asOf) }}<template v-if="pv.hargaAcuan != null && item?.price != null && pv.hargaAcuan !== item.price"> pada harga Rp{{ pv.hargaAcuan.toLocaleString('id-ID') }}; harga kini Rp{{ Number(item.price).toLocaleString('id-ID') }}</template>.</p>
+    <p v-if="pv.asOf" class="small muted asof">Pandangan per {{ fmtDate(pv.asOf) }}<template v-if="pv.hargaAcuan != null && item?.price != null && pv.hargaAcuan !== item.price"> pada harga Rp{{ pv.hargaAcuan.toLocaleString('id-ID') }}<template v-if="pv.hargaAsOf"> (per {{ fmtDate(tglHargaAcuan(pv)) }})</template>; harga kini Rp{{ Number(item.price).toLocaleString('id-ID') }}</template>.</p>
 
     <section class="rule-top" aria-labelledby="rk-ladder">
       <h2 id="rk-ladder" class="lbl">Harga terhadap level kunci (Rp)</h2>

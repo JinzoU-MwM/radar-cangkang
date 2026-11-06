@@ -1,7 +1,7 @@
 // Analisa otomatis untuk laporan/berita TERBARU satu emiten: ringkasan, poin kunci, tingkat sinyal, dampak terhadap
 // pemegang saham publik (Positif/Netral/Negatif beserta alasan dari isi dokumen), kaitan dengan tesis analisa kurasi
 // (pandangan-analis.json), dan hal yang dipantau. Deterministik dari data sinkron Stockbit; dipakai tab Berita dan PDF.
-import { UTYPES } from './domain.js'
+import { UTYPES, tglHargaAcuan } from './domain.js'
 import { newsTake, maxAmountRp } from './news.js'
 import { faktaAset, laporanMaterial, RUTIN_RX } from './pembaruan.js'
 import { selidikBerita } from './selidikBerita.js'
@@ -88,7 +88,7 @@ export function analisaBerita(u, { items = [], pandangan = {}, updates = [], pen
       : harga > nw.atas ? `Harga ${rp(harga)} di atas rentang nilai wajar ${rp(nw.bawah)}–${rp(nw.atas)}.`
       : harga < nw.bawah ? `Harga ${rp(harga)} di bawah rentang nilai wajar ${rp(nw.bawah)}–${rp(nw.atas)}.`
       : `Harga ${rp(harga)} di dalam rentang nilai wajar ${rp(nw.bawah)}–${rp(nw.atas)}.`
-    tesis = { sikap: pa.sikap || '', ringkas: pa.ringkas || '', asOf: pa.asOf || '', hargaAcuan: pa.hargaAcuan ?? null, harga, posisi,
+    tesis = { sikap: pa.sikap || '', ringkas: pa.ringkas || '', asOf: pa.asOf || '', hargaAsOf: tglHargaAcuan(pa), hargaAcuan: pa.hargaAcuan ?? null, harga, posisi,
       baru: !!pa.asOf && day(u) > String(pa.asOf).slice(0, 10) }
   }
 
@@ -105,7 +105,7 @@ export function analisaBerita(u, { items = [], pandangan = {}, updates = [], pen
   const implikasi = []
   if (tesis?.hargaAcuan && harga != null) {
     const g = (harga / tesis.hargaAcuan - 1) * 100
-    implikasi.push(`Sejak analisa ${tesis.asOf} harga bergerak ${g > 0 ? '+' : ''}${g.toFixed(1).replace('.', ',')}% (${rp(tesis.hargaAcuan)} ke ${rp(harga)}).`)
+    implikasi.push(`Sejak harga acuan analisa ${tesis.hargaAsOf} harga bergerak ${g > 0 ? '+' : ''}${g.toFixed(1).replace('.', ',')}% (${rp(tesis.hargaAcuan)} ke ${rp(harga)}).`)
   }
   if (!rutin) {
     const np = sisi.positif.length, nn = sisi.negatif.length

@@ -57,6 +57,8 @@ export const MS_STAGE = [['bisnis', 'selesai'], ['inbreng', 'injeksi'], ['kjpp',
   ['to_selesai', 'tender'], ['to_umum', 'tender'], ['akuisisi', 'tender'], ['spa', 'spa']]
 export const stageFromMs = ms => (MS_STAGE.find(([m]) => (ms || {})[m]) || [])[1]
 export const stageOf = d => stageFromMs(d.ms) || d.stage || 'radar'
+// Tanggal harga acuan pandangan analis: hargaAsOf bila analisa diperbarui dari laporan baru tanpa menghitung ulang harga.
+export const tglHargaAcuan = pa => pa?.hargaAsOf || pa?.asOf || ''
 
 // Akuisisi strategis tanpa rencana injeksi (story terverifikasi: tanpa injectType, usaha "Tetap ...").
 const noInjectOf = v => !!v && !v.injectType && /^Tetap/i.test(v.baru || '')
