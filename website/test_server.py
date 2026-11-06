@@ -1044,15 +1044,18 @@ class PovAhTest(unittest.TestCase):
                                       ["ANDRY HAKIM", 1.05, "INDONESIA", "Individual"]], "jumlah": [["2026-10-31", 1811], ["2026-07-31", 1666]]},
                 "FLMC": {"pemegang": [["DELTA WIBAWA BERSAMA", 3.84, "INDONESIA", "Corporate"], ["ANDRY HAKIM", 1.13, "INDONESIA", "Individual"]]},
                 "TRUK": {"pemegang": [["HAKIMSON GROWTH CAPITAL", 5.01, "INDONESIA", "Corporate"]]},
-                "XXXX": {"pemegang": [["DELTA WIBAWA BERSAMA", 2.0, "INDONESIA", "Corporate"]], "jumlah": [["2026-10-31", 800], ["2026-09-30", 900],
+                "ZZZZ": {"pemegang": [["DELTA WIBAWA BERSAMA", 2.0, "INDONESIA", "Corporate"]], "jumlah": [["2026-10-31", 800], ["2026-09-30", 900],
                                                                                                   ["2026-08-31", 950], ["2026-07-31", 1000]]},
                 "BESR": {"pemegang": []}}
         ks = {"AIMS": {"saham": 220e6, "freeFloat": 22.07, "hargaKira": 940, "kuartal": {"Net Income": {"Q126": -375e6, "Q226": -90e6}}},
               "FLMC": {"saham": 781.25e6, "freeFloat": 49.64, "hargaKira": 160}, "TRUK": {"saham": 435e6, "freeFloat": 29.82, "hargaKira": 6025},
               "SOTS": {"saham": 1e9, "freeFloat": 20.18, "hargaKira": 530},
-              "XXXX": {"saham": 300e6, "freeFloat": 10.0, "hargaKira": 100}, "RMKO": {"saham": 300e6, "freeFloat": 10.0, "hargaKira": 100},
+              "ZZZZ": {"saham": 300e6, "freeFloat": 10.0, "hargaKira": 100}, "RMKO": {"saham": 300e6, "freeFloat": 10.0, "hargaKira": 100},
+              "ASBI": {"saham": None, "freeFloat": 14.73, "mcap": 137e9},           # jumlah saham kosong: diturunkan dari mcap / harga
+              "PLAS": {"saham": 1.18e9, "freeFloat": None, "hargaKira": 50},          # free float kosong -> tanpaFF (Key Stats)
+              "XCLQ": {"saham": 106e6, "freeFloat": 10.0, "hargaKira": 100},          # ETF: diabaikan
               "BESR": {"saham": 9e9, "freeFloat": 10.0, "hargaKira": 100}}
-        r = povah.analisa(cfg, pidx, ks, {"AIMS": {"h": 1175}}, {}, {"XXXX"})
+        r = povah.analisa(cfg, pidx, ks, {"AIMS": {"h": 1175}, "ASBI": {"h": 394}}, {}, {"ZZZZ"})
         porto = {x["t"]: x for x in r["portofolio"]}
         self.assertEqual(set(porto), {"AIMS", "FLMC", "TRUK", "SOTS"})
         self.assertEqual(porto["TRUK"]["jalur"][0]["status"], "indikasi")
@@ -1060,13 +1063,18 @@ class PovAhTest(unittest.TestCase):
         self.assertEqual(porto["AIMS"]["harga"], 1175)                      # harga terbaru menang atas perkiraan Key Stats
         self.assertEqual(porto["AIMS"]["laba"], [["Q126", -375e6], ["Q226", -90e6]])
         self.assertEqual(r["rekan"], [{"nama": "DELTA WIBAWA BERSAMA", "di": ["AIMS", "FLMC"]}])
-        self.assertEqual([x["t"] for x in r["rows"]], ["XXXX"])              # BESR: saham beredar terlalu banyak
+        self.assertEqual([x["t"] for x in r["rows"]], ["ZZZZ", "ASBI"])      # BESR: saham beredar terlalu banyak; XCLQ: ETF
+        a = r["rows"][1]
+        self.assertTrue(a["sahamKira"])
+        self.assertEqual(a["saham"], round(137e9 / 394))
+        self.assertIn("perkiraan", a["ringkas"][0])
         x = r["rows"][0]
         self.assertEqual(x["skor"], 100)                                     # 30 + 25 + 20 + 10 (pemegang -20%) + 15 (rekan)
         self.assertTrue(x["radar"])
         self.assertEqual(x["tren"]["ubah"], -20.0)
         self.assertIn("akumulasi", x["ringkas"][1])
-        self.assertEqual([y["t"] for y in r["tanpaFF"]], ["UNIT"])
+        self.assertEqual([(y["t"], y["asal"]) for y in r["tanpaFF"]], [("UNIT", "s"), ("PLAS", "Key Stats Stockbit")])
+        self.assertEqual(r["kurangData"], ["PLAS"])
         # Riwayat: yang tidak di portofolio kini tampil di "pernah" (bukan screening); yang masih dipegang menempel di portofolio.
         self.assertEqual([(y["t"], y["status"]) for y in r["pernah"]], [("RMKO", "keluar dari ≥1%")])
         self.assertEqual(r["pernah"][0]["saham"], 300e6)

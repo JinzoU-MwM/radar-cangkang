@@ -149,7 +149,7 @@ function lihat(t) {
       </template>
 
       <h3 class="j">Screening: saham berpotensi dengan ciri pilihan AH</h3>
-      <p class="small muted">{{ d.dinilai }} emiten dinilai · {{ d.rows.length }} lolos (skor ≥ 50, saham beredar ≤ 2 miliar, publik ≤ 40%) · saham yang disuspensi tidak ditampilkan · diperbarui {{ d.updated }}.
+      <p class="small muted">{{ d.dinilai }} emiten dinilai (Key Stats Stockbit seluruh kode BEI; ETF/reksa dana tidak ikut) · {{ d.rows.length }} lolos (skor ≥ 50, saham beredar ≤ 2 miliar, publik ≤ 40%) · saham yang disuspensi tidak ditampilkan · diperbarui {{ d.updated }}.
         Skor: saham beredar sedikit (30), porsi publik kecil (25), nilai float tipis (20), jumlah pemegang menyusut (10), ada pemegang yang juga muncul di saham AH (15).</p>
       <p v-if="d.belumDicek" class="small c-strong">Status suspensi {{ d.belumDicek }} saham belum dicek; server sedang melengkapinya, muat ulang beberapa menit lagi.</p>
       <div class="fl small">
@@ -170,7 +170,7 @@ function lihat(t) {
                   <span v-for="n in r.notasi || []" :key="n.k" class="tag t-calm" :title="n.ket">{{ n.k }}</span>
                   <div class="muted">{{ r.nama }}</div></td>
                 <td class="num"><span class="tag" :class="nadaSkor(r.skor)">{{ r.skor }}</span></td>
-                <td class="num">{{ lembar(r.saham) }}</td>
+                <td class="num" :title="r.sahamKira ? 'Perkiraan: kapitalisasi dibagi harga' : null">{{ r.sahamKira ? '±' : '' }}{{ lembar(r.saham) }}</td>
                 <td class="num">{{ pctId(r.ff) }}</td>
                 <td class="num">{{ big(r.nilaiFloat) }}</td>
                 <td class="num">{{ r.harga ? fmt(r.harga, 0) : '–' }}</td>
@@ -196,8 +196,9 @@ function lihat(t) {
 
       <template v-if="d.tanpaFF?.length">
         <h4>Saham beredar sedikit tanpa data free float</h4>
-        <p class="small muted">{{ d.tanpaFFSumber }}. Belum ada Key Stats di server, jadi belum diberi skor penuh.</p>
+        <p class="small muted">Free float belum ada, jadi belum diberi skor penuh. Yang sedang disuspensi tidak dimasukkan.</p>
         <ul class="small"><li v-for="r in d.tanpaFF" :key="r.t"><b>{{ r.t }}</b> {{ lembar(r.saham) }}<template v-if="r.harga"> · harga {{ fmt(r.harga, 0) }}</template>
+          <span class="muted"> · sumber: {{ r.asal }}</span>
           <template v-if="r.dicek === false"> · status perdagangan belum dicek</template>
           <button type="button" class="btn kecil" @click="emit('analisa', r.t)">Analisa mendalam</button></li></ul>
       </template>

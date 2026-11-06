@@ -3266,6 +3266,14 @@ def ah_status(t: str) -> dict:
             "uma": bool(d.get("uma"))}
 
 
+def ah_harga_info(t: str) -> float | None:
+    """Harga terakhir dari cache info emiten Stockbit (tanpa memanggil Stockbit)."""
+    try:
+        return float((json.loads(cache_read(SB + f"/emitten/{t}/info", 0) or "{}").get("data") or {}).get("price") or 0) or None
+    except (ValueError, TypeError):
+        return None
+
+
 def ah_isi_status(kode: list[str]) -> None:
     """Latar: ambil info emiten yang statusnya belum ada di cache (maks. 120), lalu hitung ulang analisa AH."""
     global _ah_memo
@@ -3291,19 +3299,28 @@ def ah_screen() -> dict:
     if _ah_memo[1] and time.time() - _ah_memo[0] < 3600:
         return _ah_memo[1]
     try:
-        harga = harga_semua()
+        harga = dict(harga_semua())
     except Exception:
         harga = {}
-    hasil = AH.analisa(_json_berkas("pov-ah.json"), profil_indeks(), lks_load(), harga, nama_semua(), radar_tickers(), batas=200)
+    ks = lks_load()
+    for t, k in ks.items():  # Key Stats tanpa jumlah saham: harga dari cache info emiten supaya saham beredar bisa diturunkan
+        if not k.get("saham") and k.get("mcap") and t not in harga:
+            h = ah_harga_info(t)
+            if h:
+                harga[t] = {"h": h}
+    hasil = AH.analisa(_json_berkas("pov-ah.json"), profil_indeks(), ks, harga, nama_semua(), radar_tickers(), batas=200)
     for r in hasil["portofolio"] + hasil["pernah"] + hasil["rows"] + hasil["tanpaFF"]:
         r["backdoor"] = (((pd_baca(r["t"]) or {}).get("hasil") or {}).get("backdoor") or {}).get("skor")
         r.update(ah_status(r["t"]))
     belum = [r["t"] for r in hasil["portofolio"] + hasil["pernah"] + hasil["rows"] + hasil["tanpaFF"] if not r["dicek"]]
-    hasil["suspen"] = [{"t": r["t"], "nama": r["nama"], "skor": r["skor"]} for r in hasil["rows"] + hasil["tanpaFF"] if r.get("suspen")]
+    hasil["suspen"] = [{"t": r["t"], "nama": r["nama"], "skor": r["skor"]} for r in hasil["rows"] if r.get("suspen")]
     hasil["rows"] = [r for r in hasil["rows"] if not r.get("suspen")][:60]
     hasil["tanpaFF"] = [r for r in hasil["tanpaFF"] if not r.get("suspen")]
     hasil["belumDicek"] = len(belum)
     hasil["updated"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+    # Emiten yang saham beredar/free float-nya kosong: status dan harga dari info emiten (Key Stats sendiri diperbarui
+    # mingguan lewat s50_kandidat_universe).
+    belum += [t for t in hasil["kurangData"] if not ah_status(t).get("dicek")]
     if belum and not is_public_request() and get_token() and not token_expired():
         threading.Thread(target=ah_isi_status, args=(belum,), daemon=True).start()
     _ah_memo = (time.time(), hasil)
