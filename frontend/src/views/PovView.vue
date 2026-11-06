@@ -7,6 +7,7 @@ import { fmt, fmtDate } from '../lib/domain.js'
 import PovDetail from '../components/PovDetail.vue'
 import PovDalam from '../components/PovDalam.vue'
 import PovHarmonik from '../components/PovHarmonik.vue'
+import PovAh from '../components/PovAh.vue'
 
 const data = ref(null), err = ref(''), kd = ref(null)
 // Analisa KakdrWay disembunyikan sampai tombolnya diklik.
@@ -18,6 +19,8 @@ watch(kdOpen, v => { if (v && !kdScr.value) api.get('/api/kakdr-screen').then(r 
 const polaOpen = ref(false)
 // Harmonic Pattern (materi + screening) juga disembunyikan sampai diklik; data dimuat saat dibuka.
 const hmOpen = ref(false)
+// POV AH (portofolio Andry Hakim + screening saham beredar sedikit) juga dimuat saat dibuka.
+const ahOpen = ref(false)
 // POV dan KakdrWay dimuat paralel: tombol KakdrWay tidak menunggu data POV.
 onMounted(() => {
   api.get('/api/pov').then(v => { data.value = v }, e => { err.value = e.message })
@@ -132,6 +135,14 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
       </button>
       <p class="small ket">Belajar pola XABCD dan rasio Fibonacci, lalu lihat saham BEI yang sedang membentuk pola harmonik.</p>
       <PovHarmonik v-if="hmOpen" id="hm-isi" />
+    </section>
+
+    <section class="rule-top">
+      <button type="button" class="btn kdbtn" :aria-expanded="String(ahOpen)" aria-controls="ah-isi" @click="ahOpen = !ahOpen">
+        POV AH <span class="muted">(portofolio Andry Hakim, screening saham beredar sedikit)</span> <span aria-hidden="true">{{ ahOpen ? '▴' : '▾' }}</span>
+      </button>
+      <p class="small ket">Saham yang dipegang AH dan saham BEI lain dengan ciri serupa: saham beredar sedikit, porsi publik kecil, tidak sedang disuspensi.</p>
+      <PovAh v-if="ahOpen" id="ah-isi" @analisa="analisa" />
     </section>
 
     <PovDetail v-if="buka" :u="buka" @close="buka = null" />

@@ -1031,6 +1031,42 @@ class KakdrScreenTest(unittest.TestCase):
         self.assertTrue(all(r["rows"][0]["lolos"].values()))
 
 
+class PovAhTest(unittest.TestCase):
+    """povah.analisa: portofolio AH (pribadi, lewat PT indikasi, kurasi), rekan pemegang, dan screening saham beredar sedikit."""
+
+    def test_analisa(self):
+        import povah
+        cfg = {"polaNama": ["ANDRY HAKIM"], "entitas": [{"nama": "HAKIMSON GROWTH CAPITAL", "status": "indikasi", "ket": "x"}],
+               "tambahan": [{"t": "SOTS", "status": "indikasi", "ket": "kurasi"}],
+               "sahamSedikit": {"sumber": "s", "data": {"UNIT": [75420000, 316]}}}
+        pidx = {"AIMS": {"pemegang": [["AIMS INDO INVESTAMA", 35.75, "INDONESIA", "Corporate"], ["DELTA WIBAWA BERSAMA", 31.13, "INDONESIA", "Corporate"],
+                                      ["ANDRY HAKIM", 1.05, "INDONESIA", "Individual"]], "jumlah": [["2026-10-31", 1811], ["2026-07-31", 1666]]},
+                "FLMC": {"pemegang": [["DELTA WIBAWA BERSAMA", 3.84, "INDONESIA", "Corporate"], ["ANDRY HAKIM", 1.13, "INDONESIA", "Individual"]]},
+                "TRUK": {"pemegang": [["HAKIMSON GROWTH CAPITAL", 5.01, "INDONESIA", "Corporate"]]},
+                "XXXX": {"pemegang": [["DELTA WIBAWA BERSAMA", 2.0, "INDONESIA", "Corporate"]], "jumlah": [["2026-10-31", 800], ["2026-09-30", 900],
+                                                                                                  ["2026-08-31", 950], ["2026-07-31", 1000]]},
+                "BESR": {"pemegang": []}}
+        ks = {"AIMS": {"saham": 220e6, "freeFloat": 22.07, "hargaKira": 940, "kuartal": {"Net Income": {"Q126": -375e6, "Q226": -90e6}}},
+              "FLMC": {"saham": 781.25e6, "freeFloat": 49.64, "hargaKira": 160}, "TRUK": {"saham": 435e6, "freeFloat": 29.82, "hargaKira": 6025},
+              "SOTS": {"saham": 1e9, "freeFloat": 20.18, "hargaKira": 530},
+              "XXXX": {"saham": 300e6, "freeFloat": 10.0, "hargaKira": 100}, "BESR": {"saham": 9e9, "freeFloat": 10.0, "hargaKira": 100}}
+        r = povah.analisa(cfg, pidx, ks, {"AIMS": {"h": 1175}}, {}, {"XXXX"})
+        porto = {x["t"]: x for x in r["portofolio"]}
+        self.assertEqual(set(porto), {"AIMS", "FLMC", "TRUK", "SOTS"})
+        self.assertEqual(porto["TRUK"]["jalur"][0]["status"], "indikasi")
+        self.assertEqual(porto["SOTS"]["jalur"][0]["jenis"], "kurasi")
+        self.assertEqual(porto["AIMS"]["harga"], 1175)                      # harga terbaru menang atas perkiraan Key Stats
+        self.assertEqual(porto["AIMS"]["laba"], [["Q126", -375e6], ["Q226", -90e6]])
+        self.assertEqual(r["rekan"], [{"nama": "DELTA WIBAWA BERSAMA", "di": ["AIMS", "FLMC"]}])
+        self.assertEqual([x["t"] for x in r["rows"]], ["XXXX"])              # BESR: saham beredar terlalu banyak
+        x = r["rows"][0]
+        self.assertEqual(x["skor"], 100)                                     # 30 + 25 + 20 + 10 (pemegang -20%) + 15 (rekan)
+        self.assertTrue(x["radar"])
+        self.assertEqual(x["tren"]["ubah"], -20.0)
+        self.assertIn("akumulasi", x["ringkas"][1])
+        self.assertEqual([y["t"] for y in r["tanpaFF"]], ["UNIT"])
+
+
 class PovDalamTest(unittest.TestCase):
     """povdalam.analyze: contoh AKPI (pendiri 95,72%, jaringan Risjad/Henry Pribadi, posting komunitas)."""
 
