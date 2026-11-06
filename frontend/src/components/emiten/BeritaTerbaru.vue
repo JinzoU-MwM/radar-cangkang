@@ -7,9 +7,11 @@ import { fmtDate } from '../../lib/domain.js'
 import { beritaTerakhir, analisaBerita } from '../../lib/beritaTerbaru.js'
 
 // daftar: berita saham di luar radar (diambil saat dicari); bila kosong memakai feed radar (store.updates).
-const props = defineProps({ ticker: { type: String, required: true }, daftar: { type: Array, default: null } })
+// u: laporan tertentu yang dianalisa (daftar Stockbit Reports); tanpa u = dokumen terbaru. judul: label bagian.
+const props = defineProps({ ticker: { type: String, required: true }, daftar: { type: Array, default: null },
+  u: { type: Object, default: null }, judul: { type: String, default: 'Analisa berita terbaru' } })
 const sumber = computed(() => props.daftar || store.updates)
-const a = computed(() => analisaBerita(beritaTerakhir(sumber.value, props.ticker), {
+const a = computed(() => analisaBerita(props.u || beritaTerakhir(sumber.value, props.ticker), {
   items: store.items, pandangan: store.pandangan, updates: sumber.value, pengendali: store.pengendali, relasi: store.relasi, verified: store.verified,
 }))
 const busy = ref(false), err = ref('')
@@ -33,7 +35,7 @@ const NILAI = { Didukung: 't-good', 'Sebagian didukung': 't-warn', 'Belum diduku
 <template>
   <section v-if="a" class="bt rule-top">
     <div class="hd">
-      <h2 class="lbl">Analisa berita terbaru</h2>
+      <h2 class="lbl">{{ judul }}</h2>
       <span class="small muted">{{ a.laporan ? 'Keterbukaan resmi' : 'Berita media' }} · {{ fmtDate(a.tanggal) }} · {{ a.jenis }}</span>
       <button type="button" class="btn" :disabled="busy" @click="unduh">{{ busy ? 'Menyiapkan PDF…' : '⬇ Unduh analisa (PDF)' }}</button>
     </div>
