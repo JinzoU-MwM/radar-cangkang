@@ -502,8 +502,11 @@ class AutoMonitorTest(unittest.TestCase):
             self.kd("BUMI", "BUMI Akuisisi Tambang Emas di Australia"),                        # BUMI pembeli, bukan target
             self.kd("LAMA", "Penawaran Tender Wajib atas Saham PT Lama Tbk", d="2026-10-01"),  # lebih dari 14 hari
             self.kd("TRSY", "Keterbukaan Informasi Pengalihan Saham Hasil Pembelian Kembali Saham"),
+            self.kd("BUMX", "Pengambilalihan Mount Margaret"),                                 # BUMI mengambil alih pihak lain
+            self.kd("CSIS", "Investor Hong Kong Batal Akuisisi 86 Persen Saham Puri Sentul (KDTN)"),  # batal & emiten lain
+            self.kd("IPAC", "Penyampaian Salinan Pernyataan Penawaran Tender Sukarela atas Saham-Saham PT Era Graharealty Tbk (IPAC)"),
         ])
-        self.assertEqual(hasil, ["DGIK"])
+        self.assertEqual(hasil, ["DGIK", "IPAC"])
         self.assertEqual((simpan[0]["stage"], simpan[0]["auto"], simpan[0]["autoJenis"]), ("radar", True, "rencana"))
         self.assertIn("belum terkonfirmasi di KSEI", simpan[0]["notes"])
 
