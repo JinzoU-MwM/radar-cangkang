@@ -4,7 +4,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../api.js'
 import { big, fmt, fmtDate } from '../lib/domain.js'
-import { jalurTeks, lembar, saringAh, trenTeks } from '../lib/povAh.js'
+import { jalurTeks, lembar, pilihRekomendasi, saringAh, trenTeks } from '../lib/povAh.js'
 
 const emit = defineEmits(['analisa'])
 const d = ref(null), err = ref('')
@@ -21,6 +21,13 @@ const pctId = v => v == null ? '–' : fmt(v, 2) + '%'
 // Laba negatif: tanda minus di depan Rp.
 const labaTxt = v => v < 0 ? '−' + big(-v) : big(v)
 const nadaSkor = s => s >= 75 ? 't-strong' : s >= 60 ? 't-warn' : 't-calm'
+const reko = computed(() => pilihRekomendasi(d.value?.rows, 5))
+// Buka analisa baris di tabel screening; kosongkan saringan supaya barisnya pasti tampil.
+function lihat(t) {
+  cari.value = ''; maksSaham.value = Infinity; maksFF.value = Infinity; rekan.value = false
+  buka.value = t
+  setTimeout(() => document.getElementById('ah-' + t)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0)
+}
 </script>
 
 <template>
@@ -87,6 +94,27 @@ const nadaSkor = s => s >= 75 ? 't-strong' : s >= 60 ? 't-warn' : 't-calm'
         </div>
       </div>
 
+      <template v-if="reko.length">
+        <h3 class="j">Rekomendasi 5 saham</h3>
+        <p class="small muted">Dipilih otomatis dari screening di bawah: skor tertinggi yang jumlah pemegangnya menyusut ≥5% dalam ±3 bulan
+          (tanda pengumpulan), status perdagangan sudah dicek, tanpa suspensi, notasi khusus, atau UMA.</p>
+        <div class="reko">
+          <div v-for="(r, i) in reko" :key="r.t" class="kartu">
+            <div class="kp"><span class="no">{{ i + 1 }}</span> <b>{{ r.t }}</b>
+              <span class="tag" :class="nadaSkor(r.skor)">skor {{ r.skor }}</span>
+              <span v-if="r.radar" class="tag t-warn">radar</span><span v-if="r.jejak.length" class="tag t-now">rekan AH</span></div>
+            <div class="muted small">{{ r.nama }}</div>
+            <div class="small">{{ lembar(r.saham) }} · publik {{ pctId(r.ff) }} · float {{ big(r.nilaiFloat) }}</div>
+            <div class="small">Pemegang ±3 bln <span :class="trenTeks(r.tren).nada">{{ trenTeks(r.tren).teks }}</span>
+              <template v-if="r.harga"> · harga {{ fmt(r.harga, 0) }}</template></div>
+            <div v-if="r.laba.length" class="small muted">Laba {{ r.laba.length }} kuartal: {{ r.laba.filter(l => l[1] < 0).length ? r.laba.filter(l => l[1] < 0).length + ' rugi' : 'semua positif' }}</div>
+            <div class="kb"><button type="button" class="btn kecil0" @click="lihat(r.t)">Analisa</button>
+              <button type="button" class="btn kecil0" @click="emit('analisa', r.t)">Analisa mendalam</button></div>
+          </div>
+        </div>
+        <p class="small muted">Ciri serupa belum berarti AH akan masuk. Bukan rekomendasi beli/jual.</p>
+      </template>
+
       <h3 class="j">Screening: saham berpotensi dengan ciri pilihan AH</h3>
       <p class="small muted">{{ d.dinilai }} emiten dinilai · {{ d.rows.length }} lolos (skor ≥ 50, saham beredar ≤ 2 miliar, publik ≤ 40%) · saham yang disuspensi tidak ditampilkan · diperbarui {{ d.updated }}.
         Skor: saham beredar sedikit (30), porsi publik kecil (25), nilai float tipis (20), jumlah pemegang menyusut (10), ada pemegang yang juga muncul di saham AH (15).</p>
@@ -103,7 +131,7 @@ const nadaSkor = s => s >= 75 ? 't-strong' : s >= 60 ? 't-warn' : 't-calm'
             <th class="num">Harga</th><th class="num">Pemegang ±3 bln</th><th></th></tr></thead>
           <tbody>
             <template v-for="r in rows" :key="r.t">
-              <tr>
+              <tr :id="'ah-' + r.t">
                 <td><b>{{ r.t }}</b> <span v-if="r.radar" class="tag t-warn">radar</span><span v-if="r.jejak.length" class="tag t-now" :title="r.jejak.map(j => j.nama).join(', ')">rekan AH</span>
                   <span v-if="r.backdoor != null" class="tag" :class="r.backdoor >= 40 ? 't-warn' : 't-calm'" title="Skor potensi backdoor dari analisa mendalam terakhir">backdoor {{ r.backdoor }}</span>
                   <span v-for="n in r.notasi || []" :key="n.k" class="tag t-calm" :title="n.ket">{{ n.k }}</span>
@@ -164,4 +192,10 @@ h4{margin:6px 0 2px;font-size:12px;text-transform:uppercase;letter-spacing:.04em
 .fl input[type=search],.fl select{padding:5px 8px;border:1px solid var(--rule);border-radius:6px;background:var(--sheet);color:inherit;font:inherit}
 .kecil{padding:1px 8px;margin-left:6px}
 .c-strong{color:var(--strong)}.c-good{color:var(--good)}
+.reko{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.kartu{border:1px solid var(--rule);border-radius:8px;padding:8px 10px;background:var(--sheet);display:flex;flex-direction:column;gap:3px}
+.kp{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.no{color:var(--ink-2);font-size:12px}
+.kb{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+.kecil0{padding:1px 8px}
 </style>
