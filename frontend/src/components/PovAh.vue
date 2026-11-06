@@ -61,6 +61,8 @@ function lihat(t) {
               <tr v-if="buka === r.t" class="dalam"><td colspan="9">
                 <ul class="jl"><li v-for="j in r.jalur" :key="'k' + j.nama + j.jenis"><b>{{ jalurTeks(j) }}</b>: {{ j.ket }}
                   <template v-for="s in j.sumber || []" :key="s.url"> · <a :href="s.url" target="_blank" rel="noopener">{{ s.judul }}</a> ({{ fmtDate(s.tanggal) }})</template></li></ul>
+                <p v-if="r.riwayat"><b>Riwayat:</b> {{ r.riwayat.ket }}
+                  <template v-for="s in r.riwayat.sumber || []" :key="s.url"> · <a :href="s.url" target="_blank" rel="noopener">{{ s.judul }}</a> ({{ fmtDate(s.tanggal) }})</template></p>
                 <ul><li v-for="x in r.ringkas" :key="x">{{ x }}</li></ul>
                 <div v-if="r.notasi?.length" class="tk"><span v-for="n in r.notasi" :key="n.k" class="tag t-warn" :title="n.ket">notasi {{ n.k }}: {{ n.ket }}</span></div>
                 <p v-if="r.pemegang.length" class="muted">Pemegang ≥1%: <span v-for="(p, i) in r.pemegang" :key="p.nama"><b v-if="rekanSet.has(p.nama.toUpperCase())">{{ p.nama }}</b><template v-else>{{ p.nama }}</template> {{ fmt(p.pct, 2) }}%<template v-if="i < r.pemegang.length - 1">, </template></span></p>
@@ -71,6 +73,42 @@ function lihat(t) {
           </tbody>
         </table>
       </div>
+
+      <template v-if="d.pernah?.length">
+        <h3 class="j">Pernah atau masih dipegang di luar data ≥1% terkini</h3>
+        <p class="small muted">Dari berita dan pengakuan AH. Status: keluar dari ≥1% (namanya hilang dari daftar KSEI, porsi di bawah 1% tidak
+          diungkap), pengakuan AH (bukan data KSEI), disebut media (belum terverifikasi data kepemilikan).</p>
+        <div class="scroll">
+          <table class="ledger small">
+            <thead><tr><th>Saham</th><th>Status</th><th class="num">Saham beredar</th><th class="num">Publik</th><th class="num">Nilai float</th>
+              <th class="num">Harga</th><th class="num">Pemegang ±3 bln</th><th class="num">Skor ciri</th><th></th></tr></thead>
+            <tbody>
+              <template v-for="r in d.pernah" :key="r.t">
+                <tr>
+                  <td><b>{{ r.t }}</b> <span v-if="r.suspen" class="tag t-strong">suspensi</span><span v-if="r.radar" class="tag t-warn">radar</span>
+                    <div class="muted">{{ r.nama }}</div></td>
+                  <td><span class="tag" :class="r.status === 'pengakuan AH' ? 't-now' : 't-calm'">{{ r.status }}</span></td>
+                  <td class="num">{{ lembar(r.saham) }}</td>
+                  <td class="num">{{ pctId(r.ff) }}</td>
+                  <td class="num">{{ big(r.nilaiFloat) }}</td>
+                  <td class="num">{{ r.harga ? fmt(r.harga, 0) : '–' }}</td>
+                  <td class="num" :class="trenTeks(r.tren).nada">{{ trenTeks(r.tren).teks }}</td>
+                  <td class="num"><span class="tag" :class="nadaSkor(r.skor)">{{ r.skor }}</span></td>
+                  <td><button type="button" class="btn" :aria-expanded="String(buka === 'p' + r.t)" @click="togel('p' + r.t)">{{ buka === 'p' + r.t ? 'Tutup' : 'Detail' }}</button></td>
+                </tr>
+                <tr v-if="buka === 'p' + r.t" class="dalam"><td colspan="9">
+                  <p>{{ r.ket }}<template v-for="s in r.sumber" :key="s.url"> · <a :href="s.url" target="_blank" rel="noopener">{{ s.judul }}</a> ({{ fmtDate(s.tanggal) }})</template></p>
+                  <ul><li v-for="x in r.ringkas" :key="x">{{ x }}</li></ul>
+                  <div v-if="r.notasi?.length" class="tk"><span v-for="n in r.notasi" :key="n.k" class="tag t-warn">notasi {{ n.k }}: {{ n.ket }}</span></div>
+                  <p v-if="r.pemegang.length" class="muted">Pemegang ≥1%: {{ r.pemegang.map(p => `${p.nama} ${fmt(p.pct, 2)}%`).join(', ') }}</p>
+                  <p v-if="r.laba.length" class="muted">Laba bersih: <span v-for="(l, i) in r.laba" :key="l[0]"><template v-if="i"> · </template>{{ l[0] }} <span :class="l[1] < 0 ? 'c-strong' : 'c-good'">{{ labaTxt(l[1]) }}</span></span></p>
+                  <button type="button" class="btn" @click="emit('analisa', r.t)">Analisa mendalam {{ r.t }}</button>
+                </td></tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </template>
 
       <div class="dua">
         <div>
@@ -86,11 +124,6 @@ function lihat(t) {
           <ul v-if="d.rekan.length" class="small"><li v-for="x in d.rekan" :key="x.nama"><b>{{ x.nama }}</b> di {{ x.di.join(', ') }}</li></ul>
           <p v-else class="small muted">Belum ada.</p>
           <p class="small muted">Muncul bersama di daftar pemegang ≥1%, bukan bukti afiliasi.</p>
-        </div>
-        <div v-if="d.profil.riwayat?.length">
-          <h4>Riwayat</h4>
-          <ul class="small"><li v-for="x in d.profil.riwayat" :key="x.t"><b>{{ x.t }}</b>: {{ x.ket }}
-            <template v-for="s in x.sumber" :key="s.url"> <a :href="s.url" target="_blank" rel="noopener">sumber</a> ({{ fmtDate(s.tanggal) }})</template></li></ul>
         </div>
       </div>
 

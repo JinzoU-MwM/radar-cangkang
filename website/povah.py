@@ -128,9 +128,10 @@ def ringkasan(st: dict, tren: dict | None, lb: list) -> list[str]:
     out = []
     if st.get("saham") and st.get("publik") is not None:
         nilai = f" senilai ±Rp{_id(st['nilaiFloat'] / 1e9, 1)} M" if st.get("nilaiFloat") else ""
+        tipis = (" Barang beredar yang tipis membuat harga mudah digerakkan oleh sedikit modal, naik maupun turun."
+                 if st["saham"] <= 2e9 else "")
         out.append(f"Saham beredar {_id(st['saham'] / 1e6)} juta lembar; porsi publik {_id(st['ff'], 1)}% atau "
-                   f"±{_id(st['publik'] / 1e6, 1)} juta lembar{nilai}. Barang beredar yang tipis membuat harga mudah "
-                   "digerakkan oleh sedikit modal, naik maupun turun.")
+                   f"±{_id(st['publik'] / 1e6, 1)} juta lembar{nilai}.{tipis}")
     if tren:
         arah = "turun" if tren["ubah"] < 0 else "naik"
         baca = ("biasanya dibaca sebagai saham terkumpul ke lebih sedikit tangan (akumulasi)" if tren["ubah"] <= -5 else
@@ -165,8 +166,20 @@ def analisa(cfg: dict, pidx: dict, ks: dict, harga: dict, nama: dict, radar: set
                 "pemegang": [{"nama": nm, "pct": pct, "jenis": jn} for nm, pct, _, jn in (v.get("pemegang") or [])[:10]],
                 "ringkas": ringkasan(st, tr, lb), "radar": t in radar}
 
+    riwayat = {x["t"]: x for x in cfg.get("riwayat") or []}
     for r in porto:
         r.update(baris(r["t"]))
+        if r["t"] in riwayat:
+            r["riwayat"] = riwayat[r["t"]]
+    # Saham yang pernah/masih dipegang di luar daftar >=1% terkini (kurasi berita): struktur kini + status + sumber.
+    pernah = []
+    for t, x in riwayat.items():
+        if t in milik:
+            continue
+        r = baris(t)
+        r.update(status=x.get("status", "disebut media"), ket=x.get("ket", ""), sumber=x.get("sumber") or [])
+        pernah.append(r)
+    milik |= set(riwayat)
     # Ciri saham pilihan AH (median portofolio).
     ciri = {}
     for f in ("saham", "ff", "nilaiFloat", "mcap"):
@@ -196,6 +209,6 @@ def analisa(cfg: dict, pidx: dict, ks: dict, harga: dict, nama: dict, radar: set
         lain.append(r)
     rows.sort(key=lambda r: (-r["skor"], r["nilaiFloat"] or 9e18))
     return {"profil": {k: cfg.get(k) for k in ("nama", "julukan", "peran", "peranSumber", "entitas", "riwayat", "catatan", "asOf")},
-            "portofolio": porto, "ciri": ciri, "rekan": [{"nama": n, "di": d} for n, d in rk.items()],
+            "portofolio": porto, "pernah": pernah, "ciri": ciri, "rekan": [{"nama": n, "di": d} for n, d in rk.items()],
             "dinilai": sum(1 for t in ks if (ks[t] or {}).get("saham")), "rows": rows[:batas],
             "tanpaFF": sorted(lain, key=lambda r: r["saham"]), "tanpaFFSumber": tamb.get("sumber", "")}
