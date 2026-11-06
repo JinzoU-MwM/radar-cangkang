@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { chText, meaningful } from '../../lib/diff.js'
 import { store, loadDiff, itemOf } from '../../store.js'
 import { tlEvents, fmtDate } from '../../lib/domain.js'
@@ -50,17 +50,27 @@ const ringkas = u => String(u.summary || '').replace(/\s*\(Ringkasan AI Stockbit
 
 const due = computed(() => store.items.flatMap(d => tlEvents(d).filter(e => e.date >= today && e.date <= day(14)).map(e => ({ ...e, t: d.ticker })))
   .sort((a, b) => a.date.localeCompare(b.date)))
+
+// Tiap panel bisa diciutkan lewat judulnya; pilihan disimpan di browser ini saja (bila penyimpanan tersedia).
+const KUNCI = 'monitor-agenda-ciut'
+const ciut = reactive((() => { try { return JSON.parse(localStorage.getItem(KUNCI) || '{}') } catch { return {} } })())
+function togel(k) {
+  ciut[k] = !ciut[k]
+  try { localStorage.setItem(KUNCI, JSON.stringify(ciut)) } catch { /* penyimpanan diblokir: pilihan berlaku sampai halaman dimuat ulang */ }
+}
 </script>
 
 <template>
   <div class="agenda">
     <section class="chg">
       <div class="hd">
-        <h2>Berubah</h2>
-        <div role="group" aria-label="Rentang perubahan" class="rng">
+        <h2><button type="button" class="tg" :aria-expanded="String(!ciut.berubah)" @click="togel('berubah')">
+          <span class="ar" aria-hidden="true">{{ ciut.berubah ? '▸' : '▾' }}</span>Berubah<span v-if="ciut.berubah" class="n">{{ changed.length }}</span></button></h2>
+        <div v-if="!ciut.berubah" role="group" aria-label="Rentang perubahan" class="rng">
           <button v-for="[d, l] in [[1, 'sejak kemarin'], [7, '7 hari']]" :key="d" type="button" class="pill sm" :aria-pressed="String(span === d)" @click="span = d">{{ l }}</button>
         </div>
       </div>
+      <template v-if="!ciut.berubah">
       <p v-if="diffErr" class="muted small">Perubahan belum bisa dimuat: {{ diffErr }}</p>
       <ol v-else-if="changed.length" class="cl">
         <li v-for="x in changed" :key="x.t">
@@ -69,9 +79,12 @@ const due = computed(() => store.items.flatMap(d => tlEvents(d).filter(e => e.da
         </li>
       </ol>
       <p v-else class="muted small">{{ diff ? (diff.base ? `Belum ada perubahan berarti sejak ${baseTxt}.` : 'Snapshot pertama baru diambil hari ini; perubahan tampil mulai besok.') : 'Memuat…' }}</p>
+      </template>
     </section>
     <section>
-      <h2>Masuk 3 hari</h2>
+      <h2><button type="button" class="tg" :aria-expanded="String(!ciut.masuk)" @click="togel('masuk')">
+        <span class="ar" aria-hidden="true">{{ ciut.masuk ? '▸' : '▾' }}</span>Masuk 3 hari<span v-if="ciut.masuk" class="n">{{ fresh.length }}</span></button></h2>
+      <template v-if="!ciut.masuk">
       <p v-if="note" class="note small">{{ note }}
         <button v-if="canMark" type="button" class="linkbtn small" @click="emit('seen')">Tandai sudah dilihat</button>
       </p>
@@ -83,9 +96,12 @@ const due = computed(() => store.items.flatMap(d => tlEvents(d).filter(e => e.da
         </li>
       </ol>
       <p v-else class="muted small">Belum ada keterbukaan baru tentang emiten backdoor dalam 3 hari terakhir.</p>
+      </template>
     </section>
     <section>
-      <h2>Jatuh tempo 14 hari</h2>
+      <h2><button type="button" class="tg" :aria-expanded="String(!ciut.tempo)" @click="togel('tempo')">
+        <span class="ar" aria-hidden="true">{{ ciut.tempo ? '▸' : '▾' }}</span>Jatuh tempo 14 hari<span v-if="ciut.tempo" class="n">{{ due.length }}</span></button></h2>
+      <template v-if="!ciut.tempo">
       <ol v-if="due.length">
         <li v-for="(e, i) in due" :key="i">
           <span class="d" :class="{ hot: e.date <= day(3) }">{{ fmtDate(e.date) }}</span>
@@ -94,9 +110,12 @@ const due = computed(() => store.items.flatMap(d => tlEvents(d).filter(e => e.da
         </li>
       </ol>
       <p v-else class="muted small">Tidak ada tanggal tender atau tahapan yang jatuh dalam 14 hari ke depan.</p>
+      </template>
     </section>
     <section class="upd">
-      <h2>Update terbaru</h2>
+      <h2><button type="button" class="tg" :aria-expanded="String(!ciut.update)" @click="togel('update')">
+        <span class="ar" aria-hidden="true">{{ ciut.update ? '▸' : '▾' }}</span>Update terbaru<span v-if="ciut.update" class="n">{{ terbaru.length }}</span></button></h2>
+      <template v-if="!ciut.update">
       <input v-model="q" type="search" class="field cari" placeholder="Cari kode/nama saham di Monitor…" aria-label="Cari update saham" list="kode-monitor" />
       <datalist id="kode-monitor"><option v-for="d in store.items" :key="d.ticker" :value="d.ticker">{{ d.name }}</option></datalist>
       <ol v-if="terbaru.length" class="ul">
@@ -111,6 +130,7 @@ const due = computed(() => store.items.flatMap(d => tlEvents(d).filter(e => e.da
         </li>
       </ol>
       <p v-else class="muted small">{{ q ? `Tidak ada update untuk "${q}" di saham Monitor.` : 'Belum ada update.' }}</p>
+      </template>
     </section>
   </div>
 </template>
@@ -130,6 +150,10 @@ const due = computed(() => store.items.flatMap(d => tlEvents(d).filter(e => e.da
 .rk{color:var(--ink-2);line-height:1.35}
 section{background:var(--sheet);border:1px solid var(--rule);border-top:2px solid var(--ink);padding:12px 14px;min-width:0}
 h2{font-size:16px;text-transform:uppercase;margin-bottom:6px}
+.tg{all:unset;cursor:pointer;display:inline-flex;align-items:baseline;gap:6px;font:inherit;text-transform:inherit;color:inherit}
+.tg:hover{color:var(--accent)}.tg:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ar{font-size:12px;color:var(--ink-2);width:12px}
+.n{font:600 12px var(--f-data);color:var(--ink-2);background:var(--rule-2);border-radius:9px;padding:1px 7px;text-transform:none}
 .note{margin:0 0 6px;color:var(--ink-2)}
 ol{list-style:none;margin:0;padding:0}
 li{display:grid;grid-template-columns:86px 56px 1fr;gap:8px;align-items:baseline;padding:5px 0;border-top:1px solid var(--rule-2)}
