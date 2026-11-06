@@ -505,8 +505,10 @@ class AutoMonitorTest(unittest.TestCase):
             self.kd("BUMX", "Pengambilalihan Mount Margaret"),                                 # BUMI mengambil alih pihak lain
             self.kd("CSIS", "Investor Hong Kong Batal Akuisisi 86 Persen Saham Puri Sentul (KDTN)"),  # batal & emiten lain
             self.kd("IPAC", "Penyampaian Salinan Pernyataan Penawaran Tender Sukarela atas Saham-Saham PT Era Graharealty Tbk (IPAC)"),
+            self.kd("SMBR", "Semen Baturaja (SMBR) Caplok Anak Usaha, Begini Alasannya"),     # SMBR pembeli
+            self.kd("BYAN", "Usai Dicaplok Haji Isam, Bayan (BYAN) Rombak Direksi-Komisaris"),  # pasif: BYAN target
         ])
-        self.assertEqual(hasil, ["DGIK", "IPAC"])
+        self.assertEqual(hasil, ["DGIK", "IPAC", "BYAN"])
         self.assertEqual((simpan[0]["stage"], simpan[0]["auto"], simpan[0]["autoJenis"]), ("radar", True, "rencana"))
         self.assertIn("belum terkonfirmasi di KSEI", simpan[0]["notes"])
 
