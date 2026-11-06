@@ -409,6 +409,96 @@ class HargaRadarTest(unittest.TestCase):
         self.assertIn("updatedAt", disimpan[0])
 
 
+class SinkronTest(unittest.TestCase):
+    """Sinkron dua arah antarserver (sinkron.py + endpoint /api/sinkron/*)."""
+
+    def test_berkas_dan_rencana(self):
+        import sinkron
+        self.assertTrue(sinkron.berkas_sah(".harmonik.json"))
+        self.assertTrue(sinkron.berkas_sah(".pov-dalam/INDS.json"))
+        for buruk in (".stockbit-token", ".sinkron-kunci", "../x.json", ".pov-dalam/../a.json", ".radar.sqlite", ".cache.sqlite", "server.py"):
+            self.assertFalse(sinkron.berkas_sah(buruk), buruk)
+        lokal = {".harmonik.json": [100, 1], ".pov.json": [500, 1], ".pov-dalam/AAAA.json": [300, 1]}
+        remote = {".harmonik.json": [200, 1], ".pov.json": [501, 1], ".pov-dalam/BBBB.json": [50, 1], ".stockbit-token": [999, 1]}
+        self.assertEqual(sinkron.rencana(lokal, remote), ([".harmonik.json", ".pov-dalam/BBBB.json"], [".pov-dalam/AAAA.json"]))
+
+    def test_gabung_data_tim(self):
+        import sinkron
+        it = lambda t, catatan, at=1: {"ticker": t, "data": {"ticker": t, "notes": catatan}, "updated_at": at}
+        lokal = {"items": [it("AAAA", "lama"), it("BBBB", "harga otomatis", 900), it("CCCC", "sini"), it("DDDD", "akan dihapus")],
+                 "jejak": [{"tabel": "items", "kunci": "AAAA", "at": 10, "hapus": 0}],
+                 "updates": [{"id": "u1", "updatedAt": "2026-11-01"}], "layout": {}, "hidden": {"EEEE": 5}, "snapshots": []}
+        remote = {"items": [it("AAAA", "disunting tim"), it("BBBB", "versi peer"), it("FFFF", "baru di peer")],
+                  "jejak": [{"tabel": "items", "kunci": "AAAA", "at": 20, "hapus": 0},
+                            {"tabel": "items", "kunci": "DDDD", "at": 30, "hapus": 1},
+                            {"tabel": "hidden", "kunci": "EEEE", "at": 40, "hapus": 1}],
+                  "updates": [{"id": "u1", "updatedAt": "2026-11-05"}, {"id": "u2", "updatedAt": "2026-11-05"}],
+                  "layout": {"AAAA": {"x": 1}}, "hidden": {}, "snapshots": [{"day": "2026-11-05", "ticker": "AAAA", "taken_at": 1, "data": "{}"}]}
+        ops = sinkron.gabung(lokal, remote)
+        jenis = [(o[0], o[1] if isinstance(o[1], str) else o[1].get("id", o[1].get("ticker"))) for o in ops]
+        self.assertIn(("item", "AAAA"), jenis)          # suntingan peer lebih baru
+        self.assertIn(("item_hapus", "DDDD"), jenis)    # dihapus di peer
+        self.assertIn(("hidden_hapus", "EEEE"), jenis)
+        self.assertIn(("item", "FFFF"), jenis)          # item baru ditambahkan
+        self.assertNotIn(("item", "BBBB"), jenis)       # tanpa jejak: pembaruan harga otomatis tidak saling menimpa
+        self.assertNotIn(("item_hapus", "CCCC"), jenis)
+        self.assertIn(("update", "u1"), jenis)          # berita peer lebih baru
+        self.assertIn(("update", "u2"), jenis)
+        self.assertIn(("layout", "AAAA"), jenis)
+        self.assertIn(("snapshot", "AAAA"), jenis)
+        # Sinkron pertama (awal=True): data lama yang berbeda mengikuti peer.
+        self.assertIn(("item", "BBBB"), [(o[0], o[1]) for o in sinkron.gabung(lokal, remote, awal=True) if isinstance(o[1], str)])
+        # Arah sebaliknya: jejak sini (AAAA at 10) lebih lama dari peer, jadi peer tidak menerima versi lama.
+        self.assertNotIn(("item", "AAAA"), [(o[0], o[1]) for o in sinkron.gabung(remote, lokal) if isinstance(o[1], str)])
+        self.assertEqual(sinkron.arah_token(1000, 5000), "tarik")
+        self.assertEqual(sinkron.arah_token(5000, 1000), "kirim")
+        self.assertEqual(sinkron.arah_token(1000, 1030), "")
+
+    def test_endpoint_dijaga_kunci(self):
+        tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        root = Path(tmp.name)
+        (root / ".sinkron-kunci").write_text("kunci-rahasia-uji-123456")
+        (root / ".harmonik.json").write_text("{}")
+        srv = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        base = f"http://127.0.0.1:{srv.server_address[1]}"
+
+        def get(path, kunci=None, publik=False, body=None):
+            req = urllib.request.Request(base + path, data=None if body is None else json.dumps(body).encode(),
+                                         method="GET" if body is None else "POST", headers={"Content-Type": "application/json"})
+            if kunci:
+                req.add_header("X-Sinkron-Kunci", kunci)
+            if publik:
+                req.add_header("Cf-Connecting-Ip", "203.0.113.9")
+            try:
+                with urllib.request.urlopen(req) as r:
+                    return r.status, json.loads(r.read() or b"null")
+            except urllib.error.HTTPError as e:
+                return e.code, None
+        try:
+            with unittest.mock.patch.object(server, "ROOT", root), \
+                    unittest.mock.patch.object(server, "SINKRON_KUNCI_PATH", root / ".sinkron-kunci"), \
+                    unittest.mock.patch.object(server, "TOKEN_PATH", root / ".stockbit-token"):
+                self.assertEqual(get("/api/sinkron/manifest")[0], 403)                                   # tanpa kunci
+                self.assertEqual(get("/api/sinkron/manifest", "salah-kunci-xxxxxxxx")[0], 403)
+                self.assertEqual(get("/api/sinkron/manifest", "kunci-rahasia-uji-123456", publik=True)[0], 404)   # domain publik
+                st, m = get("/api/sinkron/manifest", "kunci-rahasia-uji-123456")
+                self.assertEqual((st, list(m["berkas"])), (200, [".harmonik.json"]))
+                self.assertEqual(get("/api/sinkron/berkas?p=.stockbit-token", "kunci-rahasia-uji-123456")[1], {"error": "Tidak ditemukan."})
+                # Kiriman berkas dengan mtime peer; berkas di luar daftar putih ditolak.
+                import base64 as b64
+                st, r = get("/api/sinkron/berkas", "kunci-rahasia-uji-123456", body={"p": ".pov-dalam/ZZZZ.json", "mtime": 1790000000,
+                                                                                     "b64": b64.b64encode(b"{\"a\": 1}").decode()})
+                self.assertEqual(st, 200)
+                self.assertEqual(int((root / ".pov-dalam" / "ZZZZ.json").stat().st_mtime), 1790000000)
+                self.assertEqual(get("/api/sinkron/berkas", "kunci-rahasia-uji-123456", body={"p": ".stockbit-token", "mtime": 1, "b64": ""})[0], 400)
+                self.assertEqual(get("/api/sinkron/berkas", "kunci-rahasia-uji-123456", publik=True, body={"p": ".pov.json", "mtime": 1, "b64": ""})[0], 403)
+        finally:
+            srv.shutdown()
+            srv.server_close()
+            tmp.cleanup()
+
+
 class HarmonikTest(unittest.TestCase):
     """Screening Harmonic Pattern: Gartley bullish sintetis X 100, A 200, B 138,2 (0,618), C 175,3, D 121,4 (0,786)."""
 

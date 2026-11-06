@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import base64
 import hashlib
+import hmac
 import ipaddress
 import html as html_mod
 import json
@@ -44,6 +45,7 @@ import beritapasar as BN
 import ihsg as IH
 import astro as AS
 import recovery as RC
+import sinkron as SK
 import harmonik as HM
 import runtun as TS
 import seasonality as SZ
@@ -380,7 +382,10 @@ def data_db() -> sqlite3.Connection:
                 "CREATE TABLE IF NOT EXISTS layout(ticker TEXT PRIMARY KEY, data TEXT NOT NULL);"
                 "CREATE TABLE IF NOT EXISTS kandidat_hidden(ticker TEXT PRIMARY KEY, hidden_at INTEGER NOT NULL);"
                 "CREATE TABLE IF NOT EXISTS snapshots(day TEXT NOT NULL, ticker TEXT NOT NULL, taken_at INTEGER NOT NULL,"
-                " data TEXT NOT NULL, PRIMARY KEY(day, ticker));")
+                " data TEXT NOT NULL, PRIMARY KEY(day, ticker));"
+                # Waktu suntingan manual per baris (termasuk hapus) untuk sinkron dua arah (sinkron.gabung).
+                "CREATE TABLE IF NOT EXISTS jejak(tabel TEXT NOT NULL, kunci TEXT NOT NULL, at INTEGER NOT NULL,"
+                " hapus INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(tabel, kunci));")
             _data.commit()
         return _data
 
@@ -405,6 +410,11 @@ def items_all() -> list[dict]:
 def item_put(item: dict) -> None:
     data_exec("INSERT OR REPLACE INTO items VALUES(?,?,?)",
               [(item["ticker"], json.dumps(item, ensure_ascii=False), int(time.time()))])
+
+
+def jejak_catat(tabel: str, kunci: str, hapus: bool = False) -> None:
+    """Catat suntingan manual (bukan pembaruan otomatis) agar sinkron tahu sisi mana yang lebih baru."""
+    data_exec("INSERT OR REPLACE INTO jejak VALUES(?,?,?,?)", [(tabel, kunci, int(time.time()), 1 if hapus else 0)])
 
 
 def updates_all() -> list[dict]:
@@ -5771,6 +5781,197 @@ def _kandidat(cfg: dict, fresh: bool = False) -> dict:
 # ---------------------------------------------------------------- server ----
 
 
+# ---------------------------------------------------------------- sinkron ----
+# Sinkron dua arah dengan server lain (mis. jni-server <-> laptop) lewat Tailscale, tiap SINKRON_GAP detik, aktif bila
+# website/.sinkron-peer berisi URL peer (http://100.x.y.z:8765) dan website/.sinkron-kunci berisi kunci bersama yang
+# sama di kedua mesin. Cukup satu sisi yang punya .sinkron-peer (sisi itu menarik dan mengirim); sisi lain hanya perlu
+# kunci dan harus bisa dijangkau (server dijalankan dengan --lan). Aturan gabung ada di sinkron.py.
+SINKRON_PEER_PATH = ROOT / ".sinkron-peer"
+SINKRON_KUNCI_PATH = ROOT / ".sinkron-kunci"
+SINKRON_GAP = 10 * 60
+SINKRON_MAKS_BODY = 64_000_000
+SINKRON_STATE = {"peer": None, "at": None, "ok": None, "ditarik": 0, "dikirim": 0, "data": 0, "token": "", "galat": ""}
+_sinkron_lock = threading.Lock()
+
+
+def sinkron_kunci() -> str | None:
+    k = read_token(SINKRON_KUNCI_PATH)
+    return k if k and len(k) >= 16 else None
+
+
+def sinkron_peer() -> str | None:
+    p = read_token(SINKRON_PEER_PATH)
+    return p.rstrip("/") if p and re.match(r"^https?://[\w.\-\[\]:]+/?$", p) else None
+
+
+def _exp_token(t: str | None) -> int:
+    try:
+        bagian = (t or "").split(".")[1]
+        return int(json.loads(base64.urlsafe_b64decode(bagian + "=" * (-len(bagian) % 4))).get("exp") or 0)
+    except (IndexError, ValueError, TypeError):
+        return 0
+
+
+def sinkron_ekspor() -> dict:
+    """Data tim untuk peer: item (dengan updated_at), jejak suntingan, posisi diagram, kandidat tersembunyi, berita,
+    dan snapshot harian 60 hari terakhir."""
+    batas = (datetime.now() - timedelta(days=60)).strftime("%Y-%m-%d")
+    return {
+        "items": [{"ticker": t, "data": json.loads(d), "updated_at": at} for t, d, at in data_rows("SELECT ticker, data, updated_at FROM items")],
+        "jejak": [{"tabel": a, "kunci": b, "at": c, "hapus": h} for a, b, c, h in data_rows("SELECT tabel, kunci, at, hapus FROM jejak")],
+        "layout": {t: json.loads(d) for t, d in data_rows("SELECT ticker, data FROM layout")},
+        "hidden": {t: at for t, at in data_rows("SELECT ticker, hidden_at FROM kandidat_hidden")},
+        "updates": updates_all(),
+        "snapshots": [{"day": a, "ticker": b, "taken_at": c, "data": d}
+                      for a, b, c, d in data_rows("SELECT day, ticker, taken_at, data FROM snapshots WHERE day>=?", (batas,))],
+    }
+
+
+def sinkron_terapkan(ops: list[tuple]) -> int:
+    n = 0
+    for op in ops:
+        k = op[0]
+        if k in ("item", "item_hapus", "layout", "layout_hapus", "hidden", "hidden_hapus") and not TICKER_RE.match(str(op[1])):
+            continue
+        if k == "item" and valid_item(op[2]) and op[2]["ticker"] == op[1]:
+            data_exec("INSERT OR REPLACE INTO items VALUES(?,?,?)", [(op[1], json.dumps(op[2], ensure_ascii=False), int(op[3] or time.time()))])
+        elif k == "item_hapus":
+            data_exec("DELETE FROM items WHERE ticker=?", [(op[1],)])
+        elif k == "layout" and isinstance(op[2], dict):
+            data_exec("INSERT OR REPLACE INTO layout VALUES(?,?)", [(op[1], json.dumps(op[2], ensure_ascii=False))])
+        elif k == "layout_hapus":
+            data_exec("DELETE FROM layout WHERE ticker=?", [(op[1],)])
+        elif k == "hidden":
+            data_exec("INSERT OR REPLACE INTO kandidat_hidden VALUES(?,?)", [(op[1], int(op[2] or time.time()))])
+        elif k == "hidden_hapus":
+            data_exec("DELETE FROM kandidat_hidden WHERE ticker=?", [(op[1],)])
+        elif k == "jejak" and op[1] in SK.TABEL_JEJAK:
+            data_exec("INSERT OR REPLACE INTO jejak VALUES(?,?,?,?)", [(op[1], str(op[2]), int(op[3]), int(op[4]))])
+        elif k == "update" and valid_update(op[1]):
+            updates_put([op[1]])
+        elif k == "snapshot" and TICKER_RE.match(str(op[1].get("ticker"))):
+            data_exec("INSERT OR IGNORE INTO snapshots VALUES(?,?,?,?)",
+                      [(str(op[1]["day"]), op[1]["ticker"], int(op[1].get("taken_at") or 0), str(op[1].get("data") or "{}"))])
+        else:
+            continue
+        n += 1
+    return n
+
+
+def _sinkron_segarkan(rels: list[str]) -> None:
+    """Memo yang tidak memeriksa waktu ubah berkas dikosongkan setelah menerima berkas baru."""
+    global _pd_indeks, _pov_memo
+    if any(r.startswith(".pov-dalam/") for r in rels):
+        with _pd_idx_lock:
+            _pd_indeks = None
+    if ".pov.json" in rels:
+        _pov_memo = None
+
+
+def token_tulis(tok: str) -> None:
+    """Tulis token Stockbit; bila .stockbit-token berupa symlink (jni-server), yang ditulis berkas tujuannya."""
+    target = TOKEN_PATH.resolve() if TOKEN_PATH.is_symlink() else TOKEN_PATH
+    SK.tulis_atomik(target, (tok.strip() + "\n").encode())
+
+
+def sinkron_get(path: str, rel: str) -> dict:
+    if path == "api/sinkron/manifest":
+        return {"versi": 1, "berkas": SK.manifest(ROOT), "tokenExp": _exp_token(read_token(TOKEN_PATH))}
+    if path == "api/sinkron/berkas" and SK.berkas_sah(rel) and (ROOT / rel).is_file():
+        f = ROOT / rel
+        return {"p": rel, "mtime": int(f.stat().st_mtime), "b64": base64.b64encode(f.read_bytes()).decode()}
+    if path == "api/sinkron/data":
+        return sinkron_ekspor()
+    if path == "api/sinkron/token":
+        t = read_token(TOKEN_PATH)
+        return {"token": t, "exp": _exp_token(t)}
+    return {"error": "Tidak ditemukan."}
+
+
+def sinkron_post(path: str, body) -> dict:
+    if not isinstance(body, dict):
+        raise ValueError("Body sinkron tidak valid.")
+    if path == "api/sinkron/berkas":
+        rel, mtime = body.get("p"), int(body.get("mtime") or 0)
+        if not SK.berkas_sah(rel) or not mtime:
+            raise ValueError("Berkas sinkron tidak diizinkan.")
+        f = ROOT / rel
+        if f.is_file() and int(f.stat().st_mtime) + SK.TOLERANSI >= mtime:
+            return {"ok": True, "dilewati": True}
+        SK.tulis_atomik(f, base64.b64decode(body.get("b64") or ""), mtime)
+        _sinkron_segarkan([rel])
+        return {"ok": True}
+    if path == "api/sinkron/data":
+        return {"ok": True, "diterapkan": sinkron_terapkan(SK.gabung(sinkron_ekspor(), body))}
+    if path == "api/sinkron/token":
+        t = str(body.get("token") or "").strip()
+        if _exp_token(t) > _exp_token(read_token(TOKEN_PATH)):
+            token_tulis(t)
+            return {"ok": True, "diganti": True}
+        return {"ok": True, "diganti": False}
+    raise ValueError("Tidak ditemukan.")
+
+
+def _sinkron_http(peer: str, kunci: str, path: str, body=None, timeout: int = 120):
+    req = urllib.request.Request(f"{peer}/{path}", data=None if body is None else json.dumps(body, ensure_ascii=False).encode(),
+                                 method="GET" if body is None else "POST",
+                                 headers={"X-Sinkron-Kunci": kunci, "Content-Type": "application/json", "User-Agent": "RadarSinkron/1"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read() or b"null")
+
+
+def sinkron_sekali(awal: bool = False) -> dict:
+    """Satu putaran: berkas (tarik yang lebih baru di peer, kirim yang lebih baru di sini), data tim dua arah, token."""
+    peer, kunci = sinkron_peer(), sinkron_kunci()
+    if not (peer and kunci):
+        raise RuntimeError("Sinkron belum diatur (.sinkron-peer dan .sinkron-kunci).")
+    m = _sinkron_http(peer, kunci, "api/sinkron/manifest")
+    tarik, kirim = SK.rencana(SK.manifest(ROOT), m.get("berkas") or {})
+    for rel in tarik:
+        r = _sinkron_http(peer, kunci, "api/sinkron/berkas?p=" + urllib.parse.quote(rel))
+        if r.get("b64") is not None:
+            SK.tulis_atomik(ROOT / rel, base64.b64decode(r["b64"]), int(r["mtime"]))
+    _sinkron_segarkan(tarik)
+    for rel in kirim:
+        f = ROOT / rel
+        _sinkron_http(peer, kunci, "api/sinkron/berkas",
+                      {"p": rel, "mtime": int(f.stat().st_mtime), "b64": base64.b64encode(f.read_bytes()).decode()})
+    n = sinkron_terapkan(SK.gabung(sinkron_ekspor(), _sinkron_http(peer, kunci, "api/sinkron/data"), awal=awal))
+    n += int((_sinkron_http(peer, kunci, "api/sinkron/data", sinkron_ekspor()) or {}).get("diterapkan") or 0)
+    arah = SK.arah_token(_exp_token(read_token(TOKEN_PATH)), m.get("tokenExp"))
+    if arah == "tarik":
+        t = (_sinkron_http(peer, kunci, "api/sinkron/token") or {}).get("token")
+        if _exp_token(t) > _exp_token(read_token(TOKEN_PATH)):
+            token_tulis(t)
+    elif arah == "kirim":
+        _sinkron_http(peer, kunci, "api/sinkron/token", {"token": read_token(TOKEN_PATH)})
+    return {"ditarik": len(tarik), "dikirim": len(kirim), "data": n, "token": arah}
+
+
+def sinkron_jalan(awal: bool = False) -> dict:
+    if not _sinkron_lock.acquire(blocking=False):
+        return {"ok": False, "galat": "Sinkron sedang berjalan."}
+    try:
+        SINKRON_STATE["peer"] = sinkron_peer()
+        try:
+            SINKRON_STATE.update({"ok": True, "galat": "", **sinkron_sekali(awal)})
+        except Exception as e:
+            SINKRON_STATE.update({"ok": False, "galat": str(e)[:200]})
+            print(f"[sinkron] gagal: {e}", file=sys.stderr)
+        SINKRON_STATE["at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+        return {k: v for k, v in SINKRON_STATE.items() if k != "peer"}
+    finally:
+        _sinkron_lock.release()
+
+
+def sinkron_loop() -> None:
+    time.sleep(60)
+    while True:
+        if sinkron_peer() and sinkron_kunci():
+            sinkron_jalan()
+        time.sleep(SINKRON_GAP)
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     server_version = "RadarCangkang/2.0"
@@ -5851,13 +6052,13 @@ class Handler(BaseHTTPRequestHandler):
     def do_DELETE(self) -> None:  # noqa: N802
         self.handle_write("DELETE")
 
-    def read_json(self):
+    def read_json(self, maks: int = MAX_BODY):
         """Body JSON penulisan. Content-Type wajib application/json: permintaan lintas situs
         dengan tipe ini selalu butuh preflight CORS, yang tidak dijawab server ini."""
         if not (self.headers.get("Content-Type") or "").startswith("application/json"):
             raise ValueError("Content-Type harus application/json.")
         n = int(self.headers.get("Content-Length") or 0)
-        if n > MAX_BODY:
+        if n > maks:
             raise ValueError("Body terlalu besar.")
         return json.loads(self.rfile.read(n) or b"null")
 
@@ -5876,14 +6077,21 @@ class Handler(BaseHTTPRequestHandler):
                 return
             path = urllib.parse.urlparse(self.path).path.strip("/")
             parts = path.split("/")
+            if path.startswith("api/sinkron/"):
+                if self.sinkron_tolak():
+                    return
+                self.reply_json(sinkron_post(path, self.read_json(SINKRON_MAKS_BODY)))
+                return
             body = None if method == "DELETE" else self.read_json()
             if len(parts) == 3 and parts[:2] == ["api", "items"] and TICKER_RE.match(parts[2]):
                 t = parts[2]
                 if method == "DELETE":
                     data_exec("DELETE FROM items WHERE ticker=?", [(t,)])
+                    jejak_catat("items", t, hapus=True)
                     self.reply_json({"ok": True})
                 elif method == "PUT" and valid_item(body) and body["ticker"] == t:
                     item_put(body)
+                    jejak_catat("items", t)
                     self.reply_json({"ok": True})
                 else:
                     self.reply_json({"error": "Item tidak valid."}, 400)
@@ -5902,11 +6110,13 @@ class Handler(BaseHTTPRequestHandler):
                     data_exec("INSERT OR REPLACE INTO kandidat_hidden VALUES(?,?)", [(parts[3], int(time.time()))])
                 else:
                     data_exec("DELETE FROM kandidat_hidden WHERE ticker=?", [(parts[3],)])
+                jejak_catat("hidden", parts[3], hapus=method == "DELETE")
                 self.reply_json({"ok": True})
             elif (len(parts) == 3 and parts[:2] == ["api", "layout"] and TICKER_RE.match(parts[2])
                   and method == "PUT" and isinstance(body, dict)):
                 data_exec("INSERT OR REPLACE INTO layout VALUES(?,?)",
                           [(parts[2], json.dumps(body, ensure_ascii=False))])
+                jejak_catat("layout", parts[2])
                 self.reply_json({"ok": True})
             else:
                 self.reply_json({"error": "Tidak ditemukan."}, 404)
@@ -5948,9 +6158,34 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(b"", 404)
 
     # ---- API
+    def sinkron_tolak(self) -> bool:
+        """Endpoint sinkron hanya untuk peer di jaringan pribadi (Tailscale/LAN) dengan kunci bersama yang sama.
+        Permintaan lewat domain publik (Cloudflare) selalu ditolak; tanpa berkas kunci, sinkron tidak aktif."""
+        kunci = sinkron_kunci()
+        if self.is_public() or not self.is_local() or not kunci:
+            self.reply_json({"error": "Tidak ditemukan."}, 404)
+            return True
+        if not hmac.compare_digest(kunci, self.headers.get("X-Sinkron-Kunci") or ""):
+            self.reply_json({"error": "Kunci sinkron salah."}, 403)
+            return True
+        return False
+
     def handle_api(self, path: str, fresh: bool) -> None:
         cfg = load_config()
         ticker = self.qs("ticker").upper()
+
+        if path == "api/sinkron/sekarang":
+            # Jalankan sinkron sekarang (hanya dari komputer ini sendiri). ?awal=peer: sinkron pertama, data tim lama
+            # yang berbeda mengikuti peer.
+            if self.is_public() or not ipaddress.ip_address(self.client_address[0].replace("::ffff:", "")).is_loopback:
+                self.reply_json({"error": "Tidak ditemukan."}, 404)
+            else:
+                self.reply_json(sinkron_jalan(awal=self.qs("awal") == "peer"))
+            return
+        if path.startswith("api/sinkron/"):
+            if not self.sinkron_tolak():
+                self.reply_json(sinkron_get(path, self.qs("p")))
+            return
 
         if path == "api/tts":
             # Narasi video (suara pria). 204 = tidak tersedia; frontend lalu memakai suara browser.
@@ -6003,6 +6238,7 @@ class Handler(BaseHTTPRequestHandler):
                 "newsAt": NEWS_STATE["at"],
                 "hargaRadar": HARGA_STATE,
                 "povDalam": pd_cakupan(),
+                "sinkron": {k: v for k, v in SINKRON_STATE.items() if k != "peer"} | {"aktif": bool(sinkron_peer() and sinkron_kunci())},
             })
         elif path == "api/tenders":
             self.api_tenders(cfg, fresh)
@@ -6456,6 +6692,7 @@ def main() -> int:
     threading.Thread(target=kandidat_loop, daemon=True).start()
     threading.Thread(target=harga_loop, daemon=True).start()
     threading.Thread(target=pd_latar_loop, daemon=True, name="pov-dalam-latar").start()
+    threading.Thread(target=sinkron_loop, daemon=True, name="sinkron").start()
     threading.Thread(target=news_loop, daemon=True).start()
     threading.Thread(target=pov_loop, daemon=True).start()
     threading.Thread(target=season_loop, daemon=True).start()

@@ -82,3 +82,11 @@ website/tsa-*.json
 **/.lk-keystats.json
 **/.saham50.json
 **/.bei-kode.json
+
+# sinkron antarserver lewat Tailscale (rahasia: alamat peer dan kunci bersama)
+**/.sinkron-peer
+**/.sinkron-kunci
+**/*.sinkron-tmp
+**/.laptop-sinkron.log
+**/.server.log
+**/.server-err.log
