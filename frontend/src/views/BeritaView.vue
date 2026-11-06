@@ -6,6 +6,7 @@ import { isBackdoorNews } from '../lib/news.js'
 import Modal from '../components/emiten/Modal.vue'
 import NewsItem from '../components/NewsItem.vue'
 import TabBerita from '../components/emiten/TabBerita.vue'
+import LaporanStockbit from '../components/LaporanStockbit.vue'
 import { api } from '../api.js'
 
 const typeName = id => (UTYPES.find(t => t.id === id) || UTYPES[UTYPES.length - 1]).name
@@ -13,6 +14,8 @@ const typeName = id => (UTYPES.find(t => t.id === id) || UTYPES[UTYPES.length - 
 const srcOf = u => /^sb-report-/.test(u.id) ? 'stockbit' : /^(news-|sb-news-)/.test(u.id) ? 'media' : ''
 
 const type = ref('')
+// Mode tampilan: semua berita (urut tanggal) atau Stockbit Reports per emiten (laporan terakhir + analisa).
+const mode = ref('semua')
 const src = ref('')
 const q = ref('')
 // Saham di luar radar (seluruh kode BEI, /api/kode-bei): dipilih dari saran pencarian lalu ditampilkan di halaman ini
@@ -95,6 +98,11 @@ onMounted(() => autoRefresh('reports'))
       </div>
     </header>
 
+    <div role="group" aria-label="Mode berita" class="mode">
+      <button type="button" class="pill" :aria-pressed="String(mode === 'semua')" @click="mode = 'semua'">Semua berita</button>
+      <button type="button" class="pill" :aria-pressed="String(mode === 'laporan')" @click="mode = 'laporan'">Stockbit Reports per emiten</button>
+    </div>
+
     <div v-if="luarRadar.length" class="luar" role="region" aria-label="Saham di luar radar">
       <span class="lbl">Di luar radar — lihat berita terakhir & analisa:</span>
       <button v-for="k in luarRadar" :key="k.t" type="button" class="sar" :class="{ on: pilih === k.t }" :title="k.nama" @click="pilih = k.t">
@@ -107,6 +115,8 @@ onMounted(() => autoRefresh('reports'))
       <TabBerita :key="pilih" :ticker="pilih" />
     </section>
 
+    <LaporanStockbit v-if="mode === 'laporan'" :q="q" />
+    <template v-else>
     <div class="bar-row">
       <div class="fbar">
         <button type="button" class="btn" :aria-expanded="String(fOpen)" aria-haspopup="dialog" @click="fOpen = true">
@@ -148,10 +158,12 @@ onMounted(() => autoRefresh('reports'))
       </div>
     </section>
     <p class="muted foot">Latar oranye = belum dilihat sejak terakhir buka. Tingkat sinyal, arah dampak, dan poin dibaca otomatis dari judul dan ringkasan. Penanda poin: segitiga naik hijau = positif bagi pemegang saham publik, segitiga turun merah = negatif atau risiko, bulat kuning = perlu dicermati.</p>
+    </template>
   </div>
 </template>
 
 <style scoped>
+.mode{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px}
 .luar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 12px}
 .luar .lbl{font-size:14px;color:var(--ink-2);width:100%}
 /* Saran pencarian dibuat besar dan kontras agar mudah dibaca dan diklik. */
