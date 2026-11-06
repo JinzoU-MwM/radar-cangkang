@@ -31,11 +31,14 @@ def struktur(t: str, k: dict, harga: dict) -> dict:
     """Saham beredar, free float, saham publik (lembar), nilai float (Rp), harga."""
     saham, ff, mcap = k.get("saham"), k.get("freeFloat"), k.get("mcap")
     h = (harga.get(t) or {}).get("h") or k.get("hargaKira")
-    if h and saham:
+    kira = False
+    if not saham and mcap and h:                    # Key Stats kadang tanpa jumlah saham: turunkan dari kapitalisasi / harga
+        saham, kira = round(mcap / h), True
+    elif h and saham:
         mcap = h * saham
     publik = saham * ff / 100 if saham and ff is not None else None
     return {"saham": saham, "ff": ff, "harga": h, "mcap": mcap, "publik": publik,
-            "nilaiFloat": publik * h if publik and h else None}
+            "nilaiFloat": publik * h if publik and h else None, "sahamKira": kira}
 
 
 def laba(k: dict) -> list:
@@ -130,7 +133,8 @@ def ringkasan(st: dict, tren: dict | None, lb: list) -> list[str]:
         nilai = f" senilai ±Rp{_id(st['nilaiFloat'] / 1e9, 1)} M" if st.get("nilaiFloat") else ""
         tipis = (" Barang beredar yang tipis membuat harga mudah digerakkan oleh sedikit modal, naik maupun turun."
                  if st["saham"] <= 2e9 else "")
-        out.append(f"Saham beredar {_id(st['saham'] / 1e6)} juta lembar; porsi publik {_id(st['ff'], 1)}% atau "
+        kira = " (perkiraan dari kapitalisasi dibagi harga)" if st.get("sahamKira") else ""
+        out.append(f"Saham beredar {_id(st['saham'] / 1e6)} juta lembar{kira}; porsi publik {_id(st['ff'], 1)}% atau "
                    f"±{_id(st['publik'] / 1e6, 1)} juta lembar{nilai}.{tipis}")
     if tren:
         arah = "turun" if tren["ubah"] < 0 else "naik"
@@ -185,30 +189,41 @@ def analisa(cfg: dict, pidx: dict, ks: dict, harga: dict, nama: dict, radar: set
     for f in ("saham", "ff", "nilaiFloat", "mcap"):
         vals = [r[f] for r in porto if r.get(f)]
         ciri[f] = statistics.median(vals) if vals else None
-    rows = []
+    rows, lain = [], []
     for t in set(ks) | set(pidx):
-        if t in milik:
+        if t in milik or t.startswith("X"):        # kode X…: ETF/reksa dana, bukan saham
             continue
         k = ks.get(t) or {}
-        if not k.get("saham") or k.get("freeFloat") is None or k["saham"] > 2e9 or k["freeFloat"] > 40:
+        st = struktur(t, k, harga)
+        if not st["saham"] or st["saham"] > 2e9:
+            continue
+        if k.get("freeFloat") is None:
+            # Bersaham sedikit menurut Key Stats tetapi free float kosong: tampil terpisah, belum diberi skor penuh.
+            r = baris(t)
+            r.update(alasan=r["alasan"] + ["free float belum ada di Key Stats"], asal="Key Stats Stockbit")
+            lain.append(r)
+            continue
+        if k["freeFloat"] > 40:
             continue
         r = baris(t)
         if r["skor"] >= 50:
             rows.append(r)
     # Kode tanpa Key Stats di server tetapi tercatat bersaham sedikit (data kurasi): tampil dengan catatan free float.
-    tamb, lain = cfg.get("sahamSedikit") or {}, []
+    tamb = cfg.get("sahamSedikit") or {}
     for t, (saham, h) in (tamb.get("data") or {}).items():
-        if t in milik or (ks.get(t) or {}).get("saham"):
+        if t in milik or (ks.get(t) or {}).get("saham") or any(x["t"] == t for x in lain):
             continue
         r = baris(t)
         st = struktur(t, {"saham": saham, "hargaKira": h, "freeFloat": None}, harga)
         sk, why = skor(st, r["tren"], r["jejak"])
         r.update(st, skor=sk, alasan=why + ["free float belum ada di data server"],
                  ringkas=[f"Saham beredar {_id(saham / 1e6, 2)} juta lembar menurut screener Stockbit; free float belum diketahui."]
-                 + r["ringkas"][1:], kurasi=True)
+                 + r["ringkas"][1:], kurasi=True, asal=tamb.get("sumber", ""))
         lain.append(r)
     rows.sort(key=lambda r: (-r["skor"], r["nilaiFloat"] or 9e18))
     return {"profil": {k: cfg.get(k) for k in ("nama", "julukan", "peran", "peranSumber", "entitas", "riwayat", "catatan", "asOf")},
             "portofolio": porto, "pernah": pernah, "ciri": ciri, "rekan": [{"nama": n, "di": d} for n, d in rk.items()],
-            "dinilai": sum(1 for t in ks if (ks[t] or {}).get("saham")), "rows": rows[:batas],
-            "tanpaFF": sorted(lain, key=lambda r: r["saham"]), "tanpaFFSumber": tamb.get("sumber", "")}
+            "dinilai": sum(1 for t in ks if not t.startswith("X") and struktur(t, ks[t] or {}, harga)["saham"]), "rows": rows[:batas],
+            "tanpaFF": sorted(lain, key=lambda r: r["saham"]), "tanpaFFSumber": tamb.get("sumber", ""),
+            "kurangData": sorted(t for t in set(ks) | set(pidx) if not t.startswith("X") and t not in milik
+                                 and (not struktur(t, ks.get(t) or {}, harga)["saham"] or (ks.get(t) or {}).get("freeFloat") is None))}
