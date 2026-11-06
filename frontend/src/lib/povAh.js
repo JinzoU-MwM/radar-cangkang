@@ -28,3 +28,14 @@ export function trenTeks(tr) {
   const s = (tr.ubah > 0 ? '+' : '') + tr.ubah.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + '%'
   return { teks: s, nada: tr.ubah <= -5 ? 'akumulasi' : tr.ubah >= 5 ? 'distribusi' : '' }
 }
+
+// Rekomendasi POV AH: n saham teratas dari screening yang status perdagangannya sudah dicek, tanpa notasi khusus/UMA,
+// dan jumlah pemegangnya menyusut ≥5% (tanda pengumpulan). Urut skor, lalu penyusutan pemegang terdalam.
+// Kalau kurang dari n, sisanya diisi baris bersih lain berdasar skor.
+export function pilihRekomendasi(rows, n = 5) {
+  const bersih = (rows || []).filter(r => r.dicek !== false && !r.suspen && !r.uma && !(r.notasi || []).length && r.ff != null)
+  const kumpul = r => r.tren && r.tren.ubah <= -5
+  const urut = (a, b) => b.skor - a.skor || (a.tren?.ubah ?? 0) - (b.tren?.ubah ?? 0)
+  const utama = bersih.filter(kumpul).sort(urut)
+  return [...utama, ...bersih.filter(r => !kumpul(r)).sort(urut)].slice(0, n)
+}

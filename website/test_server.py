@@ -1038,7 +1038,8 @@ class PovAhTest(unittest.TestCase):
         import povah
         cfg = {"polaNama": ["ANDRY HAKIM"], "entitas": [{"nama": "HAKIMSON GROWTH CAPITAL", "status": "indikasi", "ket": "x"}],
                "tambahan": [{"t": "SOTS", "status": "indikasi", "ket": "kurasi"}],
-               "sahamSedikit": {"sumber": "s", "data": {"UNIT": [75420000, 316]}}}
+               "sahamSedikit": {"sumber": "s", "data": {"UNIT": [75420000, 316]}},
+               "riwayat": [{"t": "RMKO", "status": "keluar dari ≥1%", "ket": "2,4%", "sumber": [{"url": "u"}]}, {"t": "AIMS", "ket": "catatan AIMS"}]}
         pidx = {"AIMS": {"pemegang": [["AIMS INDO INVESTAMA", 35.75, "INDONESIA", "Corporate"], ["DELTA WIBAWA BERSAMA", 31.13, "INDONESIA", "Corporate"],
                                       ["ANDRY HAKIM", 1.05, "INDONESIA", "Individual"]], "jumlah": [["2026-10-31", 1811], ["2026-07-31", 1666]]},
                 "FLMC": {"pemegang": [["DELTA WIBAWA BERSAMA", 3.84, "INDONESIA", "Corporate"], ["ANDRY HAKIM", 1.13, "INDONESIA", "Individual"]]},
@@ -1049,7 +1050,8 @@ class PovAhTest(unittest.TestCase):
         ks = {"AIMS": {"saham": 220e6, "freeFloat": 22.07, "hargaKira": 940, "kuartal": {"Net Income": {"Q126": -375e6, "Q226": -90e6}}},
               "FLMC": {"saham": 781.25e6, "freeFloat": 49.64, "hargaKira": 160}, "TRUK": {"saham": 435e6, "freeFloat": 29.82, "hargaKira": 6025},
               "SOTS": {"saham": 1e9, "freeFloat": 20.18, "hargaKira": 530},
-              "XXXX": {"saham": 300e6, "freeFloat": 10.0, "hargaKira": 100}, "BESR": {"saham": 9e9, "freeFloat": 10.0, "hargaKira": 100}}
+              "XXXX": {"saham": 300e6, "freeFloat": 10.0, "hargaKira": 100}, "RMKO": {"saham": 300e6, "freeFloat": 10.0, "hargaKira": 100},
+              "BESR": {"saham": 9e9, "freeFloat": 10.0, "hargaKira": 100}}
         r = povah.analisa(cfg, pidx, ks, {"AIMS": {"h": 1175}}, {}, {"XXXX"})
         porto = {x["t"]: x for x in r["portofolio"]}
         self.assertEqual(set(porto), {"AIMS", "FLMC", "TRUK", "SOTS"})
@@ -1065,6 +1067,10 @@ class PovAhTest(unittest.TestCase):
         self.assertEqual(x["tren"]["ubah"], -20.0)
         self.assertIn("akumulasi", x["ringkas"][1])
         self.assertEqual([y["t"] for y in r["tanpaFF"]], ["UNIT"])
+        # Riwayat: yang tidak di portofolio kini tampil di "pernah" (bukan screening); yang masih dipegang menempel di portofolio.
+        self.assertEqual([(y["t"], y["status"]) for y in r["pernah"]], [("RMKO", "keluar dari ≥1%")])
+        self.assertEqual(r["pernah"][0]["saham"], 300e6)
+        self.assertEqual(porto["AIMS"]["riwayat"]["ket"], "catatan AIMS")
 
 
 class PovDalamTest(unittest.TestCase):

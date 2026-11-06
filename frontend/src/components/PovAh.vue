@@ -4,7 +4,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../api.js'
 import { big, fmt, fmtDate } from '../lib/domain.js'
-import { jalurTeks, lembar, saringAh, trenTeks } from '../lib/povAh.js'
+import { jalurTeks, lembar, pilihRekomendasi, saringAh, trenTeks } from '../lib/povAh.js'
 
 const emit = defineEmits(['analisa'])
 const d = ref(null), err = ref('')
@@ -21,6 +21,13 @@ const pctId = v => v == null ? '–' : fmt(v, 2) + '%'
 // Laba negatif: tanda minus di depan Rp.
 const labaTxt = v => v < 0 ? '−' + big(-v) : big(v)
 const nadaSkor = s => s >= 75 ? 't-strong' : s >= 60 ? 't-warn' : 't-calm'
+const reko = computed(() => pilihRekomendasi(d.value?.rows, 5))
+// Buka analisa baris di tabel screening; kosongkan saringan supaya barisnya pasti tampil.
+function lihat(t) {
+  cari.value = ''; maksSaham.value = Infinity; maksFF.value = Infinity; rekan.value = false
+  buka.value = t
+  setTimeout(() => document.getElementById('ah-' + t)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0)
+}
 </script>
 
 <template>
@@ -54,6 +61,8 @@ const nadaSkor = s => s >= 75 ? 't-strong' : s >= 60 ? 't-warn' : 't-calm'
               <tr v-if="buka === r.t" class="dalam"><td colspan="9">
                 <ul class="jl"><li v-for="j in r.jalur" :key="'k' + j.nama + j.jenis"><b>{{ jalurTeks(j) }}</b>: {{ j.ket }}
                   <template v-for="s in j.sumber || []" :key="s.url"> · <a :href="s.url" target="_blank" rel="noopener">{{ s.judul }}</a> ({{ fmtDate(s.tanggal) }})</template></li></ul>
+                <p v-if="r.riwayat"><b>Riwayat:</b> {{ r.riwayat.ket }}
+                  <template v-for="s in r.riwayat.sumber || []" :key="s.url"> · <a :href="s.url" target="_blank" rel="noopener">{{ s.judul }}</a> ({{ fmtDate(s.tanggal) }})</template></p>
                 <ul><li v-for="x in r.ringkas" :key="x">{{ x }}</li></ul>
                 <div v-if="r.notasi?.length" class="tk"><span v-for="n in r.notasi" :key="n.k" class="tag t-warn" :title="n.ket">notasi {{ n.k }}: {{ n.ket }}</span></div>
                 <p v-if="r.pemegang.length" class="muted">Pemegang ≥1%: <span v-for="(p, i) in r.pemegang" :key="p.nama"><b v-if="rekanSet.has(p.nama.toUpperCase())">{{ p.nama }}</b><template v-else>{{ p.nama }}</template> {{ fmt(p.pct, 2) }}%<template v-if="i < r.pemegang.length - 1">, </template></span></p>
@@ -64,6 +73,42 @@ const nadaSkor = s => s >= 75 ? 't-strong' : s >= 60 ? 't-warn' : 't-calm'
           </tbody>
         </table>
       </div>
+
+      <template v-if="d.pernah?.length">
+        <h3 class="j">Pernah atau masih dipegang di luar data ≥1% terkini</h3>
+        <p class="small muted">Dari berita dan pengakuan AH. Status: keluar dari ≥1% (namanya hilang dari daftar KSEI, porsi di bawah 1% tidak
+          diungkap), pengakuan AH (bukan data KSEI), disebut media (belum terverifikasi data kepemilikan).</p>
+        <div class="scroll">
+          <table class="ledger small">
+            <thead><tr><th>Saham</th><th>Status</th><th class="num">Saham beredar</th><th class="num">Publik</th><th class="num">Nilai float</th>
+              <th class="num">Harga</th><th class="num">Pemegang ±3 bln</th><th class="num">Skor ciri</th><th></th></tr></thead>
+            <tbody>
+              <template v-for="r in d.pernah" :key="r.t">
+                <tr>
+                  <td><b>{{ r.t }}</b> <span v-if="r.suspen" class="tag t-strong">suspensi</span><span v-if="r.radar" class="tag t-warn">radar</span>
+                    <div class="muted">{{ r.nama }}</div></td>
+                  <td><span class="tag" :class="r.status === 'pengakuan AH' ? 't-now' : 't-calm'">{{ r.status }}</span></td>
+                  <td class="num">{{ lembar(r.saham) }}</td>
+                  <td class="num">{{ pctId(r.ff) }}</td>
+                  <td class="num">{{ big(r.nilaiFloat) }}</td>
+                  <td class="num">{{ r.harga ? fmt(r.harga, 0) : '–' }}</td>
+                  <td class="num" :class="trenTeks(r.tren).nada">{{ trenTeks(r.tren).teks }}</td>
+                  <td class="num"><span class="tag" :class="nadaSkor(r.skor)">{{ r.skor }}</span></td>
+                  <td><button type="button" class="btn" :aria-expanded="String(buka === 'p' + r.t)" @click="togel('p' + r.t)">{{ buka === 'p' + r.t ? 'Tutup' : 'Detail' }}</button></td>
+                </tr>
+                <tr v-if="buka === 'p' + r.t" class="dalam"><td colspan="9">
+                  <p>{{ r.ket }}<template v-for="s in r.sumber" :key="s.url"> · <a :href="s.url" target="_blank" rel="noopener">{{ s.judul }}</a> ({{ fmtDate(s.tanggal) }})</template></p>
+                  <ul><li v-for="x in r.ringkas" :key="x">{{ x }}</li></ul>
+                  <div v-if="r.notasi?.length" class="tk"><span v-for="n in r.notasi" :key="n.k" class="tag t-warn">notasi {{ n.k }}: {{ n.ket }}</span></div>
+                  <p v-if="r.pemegang.length" class="muted">Pemegang ≥1%: {{ r.pemegang.map(p => `${p.nama} ${fmt(p.pct, 2)}%`).join(', ') }}</p>
+                  <p v-if="r.laba.length" class="muted">Laba bersih: <span v-for="(l, i) in r.laba" :key="l[0]"><template v-if="i"> · </template>{{ l[0] }} <span :class="l[1] < 0 ? 'c-strong' : 'c-good'">{{ labaTxt(l[1]) }}</span></span></p>
+                  <button type="button" class="btn" @click="emit('analisa', r.t)">Analisa mendalam {{ r.t }}</button>
+                </td></tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </template>
 
       <div class="dua">
         <div>
@@ -80,12 +125,28 @@ const nadaSkor = s => s >= 75 ? 't-strong' : s >= 60 ? 't-warn' : 't-calm'
           <p v-else class="small muted">Belum ada.</p>
           <p class="small muted">Muncul bersama di daftar pemegang ≥1%, bukan bukti afiliasi.</p>
         </div>
-        <div v-if="d.profil.riwayat?.length">
-          <h4>Riwayat</h4>
-          <ul class="small"><li v-for="x in d.profil.riwayat" :key="x.t"><b>{{ x.t }}</b>: {{ x.ket }}
-            <template v-for="s in x.sumber" :key="s.url"> <a :href="s.url" target="_blank" rel="noopener">sumber</a> ({{ fmtDate(s.tanggal) }})</template></li></ul>
-        </div>
       </div>
+
+      <template v-if="reko.length">
+        <h3 class="j">Rekomendasi 5 saham</h3>
+        <p class="small muted">Dipilih otomatis dari screening di bawah: skor tertinggi yang jumlah pemegangnya menyusut ≥5% dalam ±3 bulan
+          (tanda pengumpulan), status perdagangan sudah dicek, tanpa suspensi, notasi khusus, atau UMA.</p>
+        <div class="reko">
+          <div v-for="(r, i) in reko" :key="r.t" class="kartu">
+            <div class="kp"><span class="no">{{ i + 1 }}</span> <b>{{ r.t }}</b>
+              <span class="tag" :class="nadaSkor(r.skor)">skor {{ r.skor }}</span>
+              <span v-if="r.radar" class="tag t-warn">radar</span><span v-if="r.jejak.length" class="tag t-now">rekan AH</span></div>
+            <div class="muted small">{{ r.nama }}</div>
+            <div class="small">{{ lembar(r.saham) }} · publik {{ pctId(r.ff) }} · float {{ big(r.nilaiFloat) }}</div>
+            <div class="small">Pemegang ±3 bln <span :class="trenTeks(r.tren).nada">{{ trenTeks(r.tren).teks }}</span>
+              <template v-if="r.harga"> · harga {{ fmt(r.harga, 0) }}</template></div>
+            <div v-if="r.laba.length" class="small muted">Laba {{ r.laba.length }} kuartal: {{ r.laba.filter(l => l[1] < 0).length ? r.laba.filter(l => l[1] < 0).length + ' rugi' : 'semua positif' }}</div>
+            <div class="kb"><button type="button" class="btn kecil0" @click="lihat(r.t)">Analisa</button>
+              <button type="button" class="btn kecil0" @click="emit('analisa', r.t)">Analisa mendalam</button></div>
+          </div>
+        </div>
+        <p class="small muted">Ciri serupa belum berarti AH akan masuk. Bukan rekomendasi beli/jual.</p>
+      </template>
 
       <h3 class="j">Screening: saham berpotensi dengan ciri pilihan AH</h3>
       <p class="small muted">{{ d.dinilai }} emiten dinilai · {{ d.rows.length }} lolos (skor ≥ 50, saham beredar ≤ 2 miliar, publik ≤ 40%) · saham yang disuspensi tidak ditampilkan · diperbarui {{ d.updated }}.
@@ -103,7 +164,7 @@ const nadaSkor = s => s >= 75 ? 't-strong' : s >= 60 ? 't-warn' : 't-calm'
             <th class="num">Harga</th><th class="num">Pemegang ±3 bln</th><th></th></tr></thead>
           <tbody>
             <template v-for="r in rows" :key="r.t">
-              <tr>
+              <tr :id="'ah-' + r.t">
                 <td><b>{{ r.t }}</b> <span v-if="r.radar" class="tag t-warn">radar</span><span v-if="r.jejak.length" class="tag t-now" :title="r.jejak.map(j => j.nama).join(', ')">rekan AH</span>
                   <span v-if="r.backdoor != null" class="tag" :class="r.backdoor >= 40 ? 't-warn' : 't-calm'" title="Skor potensi backdoor dari analisa mendalam terakhir">backdoor {{ r.backdoor }}</span>
                   <span v-for="n in r.notasi || []" :key="n.k" class="tag t-calm" :title="n.ket">{{ n.k }}</span>
@@ -164,4 +225,10 @@ h4{margin:6px 0 2px;font-size:12px;text-transform:uppercase;letter-spacing:.04em
 .fl input[type=search],.fl select{padding:5px 8px;border:1px solid var(--rule);border-radius:6px;background:var(--sheet);color:inherit;font:inherit}
 .kecil{padding:1px 8px;margin-left:6px}
 .c-strong{color:var(--strong)}.c-good{color:var(--good)}
+.reko{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.kartu{border:1px solid var(--rule);border-radius:8px;padding:8px 10px;background:var(--sheet);display:flex;flex-direction:column;gap:3px}
+.kp{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.no{color:var(--ink-2);font-size:12px}
+.kb{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+.kecil0{padding:1px 8px}
 </style>

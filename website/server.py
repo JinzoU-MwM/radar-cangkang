@@ -3295,10 +3295,10 @@ def ah_screen() -> dict:
     except Exception:
         harga = {}
     hasil = AH.analisa(_json_berkas("pov-ah.json"), profil_indeks(), lks_load(), harga, nama_semua(), radar_tickers(), batas=200)
-    for r in hasil["portofolio"] + hasil["rows"] + hasil["tanpaFF"]:
+    for r in hasil["portofolio"] + hasil["pernah"] + hasil["rows"] + hasil["tanpaFF"]:
         r["backdoor"] = (((pd_baca(r["t"]) or {}).get("hasil") or {}).get("backdoor") or {}).get("skor")
         r.update(ah_status(r["t"]))
-    belum = [r["t"] for r in hasil["portofolio"] + hasil["rows"] + hasil["tanpaFF"] if not r["dicek"]]
+    belum = [r["t"] for r in hasil["portofolio"] + hasil["pernah"] + hasil["rows"] + hasil["tanpaFF"] if not r["dicek"]]
     hasil["suspen"] = [{"t": r["t"], "nama": r["nama"], "skor": r["skor"]} for r in hasil["rows"] + hasil["tanpaFF"] if r.get("suspen")]
     hasil["rows"] = [r for r in hasil["rows"] if not r.get("suspen")][:60]
     hasil["tanpaFF"] = [r for r in hasil["tanpaFF"] if not r.get("suspen")]
