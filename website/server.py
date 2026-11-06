@@ -47,6 +47,7 @@ import astro as AS
 import recovery as RC
 import sinkron as SK
 import harmonik as HM
+import povah as AH
 import runtun as TS
 import seasonality as SZ
 
@@ -3245,6 +3246,70 @@ def kakdr_screen() -> dict:
     return hasil
 
 
+_ah_memo: tuple = (0.0, None)
+_ah_isi = threading.Lock()
+
+
+def ah_status(t: str) -> dict:
+    """Status perdagangan dari cache info emiten Stockbit: suspensi, notasi khusus, UMA. Tanpa memanggil Stockbit."""
+    url = SB + f"/emitten/{t}/info"
+    body = cache_read(url, int(time.time()) - 86400)
+    segar = body is not None                       # status > 1 hari dianggap belum dicek (dilengkapi ulang di latar)
+    try:
+        d = json.loads(body or cache_read(url, 0) or "{}").get("data") or {}
+    except ValueError:
+        d = {}
+    if not d:
+        return {"dicek": False}
+    return {"dicek": segar, "suspen": d.get("status") == "STATUS_SUSPENDED" or d.get("tradeable") == 0,
+            "notasi": [{"k": n.get("notation_code"), "ket": n.get("notation_desc")} for n in d.get("notation") or [] if n.get("notation_code")],
+            "uma": bool(d.get("uma"))}
+
+
+def ah_isi_status(kode: list[str]) -> None:
+    """Latar: ambil info emiten yang statusnya belum ada di cache (maks. 120), lalu hitung ulang analisa AH."""
+    global _ah_memo
+    if not _ah_isi.acquire(blocking=False):
+        return
+    try:
+        for t in kode[:120]:
+            try:
+                sb_fetch(f"/emitten/{t}/info")
+            except Exception:
+                pass
+            time.sleep(0.4)
+        _ah_memo = (0.0, None)
+    finally:
+        _ah_isi.release()
+
+
+def ah_screen() -> dict:
+    """Analisa AH (POV): portofolio Andry Hakim dari indeks profil KSEI >=1% + kurasi pov-ah.json, dan screening saham
+    beredar sedikit / publik kecil seluruh BEI (povah.py) tanpa saham yang sedang disuspensi. Data lokal dan cache saja;
+    status yang belum ada di cache dilengkapi di latar (bukan permintaan publik, token berlaku)."""
+    global _ah_memo
+    if _ah_memo[1] and time.time() - _ah_memo[0] < 3600:
+        return _ah_memo[1]
+    try:
+        harga = harga_semua()
+    except Exception:
+        harga = {}
+    hasil = AH.analisa(_json_berkas("pov-ah.json"), profil_indeks(), lks_load(), harga, nama_semua(), radar_tickers(), batas=200)
+    for r in hasil["portofolio"] + hasil["rows"] + hasil["tanpaFF"]:
+        r["backdoor"] = (((pd_baca(r["t"]) or {}).get("hasil") or {}).get("backdoor") or {}).get("skor")
+        r.update(ah_status(r["t"]))
+    belum = [r["t"] for r in hasil["portofolio"] + hasil["rows"] + hasil["tanpaFF"] if not r["dicek"]]
+    hasil["suspen"] = [{"t": r["t"], "nama": r["nama"], "skor": r["skor"]} for r in hasil["rows"] + hasil["tanpaFF"] if r.get("suspen")]
+    hasil["rows"] = [r for r in hasil["rows"] if not r.get("suspen")][:60]
+    hasil["tanpaFF"] = [r for r in hasil["tanpaFF"] if not r.get("suspen")]
+    hasil["belumDicek"] = len(belum)
+    hasil["updated"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+    if belum and not is_public_request() and get_token() and not token_expired():
+        threading.Thread(target=ah_isi_status, args=(belum,), daemon=True).start()
+    _ah_memo = (time.time(), hasil)
+    return hasil
+
+
 def saham50_build() -> dict:
     """Bangun daftar Saham 50 (dipanggil di latar). Butuh token Stockbit untuk harga dan keterbukaan."""
     cfg = load_config() or {}
@@ -6404,6 +6469,8 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json({"kode": [{"t": t, "nama": nama.get(t, "")} for t in sorted(set(bei_kode_load()) | radar_tickers())]})
         elif path == "api/kakdr-screen":
             self.reply_json(kakdr_screen())
+        elif path == "api/pov-ah":
+            self.reply_json(ah_screen())
         elif path == "api/harmonik":
             t = self.qs("ticker").upper()
             if not t:
