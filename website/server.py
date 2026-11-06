@@ -1732,15 +1732,46 @@ def rencana_cocok(t: str, teks: str) -> bool:
 RENCANA_HARI, RENCANA_MAKS = 14, 5
 
 
+# Tahap awal item otomatis dari judul bukti (tonggak sama dengan MILESTONES/MS_STAGE di frontend/src/lib/domain.js):
+# tender diumumkan -> PTW (to_umum); sudah dicaplok -> perubahan pengendalian efektif (akuisisi); PPJB/perjanjian
+# jual beli/porsi saham dibeli -> PPJB (spa). Sisanya (mis. calon pengendali) tetap penyaringan.
+TAHAP_TENDER_RX = re.compile(r"penawaran tender|tender (wajib|sukarela)|\bmto\b", re.I)
+TAHAP_EFEKTIF_RX = re.compile(r"\bdicaplok|telah diambil ?alih|resmi (mengambil ?alih|diambil ?alih)", re.I)
+TAHAP_PPJB_RX = re.compile(r"\bppjb\b|perjanjian (pengikatan |bersyarat |)jual beli|perjanjian bersyarat|"
+                           r"(akuisisi|caplok|membeli|beli|serap)\D{0,40}\d+([.,]\d+)?\s*(%|persen)\s*saham", re.I)
+
+
+def tahap_otomatis(teks: list[str]) -> tuple[str, dict]:
+    """(stage, ms) dari judul-judul bukti; tahap paling lanjut yang terbukti dipakai."""
+    gabung = " | ".join(teks)
+    if TAHAP_TENDER_RX.search(gabung):
+        return "tender", {"to_umum": True}
+    if TAHAP_EFEKTIF_RX.search(gabung):
+        return "tender", {"akuisisi": True}
+    if TAHAP_PPJB_RX.search(gabung):
+        return "spa", {"spa": True}
+    return "radar", {}
+
+
 def auto_monitor(kd: dict, now: datetime | None = None) -> list[str]:
-    """Masukkan ke Monitor (tahap radar) secara otomatis:
+    """Masukkan ke Monitor secara otomatis (tahap sesuai bukti, lihat tahap_otomatis):
     (1) pergantian pengendali terkonfirmasi: pemegang baru >= 20% di KSEI/IDX dan keterbukaan BEI tentang
         pengendali/pengambilalihan;
     (2) rencana pengambilalihan: keterbukaan atau berita Stockbit RENCANA_HARI hari terakhir yang menyebut saham
         emiten itu akan dibeli/dicaplok/diambil alih (PPJB, tender wajib, dst.), maks. RENCANA_MAKS per putaran;
         ditandai belum terkonfirmasi KSEI.
-    Emiten yang sudah di Monitor atau disembunyikan tim dari Kandidat dilewati; data yang sudah ada tidak ditimpa."""
-    ada = {i["ticker"] for i in items_all()}
+    Emiten yang sudah di Monitor atau disembunyikan tim dari Kandidat dilewati; data yang sudah ada tidak ditimpa,
+    kecuali item otomatis yang masih di tahap penyaringan tanpa tonggak: tahapnya dinaikkan sesuai bukti."""
+    semua = items_all()
+    ada = {i["ticker"] for i in semua}
+    for it in semua:
+        if it.get("auto") and not it.get("ms") and (it.get("stage") or "radar") == "radar":
+            ev = ((it.get("signals") or {}).get("akuisisi") or {}).get("ev") or []
+            st, ms = tahap_otomatis([e.get("text") or "" for e in ev] + [it.get("notes") or ""])
+            if it.get("autoJenis") != "rencana" and st == "radar":
+                st, ms = "tender", {"akuisisi": True}      # pengendali baru sudah tercatat di KSEI
+            if st != "radar":
+                item_put({**it, "stage": st, "ms": ms, "updatedAt": datetime.now(timezone.utc).isoformat()})
     try:
         ada |= {t for (t,) in data_rows("SELECT ticker FROM kandidat_hidden")}
     except Exception:
@@ -1758,15 +1789,17 @@ def auto_monitor(kd: dict, now: datetime | None = None) -> list[str]:
             if not ren or rencana >= RENCANA_MAKS:
                 continue
             rencana += 1
-            item_put({"id": t, "ticker": t, "name": k.get("name") or "", "stage": "radar", "flags": k.get("flags") or {"akuisisi": True},
-                      "ms": {}, "signals": k.get("signals") or {}, "auto": True, "autoJenis": "rencana",
+            st, ms = tahap_otomatis([e.get("text") or "" for e in ren])
+            item_put({"id": t, "ticker": t, "name": k.get("name") or "", "stage": st, "flags": k.get("flags") or {"akuisisi": True},
+                      "ms": ms, "signals": k.get("signals") or {}, "auto": True, "autoJenis": "rencana",
                       "notes": f"Otomatis: rencana pengambilalihan, belum terkonfirmasi di KSEI. {ren[0]['text']} ({ren[0]['d']}).",
                       "updatedAt": datetime.now(timezone.utc).isoformat()})
             added.append(t)
             continue
         nc = k["pengendaliBaru"]
-        item_put({"id": t, "ticker": t, "name": k.get("name") or "", "stage": "radar", "flags": k.get("flags") or {"akuisisi": True},
-                  "ms": {}, "signals": k.get("signals") or {}, "auto": True,
+        # Pemegang baru >= 20% sudah tercatat: perubahan pengendalian efektif (tahap Penyelesaian & PTW).
+        item_put({"id": t, "ticker": t, "name": k.get("name") or "", "stage": "tender", "flags": k.get("flags") or {"akuisisi": True},
+                  "ms": {"akuisisi": True}, "signals": k.get("signals") or {}, "auto": True,
                   "notes": f"Otomatis: pergantian pengendali terkonfirmasi. {nc['text']} pada {nc['date']}; keterbukaan: {lap[0]['text']} ({lap[0]['d']}).",
                   "updatedAt": datetime.now(timezone.utc).isoformat()})
         added.append(t)

@@ -599,7 +599,10 @@ class AutoMonitorTest(unittest.TestCase):
             self.kd("BYAN", "Usai Dicaplok Haji Isam, Bayan (BYAN) Rombak Direksi-Komisaris"),  # pasif: BYAN target
         ])
         self.assertEqual(hasil, ["DGIK", "IPAC", "BYAN"])
-        self.assertEqual((simpan[0]["stage"], simpan[0]["auto"], simpan[0]["autoJenis"]), ("radar", True, "rencana"))
+        self.assertEqual((simpan[0]["stage"], simpan[0]["auto"], simpan[0]["autoJenis"]), ("spa", True, "rencana"))
+        # Tahap sesuai bukti: DGIK PPJB, IPAC tender diumumkan, BYAN pengendalian efektif.
+        self.assertEqual([(x["ticker"], x["stage"], x["ms"]) for x in simpan],
+                         [("DGIK", "spa", {"spa": True}), ("IPAC", "tender", {"to_umum": True}), ("BYAN", "tender", {"akuisisi": True})])
         self.assertIn("belum terkonfirmasi di KSEI", simpan[0]["notes"])
 
     def test_terkonfirmasi_dan_lewati(self):
@@ -610,7 +613,22 @@ class AutoMonitorTest(unittest.TestCase):
                                    ada=["BBBB"], sembunyi=["CCCC"])
         self.assertEqual(hasil, ["AAAA"])
         self.assertNotIn("autoJenis", simpan[0])
+        self.assertEqual((simpan[0]["stage"], simpan[0]["ms"]), ("tender", {"akuisisi": True}))
         self.assertIn("terkonfirmasi", simpan[0]["notes"])
+
+    def test_naikkan_tahap_item_otomatis_lama(self):
+        lama = [{"ticker": "IPAC", "auto": True, "autoJenis": "rencana", "stage": "radar", "ms": {},
+                 "notes": "Otomatis: rencana pengambilalihan. Pernyataan Penawaran Tender Sukarela atas Saham IPAC"},
+                {"ticker": "ANDI", "auto": True, "stage": "radar", "ms": {}, "notes": "Otomatis: pergantian pengendali terkonfirmasi."},
+                {"ticker": "TIMX", "auto": True, "stage": "spa", "ms": {"spa": True}},              # sudah diatur, tidak disentuh
+                {"ticker": "MANU", "stage": "radar", "ms": {}, "notes": "PPJB"}]                  # bukan otomatis
+        simpan = []
+        with unittest.mock.patch.object(server, "items_all", return_value=lama), \
+                unittest.mock.patch.object(server, "data_rows", return_value=[]), \
+                unittest.mock.patch.object(server, "item_put", side_effect=simpan.append):
+            server.auto_monitor({"items": []})
+        self.assertEqual([(x["ticker"], x["stage"], x["ms"]) for x in simpan],
+                         [("IPAC", "tender", {"to_umum": True}), ("ANDI", "tender", {"akuisisi": True})])
 
     def test_batas_per_putaran(self):
         items = [self.kd(f"A{c}AA", f"Investor Siap Caplok 20 Persen Saham A{c}AA") for c in "BCDEFGH"]
