@@ -7,6 +7,8 @@ import { newsConclusion } from '../../lib/newsConclusion.js'
 import NewsItem from '../NewsItem.vue'
 import PenjelasanBursa from './PenjelasanBursa.vue'
 import BeritaTerbaru from './BeritaTerbaru.vue'
+import { analisaBerita } from '../../lib/beritaTerbaru.js'
+import { analisaLaporan } from '../../lib/laporanAnalisa.js'
 
 const props = defineProps({ ticker: { type: String, required: true } })
 // Saham di luar radar: berita & keterbukaan terbaru diambil saat dicari (/api/berita-saham), tidak masuk feed radar.
@@ -37,6 +39,22 @@ const groups = computed(() => {
   return out
 })
 const sum = computed(() => newsConclusion(list.value, { ticker: props.ticker }))
+
+// Stockbit Reports emiten ini: tiap laporan bisa dianalisa di tempat (format Analisa berita terbaru) dan diunduh PDF.
+const laporan = computed(() => list.value.filter(u => /^sb-report-/.test(String(u.id))))
+const nLap = ref(10), bukaLap = ref('')
+const NADA = { perhatian: ['Perlu perhatian', 't-warn'], positif: ['Positif', 't-good'], netral: ['Netral', 't-calm'] }
+const label = u => analisaLaporan(u)
+const busyPdf = ref(''), errPdf = ref('')
+async function unduhLap(u) {
+  busyPdf.value = u.id; errPdf.value = ''
+  try {
+    const [{ jsPDF }, mod] = await Promise.all([import('jspdf'), import('../../lib/beritaPdf.js')])
+    const a = analisaBerita(u, { items: store.items, pandangan: store.pandangan, updates: sumber.value, pengendali: store.pengendali,
+      relasi: store.relasi, verified: store.verified })
+    ;(await mod.beritaPdf(a, jsPDF)).save(mod.beritaPdfName(a).replace(/\.pdf$/, `-${String(u.id).replace(/\D/g, '').slice(-6)}.pdf`))
+  } catch (e) { errPdf.value = 'PDF gagal dibuat: ' + (e.message || e) } finally { busyPdf.value = '' }
+}
 // Server memperbarui berita otomatis tiap 2 jam (newsAt = waktu pembaruan terakhir).
 const newsAt = computed(() => store.status?.newsAt ? new Date(store.status.newsAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '')
 </script>
@@ -47,6 +65,28 @@ const newsAt = computed(() => store.status?.newsAt ? new Date(store.status.newsA
   <p v-else-if="luarErr && !list.length" class="muted">{{ luarErr }}</p>
   <BeritaTerbaru :ticker="ticker" :daftar="diRadar ? null : luar" />
   <PenjelasanBursa v-if="store.riDoc?.[ticker]?.penjelasanBursa" :pb="store.riDoc[ticker].penjelasanBursa" />
+  <section v-if="laporan.length" class="rule-top lap">
+    <div class="bar">
+      <h2 class="lbl">Stockbit Reports {{ ticker }} <span class="muted small">({{ laporan.length }} laporan)</span></h2>
+    </div>
+    <p class="muted small">Keterbukaan resmi dari Stockbit Reports, terbaru dulu. Klik <b>Analisa</b> untuk membuka analisa laporan itu di sini, atau unduh PDF-nya.</p>
+    <p v-if="errPdf" class="small c-strong">{{ errPdf }}</p>
+    <ol class="ld">
+      <li v-for="u in laporan.slice(0, nLap)" :key="u.id" :class="{ on: bukaLap === u.id }">
+        <div class="lr">
+          <span class="d">{{ fmtDate(String(u.date).slice(0, 10)) }}</span>
+          <a :href="u.url" target="_blank" rel="noopener" class="lt">{{ u.title }}</a>
+          <span class="tags"><span class="tag t-now">{{ label(u).jenis.nama }}</span><span class="tag" :class="NADA[label(u).nada][1]">{{ NADA[label(u).nada][0] }}</span></span>
+          <span class="act">
+            <button type="button" class="pill sm" :aria-expanded="String(bukaLap === u.id)" @click="bukaLap = bukaLap === u.id ? '' : u.id">{{ bukaLap === u.id ? 'Tutup' : 'Analisa' }}</button>
+            <button type="button" class="pill sm" :disabled="busyPdf === u.id" @click="unduhLap(u)">{{ busyPdf === u.id ? 'Menyiapkan…' : 'Unduh PDF' }}</button>
+          </span>
+        </div>
+        <BeritaTerbaru v-if="bukaLap === u.id" :ticker="ticker" :u="u" :daftar="diRadar ? null : luar" judul="Analisa laporan" />
+      </li>
+    </ol>
+    <p v-if="laporan.length > nLap" class="small"><button type="button" class="pill sm" @click="nLap += 20">Tampilkan 20 lagi ({{ laporan.length - nLap }} tersisa)</button></p>
+  </section>
   <section class="rule-top">
     <div class="bar">
       <h2 class="lbl">Laporan dan berita {{ ticker }}</h2>
@@ -76,6 +116,12 @@ const newsAt = computed(() => store.status?.newsAt ? new Date(store.status.newsA
 </template>
 
 <style scoped>
+.ld{list-style:none;margin:6px 0 0;padding:0}
+.ld>li{border-top:1px solid var(--rule-2);padding:6px 0}.ld>li.on{background:var(--zebra)}
+.lr{display:grid;grid-template-columns:90px minmax(0,1fr) auto auto;gap:8px;align-items:center}
+.lr .d{font:600 13px var(--f-display);color:var(--ink-2)}.lt{color:var(--ink);font-size:14px}
+.tags{display:flex;gap:4px;flex-wrap:wrap}.act{display:flex;gap:4px}
+@media (max-width:760px){.lr{grid-template-columns:80px minmax(0,1fr)}.tags,.act{grid-column:2}}
 .bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
 .lbl{margin:0}
 .list{border-radius:4px}
