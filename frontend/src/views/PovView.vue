@@ -6,7 +6,6 @@ import { api, loadJson } from '../api.js'
 import { fmt, fmtDate } from '../lib/domain.js'
 import PovDetail from '../components/PovDetail.vue'
 import PovDalam from '../components/PovDalam.vue'
-import PovHarmonik from '../components/PovHarmonik.vue'
 import PovAh from '../components/PovAh.vue'
 
 const data = ref(null), err = ref(''), kd = ref(null)
@@ -17,8 +16,6 @@ const kdScr = ref(null)
 watch(kdOpen, v => { if (v && !kdScr.value) api.get('/api/kakdr-screen').then(r => { kdScr.value = r }, () => { kdScr.value = { rows: [], dinilai: 0, catatan: 'Screening gagal dimuat.' } }) })
 // Pola pikir per akun juga disembunyikan sampai diklik.
 const polaOpen = ref(false)
-// Harmonic Pattern (materi + screening) juga disembunyikan sampai diklik; data dimuat saat dibuka.
-const hmOpen = ref(false)
 // POV AH (portofolio Andry Hakim + screening saham beredar sedikit) juga dimuat saat dibuka.
 const ahOpen = ref(false)
 // POV dan KakdrWay dimuat paralel: tombol KakdrWay tidak menunggu data POV.
@@ -130,11 +127,8 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
     </section>
 
     <section class="rule-top">
-      <button type="button" class="btn kdbtn" :aria-expanded="String(hmOpen)" aria-controls="hm-isi" @click="hmOpen = !hmOpen">
-        Harmonic Pattern <span class="muted">(materi, studi kasus, screening)</span> <span aria-hidden="true">{{ hmOpen ? '▴' : '▾' }}</span>
-      </button>
-      <p class="small ket">Belajar pola XABCD dan rasio Fibonacci, lalu lihat saham BEI yang sedang membentuk pola harmonik.</p>
-      <PovHarmonik v-if="hmOpen" id="hm-isi" />
+      <RouterLink class="btn kdbtn" to="/harmonic">Harmonic Pattern <span class="muted">(pindah ke menu sendiri)</span> →</RouterLink>
+      <p class="small ket">Materi, chart dengan gambar otomatis, dan screening pola harmonik sekarang ada di menu Harmonic Pattern.</p>
     </section>
 
     <section class="rule-top">
