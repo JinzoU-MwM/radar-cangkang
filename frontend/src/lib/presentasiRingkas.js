@@ -6,13 +6,42 @@ export const RINGKAS = [
   {
     id: 'r-judul', bagian: 'Pendahuluan', judul: 'Harmonic Pattern pada Saham BEI',
     sub: 'Ringkasan Harmonic Trading Vol. 1 (Scott M. Carney) dan penerapannya di Radar Backdoor',
+    paragraf: ['Harmonic Pattern adalah pola harga lima titik (X, A, B, C, D) yang divalidasi dengan rasio Fibonacci untuk menemukan zona tempat harga berpeluang berbalik arah, lengkap dengan batas rugi dan target yang bisa dihitung sebelum transaksi.'],
     tabel: { kolom: ['Bagian', 'Isi'], baris: [
+      ['Pengantar', 'Apa itu Harmonic Pattern, fungsi, dan arti tiap titik'],
       ['Landasan teori', 'Konsep harmonic trading, rasio Fibonacci, struktur XABCD, PRZ'],
       ['Pola', 'AB=CD, Gartley, Bat, Crab, Butterfly'],
       ['Eksekusi dan manajemen', 'Aksi harga di PRZ, target, stop, pola gagal'],
       ['Metodologi', 'Cara halaman ini mendeteksi pola otomatis'],
       ['Penerapan di BEI', 'Penyesuaian karakter saham Indonesia, kesimpulan'],
     ] },
+  },
+  {
+    id: 'r-apa', bagian: 'Pendahuluan', judul: 'Apa itu Harmonic Pattern?', sub: 'Definisi, fungsi, dan arti tiap titik',
+    paragraf: [
+      'Harmonic Pattern adalah pola grafik harga berbentuk lima titik (X, A, B, C, D) yang panjang tiap gelombangnya saling berhubungan dengan rasio Fibonacci tertentu. Bila semua rasio itu terpenuhi, titik D menandai zona tempat harga berpeluang besar berbalik arah, yang disebut PRZ (Potential Reversal Zone).',
+      'Akar polanya dari H.M. Gartley (1935); Scott M. Carney kemudian menetapkan rasio yang presisi untuk tiap pola dan menyusunnya menjadi metode Harmonic Trading. Pola dibaca dari aksi harga saja, tanpa bergantung pada berita.',
+    ],
+    poin: [
+      'Fungsi 1: menemukan area beli (pola bullish) atau area jual dan ambil untung (pola bearish) sebelum harga sampai di sana.',
+      'Fungsi 2: menentukan stop loss yang objektif, yaitu batas tempat pola dinyatakan batal.',
+      'Fungsi 3: menentukan target terukur (retracement 0,382 dan 0,618 kaki AD) serta menghitung rasio untung-rugi dan jumlah lot sebelum transaksi.',
+    ],
+    pola: 'gartley', alat: 'xabcd', rujukan: 'Carney, Bab 1 dan 3',
+  },
+  {
+    id: 'r-istilah', bagian: 'Pendahuluan', judul: 'Arti setiap titik dan istilah', sub: 'Bahasa dasar untuk membaca semua pola',
+    tabel: { kolom: ['Istilah', 'Keterangan'], baris: [
+      ['X', 'Titik awal pola: swing low untuk pola bullish, swing high untuk pola bearish'],
+      ['A', 'Ujung gerak pertama; kaki XA menjadi penggaris semua rasio'],
+      ['B', 'Koreksi dari kaki XA; rasio B paling menentukan jenis pola'],
+      ['C', 'Koreksi dari kaki AB'],
+      ['D', 'Titik akhir pola, tempat harga diperkirakan berbalik'],
+      ['PRZ', 'Zona di sekitar D tempat beberapa angka Fibonacci bertemu; area entry'],
+      ['Bullish / bearish', 'D berupa lembah (potensi naik) / D berupa puncak (potensi turun)'],
+      ['Retracement / ekstensi', 'D di dalam kaki XA (Gartley, Bat) / D melewati X (Butterfly, Crab)'],
+    ] },
+    pola: 'gartley', rujukan: 'Carney, Bab 3',
   },
   {
     id: 'r-latar', bagian: 'Pendahuluan', judul: 'Latar belakang dan tujuan', sub: 'Dari harga yang tampak acak ke kerangka terukur',
