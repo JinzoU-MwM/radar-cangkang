@@ -14,9 +14,12 @@ const hsc = computed(() => store.hsc || { kode: [] })
 const daftar = computed(() => {
   const q = cari.value.trim().toUpperCase()
   return [...(hsc.value.kode || [])].sort()
-    .map(t => ({ t, nama: hsc.value.nama?.[t] || '', baru: hsc.value.baru?.[t] || '' }))
+    .map(t => ({ t, nama: hsc.value.nama?.[t] || '', baru: hsc.value.baru?.[t] || '', pct: hsc.value.konsentrasi?.[t],
+      tanda: hsc.value.tanda?.[t] || '' }))
     .filter(x => !q || x.t.includes(q) || x.nama.toUpperCase().includes(q))
 })
+// Ringkasan perubahan daftar dibanding daftar sebelumnya (hsc.json → sebelumnya).
+const nBaru = computed(() => (hsc.value.kode || []).length - ((hsc.value.sebelumnya?.jumlah || 0) - (hsc.value.keluar || []).length))
 
 // Teks sumber (fakta & implikasi) dari hsc.json; angka analisa dihitung server.
 const an = computed(() => hsc.value.analisa || null)
@@ -185,22 +188,26 @@ async function unduh() {
       <h2>Daftar saham HSC</h2>
       <span class="small muted">{{ (hsc.kode || []).length }} saham, urut alfabet · per {{ hsc.tanggal || '–' }}</span>
     </div>
+    <p v-if="hsc.sebelumnya" class="small muted">Dibanding daftar sebelumnya ({{ hsc.sebelumnya.jumlah }} emiten{{ hsc.sebelumnya.catatan ? ': ' + hsc.sebelumnya.catatan : '' }}):
+      {{ nBaru }} saham baru, {{ (hsc.keluar || []).length ? 'keluar ' + hsc.keluar.join(', ') : 'tidak ada yang keluar' }}. Mulai {{ hsc.berlaku }} dikeluarkan dari perhitungan IHSG.</p>
     <div class="flt">
       <input v-model="cari" type="search" class="cari" placeholder="Cari kode atau nama perusahaan" aria-label="Cari saham HSC">
       <span v-if="cari" class="small muted">{{ daftar.length }} cocok</span>
     </div>
     <div class="scroll">
       <table class="ledger">
-        <thead><tr><th class="num">No</th><th>Kode</th><th>Nama perusahaan</th><th class="num">Harga</th><th>Keterangan</th></tr></thead>
+        <thead><tr><th class="num">No</th><th>Kode</th><th>Nama perusahaan</th><th class="num" title="Konsentrasi kepemilikan 10 pemegang terbesar">Top 10</th><th class="num">Harga</th><th>Keterangan</th></tr></thead>
         <tbody>
           <tr v-for="(x, i) in daftar" :key="x.t">
             <td class="num muted">{{ i + 1 }}</td>
             <td><RouterLink :to="{ path: '/emiten/' + x.t, query: { tab: 'analisa' } }"><b>{{ x.t }}</b></RouterLink></td>
             <td>{{ x.nama || '–' }}</td>
+            <td class="num">{{ x.pct != null ? x.pct.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 3 }) + '%' : '–' }}</td>
             <td class="num"><HargaSaham :kode="x.t" /></td>
-            <td class="small"><span v-if="x.baru" class="tag t-warn">Baru</span> <span class="muted">{{ x.baru }}</span></td>
+            <td class="small"><span v-if="x.baru" class="tag t-warn">Baru</span> <span class="muted">{{ x.baru }}</span>
+              <div v-if="x.tanda" class="muted">{{ x.tanda }}</div></td>
           </tr>
-          <tr v-if="!daftar.length"><td colspan="5" class="muted">Tidak ada saham yang cocok.</td></tr>
+          <tr v-if="!daftar.length"><td colspan="6" class="muted">Tidak ada saham yang cocok.</td></tr>
         </tbody>
       </table>
     </div>
