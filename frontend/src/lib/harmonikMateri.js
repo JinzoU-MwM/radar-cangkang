@@ -277,3 +277,11 @@ export function diagramAbcd(arah = 'bullish') {
   const titik = ['A', 'B', 'C', 'D'].map((n, j) => { const t = (v[n] - lo) / (hi - lo); return { n, x: j / 3, y: bull ? 1 - t : t } })
   return { titik, garis: [{ a: titik[0], b: titik[2], teks: '0,382–0,886' }, { a: titik[1], b: titik[3], teks: '1,13–2,618' }], bull }
 }
+
+// Butir yang muncul bertahap di mode presentasi: tiap paragraf, tiap poin, lalu tiap baris tabel. Slide yang bisa
+// dicentang (daftar periksa, rencana belajar) tampil utuh sekaligus.
+export function butirSlide(s) {
+  if (!s || s.periksa || s.belajar) return []
+  return [...(s.paragraf || []).map((t, i) => ({ jenis: 'p', i })), ...(s.poin || []).map((t, i) => ({ jenis: 'li', i })),
+    ...(s.tabel?.baris || []).map((t, i) => ({ jenis: 'tr', i }))]
+}

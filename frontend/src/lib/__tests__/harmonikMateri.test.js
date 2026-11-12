@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BAGIAN, SLIDE, diagramAbcd, totalSlide } from '../harmonikMateri.js'
+import { BAGIAN, SLIDE, butirSlide, diagramAbcd, totalSlide } from '../harmonikMateri.js'
 import { POLA } from '../harmonikAlat.js'
 
 const KUNCI = new Set(['id', 'bagian', 'judul', 'sub', 'paragraf', 'poin', 'tabel', 'pola', 'alat', 'rujukan', 'periksa', 'belajar'])
@@ -28,5 +28,16 @@ describe('materi harmonic', () => {
     expect(y.A).toBe(0)
     expect(y.D).toBe(1)
     expect(y.B).toBeGreaterThan(y.C)
+  })
+})
+
+describe('butir presentasi', () => {
+  it('urutan: paragraf, poin, lalu baris tabel', () => {
+    const b = butirSlide({ paragraf: ['a', 'b'], poin: ['c'], tabel: { kolom: ['x'], baris: [['1'], ['2']] } })
+    expect(b.map(x => x.jenis + x.i).join(' ')).toBe('p0 p1 li0 tr0 tr1')
+  })
+  it('slide centang tampil utuh', () => {
+    expect(butirSlide(SLIDE.find(s => s.periksa))).toEqual([])
+    expect(butirSlide(null)).toEqual([])
   })
 })

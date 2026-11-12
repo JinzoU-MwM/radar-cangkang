@@ -6,6 +6,7 @@ const props = defineProps({
   w: { type: Number, default: 224 },
   h: { type: Number, default: 112 },
   pad: { type: Number, default: 16 },
+  animasi: { type: Boolean, default: false },   // garis pola tergambar bertahap, label rasio muncul berurutan
 })
 const dx = v => props.pad + v * (props.w - 2 * props.pad)
 const dy = v => props.pad + v * (props.h - 2 * props.pad)
@@ -19,14 +20,14 @@ const posLabel = (t, j) => {
 </script>
 
 <template>
-  <svg :viewBox="`0 0 ${w} ${h}`" class="pd" aria-hidden="true">
-    <g v-for="(g, j) in diagram.garis" :key="j">
+  <svg :viewBox="`0 0 ${w} ${h}`" class="pd" :class="{ anim: animasi }" aria-hidden="true">
+    <g v-for="(g, j) in diagram.garis" :key="j" class="rg" :style="{ '--d': 1.2 + j * 0.35 + 's' }">
       <line :x1="dx(g.a.x)" :y1="dy(g.a.y)" :x2="dx(g.b.x)" :y2="dy(g.b.y)" class="r" />
       <text :x="(dx(g.a.x) + dx(g.b.x)) / 2" :y="(dy(g.a.y) + dy(g.b.y)) / 2 - 2" class="rt">{{ g.teks }}</text>
     </g>
-    <polyline :points="diagram.titik.map(t => `${dx(t.x)},${dy(t.y)}`).join(' ')" class="j" />
+    <polyline :points="diagram.titik.map(t => `${dx(t.x)},${dy(t.y)}`).join(' ')" class="j" pathLength="1" />
     <circle :cx="dx(diagram.titik.at(-1).x)" :cy="dy(diagram.titik.at(-1).y)" r="6" :class="diagram.bull ? 'dg' : 'ds'" />
-    <text v-for="(t, j) in diagram.titik" :key="t.n" v-bind="posLabel(t, j)" class="t">{{ t.n }}</text>
+    <text v-for="(t, j) in diagram.titik" :key="t.n" v-bind="posLabel(t, j)" class="t" :style="{ '--d': j * 0.28 + 's' }">{{ t.n }}</text>
   </svg>
 </template>
 
@@ -37,4 +38,11 @@ const posLabel = (t, j) => {
 .rt{font:600 9px var(--f-data);fill:var(--ink);text-anchor:middle;paint-order:stroke;stroke:var(--sheet);stroke-width:3px}
 .t{font:800 11px var(--f-data);fill:var(--ink);text-anchor:middle}
 .dg{fill:var(--good);opacity:.55}.ds{fill:var(--strong);opacity:.55}
+/* Animasi: garis pola tergambar (pathLength 1), titik dan label rasio muncul berurutan. */
+.anim .j{stroke-dasharray:1;stroke-dashoffset:1;animation:gambar 1.3s ease-out forwards}
+.anim .t,.anim .rg{opacity:0;animation:muncul .45s ease-out forwards;animation-delay:var(--d)}
+.anim circle{opacity:0;animation:muncul .4s ease-out 1.2s forwards}
+@keyframes gambar{to{stroke-dashoffset:0}}
+@keyframes muncul{to{opacity:1}}
+@media (prefers-reduced-motion: reduce){.anim .j,.anim .t,.anim .rg,.anim circle{animation:none;opacity:1;stroke-dashoffset:0}}
 </style>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { jarakElliott, nilaiTren, trenBesar, alasanPola, alasanX, candleBalik, skenarioD, konfirmasiD, rsi, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag } from '../harmonikAlat.js'
+import { labPola, rasioContoh, jarakElliott, nilaiTren, trenBesar, alasanPola, alasanX, candleBalik, skenarioD, konfirmasiD, rsi, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag } from '../harmonikAlat.js'
 
 // Bar sintetis: harga bergerak lurus antar titik, 10 bar per kaki, tanggal hari kerja berurutan.
 function bangun(titik, per = 10) {
@@ -290,5 +290,23 @@ describe('jarakElliott', () => {
     expect(jarakElliott({ status: 'gelombang 5 berjalan', titik: [{ i: 50 }] }, bars)).toBeNull()
     expect(jarakElliott({ status: 'lengkap', titik: [{ i: 49 }] }, bars)).toBeNull()
     expect(jarakElliott(null, bars)).toBeNull()
+  })
+})
+
+describe('lab pola', () => {
+  it('rasio contoh tiap pola dikenali sebagai pola itu sendiri', () => {
+    for (const k of ['gartley', 'bat', 'altbat', 'butterfly', 'crab', 'deepcrab', 'cypher', 'shark']) {
+      const r = rasioContoh(k)
+      const hasil = labPola(r.b, r.c, r.d)
+      expect(hasil.cocok.map(x => x.k), k).toContain(k)
+    }
+  })
+  it('rasio acak yang tidak memenuhi aturan: tidak ada pola', () => {
+    expect(labPola(0.95, 0.2, 0.5).cocok).toEqual([])
+  })
+  it('Gartley: B 0,618 dan D 0,786 dengan C 0,618', () => {
+    const h = labPola(0.618, 0.618, 0.786)
+    expect(h.cocok[0].k).toBe('gartley')
+    expect(h.rasio.b).toBeCloseTo(0.618, 3)
   })
 })
