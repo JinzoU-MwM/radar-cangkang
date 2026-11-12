@@ -70,6 +70,11 @@ export function harmonicViewPdf(s, jsPDF) {
     butir(['Rasio lima swing terakhir belum masuk rentang pola mana pun. Pola harmonik jarang terbentuk sempurna; jangan dipaksakan. Pantau lagi setelah swing baru terbentuk.'])
     tbl([{ t: 'Rasio', w: 90 }, { t: 'Aktual', w: 92, align: 'right' }], s.rasio.map(r => [{ t: r[0], bold: true }, r3(r[1])]))
   }
+  if (x?.pola) {
+    sub(s.konf ? `Konfirmasi di D: ${s.konf.jumlah} dari ${s.konf.total} (${s.konf.label})` : 'Konfirmasi di D')
+    butir(s.konf ? [...s.konf.cek.map(c => `${c.ok ? 'Ada' : 'Belum'}: ${c.teks}.`), 'Entry setelah minimal dua konfirmasi; PRZ adalah area, bukan sinyal beli/jual otomatis.']
+      : ['D belum terbentuk. Konfirmasi (candle pembalikan, divergence RSI, tembus struktur minor, volume) dinilai setelah harga masuk PRZ.'])
+  }
   sub('Titik pola')
   tbl([{ t: 'Titik', w: 18 }, { t: 'Tanggal', w: 40 }, { t: 'Harga', w: 34, align: 'right' }, { t: 'Keterangan', w: 90 }],
     (x?.titik || []).map(t => [{ t: t.n, bold: true }, t.proyeksi ? 'proyeksi' : tgl(bars[t.i]?.d), n(t.p),

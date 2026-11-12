@@ -10,7 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { createChart, CrosshairMode } from 'lightweight-charts'
 import { api } from '../api.js'
 import { store, toast } from '../store.js'
-import { SKALA, TF, POLA, PEMBEDA, alasanPola, alasanX, diagramIdeal, cariElliott, cariXabcd, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
+import { SKALA, TF, POLA, PEMBEDA, alasanPola, alasanX, diagramIdeal, konfirmasiD, cariElliott, cariXabcd, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
 import { ukuranPosisi } from '../lib/harmonikBelajar.js'
 
 const route = useRoute(), router = useRouter()
@@ -78,6 +78,8 @@ const pilihPola = ref(0)
 watch(polaList, () => { pilihPola.value = 0 })
 const xabcd = computed(() => polaList.value[pilihPola.value] || (bars.value.length ? swingXabcd(bars.value, skala.value) : null))
 const polaAcuan = computed(() => xabcd.value?.pola ? xabcd.value : null)
+// Konfirmasi pembalikan di D (candle, divergence RSI, struktur minor, volume); null bila D belum terbentuk.
+const konf = computed(() => polaAcuan.value ? konfirmasiD(bars.value, polaAcuan.value) : null)
 // Pola terpilih didahulukan untuk Long/Short bila arahnya cocok.
 const urutPosisi = computed(() => polaAcuan.value ? [polaAcuan.value, ...polaList.value.filter(r => r !== polaAcuan.value)] : polaList.value)
 const hasil = computed(() => {
@@ -151,6 +153,8 @@ const ringkasan = computed(() => {
   if (!p) return []
   const out = []
   out.push(x?.pola ? `Pola ${x.nama} ${x.arah}, ${STATUS[x.status]}.` : 'Belum ada pola harmonik yang cocok; rencana posisi memakai swing terakhir, jadi bobotnya lebih lemah.')
+  if (x?.pola) out.push(konf.value ? `Konfirmasi di D ${konf.value.jumlah} dari ${konf.value.total} (${konf.value.label})${konf.value.jumlah < 2 ? ': belum cukup, tunggu candle pembalikan atau volume sebelum masuk' : ''}.`
+    : 'D belum terbentuk: tunggu harga masuk PRZ dan muncul konfirmasi.')
   if (e) out.push(`Elliott: impuls ${e.naik ? 'naik' : 'turun'} (${e.status})${e.valid ? '' : ', aturan belum terpenuhi'}.`)
   if (!p.kosong) out.push(`${arahPosisi.value === 'long' ? 'Long' : 'Short'}: entry ${fmtH(p.entry)}, stop loss ${fmtH(p.stop)} (${fmtP(p.stopPct)}), TP1 ${fmtH(p.target[0])} (${fmtP(p.targetPct[0])}), TP2 ${fmtH(p.target[1])} (${fmtP(p.targetPct[1])}), R:R ${r2(p.rr[0])}–${r2(p.rr[1])}.`)
   if (!p.kosong && p.rr[1] != null) out.push(p.rr[1] >= 2 ? `R:R TP2 ${r2(p.rr[1])}: target sebanding dengan stop (minimal 2), layak dipertimbangkan.`
@@ -266,6 +270,12 @@ function tampilkan(k) {
   const r = ts.getVisibleLogicalRange()
   if (!r || !idx.length) return
   const lo = Math.min(...idx) - 8, hi = Math.max(...idx, bars.value.length - 1) + 12
+  // XABCD dengan pola: pola dan candle terbaru di sisi kiri, ruang kosong di kanan untuk gambar pola ideal.
+  if (k === 'xabcd' && x.pola) {
+    const ujung = Math.max(...idx, bars.value.length - 1), awal = Math.min(...idx) - 6
+    ts.setVisibleLogicalRange({ from: awal, to: ujung + Math.max(14, (ujung - awal) * 0.85) })
+    return
+  }
   // Gambar yang terlalu kecil di layar diperbesar (fokus ke pola); yang terpotong diperlebar.
   if ((k === 'xabcd' || k === 'elliott') && hi - lo < (r.to - r.from) * 0.3) ts.setVisibleLogicalRange({ from: lo - (hi - lo) * 0.4, to: hi })
   else if (lo < r.from || hi > r.to) ts.setVisibleLogicalRange({ from: Math.min(r.from, lo), to: Math.max(r.to, hi) })
@@ -313,6 +323,12 @@ const gambar = computed(() => {
         titik: p.map((t, j) => ({ ...t, atas: j === 0 ? t.p >= p[1].p : t.p >= (p[j - 1]?.p ?? 0) })),
         prz: x.prz && ok(Y(x.prz[0]), Y(x.prz[1])) ? { x1: C.x, x2: Math.min(W, D.x + Math.max(40, (D.x - C.x) * 0.6)), y1: Y(x.prz[1]), y2: Y(x.prz[0]) } : null,
         label: x.pola ? `${x.nama} ${x.arah}` : 'Swing terakhir (bukan pola)',
+        tanda: (() => {
+          const c = konf.value?.candle, b = c && bars.value[c.i]
+          if (!b) return null
+          const bull = x.arah === 'bullish', tx = X(c.i), ty = Y(bull ? b.l : b.h)
+          return ok(tx, ty) ? { x: tx, y: bull ? ty + 8 : ty - 8, bull, nama: c.nama } : null
+        })(),
       }
     }
   }
@@ -397,11 +413,12 @@ const inset = computed(() => {
     pembeda: PEMBEDA[x.pola], status: STATUS[x.status], prz: x.prz }
 })
 watch(() => hasil.value.xabcd?.kunci, () => { insetTutup.value = false })
-const IW = 268, IH = 330
+const IW = 268, elInset = ref(), tinggiInset = ref(330)
+watch([inset, ver], () => nextTick(() => { const h = elInset.value?.offsetHeight; if (h && Math.abs(h - tinggiInset.value) > 4) tinggiInset.value = h }))
 // Sudut dengan candle (dan titik pola) paling sedikit yang tertutup kotak gambar.
 const insetPos = computed(() => {
   ver.value // eslint-disable-line no-unused-expressions
-  const { w, h } = panel.value
+  const { w, h } = panel.value, IH = tinggiInset.value
   if (!inset.value || !w || !chart) return null
   const kandidat = [8, (w - IW) / 2, w - IW - 8].flatMap(x => [52, h * 0.78 - IH].map(y => ({ x, y })))
     .filter(c => c.x >= 0 && c.y >= 0)
@@ -460,7 +477,7 @@ async function unduh() {
       t: kode.value, nama: nama.value, tfNama: tfNama.value.nama, bars: bars.value, hasil: hasil.value, foto,
       alatAktif: aktif.value.map(k => ALAT.find(a => a.k === k).nama), rasio: barisRasio.value,
       alasan: x?.pola ? alasanPola(x) : [], teksX: teksX.value, pembeda: PEMBEDA[x?.pola] || '', status: STATUS[x?.status] || '',
-      kesimpulan: ringkasan.value, modal: modal.value, risiko: risiko.value, lot: { long: lot('long'), short: lot('short') },
+      kesimpulan: ringkasan.value, konf: konf.value, modal: modal.value, risiko: risiko.value, lot: { long: lot('long'), short: lot('short') },
     }, jsPDF)
     doc.save(P.harmonicViewPdfName(kode.value, tfNama.value.pendek))
   } catch (e) {
@@ -535,7 +552,7 @@ async function unduh() {
           <span class="vol">Vol <i>{{ fmtV(info.v) }} lot</i> · {{ String(info.d) }}</span>
         </div>
         <p v-if="err" class="err" role="alert">{{ err }}</p>
-        <div v-if="inset && insetPos && !insetTutup" class="inset" :style="{ left: insetPos.x + 'px', top: insetPos.y + 'px', width: IW + 'px' }" role="note" aria-label="Pola harmonik terdeteksi">
+        <div v-if="inset && insetPos && !insetTutup" ref="elInset" class="inset" :style="{ left: insetPos.x + 'px', top: insetPos.y + 'px', width: IW + 'px' }" role="note" aria-label="Pola harmonik terdeteksi">
           <div class="ih"><b :class="inset.bull ? 'up' : 'dn'">{{ inset.nama }}</b><button type="button" class="ix" title="Sembunyikan gambar pola" aria-label="Sembunyikan gambar pola" @click="insetTutup = true">×</button></div>
           <svg :viewBox="`0 0 ${DW} ${DH}`" class="ideal" aria-hidden="true">
             <g v-for="(g, j) in inset.diagram.garis" :key="j">
@@ -551,6 +568,7 @@ async function unduh() {
           <ul class="ia">
             <li v-for="a in inset.alasan" :key="a.teks" :class="a.ok ? 'up' : 'dn'">{{ a.ok ? '✓' : '≈' }} {{ a.teks }} <b>{{ fmtR(a.aktual) }}</b> <span>(ideal {{ a.ideal }})</span></li>
           </ul>
+          <p v-if="konf" class="ip"><b>Konfirmasi {{ konf.jumlah }}/{{ konf.total }} ({{ konf.label }})</b>: {{ konf.cek.filter(c => c.ok).map(c => c.k === 'candle' ? c.nama : c.k === 'rsi' ? 'divergence RSI' : c.k === 'struktur' ? 'struktur minor tembus' : 'volume tinggi').join(', ') || 'belum ada' }}.</p>
           <p class="ip">{{ inset.status }}. PRZ {{ fmtH(inset.prz[0]) }}–{{ fmtH(inset.prz[1]) }}: {{ inset.bull ? 'area potensi berbalik naik' : 'area potensi berbalik turun' }}.</p>
         </div>
         <svg v-if="panel.w" ref="elOv" class="ov" :width="panel.w" :height="panel.h" :viewBox="`0 0 ${panel.w} ${panel.h}`" aria-hidden="true">
@@ -581,6 +599,10 @@ async function unduh() {
               <circle :cx="t.x" :cy="t.y" r="4" class="pt" :class="{ proy: t.proyeksi }" />
               <text :x="t.x" :y="t.atas ? t.y - 10 : t.y + 19" class="nt">{{ t.n }}</text>
               <text v-if="t.n === 'X'" :x="t.x" :y="t.atas ? t.y - 24 : t.y + 33" class="xket">{{ gambar.xabcd.bull ? 'swing low awal pola' : 'swing high awal pola' }}</text>
+            </g>
+            <g v-if="gambar.xabcd.tanda" class="tanda">
+              <path :d="gambar.xabcd.tanda.bull ? `M${gambar.xabcd.tanda.x},${gambar.xabcd.tanda.y} l-5,9 h10 z` : `M${gambar.xabcd.tanda.x},${gambar.xabcd.tanda.y} l-5,-9 h10 z`" />
+              <text :x="gambar.xabcd.tanda.x" :y="gambar.xabcd.tanda.bull ? gambar.xabcd.tanda.y + 21 : gambar.xabcd.tanda.y - 13">{{ gambar.xabcd.tanda.nama }}</text>
             </g>
             <text :x="gambar.xabcd.titik[4].x + 8" :y="gambar.xabcd.titik[4].y + (gambar.xabcd.bull ? 34 : -26)" class="nama">{{ gambar.xabcd.label }}</text>
           </g>
@@ -644,6 +666,13 @@ async function unduh() {
               <thead><tr><th>Rasio</th><th>Aktual</th><th v-if="hasil.xabcd.pola">Ideal</th></tr></thead>
               <tbody><tr v-for="b in barisRasio" :key="b[0]"><td>{{ b[0] }}</td><td>{{ fmtR(b[1]) }}</td><td v-if="hasil.xabcd.pola">{{ b[2] }}</td></tr></tbody>
             </table>
+            <div v-if="hasil.xabcd.pola" class="konf">
+              <b>Konfirmasi di D: {{ konf ? `${konf.jumlah} dari ${konf.total} (${konf.label})` : 'menunggu D terbentuk' }}</b>
+              <ul v-if="konf" class="cek">
+                <li v-for="c in konf.cek" :key="c.k" :class="c.ok ? 'up' : 'mute'">{{ c.ok ? '✓' : '·' }} {{ c.teks }}</li>
+              </ul>
+              <p v-else class="small">Konfirmasi baru bisa dinilai setelah harga masuk PRZ dan membentuk titik D.</p>
+            </div>
             <details class="kx" open>
               <summary>Kenapa titik X di sini?</summary>
               <p v-for="(t, j) in teksX" :key="j" class="small">{{ t }}</p>
@@ -685,6 +714,7 @@ async function unduh() {
             <template v-if="hasil[k] && !hasil[k].kosong">
               <p class="besar">{{ hasil[k].pola ? `${hasil[k].pola.nama} ${hasil[k].pola.arah}` : 'Tanpa pola harmonik searah' }}</p>
               <p class="small">Dasar: {{ hasil[k].dasar }} · {{ hasil[k].aktif }}.</p>
+              <p v-if="hasil[k].pola && hasil[k].pola === polaAcuan" class="small" :class="konf && konf.jumlah >= 2 ? 'up' : 'dn'">{{ konf ? `Konfirmasi di D ${konf.jumlah}/${konf.total} (${konf.label})${konf.jumlah < 2 ? ': tunggu konfirmasi sebelum entry.' : '.'}` : 'D belum terbentuk: entry menunggu harga masuk PRZ dan konfirmasi.' }}</p>
               <dl class="dl">
                 <dt>Entry</dt><dd>{{ fmtH(hasil[k].entry) }}</dd>
                 <dt>Stop loss</dt><dd class="dn">{{ fmtH(hasil[k].stop) }} ({{ fmtP(hasil[k].stopPct) }})</dd>
@@ -871,7 +901,10 @@ async function unduh() {
 .pt{fill:var(--sheet);stroke:var(--pc);stroke-width:2}.pt.proy{stroke-dasharray:2 2}
 .nt{fill:var(--pc);text-anchor:middle;font-weight:800;font-size:13px !important}
 .xket{fill:var(--ink-2);text-anchor:middle;font-size:10px !important}
+.konf{margin:6px 0;font-size:12px}
 .kx{margin:6px 0;font-size:12px}.kx summary{cursor:pointer;font-weight:700;color:var(--ink)}.kx p.small{margin:4px 0 0 !important;color:var(--ink) !important}
+.tanda path{fill:var(--good);stroke:none}.tanda text{fill:var(--good);text-anchor:middle;font-weight:700;font-size:10px !important}
+.bear .tanda path{fill:var(--strong)}.bear .tanda text{fill:var(--strong)}
 .nama{fill:var(--pc);font-weight:700;font-size:12px !important}
 .prz{fill:var(--warn-bg);stroke:var(--warn);stroke-dasharray:4 3;opacity:.85}
 .przt{fill:var(--warn);text-anchor:end;font-weight:700}

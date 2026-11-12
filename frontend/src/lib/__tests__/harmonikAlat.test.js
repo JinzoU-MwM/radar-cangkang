@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { alasanPola, alasanX, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag } from '../harmonikAlat.js'
+import { alasanPola, alasanX, candleBalik, konfirmasiD, rsi, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag } from '../harmonikAlat.js'
 
 // Bar sintetis: harga bergerak lurus antar titik, 10 bar per kaki, tanggal hari kerja berurutan.
 function bangun(titik, per = 10) {
@@ -176,5 +176,34 @@ describe('alasanX', () => {
     expect(t[0]).toMatch(/^X = swing low 100 \(2026-/)
     expect(t[0]).toMatch(/naik 100% ke A 200/)
     expect(t.join(' ')).toMatch(/batas batal/)
+  })
+})
+
+describe('konfirmasi di D', () => {
+  it('candle pembalikan: pin bar dan engulfing', () => {
+    const pin = [{ o: 10, h: 10.5, l: 9.5, c: 10 }, { o: 10, h: 10.1, l: 8, c: 9.9 }]
+    expect(candleBalik(pin, 1, true)).toBe('pin bar')
+    const eng = [{ o: 10, h: 10.1, l: 9, c: 9.2 }, { o: 9.1, h: 10.4, l: 9.05, c: 10.3 }]
+    expect(candleBalik(eng, 1, true)).toBe('bullish engulfing')
+    expect(candleBalik(eng, 1, false)).toBe('')
+  })
+  it('RSI 100 saat harga hanya naik', () => {
+    const r = rsi(Array.from({ length: 20 }, (_, i) => 100 + i))
+    expect(r[13]).toBeNull()
+    expect(r[19]).toBe(100)
+  })
+  it('pola dengan D terbentuk diberi empat cek; pola menuju tidak', () => {
+    const bars = bangun([150, X, A, B, C, D, D + 20])
+    bars.forEach(b => { b.v = 1000 })
+    const iD = 50
+    bars[iD + 1] = { ...bars[iD + 1], o: D - 1, l: D - 1.5, c: D + 4, h: D + 4.2, v: 3000 }  // bullish engulfing bervolume
+    bars[iD] = { ...bars[iD], o: D + 1, c: D, h: D + 1.2, l: D }
+    const g = cariXabcd(bars, [0.04]).find(r => r.pola === 'gartley')
+    const k = konfirmasiD(bars, g)
+    expect(k.total).toBe(4)
+    expect(k.cek.find(c => c.k === 'candle').ok).toBe(true)
+    expect(k.cek.find(c => c.k === 'volume').ok).toBe(true)
+    expect(k.cek.find(c => c.k === 'struktur').ok).toBe(true)
+    expect(konfirmasiD(bars, { ...g, titik: g.titik.map((t, j) => j === 4 ? { ...t, proyeksi: true } : t) })).toBeNull()
   })
 })
