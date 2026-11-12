@@ -37,8 +37,11 @@ export const MENUJU_MAKS = 0.25  // jarak harga terakhir ke tepi PRZ yang masih 
 export const SKALA = { D: [0.04, 0.06, 0.1, 0.15], W: [0.08, 0.12, 0.18, 0.25], M: [0.12, 0.18, 0.25, 0.35] }
 export const TF = [{ k: 'D', nama: 'Harian', pendek: '1D' }, { k: 'W', nama: 'Mingguan', pendek: '1W' }, { k: 'M', nama: 'Bulanan', pendek: '1M' }]
 
-export const FIB_RET = [0, 0.236, 0.382, 0.5, 0.618, 0.707, 0.786, 0.886, 1, 1.13, 1.27, 1.414, 1.618]
-export const FIB_EXT = [0, 0.382, 0.618, 0.786, 1, 1.13, 1.27, 1.414, 1.618, 2, 2.24, 2.618]
+// Level kunci harmonic saja supaya chart tidak rapat: retracement tempat B dan D diukur (0,382–0,886), ditambah 1,27 dan
+// 1,618 untuk pola ekstensi; extension memakai panjang AB=CD (1), alternatif (1,272, 1,618), dan lanjutan (2, 2,618).
+export const FIB_RET = [0, 0.382, 0.5, 0.618, 0.786, 0.886, 1, 1.27, 1.618]
+export const FIB_EXT = [0, 0.618, 1, 1.272, 1.618, 2, 2.618]
+export const FIB_KUNCI = [0.618, 0.786, 0.886, 1, 1.27, 1.272, 1.618]
 
 // ------------------------------------------------------------------ timeframe ----
 // Senin minggu itu (UTC) untuk tanggal YYYY-MM-DD.
@@ -252,15 +255,16 @@ export function cariXabcd(bars = [], skala = SKALA.D, umurD = 30) {
 
 // ------------------------------------------------- AB=CD dan Three Drives ----
 // Pola di luar kerangka X-A-B-C-D. AB=CD (Carney Bab 4): C retracement 0,382–0,886 AB, proyeksi BC 1,13–2,618, dan
-// CD setara AB (AB=CD) atau 1,27–1,618 AB (Alternate AB=CD). Three Drives (lembar pola): tiga dorongan searah, tiap
-// dorongan berikutnya 1,27–1,618 kali koreksi sebelumnya; pembalikan diharapkan setelah dorongan ketiga.
+// CD setara AB (AB=CD) atau 1,27–1,618 AB (Alternate AB=CD); hanya tampil setelah D sampai di PRZ (pola empat titik
+// yang belum selesai terlalu banyak dan kurang bernilai). Three Drives (lembar pola): dorongan kedua 1,27–1,618 kali
+// koreksi A; dorongan ketiga selesai di level 1,27 atau 1,618 kali koreksi B (PRZ sempit di sekitar level itu).
 export const POLA_LAIN = {
   abcd: { nama: 'AB=CD', bentuk: 'abcd', cd: [1, 1],
     ket: 'Pola empat titik paling dasar: kaki CD sama panjang dengan AB setelah koreksi C 0,382–0,886.' },
   altabcd: { nama: 'Alternate AB=CD', bentuk: 'abcd', cd: [1.27, 1.618],
     ket: 'Varian AB=CD: kaki CD memanjang 1,27–1,618 kali AB, umum di saham yang bergerak kuat.' },
-  tigadorongan: { nama: 'Three Drives', bentuk: 'tigadorongan', dorong: [1.27, 1.618],
-    ket: 'Tiga dorongan searah yang makin melemah; tiap dorongan 1,27–1,618 kali koreksi sebelumnya, lalu tren berbalik.' },
+  tigadorongan: { nama: 'Three Drives', bentuk: 'tigadorongan', dorong: [1.27, 1.618], level: [1.27, 1.618],
+    ket: 'Tiga dorongan searah yang makin melemah; dorongan kedua 1,27–1,618 kali koreksi, dorongan ketiga selesai di 1,27 atau 1,618 kali koreksi, lalu tren berbalik.' },
 }
 const ABCD_C = [0.382, 0.886], ABCD_E = [1.13, 2.618]
 export const namaPola = k => POLA[k]?.nama || POLA_LAIN[k]?.nama || ''
@@ -310,7 +314,7 @@ export function cariAbcd(bars = [], skala = SKALA.D, umurD = 30) {
         const lengkapOk = jarak(r.cd, p.cd) <= TOL && jarak(r.e, ABCD_E) <= TOL * 2
         const st = statusAkhir({ bars, mode, akhirPt: D, prz, bull, lengkapOk, label: 'D',
           iProyeksi: Math.max(n - 1, C.i) + Math.max(3, Math.round((C.i - B.i) * 0.8)) })
-        if (!st) continue
+        if (!st || st.status === 'menuju') continue   // AB=CD hanya bila D sudah di PRZ atau berbalik
         const Dt = st.titik, stop = bull ? prz[0] : prz[1]
         if (batal(bars, Dt, stop, bull)) continue
         const rasio = st.status === 'menuju' ? { c } : r
@@ -345,10 +349,15 @@ export function cariTigaDorongan(bars = [], skala = SKALA.D, umurD = 30) {
       if (!(s * (P3.p - P1.p) > 0 && s * (P2.p - P0.p) > 0 && s * (P4.p - P2.p) > 0)) continue
       const r1 = r3(Math.abs(P3.p - P2.p) / Math.abs(P1.p - P2.p))
       if (jarak(r1, p.dorong) > TOL) continue
-      const prz = urutkan(P4.p + (P3.p - P4.p) * p.dorong[0] * (1 - TOL), P4.p + (P3.p - P4.p) * p.dorong[1] * (1 + TOL))
-      const r2 = r3(Math.abs(P5.p - P4.p) / Math.abs(P3.p - P4.p))
-      const st = statusAkhir({ bars, mode, akhirPt: P5, prz, bull, lengkapOk: jarak(r2, p.dorong) <= TOL, label: '3',
-        iProyeksi: Math.max(n - 1, P4.i) + Math.max(3, P3.i - P2.i) })
+      // PRZ sempit (±PRZ_LEBAR kaki koreksi B) di level 1,27 lalu 1,618; dipakai level pertama yang cocok/belum terlewati.
+      const r2 = r3(Math.abs(P5.p - P4.p) / Math.abs(P3.p - P4.p)), kakiB = Math.abs(P3.p - P4.p)
+      let st = null, prz = null, lv = null
+      for (const L of p.level) {
+        const pusat = P4.p + (P3.p - P4.p) * L, rg = [pusat - PRZ_LEBAR * kakiB, pusat + PRZ_LEBAR * kakiB]
+        const s2 = statusAkhir({ bars, mode, akhirPt: P5, prz: rg, bull, lengkapOk: true, label: '3',
+          iProyeksi: Math.max(n - 1, P4.i) + Math.max(3, P3.i - P2.i) })
+        if (s2) { st = s2; prz = rg; lv = L; break }
+      }
       if (!st) continue
       const T = st.titik, stop = bull ? prz[0] : prz[1]
       if (batal(bars, T, stop, bull)) continue
@@ -356,14 +365,14 @@ export function cariTigaDorongan(bars = [], skala = SKALA.D, umurD = 30) {
       const kunci = `tigadorongan|${bull ? 'b' : 's'}|${P2.i}|${P4.i}|${T.proyeksi ? 'p' : P5.i}`
       const row = {
         kunci, pola: 'tigadorongan', bentuk: 'tigadorongan', nama: p.nama, ket: p.ket, arah: bull ? 'bullish' : 'bearish', status: st.status,
-        skala: th, skor: Math.round((jarak(r1, p.dorong) + (rasio.r2 != null ? jarak(r2, p.dorong) : 0)) * 1000) / 1000,
+        skala: th, skor: Math.round((jarak(r1, p.dorong) + (rasio.r2 != null ? Math.abs(r2 / lv - 1) : 0)) * 1000) / 1000, level: lv,
         titik: [{ n: '0', i: P0.i, p: P0.p }, { n: '1', i: P1.i, p: P1.p }, { n: 'A', i: P2.i, p: P2.p }, { n: '2', i: P3.i, p: P3.p },
           { n: 'B', i: P4.i, p: P4.p }, T],
         rasio, prz, stop, harga: bars[n - 1].c, kaki: '0–3', ketTarget: ['0,382 pola', '0,618 pola'],
         target: [0.382, 0.618].map(x => bulatArah(T.p + (P0.p - T.p) * x, bull)),
         segi: [],
         garis: [{ a: 1, b: 3, v: rasio.r1, k: 'Dorongan 2' }, { a: 3, b: 5, v: rasio.r2, k: 'Dorongan 3' }].filter(g => g.v != null),
-        alasan: [cekRasio('Dorongan 2: (2 − A) / (1 − A)', r1, p.dorong), cekRasio('Dorongan 3: (3 − B) / (2 − B)', rasio.r2, p.dorong)].filter(Boolean),
+        alasan: [cekRasio('Dorongan 2: (2 − A) / (1 − A)', r1, p.dorong), cekRasio('Dorongan 3: (3 − B) / (2 − B)', rasio.r2, [lv, lv])].filter(Boolean),
       }
       const lama = hasil.get(kunci)
       if (!lama || row.skor < lama.skor) hasil.set(kunci, row)
@@ -410,7 +419,7 @@ export function fibRetracement(bars = [], pola = null, th = 0.1) {
     if (!leg) return null
     ;[a, b] = leg; dasar = 'swing terakhir yang sudah selesai'
   }
-  const level = FIB_RET.map(r => ({ r, p: b.p - (b.p - a.p) * r }))
+  const level = FIB_RET.map(r => ({ r, p: b.p - (b.p - a.p) * r })).filter(l => l.p > 0)
   const akhir = bars[bars.length - 1]?.c
   return { a: { i: a.i, p: a.p }, b: { i: b.i, p: b.p }, level, dasar, naik: b.p > a.p,
     posisi: akhir == null ? null : r3((b.p - akhir) / (b.p - a.p)) }
@@ -431,7 +440,7 @@ export function fibExtension(bars = [], pola = null, th = 0.1) {
     dasar = pola?.pola ? `tiga swing terakhir yang sudah selesai (pola ${pola.nama} tidak memakai AB=CD)` : 'tiga swing terakhir yang sudah selesai'
   }
   const k = p2.p - p1.p
-  const level = FIB_EXT.map(r => ({ r, p: p3.p + k * r }))
+  const level = FIB_EXT.map(r => ({ r, p: p3.p + k * r })).filter(l => l.p > 0)   // harga di bawah nol tidak mungkin
   return { titik: [p1, p2, p3].map((x, j) => ({ n: String(j + 1), i: x.i, p: x.p })), level, dasar, naik: k > 0 }
 }
 
