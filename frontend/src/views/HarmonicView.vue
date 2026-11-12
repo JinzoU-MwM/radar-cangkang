@@ -10,7 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { createChart, CrosshairMode } from 'lightweight-charts'
 import { api } from '../api.js'
 import { store, toast } from '../store.js'
-import { SKALA, TF, POLA, PEMBEDA, alasanPola, alasanX, diagramIdeal, konfirmasiD, cariElliott, cariXabcd, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
+import { SKALA, TF, POLA, PEMBEDA, alasanPola, alasanX, diagramIdeal, konfirmasiD, skenarioD, cariElliott, cariXabcd, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
 import { ukuranPosisi } from '../lib/harmonikBelajar.js'
 
 const route = useRoute(), router = useRouter()
@@ -246,7 +246,7 @@ function hargaPenting() {
   for (const k of aktif.value) {
     const x = h[k]
     if (!x) continue
-    if (k === 'xabcd') out.push(...x.titik.map(t => t.p), ...(x.prz || []))
+    if (k === 'xabcd') out.push(...x.titik.map(t => t.p), ...(x.prz || []), ...skenarioD(x).map(z => z.ke.p))
     if (k === 'fib') out.push(...x.level.filter(l => l.r <= 1).map(l => l.p))
     if (k === 'ext') out.push(...x.level.filter(l => l.r <= 1.27).map(l => l.p))
     if (k === 'elliott') out.push(...x.titik.map(t => t.p), ...(x.proyeksi || []).map(p => p.p))
@@ -272,8 +272,8 @@ function tampilkan(k) {
   const lo = Math.min(...idx) - 8, hi = Math.max(...idx, bars.value.length - 1) + 12
   // XABCD dengan pola: pola dan candle terbaru di sisi kiri, ruang kosong di kanan untuk gambar pola ideal.
   if (k === 'xabcd' && x.pola) {
-    const ujung = Math.max(...idx, bars.value.length - 1), awal = Math.min(...idx) - 6
-    ts.setVisibleLogicalRange({ from: awal, to: ujung + Math.max(14, (ujung - awal) * 0.85) })
+    const ujung = Math.max(...idx, bars.value.length - 1, ...skenarioD(x).map(z => z.ke.i)) + 4, awal = Math.min(...idx) - 6
+    ts.setVisibleLogicalRange({ from: awal, to: ujung + Math.max(14, (ujung - awal) * 0.6) })
     return
   }
   // Gambar yang terlalu kecil di layar diperbesar (fokus ke pola); yang terpotong diperlebar.
@@ -323,6 +323,15 @@ const gambar = computed(() => {
         titik: p.map((t, j) => ({ ...t, atas: j === 0 ? t.p >= p[1].p : t.p >= (p[j - 1]?.p ?? 0) })),
         prz: x.prz && ok(Y(x.prz[0]), Y(x.prz[1])) ? { x1: C.x, x2: Math.min(W, D.x + Math.max(40, (D.x - C.x) * 0.6)), y1: Y(x.prz[1]), y2: Y(x.prz[0]) } : null,
         label: x.pola ? `${x.nama} ${x.arah}` : 'Swing terakhir (bukan pola)',
+        // Panah skenario dari D: garis + kepala panah (segitiga) di ujung.
+        panah: skenarioD(x).map(z => {
+          const x1 = X(z.dari.i), y1 = Y(z.dari.p), x2 = X(z.ke.i), y2 = Y(z.ke.p)
+          if (!ok(x1, y1, x2, y2)) return null
+          const sudut = Math.atan2(y2 - y1, x2 - x1), u = 9, v = 4.5
+          const kepala = [[x2, y2], [x2 - u * Math.cos(sudut) + v * Math.sin(sudut), y2 - u * Math.sin(sudut) - v * Math.cos(sudut)],
+            [x2 - u * Math.cos(sudut) - v * Math.sin(sudut), y2 - u * Math.sin(sudut) + v * Math.cos(sudut)]].map(p => p.join(',')).join(' ')
+          return { ...z, x1, y1, x2, y2, kepala }
+        }).filter(Boolean),
         tanda: (() => {
           const c = konf.value?.candle, b = c && bars.value[c.i]
           if (!b) return null
@@ -413,14 +422,14 @@ const inset = computed(() => {
     pembeda: PEMBEDA[x.pola], status: STATUS[x.status], prz: x.prz }
 })
 watch(() => hasil.value.xabcd?.kunci, () => { insetTutup.value = false })
-const IW = 268, elInset = ref(), tinggiInset = ref(330)
+const IW = 244, elInset = ref(), tinggiInset = ref(330)
 watch([inset, ver], () => nextTick(() => { const h = elInset.value?.offsetHeight; if (h && Math.abs(h - tinggiInset.value) > 4) tinggiInset.value = h }))
 // Sudut dengan candle (dan titik pola) paling sedikit yang tertutup kotak gambar.
 const insetPos = computed(() => {
   ver.value // eslint-disable-line no-unused-expressions
   const { w, h } = panel.value, IH = tinggiInset.value
   if (!inset.value || !w || !chart) return null
-  const kandidat = [8, (w - IW) / 2, w - IW - 8].flatMap(x => [52, h * 0.78 - IH].map(y => ({ x, y })))
+  const kandidat = [8, (w - IW) / 2, w - IW - 8].flatMap(x => [52, (52 + h * 0.78 - IH) / 2, h * 0.78 - IH].map(y => ({ x, y })))
     .filter(c => c.x >= 0 && c.y >= 0)
   if (!kandidat.length) return { x: 8, y: 52 }
   const r = chart.timeScale().getVisibleLogicalRange(), b = bars.value
@@ -430,11 +439,12 @@ const insetPos = computed(() => {
     // Candle terbaru (20 bar terakhir) paling penting dilihat: bobot lebih besar agar kotak menghindarinya.
     if (ok(x, y1, y2)) kotak.push({ x, y1, y2, berat: i >= b.length - 20 ? 4 : 1 })
   }
+  for (const p of (gambar.value.xabcd?.panah || [])) for (const f of [0.5, 1]) kotak.push({ x: p.x1 + (p.x2 - p.x1) * f, y1: p.y1 + (p.y2 - p.y1) * f - 14, y2: p.y1 + (p.y2 - p.y1) * f + 14, berat: 40 })
   for (const t of (gambar.value.xabcd?.titik || [])) kotak.push({ x: t.x, y1: t.y - 20, y2: t.y + 20, berat: 40 })
   const skor = c => kotak.reduce((s, k) => s + (k.x >= c.x && k.x <= c.x + IW && k.y2 >= c.y && k.y1 <= c.y + IH ? (k.berat || 1) : 0), 0)
   return kandidat.map(c => ({ ...c, s: skor(c) })).sort((a, b) => a.s - b.s)[0]
 })
-const DW = 236, DH = 130, DP = 18
+const DW = 224, DH = 112, DP = 16
 const dx = v => DP + v * (DW - 2 * DP), dy = v => DP + v * (DH - 2 * DP)
 
 const teksX = computed(() => alasanX(hasil.value.xabcd, bars.value))
@@ -563,13 +573,16 @@ async function unduh() {
             <circle :cx="dx(1)" :cy="dy(inset.diagram.titik[4].y)" r="6" :class="inset.bull ? 'ig-dg' : 'ig-ds'" />
             <text v-for="(t, j) in inset.diagram.titik" :key="t.n" :x="dx(t.x) + (j === 4 ? 10 : 0)" :y="j === 4 ? dy(t.y) + 4 : t.y <= (inset.diagram.titik[j - 1]?.y ?? inset.diagram.titik[1].y) ? dy(t.y) - 6 : dy(t.y) + 13" class="ig-t">{{ t.n }}</text>
           </svg>
-          <p class="ip">{{ teksX[0] }}</p>
           <p class="ip">Kenapa {{ inset.nama.split(' ').slice(0, -1).join(' ') }}: {{ inset.pembeda }}</p>
-          <ul class="ia">
-            <li v-for="a in inset.alasan" :key="a.teks" :class="a.ok ? 'up' : 'dn'">{{ a.ok ? '✓' : '≈' }} {{ a.teks }} <b>{{ fmtR(a.aktual) }}</b> <span>(ideal {{ a.ideal }})</span></li>
-          </ul>
           <p v-if="konf" class="ip"><b>Konfirmasi {{ konf.jumlah }}/{{ konf.total }} ({{ konf.label }})</b>: {{ konf.cek.filter(c => c.ok).map(c => c.k === 'candle' ? c.nama : c.k === 'rsi' ? 'divergence RSI' : c.k === 'struktur' ? 'struktur minor tembus' : 'volume tinggi').join(', ') || 'belum ada' }}.</p>
-          <p class="ip">{{ inset.status }}. PRZ {{ fmtH(inset.prz[0]) }}–{{ fmtH(inset.prz[1]) }}: {{ inset.bull ? 'area potensi berbalik naik' : 'area potensi berbalik turun' }}.</p>
+          <details class="irinci" @toggle="segar">
+            <summary>Rincian rasio dan titik X</summary>
+            <ul class="ia">
+              <li v-for="a in inset.alasan" :key="a.teks" :class="a.ok ? 'up' : 'dn'">{{ a.ok ? '✓' : '≈' }} {{ a.teks }} <b>{{ fmtR(a.aktual) }}</b> <span>(ideal {{ a.ideal }})</span></li>
+            </ul>
+            <p class="ip">{{ teksX[0] }}</p>
+            <p class="ip">{{ inset.status }}. PRZ {{ fmtH(inset.prz[0]) }}–{{ fmtH(inset.prz[1]) }}: {{ inset.bull ? 'area potensi berbalik naik' : 'area potensi berbalik turun' }}.</p>
+          </details>
         </div>
         <svg v-if="panel.w" ref="elOv" class="ov" :width="panel.w" :height="panel.h" :viewBox="`0 0 ${panel.w} ${panel.h}`" aria-hidden="true">
           <!-- Fib retracement / extension -->
@@ -599,6 +612,11 @@ async function unduh() {
               <circle :cx="t.x" :cy="t.y" r="4" class="pt" :class="{ proy: t.proyeksi }" />
               <text :x="t.x" :y="t.atas ? t.y - 10 : t.y + 19" class="nt">{{ t.n }}</text>
               <text v-if="t.n === 'X'" :x="t.x" :y="t.atas ? t.y - 24 : t.y + 33" class="xket">{{ gambar.xabcd.bull ? 'swing low awal pola' : 'swing high awal pola' }}</text>
+            </g>
+            <g v-for="p in gambar.xabcd.panah" :key="p.k" class="panah" :class="p.jenis">
+              <line :x1="p.x1" :y1="p.y1" :x2="p.x2" :y2="p.y2" />
+              <polygon :points="p.kepala" />
+              <text :x="p.x2 + 6" :y="p.y2 + 4">{{ p.label }}</text>
             </g>
             <g v-if="gambar.xabcd.tanda" class="tanda">
               <path :d="gambar.xabcd.tanda.bull ? `M${gambar.xabcd.tanda.x},${gambar.xabcd.tanda.y} l-5,9 h10 z` : `M${gambar.xabcd.tanda.x},${gambar.xabcd.tanda.y} l-5,-9 h10 z`" />
@@ -673,6 +691,7 @@ async function unduh() {
               </ul>
               <p v-else class="small">Konfirmasi baru bisa dinilai setelah harga masuk PRZ dan membentuk titik D.</p>
             </div>
+            <p v-if="hasil.xabcd.pola" class="small">Panah dari D: jalur ke TP1, TP2, dan titik C bila pola berhasil; panah putus-putus adalah jalur bila pola gagal (stop tertembus). Jarak waktu panah hanya ilustrasi.</p>
             <details class="kx" open>
               <summary>Kenapa titik X di sini?</summary>
               <p v-for="(t, j) in teksX" :key="j" class="small">{{ t }}</p>
@@ -903,6 +922,10 @@ async function unduh() {
 .xket{fill:var(--ink-2);text-anchor:middle;font-size:10px !important}
 .konf{margin:6px 0;font-size:12px}
 .kx{margin:6px 0;font-size:12px}.kx summary{cursor:pointer;font-weight:700;color:var(--ink)}.kx p.small{margin:4px 0 0 !important;color:var(--ink) !important}
+.panah line{stroke-width:1.8}.panah text{font-weight:700;font-size:10.5px !important}
+.bull .panah.target line,.bear .panah.gagal line{stroke:var(--good)}.bull .panah.target polygon,.bear .panah.gagal polygon{fill:var(--good)}.bull .panah.target text,.bear .panah.gagal text{fill:var(--good)}
+.bear .panah.target line,.bull .panah.gagal line{stroke:var(--strong)}.bear .panah.target polygon,.bull .panah.gagal polygon{fill:var(--strong)}.bear .panah.target text,.bull .panah.gagal text{fill:var(--strong)}
+.panah.gagal line{stroke-dasharray:5 4}
 .tanda path{fill:var(--good);stroke:none}.tanda text{fill:var(--good);text-anchor:middle;font-weight:700;font-size:10px !important}
 .bear .tanda path{fill:var(--strong)}.bear .tanda text{fill:var(--strong)}
 .nama{fill:var(--pc);font-weight:700;font-size:12px !important}
@@ -954,6 +977,7 @@ async function unduh() {
 .ig-t{font:800 11px var(--f-data);fill:var(--ink);text-anchor:middle}
 .ig-dg{fill:var(--good);opacity:.55}.ig-ds{fill:var(--strong);opacity:.55}
 .ip{margin:4px 0;color:var(--ink)}
+.irinci{margin-top:4px}.irinci summary{cursor:pointer;color:var(--ink-2);font-weight:600}
 .ia{list-style:none;padding:0;margin:2px 0;display:grid;gap:1px;font-family:var(--f-data)}
 .ia span{color:var(--ink-2)}
 .panduan{margin-top:18px}

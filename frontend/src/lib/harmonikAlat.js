@@ -526,3 +526,23 @@ export function konfirmasiD(bars = [], row = null) {
   const jumlah = cek.filter(c => c.ok).length
   return { cek, jumlah, total: cek.length, candle, label: jumlah >= 3 ? 'kuat' : jumlah === 2 ? 'sedang' : 'lemah' }
 }
+
+// -------------------------------------------------- panah skenario dari D ----
+// Jalur yang mungkin setelah D (seperti panah skenario di materi): ke target 1 (0,382 AD), target 2 (0,618 AD),
+// titik C sebagai target lanjutan (Maxco) bila lebih jauh dari target 2, dan jalur gagal bila harga menembus stop.
+// Jarak waktu panah hanya ilustrasi (kelipatan durasi kaki CD), bukan proyeksi waktu.
+export function skenarioD(row) {
+  const t = row?.titik
+  if (!row?.pola || !t || t.length < 5 || !row.target) return []
+  const C = t[3], D = t[4], bull = row.arah === 'bullish', s = bull ? 1 : -1
+  const lebar = Math.max(5, D.i - C.i), ke = k => D.i + Math.round(lebar * k)
+  const fh = p => Number(p).toLocaleString('id-ID', { maximumFractionDigits: p < 200 ? 1 : 0 })
+  const out = [
+    { k: 't1', jenis: 'target', label: `TP1 0,382 AD ${fh(row.target[0])}`, dari: D, ke: { i: ke(0.6), p: row.target[0] } },
+    { k: 't2', jenis: 'target', label: `TP2 0,618 AD ${fh(row.target[1])}`, dari: D, ke: { i: ke(1), p: row.target[1] } },
+  ]
+  if (s * (C.p - row.target[1]) > 0) out.push({ k: 'c', jenis: 'target', label: `Titik C ${fh(C.p)} (lanjutan)`, dari: D, ke: { i: ke(1.4), p: C.p } })
+  const jarak = Math.max(Math.abs(D.p - row.stop), D.p * 0.03)
+  out.push({ k: 'gagal', jenis: 'gagal', label: `Gagal bila tembus ${fh(row.stop)}`, dari: D, ke: { i: ke(0.6), p: row.stop - s * jarak } })
+  return out
+}
