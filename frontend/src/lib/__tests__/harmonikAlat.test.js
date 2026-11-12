@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { labPola, rasioContoh, jarakElliott, nilaiTren, trenBesar, alasanPola, alasanX, candleBalik, skenarioD, konfirmasiD, rsi, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag } from '../harmonikAlat.js'
+import { cariPola, diagramIdeal as diagramIdeal2, konfirmasiD as konfirmasiD2, skenarioD as skenarioD2, labPola, rasioContoh, jarakElliott, nilaiTren, trenBesar, alasanPola, alasanX, candleBalik, skenarioD, konfirmasiD, rsi, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag } from '../harmonikAlat.js'
 
 // Bar sintetis: harga bergerak lurus antar titik, 10 bar per kaki, tanggal hari kerja berurutan.
 function bangun(titik, per = 10) {
@@ -295,7 +295,7 @@ describe('jarakElliott', () => {
 
 describe('lab pola', () => {
   it('rasio contoh tiap pola dikenali sebagai pola itu sendiri', () => {
-    for (const k of ['gartley', 'bat', 'altbat', 'butterfly', 'crab', 'deepcrab', 'cypher', 'shark']) {
+    for (const k of ['gartley', 'bat', 'altbat', 'butterfly', 'crab', 'deepcrab', 'cypher', 'shark', 'fiveo']) {
       const r = rasioContoh(k)
       const hasil = labPola(r.b, r.c, r.d)
       expect(hasil.cocok.map(x => x.k), k).toContain(k)
@@ -308,5 +308,58 @@ describe('lab pola', () => {
     const h = labPola(0.618, 0.618, 0.786)
     expect(h.cocok[0].k).toBe('gartley')
     expect(h.rasio.b).toBeCloseTo(0.618, 3)
+  })
+})
+
+describe('pola tambahan: 5-0, AB=CD, Three Drives', () => {
+  it('5-0 bullish: B melewati X, C melewati A, D di 0,50 BC', () => {
+    // X 150, A 200, B 130 (1,4 XA), C 263 (1,9 AB), D = 263 - 0,5 x 133 = 196,5
+    const rows = cariPola(bangun([180, 150, 200, 130, 263, 196.5]), [0.04])
+    const r = rows.find(x => x.pola === 'fiveo')
+    expect(r).toMatchObject({ arah: 'bullish', status: 'prz', bentuk: 'xabcd', kaki: 'DC' })
+    expect(r.rasio.dbc).toBeCloseTo(0.5, 2)
+    expect(r.stop).toBeCloseTo(263 + (130 - 263) * 0.618, 6)   // retracement 0,618 BC
+    expect(r.ketTarget).toEqual(['0,618 DC', 'titik C'])
+    expect(skenarioD2(r)[1].label).toMatch(/titik C/)
+    expect(r.target[1]).toBe(262)                               // kembali ke C 263, dibulatkan ke fraksi 2 (bullish ke bawah)
+  })
+  it('AB=CD setara dan alternatif: empat titik, target dari kaki AD', () => {
+    const C = 150 + 0.618 * 50
+    const setara = cariPola(bangun([170, 200, 150, C, C - 50]), [0.04]).find(x => x.pola === 'abcd')
+    expect(setara).toMatchObject({ arah: 'bullish', status: 'prz', bentuk: 'abcd' })
+    expect(setara.titik.map(t => t.n).join('')).toBe('ABCD')
+    expect(setara.rasio.cd).toBeCloseTo(1, 2)
+    expect(setara.alasan.every(a => a.ok)).toBe(true)
+    const alt = cariPola(bangun([170, 200, 150, C, C - 1.27 * 50]), [0.04]).find(x => x.pola === 'altabcd')
+    expect(alt).toMatchObject({ arah: 'bullish', status: 'prz' })
+    expect(alt.rasio.cd).toBeCloseTo(1.27, 2)
+  })
+  it('Three Drives bearish: tiga dorongan naik 1,27 kali koreksi', () => {
+    const P = [110, 100, 150]
+    P.push(150 - 0.618 * 50); P.push(P[3] + 1.27 * (150 - P[3])); P.push(P[4] - 0.618 * (P[4] - P[3])); P.push(P[5] + 1.27 * (P[4] - P[5]))
+    const r = cariPola(bangun(P), [0.04]).find(x => x.pola === 'tigadorongan')
+    expect(r).toMatchObject({ arah: 'bearish', status: 'prz', bentuk: 'tigadorongan' })
+    expect(r.titik.map(t => t.n).join(' ')).toBe('0 1 A 2 B 3')
+    expect(r.rasio.r1).toBeCloseTo(1.27, 2)
+    expect(r.stop).toBeGreaterThan(r.titik[5].p)          // bearish: stop di atas dorongan ketiga
+    expect(r.target[0]).toBeLessThan(r.titik[5].p)
+  })
+  it('pola empat titik tetap punya konfirmasi dan panah skenario', () => {
+    const C = 150 + 0.618 * 50
+    const bars = bangun([170, 200, 150, C, C - 50, C - 40])
+    const r = cariPola(bars, [0.04]).find(x => x.pola === 'abcd' && x.status !== 'menuju')
+    expect(konfirmasiD2(bars, r).total).toBe(4)
+    expect(skenarioD2(r).map(x => x.k)).toContain('gagal')
+    // Rencana posisi dari pola empat titik (sebelumnya membaca titik ke-5 yang tidak ada).
+    const p = rencanaPosisi(bars, 'long', [r])
+    expect(p.pola).toBe(r)
+    expect(p.aktif).toMatch(/PRZ|berbalik/)
+  })
+  it('diagram ideal AB=CD dan Three Drives', () => {
+    const a = diagramIdeal2('abcd', 'bullish'), t = diagramIdeal2('tigadorongan', 'bullish')
+    expect(a.titik).toHaveLength(4)
+    expect(a.titik[3].y).toBe(1)                          // D terendah
+    expect(t.titik.map(x => x.n).join('')).toBe('01A2B3')
+    expect(t.titik[5].y).toBe(1)
   })
 })

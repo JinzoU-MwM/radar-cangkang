@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { RINGKAS } from '../presentasiRingkas.js'
 import { BAGIAN, butirSlide } from '../harmonikMateri.js'
-import { POLA } from '../harmonikAlat.js'
+import { diagramIdeal } from '../harmonikAlat.js'
 
 describe('presentasi ringkas', () => {
   it('sekitar 20 slide, urut per bagian, skema sama dengan materi lengkap', () => {
@@ -14,7 +14,7 @@ describe('presentasi ringkas', () => {
     for (const s of RINGKAS) {
       expect(butirSlide(s).length, s.id).toBeGreaterThan(0)
       if (s.tabel) s.tabel.baris.forEach(b => expect(b, s.id).toHaveLength(s.tabel.kolom.length))
-      if (s.pola) expect(s.pola === 'abcd' || POLA[s.pola], s.id).toBeTruthy()
+      if (s.pola) expect(s.pola === 'abcd' || diagramIdeal(s.pola), s.id).toBeTruthy()
     }
   })
   it('memuat satu slide untuk tiap pola utama Carney', () => {

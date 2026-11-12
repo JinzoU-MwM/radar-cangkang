@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BAGIAN, SLIDE, butirSlide, diagramAbcd, totalSlide } from '../harmonikMateri.js'
-import { POLA } from '../harmonikAlat.js'
+import { diagramIdeal } from '../harmonikAlat.js'
 
 const KUNCI = new Set(['id', 'bagian', 'judul', 'sub', 'paragraf', 'poin', 'tabel', 'pola', 'alat', 'rujukan', 'periksa', 'belajar'])
 
@@ -14,7 +14,7 @@ describe('materi harmonic', () => {
       expect((s.paragraf?.length || 0) + (s.poin?.length || 0) + (s.tabel?.baris?.length || 0), s.id).toBeGreaterThan(0)
       if (s.paragraf) s.paragraf.forEach(p => expect(typeof p).toBe('string'))
       if (s.tabel) s.tabel.baris.forEach(b => expect(b, s.id).toHaveLength(s.tabel.kolom.length))
-      if (s.pola) expect(s.pola === 'abcd' || POLA[s.pola], s.id).toBeTruthy()
+      if (s.pola) expect(s.pola === 'abcd' || diagramIdeal(s.pola), s.id).toBeTruthy()
       if (s.alat) expect(['xabcd', 'fib', 'ext', 'elliott', 'long', 'short']).toContain(s.alat)
     }
     expect(totalSlide).toBe(SLIDE.length)

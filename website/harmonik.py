@@ -1,31 +1,52 @@
-"""Harmonic Pattern (XABCD) dari bar harian: pivot zigzag lalu pencocokan rasio Fibonacci tiap pola.
+"""Harmonic Pattern dari bar harian: pivot zigzag lalu pencocokan rasio Fibonacci tiap pola. Aturan sama dengan
+frontend/src/lib/harmonikAlat.js (tab Saham), supaya tab Screening dan chart memberi hasil yang sama.
 
-Rasio mengikuti ilustrasi artikel Astronacci "Belajar Harmonic Pattern: Pengertian, Cara Kerja, dan Jenis-Jenisnya"
-(31 Juli 2026). Gambarnya diberi keterangan AI Generate; teks artikel sendiri hanya menyebut B Gartley 0,618 XA,
-B Bat 0,382-0,5 XA, dan D Crab sampai 1,618 XA. PRZ, konfirmasi, stop, dan target mengikuti artikel Astronacci
-"Cara Menggunakan Harmonic Pattern untuk Menentukan Area Entry" (7 Agustus 2026); target alternatif (titik C lalu A)
-dari artikel Maxco "Cara Mudah Belajar Harmonic Pattern". Fungsi murni: masukan bars [{d,o,h,l,c,v}] (v dalam lot),
-keluaran baris screening.
+Pola: Gartley, Bat, Alternate Bat, Butterfly, Crab, Deep Crab, Cypher, Shark, 5-0 (lima titik X-A-B-C-D), Three
+Drives (enam titik), AB=CD dan Alternate AB=CD (empat titik). Rasio dari materi: Carney, Harmonic Trading Vol. 1;
+Astronacci (Cypher, PRZ, konfirmasi, stop, target 0,382/0,618); lembar pola yang dilampirkan pengguna (Alternate Bat,
+Shark, 5-0, Three Drives). Target alternatif titik C lalu A dari Maxco. Pola batal bila setelah titik akhir ada
+penutupan yang menembus stop. Fungsi murni: masukan bars [{d,o,h,l,c,v}] (v dalam lot), keluaran baris screening.
 
-Arah: bullish bila kaki XA naik (X lembah, A puncak), sehingga D berupa lembah: area potensi berbalik naik.
+Arah: bullish bila titik akhir berupa lembah (area potensi berbalik naik), bearish bila puncak.
 """
 from __future__ import annotations
 
 
-# b = AB/XA, c = BC/AB, d = AD/XA (D diukur dari A ke arah X), bc = CD/BC.
-# Cypher: cx = XC/XA (C melewati A), dxc = CD/XC (D = retracement kaki XC).
+# Notasi rasio (sama dengan frontend/src/lib/harmonikAlat.js): b = AB/XA, c = BC/AB, d = AD/XA (D diukur dari A ke arah X),
+# bc = CD/BC (proyeksi BC), cx = XC/XA (C melewati A), dxc = CD/XC, dbc = DC/BC (D retracement kaki BC).
+# Rasio mengikuti materi: Carney, Harmonic Trading Vol. 1 (Gartley, Bat, Butterfly, Crab, Deep Crab), Astronacci
+# (Cypher), dan lembar pola yang dilampirkan pengguna (Alternate Bat, Shark, 5-0).
 POLA = {
     "gartley": {"nama": "Gartley", "b": (0.618, 0.618), "c": (0.382, 0.886), "d": (0.786, 0.786), "bc": (1.13, 1.618),
-                "ket": "Pola tertua dan paling dikenal; biasanya muncul setelah tren yang jelas, koreksi sebelum tren berlanjut."},
+                "ket": "Pola retracement klasik: B tepat 0,618 XA, D di 0,786 XA. D tidak boleh melewati X."},
     "bat": {"nama": "Bat", "b": (0.382, 0.50), "c": (0.382, 0.886), "d": (0.886, 0.886), "bc": (1.618, 2.618),
-            "ket": "Mirip Gartley dengan retracement B lebih dangkal; D biasanya tidak melewati X. Muncul pada koreksi moderat."},
-    "butterfly": {"nama": "Butterfly", "b": (0.786, 0.786), "c": (0.382, 0.886), "d": (1.27, 1.27), "bc": (1.618, 2.24),
-                  "ket": "D melewati X (ekstensi); muncul di area ekstrem, potensi pembalikan cukup signifikan."},
+            "ket": "Retracement dalam: B di bawah 0,618 XA (ideal 0,382-0,5), D di 0,886 XA. D tidak boleh melewati X."},
+    "altbat": {"nama": "Alternate Bat", "b": (0.382, 0.382), "c": (0.382, 0.886), "d": (1.13, 1.13), "bc": (2.0, 3.618),
+               "ket": "Varian Bat: B dangkal 0,382 XA, D melewati X sampai 1,13 XA."},
+    "butterfly": {"nama": "Butterfly", "b": (0.786, 0.786), "c": (0.382, 0.886), "d": (1.27, 1.414), "bc": (1.618, 2.24),
+                  "ket": "Pola ekstensi: B tepat 0,786 XA, D melewati X di 1,27 XA. Muncul di area ekstrem."},
     "crab": {"nama": "Crab", "b": (0.382, 0.618), "c": (0.382, 0.886), "d": (1.618, 1.618), "bc": (2.618, 3.618),
-             "ket": "Proyeksi D paling ekstrem (1,618 XA); muncul saat harga overextended, potensi pembalikan tajam."},
+             "ket": "Proyeksi paling ekstrem: D di 1,618 XA. Pembalikan sering tajam, disiplin stop penting."},
+    "deepcrab": {"nama": "Deep Crab", "b": (0.886, 0.886), "c": (0.382, 0.886), "d": (1.618, 1.618), "bc": (2.24, 3.618),
+                 "ket": "Seperti Crab dengan B dalam di 0,886 XA; D tetap 1,618 XA."},
     "cypher": {"nama": "Cypher", "b": (0.382, 0.618), "cx": (1.272, 1.414), "dxc": (0.786, 0.786),
-               "ket": "C melewati A (1,27-1,41 XA); D di 0,786 kaki XC. Muncul di pasar volatil dengan swing kompleks."},
+               "ket": "C melewati A (1,272-1,414 XA); D di 0,786 kaki XC. Muncul di pasar dengan swing kompleks."},
+    "shark": {"nama": "Shark", "b": (0.382, 0.886), "c": (1.13, 1.618), "dxc": (0.886, 1.13), "bc": (1.618, 2.24),
+              "ket": "C melewati A (1,13-1,618 AB); D kembali ke sekitar level X (0,886-1,13 XC)."},
+    "fiveo": {"nama": "5-0", "b": (1.13, 1.618), "c": (1.618, 2.24), "dbc": (0.5, 0.5),
+              "ket": "Pola koreksi setelah gerak berlebihan: B melewati X, C melewati A, lalu D di retracement 0,50 kaki BC."},
 }
+# Pola di luar kerangka X-A-B-C-D: AB=CD (Carney Bab 4) dan Three Drives (lembar pola).
+POLA_LAIN = {
+    "abcd": {"nama": "AB=CD", "cd": (1.0, 1.0),
+             "ket": "Pola empat titik paling dasar: kaki CD sama panjang dengan AB setelah koreksi C 0,382-0,886."},
+    "altabcd": {"nama": "Alternate AB=CD", "cd": (1.27, 1.618),
+                "ket": "Varian AB=CD: kaki CD memanjang 1,27-1,618 kali AB."},
+    "tigadorongan": {"nama": "Three Drives", "dorong": (1.27, 1.618),
+                     "ket": "Tiga dorongan searah; tiap dorongan 1,27-1,618 kali koreksi sebelumnya, lalu tren berbalik."},
+}
+ABCD_C, ABCD_E = (0.382, 0.886), (1.13, 2.618)
+STOP_PRZ = {"altbat", "butterfly", "crab", "deepcrab", "shark"}   # D melewati/menyentuh X: stop di sisi luar PRZ
 TOL = 0.05            # toleransi relatif batas rasio (±5%)
 PRZ_LEBAR = 0.03      # lebar PRZ = ±3% panjang kaki acuan di sekitar level D
 SKALA = (0.06, 0.10, 0.15)   # ambang zigzag (pembalikan minimal) dari swing kecil ke besar
@@ -145,116 +166,291 @@ def zigzag(bars: list[dict], th: float) -> list[dict]:
     return out
 
 
+def _jarak(v: float, rg: tuple[float, float]) -> float:
+    """Jarak relatif nilai ke rentang (0 bila di dalam)."""
+    if v < rg[0]:
+        return (rg[0] - v) / rg[0]
+    if v > rg[1]:
+        return (v - rg[1]) / rg[1]
+    return 0.0
+
+
 def _dalam(v: float, rg: tuple[float, float], tol: float = TOL) -> bool:
-    return rg[0] * (1 - tol) <= v <= rg[1] * (1 + tol)
+    return _jarak(v, rg) <= tol
 
 
-def cocok(X: float, A: float, B: float, C: float, tol: float = TOL) -> list[dict]:
-    """Pola yang rasio B dan C-nya terpenuhi, beserta PRZ (rentang harga D) hasil pertemuan rasio XA dan proyeksi BC."""
-    xa, ab, bc = abs(A - X), abs(A - B), abs(C - B)
-    if not (xa and ab and bc) or (A - X) * (B - A) >= 0 or (C - B) * (B - A) >= 0:
-        return []
-    b, c = ab / xa, bc / ab
-    out = []
-    for k, p in POLA.items():
-        if not _dalam(b, p["b"], tol):
-            continue
-        if k == "cypher":
-            cx = abs(C - X) / xa
-            if (C - A) * (A - X) <= 0 or not _dalam(cx, p["cx"], tol):
-                continue
-            xc = abs(C - X)
-            pusat = C - (C - X) * p["dxc"][0]
-            prz = sorted((pusat - PRZ_LEBAR * xc, pusat + PRZ_LEBAR * xc))
-            rasio = {"b": round(b, 3), "cx": round(cx, 3)}
-        else:
-            if not _dalam(c, p["c"], tol):
-                continue
-            pusat = A + (X - A) * p["d"][0]
-            prz = sorted((pusat - PRZ_LEBAR * xa, pusat + PRZ_LEBAR * xa))
-            proyeksi = sorted((C + (B - C) * p["bc"][0] * (1 - tol), C + (B - C) * p["bc"][1] * (1 + tol)))
-            if proyeksi[1] < prz[0] or proyeksi[0] > prz[1]:
-                continue   # rasio XA dan proyeksi BC tidak bertemu: bukan PRZ
-            rasio = {"b": round(b, 3), "c": round(c, 3)}
-        out.append({"pola": k, "pusat": pusat, "prz": prz, "rasio": rasio})
-    return out
+def _r3(v):
+    return None if v is None else round(v, 3)
+
+
+def rasio(X: float, A: float, B: float, C: float, D: float | None = None) -> dict:
+    xa, ab, bc, xc = abs(A - X), abs(A - B), abs(C - B), abs(C - X)
+    return {"b": _r3(ab / xa), "c": _r3(bc / ab), "cx": _r3(xc / xa),
+            "d": None if D is None else _r3(abs(A - D) / xa), "bc": None if D is None else _r3(abs(D - C) / bc),
+            "dxc": None if D is None else _r3(abs(D - C) / xc), "dbc": None if D is None else _r3(abs(D - C) / bc)}
+
+
+def prz_pola(k: str, X: float, A: float, B: float, C: float, tol: float = TOL) -> list[float] | None:
+    """Rentang harga D (PRZ) satu pola; None bila rentang rasio D dan proyeksi BC tidak bertemu."""
+    p, xa = POLA[k], abs(A - X)
+    s = 1 if A > X else -1
+    if "d" in p:
+        rg, acuan = [A - s * xa * p["d"][0], A - s * xa * p["d"][1]], xa
+    elif "dbc" in p:
+        rg, acuan = [C + (B - C) * p["dbc"][0], C + (B - C) * p["dbc"][1]], abs(B - C)
+    else:
+        rg, acuan = [C - (C - X) * p["dxc"][0], C - (C - X) * p["dxc"][1]], abs(C - X)
+    rg = sorted(rg)
+    if rg[1] - rg[0] < 2 * PRZ_LEBAR * acuan:
+        m = (rg[0] + rg[1]) / 2
+        rg = [m - PRZ_LEBAR * acuan, m + PRZ_LEBAR * acuan]
+    if "bc" in p:
+        pr = sorted([C + (B - C) * p["bc"][0] * (1 - tol), C + (B - C) * p["bc"][1] * (1 + tol)])
+        lo, hi = max(rg[0], pr[0]), min(rg[1], pr[1])
+        if lo > hi:
+            return None
+        if hi - lo < PRZ_LEBAR * acuan:
+            m = (lo + hi) / 2
+            return [max(rg[0], m - PRZ_LEBAR * acuan / 2), min(rg[1], m + PRZ_LEBAR * acuan / 2)]
+        return [lo, hi]
+    return rg
+
+
+def skor_pola(k: str, r: dict, tol: float = TOL) -> float | None:
+    """Jumlah jarak rasio ke rentang pola; None bila ada yang di luar toleransi (proyeksi BC 2x lebih longgar)."""
+    p = POLA[k]
+    cek = [(r["b"], p["b"], 1), (r["cx"], p["cx"], 1) if "cx" in p else (r["c"], p["c"], 1)]
+    if r.get("d") is not None:
+        for kunci in ("d", "dxc", "dbc"):
+            if kunci in p:
+                cek.append((r[kunci], p[kunci], 1))
+        if "bc" in p:
+            cek.append((r["bc"], p["bc"], 2))
+    s = 0.0
+    for v, rg, longgar in cek:
+        if v is None or _jarak(v, rg) > tol * longgar:
+            return None
+        s += _jarak(v, rg)
+    return round(s, 3)
+
+
+def _bentuk_ok(k: str, X: float, A: float, B: float, C: float) -> bool:
+    s = 1 if A > X else -1
+    if (B - A) * s >= 0 or (C - B) * s <= 0:
+        return False
+    lewat_a = C > A if s > 0 else C < A
+    if k == "fiveo":
+        return lewat_a and (B < X if s > 0 else B > X)
+    return lewat_a if k in ("cypher", "shark") else not lewat_a
 
 
 def _bulat(v: float) -> float:
     return round(v, 2) if v < 10 else round(v)
 
 
+def _fraksi(p: float) -> int:
+    return 1 if p < 200 else 2 if p < 500 else 5 if p < 2000 else 10 if p < 5000 else 25
+
+
+def _bulat_arah(t: float, bull: bool) -> float:
+    """Target dibulatkan ke fraksi harga BEI ke arah konservatif (bullish ke bawah, bearish ke atas)."""
+    f = _fraksi(t)
+    return (t // f) * f if bull else -((-t) // f) * f
+
+
+def _teks(v: float) -> str:
+    return f"{v:.3f}".rstrip("0").rstrip(".").replace(".", ",")
+
+
+def _rg(rg: tuple[float, float]) -> str:
+    return _teks(rg[0]) if rg[0] == rg[1] else f"{_teks(rg[0])}-{_teks(rg[1])}"
+
+
+def _jendela(pv: list[dict], N: int, n: int):
+    """Titik akhir = ekstrem berjalan, atau terkonfirmasi satu sampai dua swing lalu (paling lama BERBALIK_BAR bar)."""
+    out = []
+    if len(pv) >= N:
+        out.append((pv[-N:], "jalan"))
+    for m in (1, 2):
+        if len(pv) >= N + m:
+            w = pv[-N - m:-m]
+            if w[-1]["i"] >= n - BERBALIK_BAR:
+                out.append((w, "tetap"))
+    return out
+
+
+def _status(bars: list[dict], mode: str, akhir_pt: dict, prz: list[float], bull: bool, lengkap_ok: bool):
+    """Status titik akhir pola: 'prz' (berjalan di PRZ), 'berbalik' (terkonfirmasi di PRZ), atau 'menuju' (belum sampai)."""
+    di_prz = prz[0] <= akhir_pt["p"] <= prz[1]
+    lewat = akhir_pt["p"] < prz[0] if bull else akhir_pt["p"] > prz[1]
+    if di_prz and lengkap_ok:
+        return "prz" if mode == "jalan" else "berbalik"
+    if mode != "jalan" or lewat or di_prz:
+        return None
+    akhir, tepi = bars[-1]["c"], (prz[1] if bull else prz[0])
+    jarak = (akhir / tepi - 1) * 100
+    if jarak * (1 if bull else -1) < 0 or abs(jarak) > MENUJU_MAKS:
+        return None
+    return "menuju"
+
+
+def _baris(bars, rs, k, nama, bull, status, th, w, label, prz, stop, target, rasio_d, alasan, skor, target_ca=None):
+    """Baris screening seragam untuk semua pola; titik akhir yang masih proyeksi tidak ikut dicantumkan."""
+    akhir = bars[-1]["c"]
+    tepi = prz[1] if bull else prz[0]
+    titik = [{"n": nm, "d": bars[x["i"]]["d"][:10], "p": _bulat(x["p"])} for nm, x in zip(label, w)]
+    if status == "menuju":
+        titik = titik[:-1]
+    D = w[-1]
+    return {"pola": k, "nama": nama, "arah": "bullish" if bull else "bearish", "status": status, "harga": akhir,
+            "prz": [_bulat(prz[0]), _bulat(prz[1])], "jarak": round(abs((akhir / tepi - 1) * 100), 1) if status == "menuju" else 0.0,
+            "reaksi": round((akhir / D["p"] - 1) * 100, 1) if status == "berbalik" else None,
+            "rasio": {x: v for x, v in rasio_d.items() if v is not None}, "skala": th, "skor": skor, "titik": titik,
+            "target": [_bulat(t) for t in target], "targetCA": target_ca, "stop": _bulat(stop),
+            "alasan": alasan,
+            "konfirmasi": konfirmasi(bars, rs, w[-3], D, bull) if status != "menuju" else []}
+
+
+def _batal(bars: list[dict], D: dict, stop: float, bull: bool) -> bool:
+    """Pola batal: setelah titik akhir ada penutupan yang menembus stop."""
+    return any((b["c"] < stop) if bull else (b["c"] > stop) for b in bars[D["i"] + 1:])
+
+
+def _cari_xabcd(bars, rs, th, pv, hasil):
+    n = len(bars)
+    for w, mode in _jendela(pv, 5, n):
+        X, A, B, C, D = w
+        bull = A["p"] > X["p"]
+        for k, p in POLA.items():
+            if not _bentuk_ok(k, X["p"], A["p"], B["p"], C["p"]):
+                continue
+            prz = prz_pola(k, X["p"], A["p"], B["p"], C["p"])
+            if not prz:
+                continue
+            r = rasio(X["p"], A["p"], B["p"], C["p"], D["p"])
+            skor = skor_pola(k, r)
+            status = _status(bars, mode, D, prz, bull, skor is not None)
+            if not status:
+                continue
+            if status == "menuju":
+                skor = skor_pola(k, {**r, "d": None})
+                if skor is None:
+                    continue
+                r = rasio(X["p"], A["p"], B["p"], C["p"])
+            d_ref = D["p"] if status != "menuju" else (prz[0] + prz[1]) / 2
+            if k in ("gartley", "bat") and (d_ref < X["p"] if bull else d_ref > X["p"]):
+                continue
+            if k == "fiveo":
+                target = [d_ref + (C["p"] - d_ref) * 0.618, C["p"]]
+                stop = C["p"] + (B["p"] - C["p"]) * 0.618
+            else:
+                acuan = C["p"] if k == "cypher" else A["p"]
+                target = [d_ref + (acuan - d_ref) * x for x in (0.382, 0.618)]
+                stop = (prz[0] if bull else prz[1]) if k in STOP_PRZ else X["p"]
+            target = [_bulat_arah(t, bull) for t in target]
+            if status != "menuju" and _batal(bars, D, stop, bull):
+                continue
+            label = {"b": "B AB/XA", "c": "C BC/AB", "cx": "C XC/XA", "d": "D AD/XA", "dxc": "D CD/XC", "dbc": "D DC/BC", "bc": "CD/BC"}
+            alasan = [f"{label[x]} {_teks(r[x])} (kriteria {_rg(p[x])})" for x in ("b", "c", "cx", "d", "dxc", "dbc", "bc")
+                      if x in p and r.get(x) is not None]
+            ca = [_bulat(C["p"]), _bulat(A["p"])] if k not in ("cypher", "fiveo") else None
+            row = _baris(bars, rs, k, p["nama"], bull, status, th, w, "XABCD", prz, stop, target, r, alasan, skor, ca)
+            kunci = (k, row["arah"], B["i"], C["i"], "p" if status == "menuju" else D["i"])
+            if kunci not in hasil or row["skor"] < hasil[kunci]["skor"]:
+                hasil[kunci] = row
+
+
+def _cari_abcd(bars, rs, th, pv, hasil):
+    n = len(bars)
+    for w, mode in _jendela(pv, 4, n):
+        A, B, C, D = w
+        bull = A["p"] > B["p"]   # A puncak, D lembah: bullish
+        ab = B["p"] - A["p"]
+        c = _r3(abs(C["p"] - B["p"]) / abs(ab))
+        if not _dalam(c, ABCD_C):
+            continue
+        proy = sorted([C["p"] + (B["p"] - C["p"]) * ABCD_E[0] * (1 - 2 * TOL), C["p"] + (B["p"] - C["p"]) * ABCD_E[1] * (1 + 2 * TOL)])
+        for k in ("abcd", "altabcd"):
+            p = POLA_LAIN[k]
+            rg = sorted([C["p"] + ab * p["cd"][0] * (1 - TOL), C["p"] + ab * p["cd"][1] * (1 + TOL)])
+            lo, hi = max(rg[0], proy[0]), min(rg[1], proy[1])
+            if lo > hi:
+                continue
+            prz = [lo, hi]
+            cd, e = _r3(abs(D["p"] - C["p"]) / abs(ab)), _r3(abs(D["p"] - C["p"]) / abs(C["p"] - B["p"]))
+            status = _status(bars, mode, D, prz, bull, _dalam(cd, p["cd"]) and _dalam(e, ABCD_E, 2 * TOL))
+            if not status:
+                continue
+            d_ref = D["p"] if status != "menuju" else (lo + hi) / 2
+            stop = prz[0] if bull else prz[1]
+            if status != "menuju" and _batal(bars, D, stop, bull):
+                continue
+            target = [_bulat_arah(d_ref + (A["p"] - d_ref) * x, bull) for x in (0.382, 0.618)]
+            r = {"c": c} if status == "menuju" else {"c": c, "cd": cd, "bc": e}
+            alasan = [f"C BC/AB {_teks(c)} (kriteria {_rg(ABCD_C)})"]
+            if status != "menuju":
+                alasan += [f"CD/AB {_teks(cd)} (kriteria {_rg(p['cd'])})", f"CD/BC {_teks(e)} (kriteria {_rg(ABCD_E)})"]
+            skor = round(_jarak(c, ABCD_C) + (0 if status == "menuju" else _jarak(cd, p["cd"]) + _jarak(e, ABCD_E)), 3)
+            row = _baris(bars, rs, k, p["nama"], bull, status, th, w, "ABCD", prz, stop, target, r, alasan, skor)
+            kunci = (k, row["arah"], B["i"], C["i"], "p" if status == "menuju" else D["i"])
+            if kunci not in hasil or row["skor"] < hasil[kunci]["skor"]:
+                hasil[kunci] = row
+
+
+def _cari_tiga_dorongan(bars, rs, th, pv, hasil):
+    n, p = len(bars), POLA_LAIN["tigadorongan"]
+    for w, mode in _jendela(pv, 6, n):
+        P0, P1, P2, P3, P4, P5 = w
+        s = 1 if P1["p"] > P0["p"] else -1
+        bull = s < 0   # dorongan naik: pembalikan turun (bearish)
+        if not (s * (P3["p"] - P1["p"]) > 0 and s * (P2["p"] - P0["p"]) > 0 and s * (P4["p"] - P2["p"]) > 0):
+            continue
+        r1 = _r3(abs(P3["p"] - P2["p"]) / abs(P1["p"] - P2["p"]))
+        if not _dalam(r1, p["dorong"]):
+            continue
+        prz = sorted([P4["p"] + (P3["p"] - P4["p"]) * p["dorong"][0] * (1 - TOL), P4["p"] + (P3["p"] - P4["p"]) * p["dorong"][1] * (1 + TOL)])
+        r2 = _r3(abs(P5["p"] - P4["p"]) / abs(P3["p"] - P4["p"]))
+        status = _status(bars, mode, P5, prz, bull, _dalam(r2, p["dorong"]))
+        if not status:
+            continue
+        d_ref = P5["p"] if status != "menuju" else (prz[0] + prz[1]) / 2
+        stop = prz[0] if bull else prz[1]
+        if status != "menuju" and _batal(bars, P5, stop, bull):
+            continue
+        target = [_bulat_arah(d_ref + (P0["p"] - d_ref) * x, bull) for x in (0.382, 0.618)]
+        r = {"r1": r1} if status == "menuju" else {"r1": r1, "r2": r2}
+        alasan = [f"Dorongan 2 {_teks(r1)} x koreksi (kriteria {_rg(p['dorong'])})"]
+        if status != "menuju":
+            alasan.append(f"Dorongan 3 {_teks(r2)} x koreksi (kriteria {_rg(p['dorong'])})")
+        skor = round(_jarak(r1, p["dorong"]) + (0 if status == "menuju" else _jarak(r2, p["dorong"])), 3)
+        row = _baris(bars, rs, "tigadorongan", p["nama"], bull, status, th, w, ["0", "1", "A", "2", "B", "3"], prz, stop, target, r, alasan, skor)
+        kunci = ("tigadorongan", row["arah"], P2["i"], P4["i"], "p" if status == "menuju" else P5["i"])
+        if kunci not in hasil or row["skor"] < hasil[kunci]["skor"]:
+            hasil[kunci] = row
+
+
 def cari(bars: list[dict], skala: tuple[float, ...] = SKALA, min_nilai: float = MIN_NILAI) -> list[dict]:
-    """Pola harmonik aktif di ujung data: status "prz" (D sedang di PRZ), "berbalik" (D terkonfirmasi di PRZ dalam
-    BERBALIK_BAR bar terakhir, harga mulai berbalik), atau "menuju" (X-A-B-C terbentuk, harga bergerak ke PRZ)."""
+    """Pola harmonik aktif di ujung data (XABCD termasuk 5-0, Three Drives, AB=CD): status "prz" (titik akhir sedang di
+    PRZ), "berbalik" (titik akhir terkonfirmasi di PRZ dalam BERBALIK_BAR bar terakhir), atau "menuju" (titik akhir belum
+    terbentuk, harga bergerak ke PRZ). Aturan sama dengan frontend/src/lib/harmonikAlat.js."""
     if len(bars) < 30 or nilai_rata(bars) < min_nilai:
         return []
-    n, akhir = len(bars), bars[-1]["c"]
     rs = rsi([b["c"] for b in bars])
     hasil: dict[tuple, dict] = {}
     for th in skala:
         pv = zigzag(bars, th)
-        jendela = []
-        if len(pv) >= 5:
-            jendela.append(pv[-5:])         # D = ekstrem berjalan
-        if len(pv) >= 6:
-            jendela.append(pv[-6:-1])       # D terkonfirmasi, kaki setelahnya = reaksi
-        for w in jendela:
-            X, A, B, C, D = w
-            terkonfirmasi = not D.get("tentatif")
-            if terkonfirmasi and D["i"] < n - BERBALIK_BAR:
-                continue
-            for m in cocok(X["p"], A["p"], B["p"], C["p"]):
-                bull = A["p"] > X["p"]
-                lo, hi = m["prz"]
-                di_prz = lo <= D["p"] <= hi
-                lewat = D["p"] < lo if bull else D["p"] > hi
-                if lewat:
-                    continue          # D sudah menembus PRZ: pola batal
-                if terkonfirmasi:
-                    if not di_prz:
-                        continue
-                    status = "berbalik"
-                elif di_prz:
-                    status = "prz"
-                else:
-                    status = "menuju"
-                tepi = hi if bull else lo
-                jarak = (akhir / tepi - 1) * 100 if status == "menuju" else 0.0
-                if status == "menuju" and (jarak * (1 if bull else -1) < 0 or abs(jarak) > MENUJU_MAKS):
-                    continue
-                d_ref = D["p"] if status != "menuju" else m["pusat"]
-                acuan = C["p"] if m["pola"] == "cypher" else A["p"]
-                # Stop: sedikit di balik X (Astronacci); pola yang D-nya melewati X memakai sisi luar PRZ (Maxco).
-                if m["pola"] in ("butterfly", "crab"):
-                    stop = lo if bull else hi
-                else:
-                    stop = X["p"]
-                row = {"pola": m["pola"], "nama": POLA[m["pola"]]["nama"], "arah": "bullish" if bull else "bearish",
-                       "status": status, "harga": akhir, "prz": [_bulat(lo), _bulat(hi)],
-                       "jarak": round(abs(jarak), 1), "reaksi": round((akhir / D["p"] - 1) * 100, 1) if status == "berbalik" else None,
-                       "rasio": m["rasio"], "skala": th,
-                       "titik": [{"n": nm, "d": bars[x["i"]]["d"][:10], "p": _bulat(x["p"])}
-                                 for nm, x in zip("XABC", (X, A, B, C))]
-                       + ([{"n": "D", "d": bars[D["i"]]["d"][:10], "p": _bulat(D["p"])}] if status != "menuju" else []),
-                       # Target Astronacci: retracement 0,382 lalu 0,618 kaki AD (Cypher: kaki CD).
-                       "target": [_bulat(d_ref + (acuan - d_ref) * r) for r in (0.382, 0.618)],
-                       # Target alternatif Maxco: titik C (konservatif) lalu titik A.
-                       "targetCA": [_bulat(C["p"]), _bulat(A["p"])] if m["pola"] != "cypher" else None,
-                       "stop": _bulat(stop),
-                       "konfirmasi": konfirmasi(bars, rs, B, D, bull) if status != "menuju" else []}
-                if m["pola"] in ("gartley", "bat") and (D["p"] < X["p"] if bull else D["p"] > X["p"]):
-                    continue          # D melewati X: bukan Gartley/Bat
-                kunci = (m["pola"], row["arah"], X["i"], A["i"])
-                if kunci not in hasil:
-                    hasil[kunci] = row
-    urut = {"prz": 0, "berbalik": 1, "menuju": 2}
-    return sorted(hasil.values(), key=lambda r: (urut[r["status"]], r["jarak"]))[:3]
+        _cari_xabcd(bars, rs, th, pv, hasil)
+        _cari_tiga_dorongan(bars, rs, th, pv, hasil)
+        _cari_abcd(bars, rs, th, pv, hasil)
+    urut, kelas = {"prz": 0, "berbalik": 1, "menuju": 2}, {"abcd": 2, "altabcd": 2, "tigadorongan": 1}
+    return sorted(hasil.values(), key=lambda r: (urut[r["status"]], kelas.get(r["pola"], 0), r["jarak"], r["skor"]))[:4]
 
 
 def ringkas_pola() -> list[dict]:
-    """Tabel rasio untuk tampilan (angka sesuai ilustrasi artikel sumber)."""
+    """Tabel rasio untuk tampilan screening (sama dengan materi)."""
     out = []
     for k, p in POLA.items():
-        out.append({"k": k, "nama": p["nama"], "ket": p["ket"], **{x: list(p[x]) for x in ("b", "c", "d", "bc", "cx", "dxc") if x in p}})
+        out.append({"k": k, "nama": p["nama"], "ket": p["ket"], **{x: list(p[x]) for x in ("b", "c", "d", "bc", "cx", "dxc", "dbc") if x in p}})
+    for k, p in POLA_LAIN.items():
+        out.append({"k": k, "nama": p["nama"], "ket": p["ket"]})
     return out

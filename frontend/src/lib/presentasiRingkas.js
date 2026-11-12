@@ -113,6 +113,17 @@ export const RINGKAS = [
     pola: 'butterfly', alat: 'xabcd', rujukan: 'Carney, Bab 8',
   },
   {
+    id: 'r-tambahan', bagian: 'Pembahasan Pola', judul: 'Pola tambahan', sub: 'Dari lembar pola, ikut dideteksi otomatis',
+    tabel: { kolom: ['Pola', 'Syarat inti', 'Relevan di saham saat'], baris: [
+      ['Alternate Bat', 'B 0,382 XA, D 1,13 XA', 'Support/resistance sedikit tertembus lalu berbalik'],
+      ['Shark', 'C melewati A 1,13–1,618 AB, D 0,886–1,13 XC', 'Lonjakan tajam pada saham volatil'],
+      ['5-0', 'B melewati X, C melewati A, D 0,50 BC', 'Setelah pola lain gagal dan tren berbalik'],
+      ['Three Drives', 'Dorongan 2 dan 3 = 1,27–1,618 kali koreksi', 'Kenaikan/penurunan berjenjang yang melemah'],
+      ['AB=CD mandiri', 'CD = AB atau 1,27–1,618 AB', 'Gerak lanjutan; kuat bila bertemu level lain'],
+    ] },
+    pola: 'fiveo', alat: 'xabcd', rujukan: 'Lembar pola harmonik; Carney, Bab 4',
+  },
+  {
     id: 'r-beda', bagian: 'Pembahasan Pola', judul: 'Membedakan empat pola', sub: 'Lihat titik B dulu, lalu titik D',
     tabel: { kolom: ['Pola', 'Titik B', 'Titik D', 'Jenis', 'Batas batal'], baris: [
       ['Gartley', '0,618', '0,786 XA', 'Retracement', 'Titik X'],
