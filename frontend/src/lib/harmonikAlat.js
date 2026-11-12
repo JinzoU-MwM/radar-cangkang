@@ -160,7 +160,8 @@ function bentukOk(k, X, A, B, C) {
 
 function targetStop(k, X, A, C, D, prz, bull) {
   const acuan = k === 'cypher' ? C : A
-  const target = [0.382, 0.618].map(r => D + (acuan - D) * r)
+  // Target dibulatkan ke fraksi harga BEI ke arah konservatif (bullish ke bawah, bearish ke atas).
+  const target = [0.382, 0.618].map(r => D + (acuan - D) * r).map(t => bull ? floorTick(t) : ceilTick(t))
   const stopMentah = STOP_PRZ.has(k) ? (bull ? prz[0] : prz[1]) : X
   return { target, stop: stopMentah }
 }
@@ -206,11 +207,16 @@ export function cariXabcd(bars = [], skala = SKALA.D, umurD = 30) {
         } else continue
         if ((k === 'gartley' || k === 'bat') && (bull ? titikD.p < X.p : titikD.p > X.p)) continue
         const { target, stop } = targetStop(k, X.p, A.p, C.p, titikD.p, prz, bull)
-        const kunci = `${k}|${bull ? 'b' : 's'}|${X.i}|${A.i}`
+        // Pola batal: setelah D ada penutupan yang menembus stop (X / sisi luar PRZ); bukan pola aktif lagi.
+        if (!titikD.proyeksi && bars.slice(D.i + 1).some(b => bull ? b.c < stop : b.c > stop)) continue
+        // Kunci tanpa X/A: skala zigzag berbeda bisa memilih bar berbeda untuk harga ekstrem yang sama (harga kembar),
+        // padahal B, C, D-nya sama; pola itu cukup tampil sekali.
+        const kunci = `${k}|${bull ? 'b' : 's'}|${B.i}|${C.i}|${titikD.proyeksi ? 'p' : D.i}`
         const row = {
           kunci, pola: k, nama: POLA[k].nama, ket: POLA[k].ket, arah: bull ? 'bullish' : 'bearish', status, skala: th, skor,
           titik: [{ n: 'X', i: X.i, p: X.p }, { n: 'A', i: A.i, p: A.p }, { n: 'B', i: B.i, p: B.p }, { n: 'C', i: C.i, p: C.p }, titikD],
           rasio: status === 'menuju' ? rasioXabcd(X.p, A.p, B.p, C.p) : r, prz, target, stop, harga: akhir,
+          kaki: k === 'cypher' ? 'CD' : 'AD',   // kaki acuan target 0,382/0,618
         }
         const lama = hasil.get(kunci)
         if (!lama || row.skor < lama.skor) hasil.set(kunci, row)
@@ -266,7 +272,8 @@ export function fibExtension(bars = [], pola = null, th = 0.1) {
   } else {
     const leg = legTerakhir(bars, th, 3) || legTerakhir(bars, th / 2, 3)
     if (!leg) return null
-    ;[p1, p2, p3] = leg; dasar = 'tiga swing terakhir yang sudah selesai'
+    ;[p1, p2, p3] = leg
+    dasar = pola?.pola ? `tiga swing terakhir yang sudah selesai (pola ${pola.nama} tidak memakai AB=CD)` : 'tiga swing terakhir yang sudah selesai'
   }
   const k = p2.p - p1.p
   const level = FIB_EXT.map(r => ({ r, p: p3.p + k * r }))
@@ -375,7 +382,9 @@ export function rencanaPosisi(bars = [], arah = 'long', polaList = [], th = 0.06
   }
   // Pembulatan ke fraksi harga BEI; stop digeser satu fraksi di balik level.
   entry = bulat(entry, !long)
-  stop = long ? floorTick(stop) - tick(stop) : ceilTick(stop) + tick(stop)
+  // Satu fraksi di balik level, memakai fraksi pada harga hasil (aman di batas pita fraksi BEI).
+  if (long) stop = floorTick(floorTick(stop) - 1e-9)
+  else { const c = ceilTick(stop); stop = c + tick(c) }
   target = target.map(t => bulat(t, !long))
   const risiko = Math.abs(entry - stop)
   return {
@@ -538,11 +547,13 @@ export function skenarioD(row) {
   const lebar = Math.max(5, D.i - C.i), ke = k => D.i + Math.round(lebar * k)
   const fh = p => Number(p).toLocaleString('id-ID', { maximumFractionDigits: p < 200 ? 1 : 0 })
   const out = [
-    { k: 't1', jenis: 'target', label: `TP1 0,382 AD ${fh(row.target[0])}`, dari: D, ke: { i: ke(0.6), p: row.target[0] } },
-    { k: 't2', jenis: 'target', label: `TP2 0,618 AD ${fh(row.target[1])}`, dari: D, ke: { i: ke(1), p: row.target[1] } },
+    // Bullish: target naik (untuk beli/Long). Bearish: target turun (untuk jual, ambil untung, atau Short).
+    { k: 't1', jenis: 'target', label: `Target ${bull ? 'naik' : 'turun'} 1 (0,382 ${row.kaki || 'AD'}) ${fh(row.target[0])}`, dari: D, ke: { i: ke(0.6), p: row.target[0] } },
+    { k: 't2', jenis: 'target', label: `Target ${bull ? 'naik' : 'turun'} 2 (0,618 ${row.kaki || 'AD'}) ${fh(row.target[1])}`, dari: D, ke: { i: ke(1), p: row.target[1] } },
   ]
-  if (s * (C.p - row.target[1]) > 0) out.push({ k: 'c', jenis: 'target', label: `Titik C ${fh(C.p)} (lanjutan)`, dari: D, ke: { i: ke(1.4), p: C.p } })
-  const jarak = Math.max(Math.abs(D.p - row.stop), D.p * 0.03)
-  out.push({ k: 'gagal', jenis: 'gagal', label: `Gagal bila tembus ${fh(row.stop)}`, dari: D, ke: { i: ke(0.6), p: row.stop - s * jarak } })
+  if (s * (C.p - row.target[1]) > 0) out.push({ k: 'c', jenis: 'target', label: `Target ${bull ? 'naik' : 'turun'} lanjutan: titik C ${fh(C.p)}`, dari: D, ke: { i: ke(1.4), p: C.p } })
+  // Jalur gagal: panah sedikit melewati level stop; level stop sendiri digambar sebagai garis batas berlabel.
+  const lewat = Math.max(Math.abs(D.p - row.stop) * 0.35, D.p * 0.01)
+  out.push({ k: 'gagal', jenis: 'gagal', label: `Batal bila close menembus ${fh(row.stop)}`, dari: D, ke: { i: ke(0.6), p: row.stop - s * lewat }, stop: row.stop })
   return out
 }

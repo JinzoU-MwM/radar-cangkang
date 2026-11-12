@@ -12,8 +12,18 @@ import { api } from '../api.js'
 import { store, toast } from '../store.js'
 import { SKALA, TF, POLA, PEMBEDA, alasanPola, alasanX, diagramIdeal, konfirmasiD, skenarioD, cariElliott, cariXabcd, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
 import { ukuranPosisi } from '../lib/harmonikBelajar.js'
+import PolaDiagram from '../components/PolaDiagram.vue'
+import HarmonicMateri from '../components/HarmonicMateri.vue'
+import HarmonicScreening from '../components/HarmonicScreening.vue'
 
 const route = useRoute(), router = useRouter()
+
+// Tab halaman: Materi (presentasi), Saham (chart), Screening (daftar pola); ?tab= di URL, tanpa ?tab = Saham.
+const TAB = [{ k: 'materi', nama: 'Materi' }, { k: 'saham', nama: 'Saham' }, { k: 'screening', nama: 'Screening' }]
+const tab = ref(TAB.some(x => x.k === route.query.tab) ? route.query.tab : 'saham')
+watch(tab, v => {
+  if (v === 'saham') nextTick(() => { if (!chart) bangunBilaTampil(); segar() })
+})
 
 // ------------------------------------------------------------------ data ----
 let terakhir = ''
@@ -28,6 +38,9 @@ async function muat(t, f) {
   err.value = ''
   const k = t + '|' + sumberTf(f)
   if (cache.has(k)) { mentah.value = cache.get(k); return }
+  // Sumber berbeda (harian vs mingguan) belum ada di cache: kosongkan dulu supaya data lama tidak dianalisa
+  // dengan label timeframe baru.
+  mentah.value = []
   memuat.value = true
   try {
     const j = await api.get('/api/ohlc', { ticker: t, tf: sumberTf(f) })
@@ -44,7 +57,9 @@ async function muat(t, f) {
   } finally { memuat.value = false }
 }
 watch(kode, () => { aktif.value = [] })
-watch([kode, tf], ([t, f]) => { muat(t, f); router.replace({ query: { ...route.query, t, tf: f === 'D' ? undefined : f } }) }, { immediate: true })
+watch([kode, tf], ([t, f]) => muat(t, f), { immediate: true })
+// URL dibangun dari state (bukan dari route.query lama) supaya tab, kode, dan timeframe selalu sinkron.
+watch([tab, kode, tf], ([v, t, f]) => router.replace({ query: { t, tf: f === 'D' ? undefined : f, tab: v === 'saham' ? undefined : v } }), { immediate: true })
 const bars = computed(() => kelompokBar(mentah.value, tf.value === 'M' ? 'M' : 'D'))
 const skala = computed(() => SKALA[tf.value])
 
@@ -166,6 +181,32 @@ const ringkasan = computed(() => {
 const kesimpulan = computed(() => selesai.value && ringkasan.value.length ? ringkasan.value : null)
 const kartu = computed(() => [...aktif.value].reverse())
 
+// Dari tab Materi: buka tab Saham dengan alat itu aktif.
+function cobaAlat(k) {
+  tab.value = 'saham'
+  if (!aktif.value.includes(k)) nextTick(() => togel(k))
+}
+// Dari tab Screening: buka chart harian saham itu, XABCD aktif, pola yang sama dipilih bila ditemukan.
+// Pola dari Screening diterapkan setelah data harian saham itu termuat (watcher flush 'post', sesudah reset alat
+// karena ganti kode), supaya pilihan pola tidak tertimpa.
+const tungguPola = ref(null)
+function bukaScreening(r) {
+  tungguPola.value = { t: r.t, pola: r.pola, arah: r.arah }
+  tab.value = 'saham'
+  tf.value = 'D'
+  kode.value = r.t
+}
+watch([tungguPola, polaList, kode, tf, mentah], () => {
+  const w = tungguPola.value
+  if (!w || kode.value !== w.t || tf.value !== 'D' || !mentah.value.length || mentah.value !== cache.get(w.t + '|1y')) return
+  tungguPola.value = null
+  const i = polaList.value.findIndex(x => x.pola === w.pola && x.arah === w.arah)
+  pilihPola.value = i >= 0 ? i : 0
+  if (i < 0) toast(`Pola ${w.pola} ${w.arah} dari screening tidak terbaca lagi di data terbaru ${w.t}; yang tampil adalah pola lain atau swing terakhir.`, true)
+  aktif.value = ['xabcd']
+  nextTick(() => tampilkan('xabcd'))
+}, { flush: 'post' })
+
 // ----------------------------------------------------------------- chart ----
 const elChart = ref(), ver = ref(0)
 let chart = null, candle = null, volume = null, observer = null, resizer = null, raf = 0
@@ -197,6 +238,7 @@ function bangun() {
   candle = chart.addCandlestickSeries({ upColor: w.good, downColor: w.strong, borderUpColor: w.good, borderDownColor: w.strong,
     wickUpColor: w.good, wickDownColor: w.strong, autoscaleInfoProvider: skalaOtomatis() })
   chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.08, bottom: 0.22 } })
+  marginAtas = 0.08
   volume = chart.addHistogramSeries({ priceScaleId: 'vol', priceFormat: { type: 'volume' }, priceLineVisible: false, lastValueVisible: false })
   chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } })
   chart.timeScale().subscribeVisibleLogicalRangeChange(segar)
@@ -205,6 +247,8 @@ function bangun() {
     legenda.value = i != null && i >= 0 && i < bars.value.length ? i : null
   })
   isiData(true)
+  aturMargin()
+  if (aktif.value.includes('xabcd')) nextTick(() => tampilkan('xabcd'))
 }
 function isiData(awal = false) {
   if (!chart) return
@@ -273,7 +317,7 @@ function tampilkan(k) {
   // XABCD dengan pola: pola dan candle terbaru di sisi kiri, ruang kosong di kanan untuk gambar pola ideal.
   if (k === 'xabcd' && x.pola) {
     const ujung = Math.max(...idx, bars.value.length - 1, ...skenarioD(x).map(z => z.ke.i)) + 4, awal = Math.min(...idx) - 6
-    ts.setVisibleLogicalRange({ from: awal, to: ujung + Math.max(14, (ujung - awal) * 0.6) })
+    ts.setVisibleLogicalRange({ from: awal, to: ujung + Math.max(18, (ujung - awal) * 0.9) })
     return
   }
   // Gambar yang terlalu kecil di layar diperbesar (fokus ke pola); yang terpotong diperlebar.
@@ -281,9 +325,14 @@ function tampilkan(k) {
   else if (lo < r.from || hi > r.to) ts.setVisibleLogicalRange({ from: Math.min(r.from, lo), to: Math.max(r.to, hi) })
 }
 
+// Chart hanya dibangun saat tab Saham tampil (lebar > 0): dibangun saat tersembunyi membuat rentang dan skala kacau.
+function bangunBilaTampil() {
+  if (tab.value === 'saham' && elChart.value?.clientWidth) { bangun(); return }
+  chart?.remove(); chart = null; candle = volume = null
+}
 onMounted(() => {
-  bangun()
-  observer = new MutationObserver(bangun)
+  bangunBilaTampil()
+  observer = new MutationObserver(bangunBilaTampil)
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
   resizer = new ResizeObserver(segar)
   resizer.observe(elChart.value)
@@ -312,8 +361,13 @@ const gambar = computed(() => {
     const x = h.xabcd, p = titikXY(x.titik)
     if (p.every(t => ok(t.x, t.y))) {
       const [Xp, A, B, C, D] = p, r = x.rasio || {}
-      const garis = [[Xp, B, r.b, 'AB/XA'], [A, C, r.c, 'BC/AB'], [B, D, r.e, 'CD/BC'], [Xp, D, r.d, 'AD/XA']]
-      if (x.pola === 'cypher' || x.pola === 'shark') garis.splice(1, 1, [Xp, C, r.cx, 'XC/XA'])
+      // Garis rasio mengikuti kriteria pola: B (AB/XA), C (BC/AB atau XC/XA untuk Cypher), D (AD/XA atau CD/XC),
+      // dan proyeksi BC (CD/BC). Tanpa pola: rasio dasar XABCD.
+      const kr = POLA[x.pola] || { b: 1, c: 1, d: 1, e: 1 }
+      const garis = [[Xp, B, r.b, 'AB/XA'],
+        kr.cx ? [Xp, C, r.cx, 'XC/XA'] : [A, C, r.c, 'BC/AB'],
+        kr.dc ? [C, D, r.dc, 'CD/XC'] : [Xp, D, r.d, 'AD/XA'],
+        ...(kr.e ? [[B, D, r.e, 'CD/BC']] : [])]
       out.xabcd = {
         bull: x.arah === 'bullish',
         segi: [[Xp, A, B], [B, C, D]].map(s => s.map(t => `${t.x},${t.y}`).join(' ')),
@@ -330,7 +384,8 @@ const gambar = computed(() => {
           const sudut = Math.atan2(y2 - y1, x2 - x1), u = 9, v = 4.5
           const kepala = [[x2, y2], [x2 - u * Math.cos(sudut) + v * Math.sin(sudut), y2 - u * Math.sin(sudut) - v * Math.cos(sudut)],
             [x2 - u * Math.cos(sudut) - v * Math.sin(sudut), y2 - u * Math.sin(sudut) + v * Math.cos(sudut)]].map(p => p.join(',')).join(' ')
-          return { ...z, x1, y1, x2, y2, kepala }
+          const ys = z.stop != null ? Y(z.stop) : null
+          return { ...z, x1, y1, x2, y2, kepala, ys: ok(ys) ? ys : null }
         }).filter(Boolean),
         tanda: (() => {
           const c = konf.value?.candle, b = c && bars.value[c.i]
@@ -421,9 +476,25 @@ const inset = computed(() => {
   return { nama: `${x.nama} ${x.arah}`, bull: x.arah === 'bullish', diagram: diagramIdeal(x.pola, x.arah), alasan: alasanPola(x),
     pembeda: PEMBEDA[x.pola], status: STATUS[x.status], prz: x.prz }
 })
-watch(() => hasil.value.xabcd?.kunci, () => { insetTutup.value = false })
+// Layar sempit (ponsel): kotak gambar lebih lebar dari chart, jadi awalnya tertutup dan dibuka lewat tombol.
+const sempit = computed(() => panel.value.w > 0 && panel.value.w < 520)
+watch([() => hasil.value.xabcd?.kunci, sempit], () => { insetTutup.value = sempit.value })
 const IW = 244, elInset = ref(), tinggiInset = ref(330)
 watch([inset, ver], () => nextTick(() => { const h = elInset.value?.offsetHeight; if (h && Math.abs(h - tinggiInset.value) > 4) tinggiInset.value = h }))
+// Saat gambar pola tampil, candle dirapatkan ke bawah (margin atas skala harga) supaya bagian atas chart kosong
+// untuk kotak gambar; tanpa kotak kembali normal.
+let marginAtas = 0.08
+function aturMargin() {
+  const h = panel.value.h
+  if (!chart || !h) return
+  const ada = !!inset.value && !insetTutup.value
+  // Kotak di baris atas mulai y = 52 (di bawah legenda OHLC): margin = 52 + tinggi kotak + jarak 16.
+  const atas = ada ? Math.min(0.5, Math.max(0.2, (tinggiInset.value + 68) / h)) : 0.08
+  marginAtas = atas
+  chart.priceScale('right').applyOptions({ scaleMargins: { top: atas, bottom: 0.22 } })
+  segar()
+}
+watch([() => !!inset.value && !insetTutup.value, tinggiInset, () => panel.value.h], aturMargin)
 // Sudut dengan candle (dan titik pola) paling sedikit yang tertutup kotak gambar.
 const insetPos = computed(() => {
   ver.value // eslint-disable-line no-unused-expressions
@@ -439,13 +510,17 @@ const insetPos = computed(() => {
     // Candle terbaru (20 bar terakhir) paling penting dilihat: bobot lebih besar agar kotak menghindarinya.
     if (ok(x, y1, y2)) kotak.push({ x, y1, y2, berat: i >= b.length - 20 ? 4 : 1 })
   }
-  for (const p of (gambar.value.xabcd?.panah || [])) for (const f of [0.5, 1]) kotak.push({ x: p.x1 + (p.x2 - p.x1) * f, y1: p.y1 + (p.y2 - p.y1) * f - 14, y2: p.y1 + (p.y2 - p.y1) * f + 14, berat: 40 })
+  for (const p of (gambar.value.xabcd?.panah || [])) {
+    for (const f of [0.5, 1]) kotak.push({ x: p.x1 + (p.x2 - p.x1) * f, y1: p.y1 + (p.y2 - p.y1) * f - 14, y2: p.y1 + (p.y2 - p.y1) * f + 14, berat: 40 })
+    // Teks label panah memanjang sekitar 200 px ke kanan dari ujungnya (atau dari garis batas).
+    const yl = p.ys ?? p.y2
+    for (let dxl = 20; dxl <= 200; dxl += 45) kotak.push({ x: p.x2 + dxl, y1: yl - 12, y2: yl + 12, berat: 40 })
+  }
   for (const t of (gambar.value.xabcd?.titik || [])) kotak.push({ x: t.x, y1: t.y - 20, y2: t.y + 20, berat: 40 })
   const skor = c => kotak.reduce((s, k) => s + (k.x >= c.x && k.x <= c.x + IW && k.y2 >= c.y && k.y1 <= c.y + IH ? (k.berat || 1) : 0), 0)
-  return kandidat.map(c => ({ ...c, s: skor(c) })).sort((a, b) => a.s - b.s)[0]
+  // Seri skor: utamakan baris atas (ruang yang dikosongkan margin skala harga).
+  return kandidat.map(c => ({ ...c, s: skor(c) + (c.y > 60 ? 0.5 : 0) })).sort((a, b) => a.s - b.s)[0]
 })
-const DW = 224, DH = 112, DP = 16
-const dx = v => DP + v * (DW - 2 * DP), dy = v => DP + v * (DH - 2 * DP)
 
 const teksX = computed(() => alasanX(hasil.value.xabcd, bars.value))
 
@@ -459,8 +534,11 @@ const jumlahPola = computed(() => polaList.value.length)
 // ------------------------------------------------------------- unduh PDF ----
 // Foto chart = kanvas lightweight-charts + overlay SVG (gaya dihitung lalu ditanam supaya warna token ikut).
 const elOv = ref(), busyPdf = ref(false)
+// Chart tidak diubah saat difoto (mengubah skala lalu memotret bisa membuat gambar dan candle tidak selaras).
+// Kotak gambar pola (HTML) tidak ikut terfoto, jadi ruang kosong di atas yang disiapkan untuknya dipotong.
 async function fotoChart() {
   if (!chart) return null
+  ver.value++; await nextTick()
   const kanvas = chart.takeScreenshot(), svg = elOv.value
   if (svg) {
     const klon = svg.cloneNode(true), asal = svg.querySelectorAll('*'), salin = klon.querySelectorAll('*')
@@ -472,6 +550,13 @@ async function fotoChart() {
     const sk = kanvas.width / elChart.value.clientWidth
     kanvas.getContext('2d').drawImage(img, 0, 0, panel.value.w * sk, panel.value.h * sk)
   }
+  const potong = marginAtas > 0.1 ? Math.round(Math.max(0, marginAtas * panel.value.h - 12) * kanvas.width / elChart.value.clientWidth) : 0
+  if (potong > 0) {
+    const kecil = document.createElement('canvas')
+    kecil.width = kanvas.width; kecil.height = kanvas.height - potong
+    kecil.getContext('2d').drawImage(kanvas, 0, potong, kanvas.width, kecil.height, 0, 0, kanvas.width, kecil.height)
+    return { url: kecil.toDataURL('image/jpeg', 0.88), w: kecil.width, h: kecil.height, jenis: 'JPEG' }
+  }
   // JPEG (latar chart tidak transparan) jauh lebih kecil dari PNG untuk foto chart.
   return { url: kanvas.toDataURL('image/jpeg', 0.88), w: kanvas.width, h: kanvas.height, jenis: 'JPEG' }
 }
@@ -481,7 +566,7 @@ async function unduh() {
   try {
     const [{ jsPDF }, P] = await Promise.all([import('jspdf'), import('../lib/harmonicViewPdf.js')])
     let foto = null
-    try { foto = await fotoChart() } catch { foto = null }
+    try { foto = await fotoChart() } catch (e) { console.warn('Foto chart gagal, PDF memakai chart cadangan:', e); foto = null }
     const x = hasil.value.xabcd
     const doc = P.harmonicViewPdf({
       t: kode.value, nama: nama.value, tfNama: tfNama.value.nama, bars: bars.value, hasil: hasil.value, foto,
@@ -498,6 +583,12 @@ async function unduh() {
 
 <template>
   <section class="hp">
+    <nav class="tabs" role="tablist" aria-label="Bagian Harmonic Pattern">
+      <button v-for="x in TAB" :key="x.k" type="button" role="tab" :aria-selected="String(tab === x.k)" :class="{ on: tab === x.k }" @click="tab = x.k">{{ x.nama }}</button>
+    </nav>
+    <HarmonicMateri v-if="tab === 'materi'" @coba="cobaAlat" />
+    <HarmonicScreening v-else-if="tab === 'screening'" @buka="bukaScreening" />
+    <div v-show="tab === 'saham'" class="sahamTab">
     <header class="top">
       <div class="cari" @focusin="bukaCari" @focusout="tutupCari">
         <input v-model="q" :placeholder="kode" aria-label="Cari kode atau nama saham" @keydown.enter="pilih(saran[0]?.t || q)" />
@@ -562,17 +653,9 @@ async function unduh() {
           <span class="vol">Vol <i>{{ fmtV(info.v) }} lot</i> · {{ String(info.d) }}</span>
         </div>
         <p v-if="err" class="err" role="alert">{{ err }}</p>
-        <div v-if="inset && insetPos && !insetTutup" ref="elInset" class="inset" :style="{ left: insetPos.x + 'px', top: insetPos.y + 'px', width: IW + 'px' }" role="note" aria-label="Pola harmonik terdeteksi">
+        <div v-if="inset && insetPos && !insetTutup" ref="elInset" class="inset" :style="{ left: Math.max(0, insetPos.x) + 'px', top: insetPos.y + 'px', width: Math.min(IW, panel.w - 8) + 'px' }" role="note" aria-label="Pola harmonik terdeteksi">
           <div class="ih"><b :class="inset.bull ? 'up' : 'dn'">{{ inset.nama }}</b><button type="button" class="ix" title="Sembunyikan gambar pola" aria-label="Sembunyikan gambar pola" @click="insetTutup = true">×</button></div>
-          <svg :viewBox="`0 0 ${DW} ${DH}`" class="ideal" aria-hidden="true">
-            <g v-for="(g, j) in inset.diagram.garis" :key="j">
-              <line :x1="dx(g.a.x)" :y1="dy(g.a.y)" :x2="dx(g.b.x)" :y2="dy(g.b.y)" class="ig-r" />
-              <text :x="(dx(g.a.x) + dx(g.b.x)) / 2" :y="(dy(g.a.y) + dy(g.b.y)) / 2 - 2" class="ig-rt">{{ g.teks }}</text>
-            </g>
-            <polyline :points="inset.diagram.titik.map(t => `${dx(t.x)},${dy(t.y)}`).join(' ')" class="ig-j" />
-            <circle :cx="dx(1)" :cy="dy(inset.diagram.titik[4].y)" r="6" :class="inset.bull ? 'ig-dg' : 'ig-ds'" />
-            <text v-for="(t, j) in inset.diagram.titik" :key="t.n" :x="dx(t.x) + (j === 4 ? 10 : 0)" :y="j === 4 ? dy(t.y) + 4 : t.y <= (inset.diagram.titik[j - 1]?.y ?? inset.diagram.titik[1].y) ? dy(t.y) - 6 : dy(t.y) + 13" class="ig-t">{{ t.n }}</text>
-          </svg>
+          <PolaDiagram class="ideal" :diagram="inset.diagram" />
           <p class="ip">Kenapa {{ inset.nama.split(' ').slice(0, -1).join(' ') }}: {{ inset.pembeda }}</p>
           <p v-if="konf" class="ip"><b>Konfirmasi {{ konf.jumlah }}/{{ konf.total }} ({{ konf.label }})</b>: {{ konf.cek.filter(c => c.ok).map(c => c.k === 'candle' ? c.nama : c.k === 'rsi' ? 'divergence RSI' : c.k === 'struktur' ? 'struktur minor tembus' : 'volume tinggi').join(', ') || 'belum ada' }}.</p>
           <details class="irinci" @toggle="segar">
@@ -584,6 +667,7 @@ async function unduh() {
             <p class="ip">{{ inset.status }}. PRZ {{ fmtH(inset.prz[0]) }}–{{ fmtH(inset.prz[1]) }}: {{ inset.bull ? 'area potensi berbalik naik' : 'area potensi berbalik turun' }}.</p>
           </details>
         </div>
+        <button v-if="inset && insetTutup" type="button" class="bukaInset" @click="insetTutup = false">Gambar pola: {{ inset.nama }}</button>
         <svg v-if="panel.w" ref="elOv" class="ov" :width="panel.w" :height="panel.h" :viewBox="`0 0 ${panel.w} ${panel.h}`" aria-hidden="true">
           <!-- Fib retracement / extension -->
           <g v-for="k in ['fib', 'ext']" :key="k">
@@ -616,7 +700,12 @@ async function unduh() {
             <g v-for="p in gambar.xabcd.panah" :key="p.k" class="panah" :class="p.jenis">
               <line :x1="p.x1" :y1="p.y1" :x2="p.x2" :y2="p.y2" />
               <polygon :points="p.kepala" />
-              <text :x="p.x2 + 6" :y="p.y2 + 4">{{ p.label }}</text>
+              <template v-if="p.ys != null">
+                <!-- Garis batas batal di level stop; label di garis, bukan di ujung panah. -->
+                <line :x1="p.x1" :x2="p.x2 + 70" :y1="p.ys" :y2="p.ys" class="batas" />
+                <text :x="p.x2 + 6" :y="p.y2 < p.ys ? p.ys + 13 : p.ys - 5">{{ p.label }}</text>
+              </template>
+              <text v-else :x="p.x2 + 6" :y="p.y2 + 4">{{ p.label }}</text>
             </g>
             <g v-if="gambar.xabcd.tanda" class="tanda">
               <path :d="gambar.xabcd.tanda.bull ? `M${gambar.xabcd.tanda.x},${gambar.xabcd.tanda.y} l-5,9 h10 z` : `M${gambar.xabcd.tanda.x},${gambar.xabcd.tanda.y} l-5,-9 h10 z`" />
@@ -691,7 +780,7 @@ async function unduh() {
               </ul>
               <p v-else class="small">Konfirmasi baru bisa dinilai setelah harga masuk PRZ dan membentuk titik D.</p>
             </div>
-            <p v-if="hasil.xabcd.pola" class="small">Panah dari D: jalur ke TP1, TP2, dan titik C bila pola berhasil; panah putus-putus adalah jalur bila pola gagal (stop tertembus). Jarak waktu panah hanya ilustrasi.</p>
+            <p v-if="hasil.xabcd.pola" class="small">Panah dari D: jalur ke target 1, target 2, dan titik C bila pola berhasil. Pola bullish: panah naik (target untuk beli). Pola bearish: panah turun (target harga turun, dipakai untuk jual, ambil untung, atau Short). Garis titik-titik adalah batas batal (stop {{ fmtH(hasil.xabcd.stop) }}); panah putus-putus menunjukkan arah harga bila penutupan menembus batas itu. Selama belum ada close di balik batas, pola masih berlaku. Jarak waktu panah hanya ilustrasi.</p>
             <details class="kx" open>
               <summary>Kenapa titik X di sini?</summary>
               <p v-for="(t, j) in teksX" :key="j" class="small">{{ t }}</p>
@@ -699,8 +788,8 @@ async function unduh() {
             <dl v-if="hasil.xabcd.pola" class="dl">
               <dt>PRZ</dt><dd>{{ fmtH(hasil.xabcd.prz[0]) }}–{{ fmtH(hasil.xabcd.prz[1]) }}</dd>
               <dt>Stop (pola batal)</dt><dd class="dn">{{ fmtH(hasil.xabcd.stop) }}</dd>
-              <dt>Target 1 · 0,382 AD</dt><dd class="up">{{ fmtH(hasil.xabcd.target[0]) }}</dd>
-              <dt>Target 2 · 0,618 AD</dt><dd class="up">{{ fmtH(hasil.xabcd.target[1]) }}</dd>
+              <dt>Target 1 · 0,382 {{ hasil.xabcd.kaki }}</dt><dd :class="hasil.xabcd.arah === 'bullish' ? 'up' : 'dn'">{{ fmtH(hasil.xabcd.target[0]) }}</dd>
+              <dt>Target 2 · 0,618 {{ hasil.xabcd.kaki }}</dt><dd :class="hasil.xabcd.arah === 'bullish' ? 'up' : 'dn'">{{ fmtH(hasil.xabcd.target[1]) }}</dd>
             </dl>
           </template>
           <!-- Fib -->
@@ -799,7 +888,7 @@ async function unduh() {
           <p>Rencana beli dari pola bullish:
             <b>Entry:</b> di D, atau di tepi atas PRZ bila D masih proyeksi.
             <b>Stop loss:</b> satu fraksi di bawah X, atau di bawah PRZ untuk pola ekstensi.
-            <b>Take profit:</b> TP1 di retracement 0,382 kaki AD, TP2 di 0,618 AD.
+            <b>Take profit:</b> TP1 di retracement 0,382 kaki AD, TP2 di 0,618 AD (Cypher: kaki CD).
             Kotak hijau adalah area untung dan kotak merah area rugi. R:R adalah jarak target dibagi jarak stop. Tanpa pola bullish, rencana dihitung dari harga terakhir dengan stop di bawah swing low terakhir.</p>
         </article>
         <article>
@@ -842,11 +931,17 @@ async function unduh() {
       </ul>
       <p class="small mute">Rasio mengikuti Scott M. Carney, <i>Harmonic Trading Vol. 1</i>, artikel Astronacci tentang harmonic pattern dan area entry, serta artikel Maxco. Ini bahan analisa teknikal, bukan saran investasi.</p>
     </section>
+    </div>
   </section>
 </template>
 
 <style scoped>
 .hp{display:grid;gap:0;min-width:0}
+.tabs{display:flex;gap:4px;margin-bottom:10px;border-bottom:1px solid var(--rule)}
+.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 16px;font:700 14px var(--f-body);color:var(--ink-2);cursor:pointer;margin-bottom:-1px}
+.tabs button:hover{color:var(--ink)}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+.sahamTab{display:grid;min-width:0}
 .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;background:var(--sheet);border:1px solid var(--rule);border-bottom:0}
 .cari{position:relative}
 .cari input{width:150px;font:700 14px var(--f-data);padding:6px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--sheet-2);color:var(--ink);text-transform:uppercase}
@@ -926,6 +1021,7 @@ async function unduh() {
 .bull .panah.target line,.bear .panah.gagal line{stroke:var(--good)}.bull .panah.target polygon,.bear .panah.gagal polygon{fill:var(--good)}.bull .panah.target text,.bear .panah.gagal text{fill:var(--good)}
 .bear .panah.target line,.bull .panah.gagal line{stroke:var(--strong)}.bear .panah.target polygon,.bull .panah.gagal polygon{fill:var(--strong)}.bear .panah.target text,.bull .panah.gagal text{fill:var(--strong)}
 .panah.gagal line{stroke-dasharray:5 4}
+.panah line.batas{stroke-width:1.2;stroke-dasharray:2 3}
 .tanda path{fill:var(--good);stroke:none}.tanda text{fill:var(--good);text-anchor:middle;font-weight:700;font-size:10px !important}
 .bear .tanda path{fill:var(--strong)}.bear .tanda text{fill:var(--strong)}
 .nama{fill:var(--pc);font-weight:700;font-size:12px !important}
@@ -967,6 +1063,7 @@ async function unduh() {
 .catatan{margin-top:6px !important}
 .bawah{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 10px;background:var(--sheet);border:1px solid var(--rule);border-top:0}
 .bawah .small{margin-left:auto}
+.bukaInset{position:absolute;z-index:4;top:52px;right:8px;max-width:calc(100% - 16px);border:1px solid var(--rule);background:var(--sheet);color:var(--ink);border-radius:14px;padding:4px 10px;font:600 12px var(--f-body);cursor:pointer;box-shadow:var(--shadow)}
 .inset{position:absolute;z-index:4;background:var(--sheet);border:1px solid var(--rule);border-radius:8px;box-shadow:var(--shadow);padding:8px 10px;font-size:11.5px;line-height:1.4;opacity:.96}
 .ih{display:flex;justify-content:space-between;align-items:center;font:700 14px var(--f-display)}
 .ix{border:0;background:none;color:var(--ink-2);font-size:18px;line-height:1;cursor:pointer;padding:0 2px}

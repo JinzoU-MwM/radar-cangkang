@@ -88,8 +88,8 @@ export function harmonicViewPdf(s, jsPDF) {
     const kw = 43.25
     kpi(doc, 14, y - 4, kw, 'PRZ', `${n(x.prz[0])}–${n(x.prz[1])}`, GOLD)
     kpi(doc, 14 + (kw + 3.7), y - 4, kw, 'Stop (pola batal)', n(x.stop), BAD)
-    kpi(doc, 14 + 2 * (kw + 3.7), y - 4, kw, 'Target 1 (0,382 AD)', n(x.target[0]), GOOD)
-    kpi(doc, 14 + 3 * (kw + 3.7), y - 4, kw, 'Target 2 (0,618 AD)', n(x.target[1]), GOOD)
+    kpi(doc, 14 + 2 * (kw + 3.7), y - 4, kw, `Target 1 (0,382 ${x.kaki || 'AD'})`, n(x.target[0]), GOOD)
+    kpi(doc, 14 + 3 * (kw + 3.7), y - 4, kw, `Target 2 (0,618 ${x.kaki || 'AD'})`, n(x.target[1]), GOOD)
     y += 24
   }
   for (const [k, judul] of [['fib', 'Fib retracement'], ['ext', 'Trend-based fib extension']]) {
