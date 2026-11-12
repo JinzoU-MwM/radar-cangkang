@@ -126,10 +126,6 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
       </template>
     </section>
 
-    <section class="rule-top">
-      <RouterLink class="btn kdbtn" to="/harmonic">Harmonic Pattern <span class="muted">(pindah ke menu sendiri)</span> →</RouterLink>
-      <p class="small ket">Materi, chart dengan gambar otomatis, dan screening pola harmonik sekarang ada di menu Harmonic Pattern.</p>
-    </section>
 
     <section class="rule-top">
       <button type="button" class="btn kdbtn" :aria-expanded="String(ahOpen)" aria-controls="ah-isi" @click="ahOpen = !ahOpen">

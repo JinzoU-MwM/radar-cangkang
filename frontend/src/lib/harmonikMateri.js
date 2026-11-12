@@ -163,6 +163,7 @@ export const SLIDE = [
     poin: [
       'Utamakan candle harian dan mingguan. Saham hanya diperdagangkan di jam bursa dan sering gap antarhari, jadi timeframe kecil penuh pola palsu.',
       'Pilih saham likuid (nilai transaksi rata-rata minimal sekitar Rp1 miliar per hari); swing saham sepi tidak representatif.',
+      'Cek tren besar: pola bullish di atas EMA200 (atau bearish di bawahnya) searah tren dan lebih layak; yang melawan tren besar lebih sering hanya memberi reaksi singkat. Garis EMA50/EMA200 muncul saat XABCD aktif.',
       'Waspadai ARB/ARA dan gap pagi yang melompati PRZ. Tunggu bar berikutnya sebelum memutuskan.',
       'Pastikan swing X sampai D tidak terpotong aksi korporasi (stock split, rights issue) yang mengubah harga historis.',
       'Pola bearish bagi investor ritel adalah tanda ambil untung atau menunda beli; short selling di BEI terbatas.',

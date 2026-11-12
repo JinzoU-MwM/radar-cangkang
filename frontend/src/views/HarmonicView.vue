@@ -7,11 +7,12 @@
 // Berbeda dari bagian Harmonic Pattern di POV (materi + screening), yang tetap di sana.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { createChart, CrosshairMode } from 'lightweight-charts'
+import { createChart, CrosshairMode, LineStyle } from 'lightweight-charts'
 import { api } from '../api.js'
 import { store, toast } from '../store.js'
-import { SKALA, TF, POLA, PEMBEDA, alasanPola, alasanX, diagramIdeal, konfirmasiD, skenarioD, cariElliott, cariXabcd, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
+import { SKALA, TF, POLA, PEMBEDA, alasanPola, alasanX, diagramIdeal, konfirmasiD, skenarioD, trenBesar, nilaiTren, cariElliott, cariXabcd, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
 import { ukuranPosisi } from '../lib/harmonikBelajar.js'
+import { ema } from '../lib/ta.js'
 import PolaDiagram from '../components/PolaDiagram.vue'
 import HarmonicMateri from '../components/HarmonicMateri.vue'
 import HarmonicScreening from '../components/HarmonicScreening.vue'
@@ -95,6 +96,9 @@ const xabcd = computed(() => polaList.value[pilihPola.value] || (bars.value.leng
 const polaAcuan = computed(() => xabcd.value?.pola ? xabcd.value : null)
 // Konfirmasi pembalikan di D (candle, divergence RSI, struktur minor, volume); null bila D belum terbentuk.
 const konf = computed(() => polaAcuan.value ? konfirmasiD(bars.value, polaAcuan.value) : null)
+// Tren besar (EMA50/EMA200) sebagai penyaring: searah atau melawan arah pola.
+const tren = computed(() => trenBesar(bars.value))
+const trenPola = computed(() => nilaiTren(tren.value, polaAcuan.value?.arah))
 // Pola terpilih didahulukan untuk Long/Short bila arahnya cocok.
 const urutPosisi = computed(() => polaAcuan.value ? [polaAcuan.value, ...polaList.value.filter(r => r !== polaAcuan.value)] : polaList.value)
 const hasil = computed(() => {
@@ -168,6 +172,7 @@ const ringkasan = computed(() => {
   if (!p) return []
   const out = []
   out.push(x?.pola ? `Pola ${x.nama} ${x.arah}, ${STATUS[x.status]}.` : 'Belum ada pola harmonik yang cocok; rencana posisi memakai swing terakhir, jadi bobotnya lebih lemah.')
+  if (trenPola.value) out.push('Tren besar: ' + trenPola.value.teks)
   if (x?.pola) out.push(konf.value ? `Konfirmasi di D ${konf.value.jumlah} dari ${konf.value.total} (${konf.value.label})${konf.value.jumlah < 2 ? ': belum cukup, tunggu candle pembalikan atau volume sebelum masuk' : ''}.`
     : 'D belum terbentuk: tunggu harga masuk PRZ dan muncul konfirmasi.')
   if (e) out.push(`Elliott: impuls ${e.naik ? 'naik' : 'turun'} (${e.status})${e.valid ? '' : ', aturan belum terpenuhi'}.`)
@@ -209,7 +214,7 @@ watch([tungguPola, polaList, kode, tf, mentah], () => {
 
 // ----------------------------------------------------------------- chart ----
 const elChart = ref(), ver = ref(0)
-let chart = null, candle = null, volume = null, observer = null, resizer = null, raf = 0
+let chart = null, candle = null, volume = null, ema50S = null, ema200S = null, observer = null, resizer = null, raf = 0
 const legenda = ref(null)
 const fmtH = p => p == null || !isFinite(p) ? '–' : Number(p).toLocaleString('id-ID', { maximumFractionDigits: p < 200 ? 1 : 0 })
 const fmtR = v => v == null ? '–' : Number(v).toLocaleString('id-ID', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
@@ -219,7 +224,7 @@ const segar = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; ver
 
 function warna() {
   const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue('--' + n).trim()
-  return { good: v('good'), strong: v('strong'), sheet: v('sheet'), ink: v('ink'), ink2: v('ink-2'), rule: v('rule'), rule2: v('rule-2'), font: v('f-data') }
+  return { good: v('good'), strong: v('strong'), sheet: v('sheet'), ink: v('ink'), ink2: v('ink-2'), rule: v('rule'), rule2: v('rule-2'), font: v('f-data'), calm: v('calm'), warn: v('warn') }
 }
 const alpha = (c, a) => /^#[0-9a-f]{6}$/i.test(c) ? c + Math.round(a * 255).toString(16).padStart(2, '0') : c
 
@@ -241,6 +246,11 @@ function bangun() {
   marginAtas = 0.08
   volume = chart.addHistogramSeries({ priceScaleId: 'vol', priceFormat: { type: 'volume' }, priceLineVisible: false, lastValueVisible: false })
   chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } })
+  // EMA50 dan EMA200 tampil saat XABCD aktif (konteks tren besar).
+  const garisEma = (color, style) => chart.addLineSeries({ color, lineWidth: 1.5, lineStyle: style, priceLineVisible: false, lastValueVisible: false,
+    crosshairMarkerVisible: false, visible: false, autoscaleInfoProvider: () => null })
+  ema50S = garisEma(w.calm, LineStyle.Solid)
+  ema200S = garisEma(w.warn, LineStyle.Dashed)
   chart.timeScale().subscribeVisibleLogicalRangeChange(segar)
   chart.subscribeCrosshairMove(p => {
     const i = p?.logical
@@ -255,9 +265,16 @@ function isiData(awal = false) {
   const b = bars.value, w = warna()
   candle.setData(b.map(x => ({ time: x.d, open: x.o, high: x.h, low: x.l, close: x.c })))
   volume.setData(b.map((x, i) => ({ time: x.d, value: x.v, color: alpha(x.c >= (b[i - 1]?.c ?? x.o) ? w.good : w.strong, 0.45) })))
+  const cl = b.map(x => x.c), ser = arr => arr.map((v, i) => v == null ? { time: b[i].d } : { time: b[i].d, value: v })
+  ema50S.setData(ser(ema(cl, 50)))
+  ema200S.setData(ser(ema(cl, 200)))
+  tampilEma()
   if (awal || b.length) rentang(tf.value === 'M' ? 'all' : tf.value === 'W' ? '3y' : '1y')
   segar()
 }
+const emaTampil = computed(() => aktif.value.includes('xabcd'))
+function tampilEma() { ema50S?.applyOptions({ visible: emaTampil.value }); ema200S?.applyOptions({ visible: emaTampil.value }) }
+watch(emaTampil, tampilEma)
 // Rentang tampil (tombol bawah, seperti TradingView).
 const RENTANG = [{ k: '1m', t: '1M' }, { k: '3m', t: '3M' }, { k: '6m', t: '6M' }, { k: 'ytd', t: 'YTD' }, { k: '1y', t: '1Y' }, { k: '3y', t: '3Y' }, { k: 'all', t: 'Semua' }]
 const rentangAktif = ref('1y')
@@ -328,7 +345,7 @@ function tampilkan(k) {
 // Chart hanya dibangun saat tab Saham tampil (lebar > 0): dibangun saat tersembunyi membuat rentang dan skala kacau.
 function bangunBilaTampil() {
   if (tab.value === 'saham' && elChart.value?.clientWidth) { bangun(); return }
-  chart?.remove(); chart = null; candle = volume = null
+  chart?.remove(); chart = null; candle = volume = ema50S = ema200S = null
 }
 onMounted(() => {
   bangunBilaTampil()
@@ -572,7 +589,7 @@ async function unduh() {
       t: kode.value, nama: nama.value, tfNama: tfNama.value.nama, bars: bars.value, hasil: hasil.value, foto,
       alatAktif: aktif.value.map(k => ALAT.find(a => a.k === k).nama), rasio: barisRasio.value,
       alasan: x?.pola ? alasanPola(x) : [], teksX: teksX.value, pembeda: PEMBEDA[x?.pola] || '', status: STATUS[x?.status] || '',
-      kesimpulan: ringkasan.value, konf: konf.value, modal: modal.value, risiko: risiko.value, lot: { long: lot('long'), short: lot('short') },
+      kesimpulan: ringkasan.value, konf: konf.value, tren: trenPola.value?.teks || '', modal: modal.value, risiko: risiko.value, lot: { long: lot('long'), short: lot('short') },
     }, jsPDF)
     doc.save(P.harmonicViewPdfName(kode.value, tfNama.value.pendek))
   } catch (e) {
@@ -651,12 +668,14 @@ async function unduh() {
           <span class="ohlc">O <i>{{ fmtH(info.o) }}</i> H <i>{{ fmtH(info.h) }}</i> L <i>{{ fmtH(info.l) }}</i> C <i>{{ fmtH(info.c) }}</i>
             <i v-if="info.ubah != null" :class="info.ubah >= 0 ? 'up' : 'dn'">{{ info.ubah >= 0 ? '+' : '' }}{{ fmtH(info.ubah) }} ({{ fmtP(info.pct) }})</i></span>
           <span class="vol">Vol <i>{{ fmtV(info.v) }} lot</i> · {{ String(info.d) }}</span>
+          <span v-if="emaTampil && tren" class="vol"><b class="e50">EMA50</b> {{ fmtH(tren.e50) }}<template v-if="tren.e200 != null"> · <b class="e200">EMA200</b> {{ fmtH(tren.e200) }}</template></span>
         </div>
         <p v-if="err" class="err" role="alert">{{ err }}</p>
         <div v-if="inset && insetPos && !insetTutup" ref="elInset" class="inset" :style="{ left: Math.max(0, insetPos.x) + 'px', top: insetPos.y + 'px', width: Math.min(IW, panel.w - 8) + 'px' }" role="note" aria-label="Pola harmonik terdeteksi">
           <div class="ih"><b :class="inset.bull ? 'up' : 'dn'">{{ inset.nama }}</b><button type="button" class="ix" title="Sembunyikan gambar pola" aria-label="Sembunyikan gambar pola" @click="insetTutup = true">×</button></div>
           <PolaDiagram class="ideal" :diagram="inset.diagram" />
           <p class="ip">Kenapa {{ inset.nama.split(' ').slice(0, -1).join(' ') }}: {{ inset.pembeda }}</p>
+          <p v-if="trenPola" class="ip" :class="trenPola.searah ? 'up' : 'dn'"><b>Tren besar:</b> {{ trenPola.searah ? 'searah' : 'melawan' }} ({{ tren.arah === 'naik' ? 'di atas' : 'di bawah' }} {{ tren.acuanNama }})</p>
           <p v-if="konf" class="ip"><b>Konfirmasi {{ konf.jumlah }}/{{ konf.total }} ({{ konf.label }})</b>: {{ konf.cek.filter(c => c.ok).map(c => c.k === 'candle' ? c.nama : c.k === 'rsi' ? 'divergence RSI' : c.k === 'struktur' ? 'struktur minor tembus' : 'volume tinggi').join(', ') || 'belum ada' }}.</p>
           <details class="irinci" @toggle="segar">
             <summary>Rincian rasio dan titik X</summary>
@@ -773,6 +792,7 @@ async function unduh() {
               <thead><tr><th>Rasio</th><th>Aktual</th><th v-if="hasil.xabcd.pola">Ideal</th></tr></thead>
               <tbody><tr v-for="b in barisRasio" :key="b[0]"><td>{{ b[0] }}</td><td>{{ fmtR(b[1]) }}</td><td v-if="hasil.xabcd.pola">{{ b[2] }}</td></tr></tbody>
             </table>
+            <p v-if="trenPola" class="small" :class="trenPola.searah ? 'up' : 'dn'"><b>Tren besar:</b> {{ trenPola.teks }}</p>
             <div v-if="hasil.xabcd.pola" class="konf">
               <b>Konfirmasi di D: {{ konf ? `${konf.jumlah} dari ${konf.total} (${konf.label})` : 'menunggu D terbentuk' }}</b>
               <ul v-if="konf" class="cek">
@@ -822,6 +842,7 @@ async function unduh() {
             <template v-if="hasil[k] && !hasil[k].kosong">
               <p class="besar">{{ hasil[k].pola ? `${hasil[k].pola.nama} ${hasil[k].pola.arah}` : 'Tanpa pola harmonik searah' }}</p>
               <p class="small">Dasar: {{ hasil[k].dasar }} · {{ hasil[k].aktif }}.</p>
+              <p v-if="hasil[k].pola && hasil[k].pola === polaAcuan && trenPola" class="small" :class="trenPola.searah ? 'up' : 'dn'">Tren besar: {{ trenPola.searah ? 'searah pola' : 'melawan pola, kecilkan posisi atau tunggu konfirmasi lebih kuat' }}.</p>
               <p v-if="hasil[k].pola && hasil[k].pola === polaAcuan" class="small" :class="konf && konf.jumlah >= 2 ? 'up' : 'dn'">{{ konf ? `Konfirmasi di D ${konf.jumlah}/${konf.total} (${konf.label})${konf.jumlah < 2 ? ': tunggu konfirmasi sebelum entry.' : '.'}` : 'D belum terbentuk: entry menunggu harga masuk PRZ dan konfirmasi.' }}</p>
               <dl class="dl">
                 <dt>Entry</dt><dd>{{ fmtH(hasil[k].entry) }}</dd>
@@ -994,6 +1015,7 @@ async function unduh() {
 .legend i{font-style:normal;color:var(--ink)}
 .legend .up{color:var(--good)}.legend .dn{color:var(--strong)}
 .legend .vol{flex-basis:100%;color:var(--ink-2)}
+.legend .e50{color:var(--calm)}.legend .e200{color:var(--warn)}
 .err{position:absolute;top:44px;left:10px;z-index:3;color:var(--strong);background:var(--strong-bg);padding:6px 10px;border-radius:6px;margin:0}
 .ov{position:absolute;top:0;left:0;z-index:2;pointer-events:none;overflow:hidden}
 .ov text{font-family:var(--f-data);font-size:11px;paint-order:stroke;stroke:var(--sheet);stroke-width:3px;stroke-linejoin:round}

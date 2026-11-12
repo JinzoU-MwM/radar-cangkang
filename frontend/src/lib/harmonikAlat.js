@@ -5,7 +5,7 @@
 // artikel Astronacci "Belajar Harmonic Pattern" dan "Cara Menggunakan Harmonic Pattern untuk Menentukan Area Entry"
 // (Cypher, PRZ, stop, target 0,382/0,618 AD), serta tabel ilustrasi pola (Alternate Bat, Shark) yang dilampirkan
 // pengguna. Notasi: b = AB/XA, c = BC/AB, d = AD/XA, e = CD/BC (proyeksi BC), cx = XC/XA, dc = CD/XC.
-import { ceilTick, floorTick, tick } from './ta.js'
+import { ceilTick, ema, floorTick, tick } from './ta.js'
 
 export const POLA = {
   gartley: { nama: 'Gartley', b: [0.618, 0.618], c: [0.382, 0.886], d: [0.786, 0.786], e: [1.13, 1.618],
@@ -556,4 +556,31 @@ export function skenarioD(row) {
   const lewat = Math.max(Math.abs(D.p - row.stop) * 0.35, D.p * 0.01)
   out.push({ k: 'gagal', jenis: 'gagal', label: `Batal bila close menembus ${fh(row.stop)}`, dari: D, ke: { i: ke(0.6), p: row.stop - s * lewat }, stop: row.stop })
   return out
+}
+
+// ------------------------------------------------------ tren besar EMA ----
+// Posisi harga terhadap EMA50 dan EMA200 sebagai penyaring: pola harmonik mencari pembalikan, jadi tren tidak
+// membatalkan pola, tetapi pola yang searah tren besar (bullish di atas EMA200, bearish di bawahnya) lebih layak;
+// yang melawan tren besar lebih sering hanya memberi reaksi singkat. EMA200 butuh minimal 200 bar.
+export function trenBesar(bars = []) {
+  const cl = bars.map(b => b.c), n = cl.length
+  if (n < 50) return null
+  const e50 = ema(cl, 50)[n - 1], e200 = n >= 200 ? ema(cl, 200)[n - 1] : null, c = cl[n - 1]
+  const acuan = e200 ?? e50
+  const arah = c > acuan ? 'naik' : 'turun'
+  const kuat = e200 != null && (arah === 'naik' ? c > e50 && e50 > e200 : c < e50 && e50 < e200)
+  return { e50, e200, harga: c, arah, kuat, acuanNama: e200 != null ? 'EMA200' : 'EMA50' }
+}
+
+// Kalimat penilaian pola terhadap tren besar.
+export function nilaiTren(tren, arahPola) {
+  if (!tren || !arahPola) return null
+  const fh = p => Number(p).toLocaleString('id-ID', { maximumFractionDigits: p < 200 ? 1 : 0 })
+  const searah = (arahPola === 'bullish') === (tren.arah === 'naik')
+  const posisi = `Harga ${fh(tren.harga)} ${tren.arah === 'naik' ? 'di atas' : 'di bawah'} ${tren.acuanNama} ${fh(tren.e200 ?? tren.e50)}`
+    + (tren.e200 != null ? ` (EMA50 ${fh(tren.e50)})` : ' (EMA200 belum bisa dihitung: data kurang dari 200 bar)')
+  const teks = searah
+    ? `${posisi}: pola ${arahPola} searah tren besar${tren.kuat ? ' yang kuat' : ''}, peluangnya lebih baik.`
+    : `${posisi}: pola ${arahPola} melawan tren besar. Lebih sering hanya memberi reaksi singkat; kecilkan posisi atau tunggu konfirmasi lebih kuat.`
+  return { searah, teks }
 }

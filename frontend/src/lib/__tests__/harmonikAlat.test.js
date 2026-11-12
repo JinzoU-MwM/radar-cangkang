@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { alasanPola, alasanX, candleBalik, skenarioD, konfirmasiD, rsi, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag } from '../harmonikAlat.js'
+import { nilaiTren, trenBesar, alasanPola, alasanX, candleBalik, skenarioD, konfirmasiD, rsi, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag } from '../harmonikAlat.js'
 
 // Bar sintetis: harga bergerak lurus antar titik, 10 bar per kaki, tanggal hari kerja berurutan.
 function bangun(titik, per = 10) {
@@ -248,5 +248,29 @@ describe('perbaikan review', () => {
     const sk = skenarioD({ pola: 'cypher', arah: 'bullish', kaki: 'CD', target: [150, 160], stop: 100,
       titik: [{ i: 0, p: 100 }, { i: 10, p: 200 }, { i: 20, p: 150 }, { i: 30, p: 234 }, { i: 40, p: 128 }] })
     expect(sk[0].label).toMatch(/0,382 CD/)
+  })
+})
+
+describe('tren besar EMA', () => {
+  const naik = Array.from({ length: 260 }, (_, i) => ({ c: 100 + i }))
+  const turun = Array.from({ length: 260 }, (_, i) => ({ c: 400 - i }))
+  it('harga di atas EMA50 dan EMA200 yang naik: tren naik kuat', () => {
+    const t = trenBesar(naik)
+    expect(t).toMatchObject({ arah: 'naik', kuat: true, acuanNama: 'EMA200' })
+    expect(t.e50).toBeGreaterThan(t.e200)
+  })
+  it('bullish searah tren naik, bullish melawan tren turun', () => {
+    expect(nilaiTren(trenBesar(naik), 'bullish').searah).toBe(true)
+    const v = nilaiTren(trenBesar(turun), 'bullish')
+    expect(v.searah).toBe(false)
+    expect(v.teks).toMatch(/melawan tren besar/)
+    expect(nilaiTren(trenBesar(turun), 'bearish').searah).toBe(true)
+  })
+  it('data kurang dari 200 bar memakai EMA50; kurang dari 50 bar tidak dinilai', () => {
+    const t = trenBesar(naik.slice(0, 120))
+    expect(t.e200).toBeNull()
+    expect(t.acuanNama).toBe('EMA50')
+    expect(nilaiTren(t, 'bullish').teks).toMatch(/EMA200 belum bisa dihitung/)
+    expect(trenBesar(naik.slice(0, 30))).toBeNull()
   })
 })

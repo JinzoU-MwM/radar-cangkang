@@ -63,7 +63,7 @@ export function harmonicViewPdf(s, jsPDF) {
 
   sub(`XABCD: ${judulPola}`)
   if (x?.pola) {
-    butir([`Kenapa ${x.nama}: ${s.pembeda}`, `Status: ${s.status}.`])
+    butir([`Kenapa ${x.nama}: ${s.pembeda}`, `Status: ${s.status}.`, ...(s.tren ? [`Tren besar (EMA50/EMA200): ${s.tren}`] : [])])
     tbl([{ t: 'Rasio', w: 70 }, { t: 'Aktual', w: 30, align: 'right' }, { t: 'Ideal', w: 50, align: 'right' }, { t: 'Cocok', w: 32 }],
       s.alasan.map(a => [{ t: a.teks, bold: true }, r3(a.aktual), a.ideal, { t: a.ok ? 'ya' : 'mendekati', color: a.ok ? GOOD : GOLD }]))
   } else {
