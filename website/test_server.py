@@ -63,6 +63,19 @@ class DataApiTest(unittest.TestCase):
         st, items = self.call("GET", "/api/items")
         self.assertEqual([i["ticker"] for i in items], ["NAYZ"])
 
+    def test_09_public_ohlc_any_bei_code(self):
+        # Halaman Harmonic Pattern publik: candle /api/ohlc boleh diambil untuk kode BEI mana pun (jalur cache + jatah),
+        # kode di luar BEI tetap hanya dari cache.
+        seen = []
+        def fake(t, tf="1y", fresh=False):
+            seen.append((t, tf, fresh, getattr(server._req, "public_fetch", None)))
+            return [{"d": "2026-11-11", "o": 1, "h": 1, "l": 1, "c": 1, "v": 1}]
+        with unittest.mock.patch.object(server, "get_ohlc", fake), unittest.mock.patch.object(server, "get_token", lambda: "x"),                 unittest.mock.patch.object(server, "bei_kode_load", lambda: {"ZZZA"}):
+            st, res = self.call("GET", "/api/ohlc?ticker=ZZZA&tf=3y&fresh=1", public=True)
+            self.assertEqual((st, res["tf"], len(res["bars"])), (200, "3y", 1))
+            self.call("GET", "/api/ohlc?ticker=ZZZB&tf=3y", public=True)
+        self.assertEqual(seen, [("ZZZA", "3y", False, True), ("ZZZB", "3y", False, False)])
+
     def test_02_put_delete_item(self):
         st, _ = self.call("PUT", "/api/items/BIKE", {"ticker": "BIKE", "notes": "x"})
         self.assertEqual(st, 200)
