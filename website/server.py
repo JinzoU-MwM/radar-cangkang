@@ -5055,7 +5055,7 @@ def harmonik_build(delay: float = 0.25) -> None:
         time.sleep(delay)
     if not dinilai:
         raise RuntimeError("data harga kosong")
-    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "dinilai": dinilai, "rows": rows, "bars": simpan}
+    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "versi": HM.VERSI_ATURAN, "dinilai": dinilai, "rows": rows, "bars": simpan}
     tmp = HARMONIK_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     tmp.replace(HARMONIK_PATH)
@@ -5090,6 +5090,11 @@ def harmonik_saham(t: str) -> dict:
             "pola": HM.ringkas_pola()}
 
 
+def harmonik_usang() -> bool:
+    """Hasil screening tersimpan dibuat dengan aturan pemindai lain (versi berbeda atau hasil lama tanpa versi)."""
+    return HARMONIK_PATH.exists() and harmonik_load().get("versi") != HM.VERSI_ATURAN
+
+
 def harmonik_api() -> dict:
     d = harmonik_load()
     nama, radar = nama_semua(), radar_tickers()
@@ -5098,7 +5103,7 @@ def harmonik_api() -> dict:
     for r in rows:
         r["nama"] = nama.get(r["t"], "")
         r["radar"] = r["t"] in radar
-    return {"updated": d.get("updated"), "dinilai": d.get("dinilai", 0), "rows": rows, "pola": HM.ringkas_pola(),
+    return {"updated": d.get("updated"), "versi": d.get("versi"), "dinilai": d.get("dinilai", 0), "rows": rows, "pola": HM.ringkas_pola(),
             "minNilai": HM.MIN_NILAI}
 
 
@@ -5817,6 +5822,13 @@ def season_loop() -> None:
             except Exception as e:
                 print(f"[{fn.__name__}] gagal: {e}; dicoba lagi 30 menit", file=sys.stderr)
             time.sleep(1800)
+    # Aturan pemindai Harmonic berubah (deploy baru): pindai ulang sekarang agar tab Screening memakai aturan terbaru.
+    if get_token() and harmonik_usang():
+        print("[harmonik] aturan pemindai berubah; memindai ulang sekarang", file=sys.stderr)
+        try:
+            harmonik_build()
+        except Exception as e:
+            print(f"[harmonik] pindai ulang gagal: {e}", file=sys.stderr)
     # Jadwal 00.01 terlewat (server mati/restart melewati jam itu): kejar sekali sekarang.
     if get_token() and any(jadwal_terlewat(p, datetime.now(timezone.utc)) for p in (SEASON_PATH, BROKER_PATH)):
         print("[seasonality] jadwal harian terlewat; memperbarui sekarang", file=sys.stderr)
