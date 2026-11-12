@@ -1,0 +1,180 @@
+import { describe, expect, it } from 'vitest'
+import { alasanPola, alasanX, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag } from '../harmonikAlat.js'
+
+// Bar sintetis: harga bergerak lurus antar titik, 10 bar per kaki, tanggal hari kerja berurutan.
+function bangun(titik, per = 10) {
+  const harga = [titik[0]]
+  for (let k = 1; k < titik.length; k++)
+    for (let j = 1; j <= per; j++) harga.push(titik[k - 1] + (titik[k] - titik[k - 1]) * j / per)
+  const t0 = Date.UTC(2026, 0, 5)
+  let hari = 0
+  return harga.map((c, i) => {
+    let d
+    do { d = new Date(t0 + hari++ * 864e5) } while (d.getUTCDay() === 0 || d.getUTCDay() === 6)
+    const o = i ? harga[i - 1] : c
+    return { d: d.toISOString().slice(0, 10), o, h: Math.max(o, c), l: Math.min(o, c), c, v: 1000 }
+  })
+}
+
+// Gartley bullish: X 100, A 200, B 0,618 XA, C 0,618 AB, D 0,786 XA.
+const X = 100, A = 200, B = 200 - 61.8, C = B + 0.618 * 61.8, D = 200 - 78.6
+
+describe('kelompokBar', () => {
+  it('menggabung harian jadi mingguan dan bulanan', () => {
+    const b = bangun([100, 110, 105], 10)
+    const w = kelompokBar(b, 'W')
+    expect(w.length).toBe(Math.ceil(b.length / 5))
+    expect(w[0]).toMatchObject({ d: b[0].d, o: b[0].o, c: b[4].c, v: 5000 })
+    expect(w[0].h).toBe(Math.max(...b.slice(0, 5).map(x => x.h)))
+    const m = kelompokBar(b, 'M')
+    // 21 hari bursa mulai 5 Jan 2026: Januari (19 hari) dan awal Februari.
+    expect(m.map(x => x.d)).toEqual(['2026-01-05', '2026-02-02'])
+    expect(m[0].l).toBe(Math.min(...b.slice(0, 19).map(x => x.l)))
+  })
+})
+
+describe('zigzag', () => {
+  it('menandai pivot bergantian dan ekstrem berjalan sebagai tentatif', () => {
+    const pv = zigzag(bangun([150, X, A, B, C, D]), 0.04)
+    expect(pv.map(x => x.k).join('')).toBe('HLHLHL')
+    expect(pv.map(x => Math.round(x.p * 10) / 10)).toEqual([150, X, A, B, C, D].map(v => Math.round(v * 10) / 10))
+    expect(pv.at(-1).tentatif).toBe(true)
+  })
+})
+
+describe('cariXabcd', () => {
+  it('menemukan Gartley bullish dengan D di PRZ', () => {
+    const rows = cariXabcd(bangun([150, X, A, B, C, D]))
+    const g = rows.find(r => r.pola === 'gartley')
+    expect(g).toBeTruthy()
+    expect(g).toMatchObject({ arah: 'bullish', status: 'prz' })
+    expect(g.titik.map(t => t.n).join('')).toBe('XABCD')
+    expect(g.rasio.b).toBeCloseTo(0.618, 2)
+    expect(g.rasio.d).toBeCloseTo(0.786, 2)
+    expect(g.stop).toBe(X)
+    // Target 0,382 dan 0,618 kaki AD.
+    expect(g.target[0]).toBeCloseTo(D + (A - D) * 0.382, 5)
+    expect(g.target[1]).toBeCloseTo(D + (A - D) * 0.618, 5)
+  })
+  it('memproyeksikan D saat harga masih menuju PRZ', () => {
+    const rows = cariXabcd(bangun([150, X, A, B, C, 140]))
+    const g = rows.find(r => r.pola === 'gartley')
+    expect(g.status).toBe('menuju')
+    expect(g.titik[4].proyeksi).toBe(true)
+    expect(g.titik[4].p).toBeGreaterThan(g.prz[0] - 1e-9)
+    expect(g.titik[4].p).toBeLessThan(g.prz[1] + 1e-9)
+  })
+  it('PRZ Gartley berada di sekitar 0,786 XA', () => {
+    const prz = przPola('gartley', X, A, B, C)
+    expect(prz[0]).toBeLessThan(D)
+    expect(prz[1]).toBeGreaterThan(D)
+  })
+  it('kosong bila data terlalu pendek', () => {
+    expect(cariXabcd(bangun([100, 120], 5))).toEqual([])
+  })
+})
+
+describe('Fibonacci', () => {
+  const bars = bangun([150, X, A, B, C, D])
+  const g = cariXabcd(bars).find(r => r.pola === 'gartley')
+  it('retracement memakai kaki XA pola', () => {
+    const f = fibRetracement(bars, g)
+    expect(f.a.p).toBe(X)
+    expect(f.b.p).toBe(A)
+    expect(f.level.find(l => l.r === 0.618).p).toBeCloseTo(A - 61.8, 5)
+    expect(f.level.find(l => l.r === 0.786).p).toBeCloseTo(D, 5)
+  })
+  it('extension memproyeksikan AB dari C', () => {
+    const f = fibExtension(bars, g)
+    expect(f.titik.map(t => t.p)).toEqual([A, B, C])
+    expect(f.level.find(l => l.r === 1).p).toBeCloseTo(C + (B - A), 5)
+  })
+  it('tanpa pola memakai swing terakhir yang sudah selesai', () => {
+    const f = fibRetracement(bars, null, 0.04)
+    expect(f.dasar).toMatch(/swing/)
+    expect([f.a.p, f.b.p]).toEqual([B, C])
+  })
+})
+
+describe('Elliott', () => {
+  it('impuls naik yang memenuhi aturan', () => {
+    const e = cariElliott(bangun([100, 150, 125, 220, 190, 250, 245]), [0.04])
+    expect(e.valid).toBe(true)
+    expect(e.naik).toBe(true)
+    expect(e.titik.map(t => t.p)).toEqual([100, 150, 125, 220, 190, 250])
+  })
+  it('gelombang 4 yang masuk wilayah gelombang 1 melanggar aturan', () => {
+    const a = aturanElliott([100, 150, 125, 220, 140, 250].map((p, i) => ({ i, p })))
+    expect(a.valid).toBe(false)
+    expect(a.aturan.find(x => /Gelombang 4/.test(x.teks)).ok).toBe(false)
+  })
+  it('gelombang 5 yang masih berjalan diberi proyeksi', () => {
+    const e = cariElliott(bangun([100, 150, 125, 220, 190, 200]), [0.04])
+    expect(e.status).toBe('gelombang 5 berjalan')
+    expect(e.proyeksi[0].p).toBeCloseTo(240, 5)
+  })
+  it('impuls 0-4 (gelombang 4 berjalan) menunggu gelombang 5', () => {
+    const e = cariElliott(bangun([100, 150, 125, 220, 190]), [0.04])
+    expect(e.status).toBe('menuju gelombang 5')
+    expect(e.titik).toHaveLength(5)
+  })
+})
+
+describe('rencanaPosisi', () => {
+  const bars = bangun([150, X, A, B, C, D])
+  const rows = cariXabcd(bars)
+  it('long dari pola bullish: entry di D, stop di balik X, target 0,382/0,618 AD', () => {
+    const p = rencanaPosisi(bars, 'long', rows)
+    expect(p.dasar).toMatch(/bullish/)
+    expect(p.entry).toBe(121)
+    expect(p.stop).toBe(99)
+    expect(p.target[0]).toBeGreaterThan(p.entry)
+    expect(p.rr[0]).toBeGreaterThan(1)
+    expect(p.stopPct).toBeLessThan(0)
+  })
+  it('stop swing terlalu jauh: rencana tidak dihitung', () => {
+    const p = rencanaPosisi(bangun([300, 150, 160]), 'short', [], 0.04)
+    expect(p.kosong).toBe(true)
+    expect(p.catatan).toMatch(/terlalu jauh/)
+  })
+  it('short tanpa pola bearish memakai swing terakhir', () => {
+    const p = rencanaPosisi(bangun([100, 130, 115, 125, 118]), 'short', [], 0.04)
+    expect(p.dasar).toMatch(/swing/)
+    expect(p.stop).toBe(126)          // satu fraksi di atas swing high 125
+    // Swing low 115 hanya 3 poin (< 1R = 8) dari entry 118: dilewati, TP1 ke swing low 100.
+    expect(p.target[0]).toBe(100)
+    expect(p.target[1]).toBeLessThan(p.target[0])
+  })
+})
+
+describe('diagram ideal dan alasan', () => {
+  it('Butterfly bullish: D di bawah X, label rasio baku', () => {
+    const d = diagramIdeal('butterfly', 'bullish')
+    const y = Object.fromEntries(d.titik.map(t => [t.n, t.y]))
+    expect(y.A).toBe(0)          // puncak di atas
+    expect(y.D).toBeGreaterThan(y.X)   // D lebih rendah dari X (ekstensi)
+    expect(d.garis.map(g => g.teks)).toEqual(['0,786', '0,382–0,886', '1,618–2,24', '1,27–1,414'])
+  })
+  it('bearish dibalik vertikal', () => {
+    const a = diagramIdeal('gartley', 'bullish'), b = diagramIdeal('gartley', 'bearish')
+    a.titik.forEach((t, j) => expect(b.titik[j].y).toBeCloseTo(1 - t.y, 9))
+  })
+  it('alasan memuat rasio aktual vs ideal', () => {
+    const g = cariXabcd(bangun([150, X, A, B, C, D])).find(r => r.pola === 'gartley')
+    const al = alasanPola(g)
+    expect(al[0]).toMatchObject({ ideal: '0,618', ok: true })
+    expect(al.every(x => x.ok)).toBe(true)
+    expect(al.some(x => /AD\/XA/.test(x.teks))).toBe(true)
+  })
+})
+
+describe('alasanX', () => {
+  it('menjelaskan X sebagai swing low awal kaki XA dan batas batal Gartley', () => {
+    const bars = bangun([150, X, A, B, C, D])
+    const g = cariXabcd(bars).find(r => r.pola === 'gartley')
+    const t = alasanX(g, bars)
+    expect(t[0]).toMatch(/^X = swing low 100 \(2026-/)
+    expect(t[0]).toMatch(/naik 100% ke A 200/)
+    expect(t.join(' ')).toMatch(/batas batal/)
+  })
+})

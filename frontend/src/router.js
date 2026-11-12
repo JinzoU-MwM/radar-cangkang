@@ -9,6 +9,7 @@ export const router = createRouter({
     // Intel Pasar dihapus (sumber tradersaham tidak tersedia); tautan lama diarahkan ke Monitor.
     { path: '/intel', redirect: '/' },
     { path: '/pov', name: 'pov', component: () => import('./views/PovView.vue') },
+    { path: '/harmonic', name: 'harmonic', component: () => import('./views/HarmonicView.vue') },
     { path: '/seasonality', name: 'seasonality', component: () => import('./views/SeasonalityView.vue') },
     { path: '/bandingkan', name: 'bandingkan', component: () => import('./views/CompareView.vue') },
     { path: '/emiten/:ticker', name: 'emiten', component: () => import('./views/EmitenView.vue'), props: true },

@@ -6210,7 +6210,7 @@ class Handler(BaseHTTPRequestHandler):
                 deals = [d.split(":")[0] for d in self.qs("deals").upper().split(",") if d]
                 wanted = ([t] if t else []) + deals
                 _req.public_fetch = all(x in radar_tickers() for x in wanted) or (
-                    path in ("api/berita-saham", "api/pov-dalam", "api/quote", "api/harmonik") and bool(t) and t in bei_kode_load())
+                    path in ("api/berita-saham", "api/pov-dalam", "api/quote", "api/harmonik", "api/ohlc") and bool(t) and t in bei_kode_load())
             if path.startswith("api/"):
                 self.handle_api(path, fresh)
                 return
