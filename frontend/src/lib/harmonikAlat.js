@@ -468,3 +468,61 @@ export function alasanX(row, bars = []) {
   }
   return out
 }
+
+// ------------------------------------------------------- konfirmasi di D ----
+// RSI Wilder per bar (null sebelum cukup data). Sama dengan website/harmonik.py.
+export function rsi(closes = [], n = 14) {
+  const out = Array(closes.length).fill(null)
+  if (closes.length <= n) return out
+  let g = 0, l = 0
+  for (let i = 1; i <= n; i++) { const d = closes[i] - closes[i - 1]; g += Math.max(d, 0); l += Math.max(-d, 0) }
+  g /= n; l /= n
+  for (let i = n; i < closes.length; i++) {
+    if (i > n) { const d = closes[i] - closes[i - 1]; g = (g * (n - 1) + Math.max(d, 0)) / n; l = (l * (n - 1) + Math.max(-d, 0)) / n }
+    out[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l)
+  }
+  return out
+}
+
+// Candle pembalikan di bar i searah pembalikan: pin bar, engulfing, atau outside bar ('' bila tidak ada).
+export function candleBalik(bars, i, bull) {
+  if (i < 1 || i >= bars.length) return ''
+  const b = bars[i], a = bars[i - 1], rng = b.h - b.l, badan = Math.abs(b.c - b.o)
+  if (rng <= 0) return ''
+  const bawah = Math.min(b.o, b.c) - b.l, atas = b.h - Math.max(b.o, b.c), ekor = bull ? bawah : atas
+  if (ekor >= 2 * Math.max(badan, rng * 0.05) && ekor >= 0.6 * rng) return 'pin bar'
+  if (bull && a.c < a.o && b.c > b.o && b.c >= a.o && b.o <= a.c) return 'bullish engulfing'
+  if (!bull && a.c > a.o && b.c < b.o && b.c <= a.o && b.o >= a.c) return 'bearish engulfing'
+  if (b.h > a.h && b.l < a.l && (bull ? b.c > b.o : b.c < b.o)) return 'outside bar'
+  return ''
+}
+
+// Empat konfirmasi pembalikan di titik D (Astronacci: candle pembalikan, divergence RSI, tembus struktur minor;
+// ditambah volume di D sesuai materi). Pola "menuju" (D belum terbentuk) tidak punya konfirmasi.
+export function konfirmasiD(bars = [], row = null) {
+  const t = row?.titik
+  if (!row?.pola || !t || t.length < 5 || t[4].proyeksi) return null
+  const bull = row.arah === 'bullish', B = t[2], D = t[4], n = bars.length
+  const cek = []
+  let candle = null
+  for (let i = D.i; i < n; i++) { const c = candleBalik(bars, i, bull); if (c) { candle = { i, nama: c }; break } }
+  cek.push({ k: 'candle', teks: candle ? `Candle pembalikan: ${candle.nama} (${String(bars[candle.i].d).slice(0, 10)})` : 'Candle pembalikan sejak D: belum ada', ok: !!candle, i: candle?.i ?? null, nama: candle?.nama })
+  const rs = rsi(bars.map(b => b.c)), rb = rs[B.i], rd = rs[D.i]
+  const div = rb != null && rd != null && (bull ? D.p < B.p && rd > rb : D.p > B.p && rd < rb)
+  cek.push({ k: 'rsi', ok: div, teks: rb == null || rd == null ? 'Divergence RSI: data belum cukup'
+    : `Divergence RSI: ${div ? 'ada' : 'tidak ada'} (RSI B ${Math.round(rb)}, RSI D ${Math.round(rd)})` })
+  const awal = bars.slice(Math.max(0, D.i - 3), D.i)
+  let tembus = false
+  if (awal.length && D.i < n - 1) {
+    const batas = bull ? Math.max(...awal.map(x => x.h)) : Math.min(...awal.map(x => x.l))
+    tembus = bull ? bars[n - 1].c > batas : bars[n - 1].c < batas
+  }
+  cek.push({ k: 'struktur', ok: tembus, teks: `Struktur minor (puncak/lembah 3 bar sebelum D) ${tembus ? 'sudah' : 'belum'} ditembus harga terakhir` })
+  const sebelum = bars.slice(Math.max(0, D.i - 20), D.i).map(b => b.v)
+  const rataV = sebelum.length ? sebelum.reduce((a, v) => a + v, 0) / sebelum.length : 0
+  const vMaks = Math.max(...bars.slice(D.i, Math.min(n, D.i + 3)).map(b => b.v))
+  const kali = rataV ? vMaks / rataV : null
+  cek.push({ k: 'volume', ok: kali != null && kali >= 1.5, teks: kali == null ? 'Volume di D: data belum cukup' : `Volume di D: ${kali.toLocaleString('id-ID', { maximumFractionDigits: 1 })}x rata-rata 20 bar` })
+  const jumlah = cek.filter(c => c.ok).length
+  return { cek, jumlah, total: cek.length, candle, label: jumlah >= 3 ? 'kuat' : jumlah === 2 ? 'sedang' : 'lemah' }
+}
