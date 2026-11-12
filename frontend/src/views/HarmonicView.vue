@@ -312,7 +312,7 @@ function hargaPenting() {
     if (!x) continue
     if (k === 'xabcd') out.push(...x.titik.map(t => t.p), ...(x.prz || []), ...skenarioD(x).map(z => z.ke.p))
     if (k === 'fib') out.push(...x.level.filter(l => l.r <= 1).map(l => l.p))
-    if (k === 'ext') out.push(...x.level.filter(l => l.r <= 1.272).map(l => l.p))
+    if (k === 'ext') out.push(...x.level.filter(l => l.r <= 1.27).map(l => l.p))
     if (k === 'elliott') out.push(...x.titik.map(t => t.p), ...(x.proyeksi || []).map(p => p.p))
     if ((k === 'long' || k === 'short') && !x.kosong) out.push(x.entry, x.stop, ...x.target)
   }
@@ -421,7 +421,7 @@ const gambar = computed(() => {
       return { ...l, y: Y(l.p), y2: ok(y2) ? y2 : null, j, kunci: FIB_KUNCI.includes(l.r) }
     }).filter(l => ok(l.y))
     // Label tidak boleh bertumpuk: level kunci didahulukan, label lain disembunyikan bila kurang dari 13 px dari label
-    // yang sudah tampil (garisnya tetap). Retracement berlabel di kiri, extension di kanan.
+    // yang sudah tampil (garisnya tetap).
     const tampil = []
     for (const l of [...level].sort((a, b) => b.kunci - a.kunci)) {
       if (l.y < -5 || l.y > panel.value.h + 5) continue
@@ -698,11 +698,9 @@ async function unduh() {
           <g v-for="k in ['fib', 'ext']" :key="k">
             <template v-if="gambar[k]">
               <template v-for="l in gambar[k].level" :key="l.r">
-                <!-- Retracement: pita warna seperti alat fib TradingView. Extension: garis putus-putus satu warna, label kanan. -->
-                <rect v-if="k === 'fib' && l.y2 != null" :x="gambar[k].x0" :width="panel.w - gambar[k].x0" :y="Math.min(l.y, l.y2)" :height="Math.abs(l.y2 - l.y)" class="band" :class="'b' + (l.j % 6)" />
-                <line :x1="gambar[k].x0" :x2="panel.w" :y1="l.y" :y2="l.y" :class="k === 'fib' ? ['lvl', 'b' + (l.j % 6), { kunci: l.kunci }] : ['lvlx', { kunci: l.kunci }]" />
-                <text v-if="l.label && k === 'fib'" :x="gambar[k].x0 + 4" :y="l.y - 3" class="lt" :class="'b' + (l.j % 6)">{{ r2(l.r) }} ({{ fmtH(l.p) }})</text>
-                <text v-if="l.label && k === 'ext'" :x="panel.w - 6" :y="l.y - 3" class="lt ltx">{{ r2(l.r) }} · {{ fmtH(l.p) }}</text>
+                <rect v-if="l.y2 != null" :x="gambar[k].x0" :width="panel.w - gambar[k].x0" :y="Math.min(l.y, l.y2)" :height="Math.abs(l.y2 - l.y)" class="band" :class="'b' + (l.j % 6)" />
+                <line :x1="gambar[k].x0" :x2="panel.w" :y1="l.y" :y2="l.y" class="lvl" :class="['b' + (l.j % 6), { kunci: l.kunci }]" />
+                <text v-if="l.label" :x="gambar[k].x0 + 4" :y="l.y - 3" class="lt" :class="'b' + (l.j % 6)">{{ r2(l.r) }} ({{ fmtH(l.p) }})</text>
               </template>
               <polyline :points="gambar[k].jalur" class="fibjalur" />
               <circle v-for="t in gambar[k].titik" :key="t.i" :cx="t.x" :cy="t.y" r="3.5" class="fibtitik" />
@@ -1036,8 +1034,6 @@ async function unduh() {
 .lvl.b0,.lt.b0{stroke:var(--ink-2);fill:var(--ink-2)}.lvl.b1,.lt.b1{stroke:var(--strong);fill:var(--strong)}.lvl.b2,.lt.b2{stroke:var(--warn);fill:var(--warn)}
 .lvl.b3,.lt.b3{stroke:var(--good);fill:var(--good)}.lvl.b4,.lt.b4{stroke:var(--viz-a);fill:var(--viz-a)}.lvl.b5,.lt.b5{stroke:var(--viz-b);fill:var(--viz-b)}
 .ov text.lt{stroke:var(--sheet);font-weight:600}
-.lvlx{stroke:var(--viz-b);stroke-width:1;stroke-dasharray:6 4;opacity:.85}.lvlx.kunci{stroke-width:1.8;opacity:1}
-.ov text.ltx{fill:var(--viz-b);text-anchor:end;font-weight:700}
 .fibjalur{fill:none;stroke:var(--ink-2);stroke-dasharray:4 4;stroke-width:1.2}
 .fibtitik{fill:var(--sheet);stroke:var(--ink-2);stroke-width:1.5}
 /* XABCD */

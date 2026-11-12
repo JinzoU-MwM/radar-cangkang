@@ -37,11 +37,9 @@ export const MENUJU_MAKS = 0.25  // jarak harga terakhir ke tepi PRZ yang masih 
 export const SKALA = { D: [0.04, 0.06, 0.1, 0.15], W: [0.08, 0.12, 0.18, 0.25], M: [0.12, 0.18, 0.25, 0.35] }
 export const TF = [{ k: 'D', nama: 'Harian', pendek: '1D' }, { k: 'W', nama: 'Mingguan', pendek: '1W' }, { k: 'M', nama: 'Bulanan', pendek: '1M' }]
 
-// Level kunci harmonic saja supaya chart tidak rapat: retracement tempat B dan D diukur (0,382–0,886), ditambah 1,27 dan
-// 1,618 untuk pola ekstensi; extension memakai panjang AB=CD (1), alternatif (1,272, 1,618), dan lanjutan (2, 2,618).
-export const FIB_RET = [0, 0.382, 0.5, 0.618, 0.786, 0.886, 1, 1.27, 1.618]
-export const FIB_EXT = [0, 0.618, 1, 1.272, 1.618, 2, 2.618]
-export const FIB_KUNCI = [0.618, 0.786, 0.886, 1, 1.27, 1.272, 1.618]
+export const FIB_RET = [0, 0.236, 0.382, 0.5, 0.618, 0.707, 0.786, 0.886, 1, 1.13, 1.27, 1.414, 1.618]
+export const FIB_EXT = [0, 0.382, 0.618, 0.786, 1, 1.13, 1.27, 1.414, 1.618, 2, 2.24, 2.618]
+export const FIB_KUNCI = [0.618, 0.786, 0.886, 1.27, 1.618]
 
 // ------------------------------------------------------------------ timeframe ----
 // Senin minggu itu (UTC) untuk tanggal YYYY-MM-DD.
