@@ -52,9 +52,9 @@ describe('cariXabcd', () => {
     expect(g.rasio.b).toBeCloseTo(0.618, 2)
     expect(g.rasio.d).toBeCloseTo(0.786, 2)
     expect(g.stop).toBe(X)
-    // Target 0,382 dan 0,618 kaki AD.
-    expect(g.target[0]).toBeCloseTo(D + (A - D) * 0.382, 5)
-    expect(g.target[1]).toBeCloseTo(D + (A - D) * 0.618, 5)
+    // Target 0,382 dan 0,618 kaki AD, dibulatkan ke bawah ke fraksi harga (bullish).
+    expect(g.target[0]).toBe(151)   // 121,4 + 78,6 x 0,382 = 151,4
+    expect(g.target[1]).toBe(169)   // 121,4 + 78,6 x 0,618 = 169,97 -> fraksi 1 -> 169
   })
   it('memproyeksikan D saat harga masih menuju PRZ', () => {
     const rows = cariXabcd(bangun([150, X, A, B, C, 140]))
@@ -68,6 +68,11 @@ describe('cariXabcd', () => {
     const prz = przPola('gartley', X, A, B, C)
     expect(prz[0]).toBeLessThan(D)
     expect(prz[1]).toBeGreaterThan(D)
+  })
+  it('pola batal (close menembus stop setelah D) tidak ditampilkan', () => {
+    // Gartley bullish lengkap, lalu harga naik sedikit dan jatuh menembus X (stop).
+    const rows = cariXabcd(bangun([150, X, A, B, C, D, D + 10, 90]), [0.04])
+    expect(rows.find(r => r.pola === 'gartley' && r.titik[0].p === X)).toBeUndefined()
   })
   it('kosong bila data terlalu pendek', () => {
     expect(cariXabcd(bangun([100, 120], 5))).toEqual([])
@@ -214,12 +219,34 @@ describe('skenarioD', () => {
     const sk = skenarioD(g)
     expect(sk.map(x => x.k)).toEqual(['t1', 't2', 'c', 'gagal'])
     expect(sk[0].ke.p).toBeCloseTo(g.target[0], 6)
+    expect(sk[0].label).toMatch(/^Target naik 1/)
     expect(sk[2].ke.p).toBeCloseTo(C, 6)
     expect(sk[3].ke.p).toBeLessThan(g.stop)            // bullish: gagal = turun menembus stop
+    expect(sk[3].stop).toBe(g.stop)
+    expect(sk[3].label).toMatch(/Batal bila close menembus/)
     expect(sk.every(x => x.ke.i > g.titik[4].i)).toBe(true)
   })
   it('tanpa pola: tidak ada panah', () => {
     expect(skenarioD(null)).toEqual([])
     expect(skenarioD({ pola: null, titik: [] })).toEqual([])
+  })
+})
+
+describe('perbaikan review', () => {
+  it('stop di batas pita fraksi BEI tetap harga valid', () => {
+    // floorTick(500,5) = 500 -> satu fraksi di bawahnya 498 (fraksi 2 di bawah 500), bukan 495.
+    const bars = bangun([100, 130, 115, 125, 118])
+    const tes = (stopMentah, arah) => rencanaPosisi(bars, arah, [{ arah: arah === 'long' ? 'bullish' : 'bearish', pola: 'bat', nama: 'Bat', status: 'prz',
+      prz: [1, 2], stop: stopMentah, target: [stopMentah * (arah === 'long' ? 1.2 : 0.8), stopMentah * (arah === 'long' ? 1.3 : 0.7)],
+      titik: [0, 1, 2, 3, { n: 'D', i: 40, p: stopMentah * (arah === 'long' ? 1.05 : 0.95) }] }]).stop
+    expect(tes(500.5, 'long')).toBe(498)
+    expect(tes(5003, 'long')).toBe(4990)
+    expect(tes(499, 'short')).toBe(505)
+    expect(tes(1999, 'short')).toBe(2010)
+  })
+  it('label target Cypher memakai kaki CD', () => {
+    const sk = skenarioD({ pola: 'cypher', arah: 'bullish', kaki: 'CD', target: [150, 160], stop: 100,
+      titik: [{ i: 0, p: 100 }, { i: 10, p: 200 }, { i: 20, p: 150 }, { i: 30, p: 234 }, { i: 40, p: 128 }] })
+    expect(sk[0].label).toMatch(/0,382 CD/)
   })
 })
