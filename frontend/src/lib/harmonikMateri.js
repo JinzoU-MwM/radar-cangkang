@@ -1,165 +1,161 @@
-// Materi presentasi tab "Materi" halaman Harmonic Pattern: ringkasan Scott M. Carney, Harmonic Trading Vol. 1
-// (terjemahan Indonesia yang dilampirkan pengguna), ditulis ulang dengan kata sendiri dan difokuskan ke saham BEI.
-// Tiap slide: judul, sub, poin, tabel { kolom, baris }, pola (diagram ideal dari POLA harmonikAlat, atau 'abcd'),
-// alat (tombol "Coba di chart" membuka tab Saham dengan alat itu aktif), dan catatan kaki. Data murni.
+// Materi presentasi tab "Materi" halaman Harmonic Pattern, disusun seperti presentasi makalah/penelitian:
+// Pendahuluan, Landasan Teori dan Pembahasan Pola (ringkasan Bab 1–12 Scott M. Carney, Harmonic Trading Vol. 1,
+// terjemahan Indonesia; di materiCarney16.js dan materiCarney712.js), Metodologi (cara halaman ini bekerja),
+// Penerapan di Saham BEI, Penutup, dan Lampiran (daftar periksa, rencana belajar, kuis). Semua ditulis ulang dengan
+// kata sendiri. Data murni.
+//
+// Skema slide: id, bagian, judul, sub, paragraf [..], poin [..], tabel { kolom, baris }, pola (diagram ideal:
+// kunci POLA harmonikAlat atau 'abcd'), alat (tombol "Coba di chart"), rujukan, periksa/belajar (bisa dicentang).
+import { BAB_1_6 } from './materiCarney16.js'
+import { BAB_7_12 } from './materiCarney712.js'
 
-export const SLIDE = [
+export const BAGIAN = ['Pendahuluan', 'Landasan Teori', 'Pembahasan Pola', 'Eksekusi dan Manajemen', 'Metodologi', 'Penerapan di Saham BEI', 'Penutup', 'Lampiran']
+
+const PENDAHULUAN = [
   {
-    id: 'pembuka', judul: 'Harmonic Trading untuk saham BEI', sub: 'Ringkasan Harmonic Trading Vol. 1 (Scott M. Carney), difokuskan untuk saham',
-    poin: [
-      'Harmonic trading mengenali struktur harga berulang, lalu memvalidasinya dengan rasio Fibonacci untuk mencari titik pembalikan berpeluang tinggi.',
-      'Tiga tahap kerja: identifikasi pola dan rasionya, eksekusi di zona pembalikan, lalu manajemen posisi sampai ditutup.',
-      'Semua parameter (entry, stop loss, target) ditetapkan sebelum masuk, bukan saat harga bergerak.',
+    id: 'judul', bagian: 'Pendahuluan', judul: 'Harmonic Pattern pada Saham Bursa Efek Indonesia',
+    sub: 'Kajian Harmonic Trading Vol. 1 (Scott M. Carney) dan penerapannya di Radar Backdoor',
+    paragraf: [
+      'Presentasi ini merangkum dua belas bab buku Harmonic Trading Vol. 1 karya Scott M. Carney, lalu menjelaskan bagaimana konsepnya diterapkan secara otomatis pada saham Bursa Efek Indonesia (BEI) di halaman ini.',
+      'Susunannya mengikuti format makalah: latar belakang dan rumusan masalah, landasan teori, pembahasan tiap pola, eksekusi dan manajemen posisi, metodologi penerapan, penerapan pada saham BEI, lalu kesimpulan dan saran.',
     ],
-    tabel: { kolom: ['Tahap', 'Yang dikerjakan', 'Di halaman ini'], baris: [
-      ['1. Identifikasi', 'Kenali pola dan cek rasio titik demi titik', 'Tombol XABCD, Fib, Ext'],
-      ['2. Eksekusi', 'Nilai aksi harga di PRZ, putuskan masuk atau lewati', 'Konfirmasi di D, panah skenario'],
-      ['3. Manajemen', 'Target, stop loss, trailing stop', 'Long / Short position, ukuran lot'],
+    tabel: { kolom: ['Bagian', 'Isi'], baris: [
+      ['I. Pendahuluan', 'Latar belakang, rumusan masalah, tujuan, ruang lingkup'],
+      ['II. Landasan Teori', 'Perdagangan harmonis, rasio Fibonacci, identifikasi pola (Bab 1–3)'],
+      ['III. Pembahasan Pola', 'AB=CD, Bat, Gartley, Crab, Butterfly (Bab 4–8)'],
+      ['IV. Eksekusi dan Manajemen', 'Eksekusi, aksi harga di PRZ, manajemen, pelanggaran pola (Bab 9–12)'],
+      ['V. Metodologi', 'Data, deteksi swing, pencocokan rasio, konfirmasi, rencana posisi'],
+      ['VI. Penerapan di Saham BEI', 'Penyesuaian karakter BEI dan cara membaca hasil'],
+      ['VII. Penutup', 'Kesimpulan, keterbatasan, saran, daftar pustaka'],
     ] },
   },
   {
-    id: 'fibonacci', judul: 'Rasio Fibonacci yang dipakai', sub: 'Hanya rasio ini yang menentukan pola',
-    poin: [
-      'Deret Fibonacci: 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89. Satu angka dibagi angka berikutnya mendekati 0,618; dibalik mendekati 1,618.',
-      'Kekuatan analisa ada pada kombinasi beberapa rasio di satu area, bukan satu angka tunggal.',
+    id: 'latar', bagian: 'Pendahuluan', judul: 'Latar belakang', sub: 'Mengapa pendekatan harmonik relevan untuk saham',
+    paragraf: [
+      'Pergerakan harga saham sering tampak acak, sehingga banyak keputusan beli dan jual diambil berdasarkan perasaan, rumor, atau mengikuti keramaian. Akibatnya titik masuk, batas rugi, dan target sering tidak ditentukan sebelum transaksi.',
+      'Harmonic trading menawarkan kerangka yang terukur: struktur harga tertentu dikenali, lalu divalidasi dengan rasio Fibonacci yang spesifik. Dari struktur itu diperoleh zona pembalikan potensial (PRZ), batas batal pola, dan target yang semuanya dapat dihitung di depan.',
+      'Buku Carney banyak memakai contoh pasar Amerika Serikat dan berbagai instrumen. Saham BEI memiliki karakter sendiri, seperti fraksi harga, batas auto reject, likuiditas yang timpang antarsaham, dan keterbatasan short selling, sehingga penerapannya perlu disesuaikan.',
     ],
-    tabel: { kolom: ['Kelompok', 'Rasio', 'Keterangan'], baris: [
-      ['Utama', '0,618 · 1,618', 'Langsung dari deret Fibonacci'],
-      ['Turunan primer', '0,786 · 0,886 · 1,13 · 1,27', 'Akar dari rasio utama; 0,886 penanda Bat, 1,27 penanda Butterfly'],
-      ['Pelengkap', '0,382 · 0,5 · 0,707 · 1,41 · 2,0 · 2,24 · 2,618 · 3,14 · 3,618', 'Membedakan struktur yang mirip; proyeksi besar khas Crab'],
+  },
+  {
+    id: 'rumusan', bagian: 'Pendahuluan', judul: 'Rumusan masalah', sub: 'Pertanyaan yang dijawab presentasi ini',
+    poin: [
+      'Bagaimana struktur dan aturan rasio pola harmonik (AB=CD, Bat, Gartley, Crab, Butterfly) menurut Carney?',
+      'Bagaimana menentukan zona pembalikan potensial (PRZ) dan mengeksekusi transaksi di zona itu?',
+      'Bagaimana mengelola posisi setelah entry dan mengenali pola yang gagal?',
+      'Bagaimana pola harmonik dideteksi secara otomatis pada saham BEI, dan apa batasannya?',
+    ],
+  },
+  {
+    id: 'tujuan', bagian: 'Pendahuluan', judul: 'Tujuan dan manfaat', sub: 'Yang ingin dicapai dan siapa yang terbantu',
+    paragraf: [
+      'Tujuan presentasi ini adalah menjelaskan aturan pola harmonik secara lengkap, menunjukkan cara mengeksekusi dan mengelolanya, serta memaparkan metode deteksi otomatis yang dipakai di halaman ini beserta penyesuaiannya untuk saham BEI.',
+    ],
+    tabel: { kolom: ['Pihak', 'Manfaat'], baris: [
+      ['Investor dan trader saham', 'Kerangka keputusan yang terukur: entry, stop loss, dan target ditentukan sebelum transaksi'],
+      ['Tim Radar Backdoor', 'Screening pola harian untuk seluruh saham likuid BEI dan analisa per saham yang konsisten'],
+      ['Pembelajar', 'Materi berurutan dari teori, contoh, sampai latihan langsung di chart'],
     ] },
-    alat: 'fib',
   },
   {
-    id: 'xabcd', judul: 'Struktur X-A-B-C-D', sub: 'Lima titik, empat kaki: XA, AB, BC, CD',
+    id: 'lingkup', bagian: 'Pendahuluan', judul: 'Ruang lingkup dan batasan', sub: 'Apa yang dibahas dan apa yang tidak',
     poin: [
-      'Titik B paling menentukan: lihat B dulu, lalu D. Struktur yang mirip belum tentu pola yang sama (Bat dan Gartley sering tertukar).',
-      'Penyelarasan rasio tiap pola tidak boleh dilonggarkan. Jika satu rasio keluar rentang, itu bukan polanya.',
-      'Bullish: D berupa lembah, area beli potensial. Bearish: D berupa puncak, area jual potensial.',
-      'Titik X = swing awal pola (lembah untuk bullish, puncak untuk bearish); kaki XA menjadi penggaris semua rasio.',
+      'Objek: saham yang tercatat di BEI, memakai candle harian (1 tahun) dan mingguan (3 tahun) dari Stockbit; candle bulanan disusun dari candle mingguan.',
+      'Pola utama dari Carney: AB=CD, Bat, Gartley, Crab, dan Butterfly. Halaman ini juga mengenali Alternate Bat, Deep Crab, Cypher, dan Shark dari sumber pelengkap.',
+      'Elliott wave dan EMA50/EMA200 dipakai sebagai konteks tren, bukan syarat pola.',
+      'Timeframe intraday (menit atau jam) tidak dibahas karena datanya tidak tersedia di sumber yang dipakai.',
+      'Materi ini adalah bahan belajar analisa teknikal, bukan saran membeli atau menjual efek.',
     ],
-    pola: 'gartley', alat: 'xabcd',
+  },
+]
+
+const METODOLOGI = [
+  {
+    id: 'm-data', bagian: 'Metodologi', judul: 'Data dan sumber', sub: 'Candle Stockbit dan screening malam',
+    paragraf: [
+      'Analisa per saham memakai candle harian satu tahun terakhir untuk timeframe 1D, dan candle mingguan tiga tahun untuk 1W. Candle bulanan (1M) disusun dari candle mingguan, sehingga minggu yang melewati pergantian bulan dihitung ke bulan sebelumnya.',
+      'Screening malam memindai seluruh saham BEI dengan nilai transaksi rata-rata minimal sekitar Rp1 miliar per hari. Batas ini dipakai karena swing pada saham yang sepi transaksi cenderung acak dan kurang representatif.',
+    ],
   },
   {
-    id: 'prz', judul: 'PRZ: zona pembalikan potensial', sub: 'Area tempat tiga angka Fibonacci atau lebih berkumpul',
-    poin: [
-      'Konvergensi: cari area tempat retracement XA, proyeksi BC, dan penyelesaian AB=CD bertemu.',
-      'Makin banyak dan makin rapat angkanya, makin penting zonanya.',
-      'Kaki harga lebih besar lebih signifikan: pola mingguan mengalahkan pola harian.',
-      'PRZ adalah area, bukan satu harga. Lihat reaksi harga di dalam zona.',
+    id: 'm-swing', bagian: 'Metodologi', judul: 'Identifikasi swing (zigzag)', sub: 'Menentukan titik X, A, B, C, D secara objektif',
+    paragraf: [
+      'Titik-titik pola diambil dari swing harga yang ditemukan dengan metode zigzag: sebuah puncak atau lembah baru diakui bila harga berbalik minimal sekian persen dari ekstrem sebelumnya. Gerak kecil di bawah ambang itu diabaikan.',
+      'Beberapa ambang dipakai sekaligus agar pola kecil dan besar sama-sama terbaca. Titik terakhir adalah ekstrem yang masih berjalan, sehingga bisa bergeser selama harga belum berbalik sebesar ambang.',
     ],
+    tabel: { kolom: ['Timeframe', 'Ambang pembalikan yang dipakai'], baris: [
+      ['Harian (1D)', '4%, 6%, 10%, 15%'],
+      ['Mingguan (1W)', '8%, 12%, 18%, 25%'],
+      ['Bulanan (1M)', '12%, 18%, 25%, 35%'],
+    ] },
     alat: 'xabcd',
   },
   {
-    id: 'abcd', judul: 'AB=CD: fondasi semua pola', sub: 'Dua kaki setara dengan retracement di titik C',
-    poin: [
-      'Harga bergerak A ke B, menarik balik sebagian ke C, lalu bergerak ke D sejauh AB.',
-      'C adalah retracement 0,382–0,886 dari AB. Makin dangkal C, makin jauh proyeksi BC.',
-      'Varian: CD = AB (setara, syarat minimum), atau CD = 1,27 / 1,618 × AB (alternatif).',
+    id: 'm-rasio', bagian: 'Metodologi', judul: 'Pencocokan rasio dan PRZ', sub: 'Aturan yang dipakai mesin pendeteksi',
+    paragraf: [
+      'Untuk lima swing terakhir dihitung rasio AB/XA (titik B), BC/AB (titik C), AD/XA (titik D), dan CD/BC (proyeksi BC). Sebuah pola dinyatakan cocok bila setiap rasio berada dalam rentang baku dengan toleransi ±5% (proyeksi BC ±10%).',
+      'PRZ adalah irisan antara rentang harga D dari kaki XA dan rentang proyeksi BC. Bila irisannya kosong, pola tidak dianggap terbentuk. Pola dinyatakan batal bila setelah D ada harga penutupan yang menembus batas batal.',
     ],
-    tabel: { kolom: ['Titik C (retracement AB)', 'Proyeksi BC pasangannya'], baris: [
-      ['0,382', '2,618'], ['0,5', '2,0'], ['0,618', '1,618'], ['0,707', '1,41'], ['0,786', '1,27'], ['0,886', '1,13'],
-    ] },
-    pola: 'abcd', alat: 'ext',
-  },
-  {
-    id: 'gartley', judul: 'Gartley', sub: 'Pola retracement klasik',
-    poin: [
-      'Titik B tepat 0,618 XA, syarat paling ketat dari semua pola.',
-      'Titik D di 0,786 XA, bertemu AB=CD setara. Proyeksi BC tidak lebih dari 1,618.',
-      'D tidak boleh melewati X. Bila harga menembus X, pola batal.',
-    ],
-    pola: 'gartley', alat: 'xabcd',
-  },
-  {
-    id: 'bat', judul: 'Bat', sub: 'Retracement dalam di 0,886',
-    poin: [
-      'Titik B di bawah 0,618 XA, idealnya 0,5 atau 0,382. B tepat 0,5 hampir pasti Bat.',
-      'Titik D di 0,886 XA, angka terpenting di PRZ. Proyeksi BC 1,618–2,618; proyeksi 1,27 membatalkan Bat.',
-      'Pembalikannya cenderung cepat dan tajam, dengan stop loss relatif kecil.',
-    ],
-    pola: 'bat', alat: 'xabcd',
-  },
-  {
-    id: 'gartleyBat', judul: 'Gartley atau Bat?', sub: 'Mulai dari titik B, lalu cek proyeksi BC dan titik D',
-    tabel: { kolom: ['Elemen', 'Gartley', 'Bat'], baris: [
-      ['Titik B', 'Tepat 0,618 XA', 'Di bawah 0,618 XA (0,382–0,5)'],
-      ['Proyeksi BC', 'Maksimal 1,618', '1,618–2,618'],
-      ['Titik D', '0,786 XA', '0,886 XA'],
-      ['AB=CD', 'Setara', 'Setara minimum, sering 1,27'],
-      ['Batas batal', 'Harga menembus X', 'Harga menembus X'],
+    tabel: { kolom: ['Pola', 'Titik B (XA)', 'Titik C', 'Titik D', 'Proyeksi BC'], baris: [
+      ['Gartley', '0,618', '0,382–0,886 AB', '0,786 XA', '1,13–1,618'],
+      ['Bat', '0,382–0,5', '0,382–0,886 AB', '0,886 XA', '1,618–2,618'],
+      ['Alternate Bat', '0,382', '0,382–0,886 AB', '1,13 XA', '2,0–3,618'],
+      ['Butterfly', '0,786', '0,382–0,886 AB', '1,27–1,414 XA', '1,618–2,24'],
+      ['Crab', '0,382–0,618', '0,382–0,886 AB', '1,618 XA', '2,618–3,618'],
+      ['Deep Crab', '0,886', '0,382–0,886 AB', '1,618 XA', '2,24–3,618'],
+      ['Cypher', '0,382–0,618', '1,272–1,414 XA (melewati A)', '0,786 XC', '–'],
+      ['Shark', '0,382–0,886', '1,13–1,618 AB (melewati A)', '0,886–1,13 XC', '1,618–2,24'],
     ] },
   },
   {
-    id: 'butterfly', judul: 'Butterfly', sub: 'Pola ekstensi: D melewati X',
-    poin: [
-      'Titik B tepat 0,786 XA; penyelarasan ketat di B menyaring banyak struktur palsu.',
-      'Titik D di 1,27 XA (bukan 1,618). Proyeksi BC minimal 1,618, biasanya 1,618–2,24.',
-      'Sering muncul di harga tertinggi atau terendah baru, menandai akhir tren.',
-    ],
-    pola: 'butterfly', alat: 'xabcd',
-  },
-  {
-    id: 'crab', judul: 'Crab dan Deep Crab', sub: 'Ekstensi paling ekstrem di 1,618 XA',
-    poin: [
-      'Crab: B 0,618 XA atau kurang, D di 1,618 XA, proyeksi BC ekstrem 2,618–3,618.',
-      'Deep Crab: B dalam di 0,886 XA, D tetap 1,618 XA, proyeksi BC 2,24–3,618.',
-      'Menandai kondisi jenuh ekstrem; pembalikannya sering tajam, jadi disiplin stop loss sangat penting.',
-    ],
-    pola: 'crab', alat: 'xabcd',
-  },
-  {
-    id: 'retEks', judul: 'Retracement atau ekstensi?', sub: 'Menentukan di mana batas batal pola',
-    tabel: { kolom: ['', 'Retracement (Gartley, Bat)', 'Ekstensi (Butterfly, Crab)'], baris: [
-      ['Titik D', 'Di dalam kaki XA', 'Melewati X'],
-      ['Batas batal', 'Titik X: jelas dan objektif', 'Sisi luar PRZ: lebih subjektif'],
-      ['Risiko eksekusi', 'Lebih kecil', 'Lebih besar; gerak ke PRZ sering tajam'],
-      ['Stop di halaman ini', 'Satu fraksi di balik X', 'Satu fraksi di luar PRZ'],
+    id: 'm-status', bagian: 'Metodologi', judul: 'Status pola', sub: 'Di mana posisi harga terhadap pola',
+    tabel: { kolom: ['Status', 'Arti', 'Yang dilakukan'], baris: [
+      ['Menuju PRZ', 'X, A, B, C sudah terbentuk; D masih proyeksi di tengah PRZ', 'Siapkan rencana, tunggu harga masuk PRZ'],
+      ['Di PRZ', 'Swing terakhir (calon D) sedang berada di dalam PRZ', 'Pantau konfirmasi pembalikan'],
+      ['Berbalik dari PRZ', 'D terkonfirmasi di PRZ dan harga sudah berbalik', 'Nilai sisa jarak ke target dan R:R'],
+      ['Batal', 'Harga penutupan menembus batas batal setelah D', 'Pola tidak ditampilkan lagi'],
     ] },
   },
   {
-    id: 'eksekusi', judul: 'Eksekusi di PRZ', sub: 'Pola yang benar baru separuh pekerjaan',
-    poin: [
-      'Tiga kemungkinan setelah entry: menembus PRZ (ambil rugi), reaksi kecil lalu tren lama berlanjut (amankan untung cepat), atau berbalik tegas.',
-      'Terminal Price Bar (T-bar): bar yang menguji semua angka PRZ. Pembalikan valid ditandai harga stabil lalu bergerak jelas ke arah pembalikan.',
-      'Tanda bahaya: gap yang melompati seluruh PRZ tanpa mengujinya, ekspansi harga ekstrem menembus zona, atau harga hanya berkonsolidasi di zona lalu melanjutkan tren lama.',
-      'Tes awal PRZ sering terjadi cepat: siapkan daftar kandidat sebelumnya.',
+    id: 'm-konfirmasi', bagian: 'Metodologi', judul: 'Konfirmasi dan penyaring', sub: 'Membedakan pola yang layak dari yang lemah',
+    paragraf: [
+      'Setelah D terbentuk, empat konfirmasi dicek otomatis: candle pembalikan sejak D (pin bar, engulfing, atau outside bar), divergence RSI antara B dan D, penutupan yang menembus puncak atau lembah tiga candle sebelum D, dan volume di sekitar D minimal 1,5 kali rata-rata 20 candle.',
+      'Tiga penyaring lain ikut ditampilkan: posisi harga terhadap EMA50 dan EMA200 (searah atau melawan tren besar), likuiditas saham, dan rasio untung-rugi. Penyaring ini tidak membatalkan pola, tetapi menentukan seberapa layak pola diambil.',
     ],
-    alat: 'xabcd',
+    tabel: { kolom: ['Konfirmasi terpenuhi', 'Penilaian'], baris: [['3–4', 'Kuat'], ['2', 'Sedang'], ['0–1', 'Lemah, tunggu konfirmasi']] },
   },
   {
-    id: 'manajemen', judul: 'Manajemen posisi', sub: 'Aturan keluar ditetapkan sebelum entry',
-    tabel: { kolom: ['Istilah', 'Fungsi'], baris: [
-      ['PRZ', 'Zona entry, tempat proyeksi Fibonacci bertemu'],
-      ['SLZ', 'Zona stop loss di luar PRZ; bila tertembus, pola tidak valid'],
-      ['IPO', 'Target awal: retracement 0,382 atau 0,618 dari rentang pola (AD)'],
-      ['PPZ', 'Zona perlindungan untung: jangan biarkan untung berubah jadi rugi'],
-      ['Trailer 0,382', 'Setelah IPO, keluar bila harga menembus retracement 0,382 dari gerak pembalikan'],
+    id: 'm-posisi', bagian: 'Metodologi', judul: 'Rencana posisi', sub: 'Entry, stop loss, target, dan ukuran lot',
+    tabel: { kolom: ['Komponen', 'Aturan di halaman ini'], baris: [
+      ['Entry', 'Di titik D; bila D masih proyeksi, di tepi PRZ yang paling dekat dengan harga'],
+      ['Stop loss', 'Satu fraksi harga di balik X (Gartley, Bat, Cypher) atau di balik sisi luar PRZ (pola ekstensi dan Shark)'],
+      ['Target 1 dan 2', 'Retracement 0,382 dan 0,618 kaki AD (Cypher: kaki CD), dibulatkan ke fraksi harga BEI'],
+      ['Target lanjutan', 'Titik C, bila lebih jauh dari target 2'],
+      ['Ukuran posisi', 'Lot = (modal × risiko per transaksi) ÷ (jarak entry ke stop × 100 lembar)'],
+      ['Tanpa pola searah', 'Entry harga terakhir, stop di balik swing terdekat; tidak dihitung bila stop lebih dari 25% dari harga'],
     ] },
-    poin: ['Bagi posisi: sebagian ditutup di target 1 (IPO), sisanya berjalan dengan stop digeser sampai ada sinyal keluar.'],
     alat: 'long',
   },
   {
-    id: 'waktu', judul: 'Waktu dan garis tren', sub: 'Waktu penting, tetapi tidak sepenting harga',
-    poin: [
-      'Waktu setara: durasi X ke B diproyeksikan dari B untuk memperkirakan selesainya pola simetris.',
-      'Rasio waktu alternatif 0,382–1,618. Pola yang selesai lebih cepat dari 0,382 waktu X ke B patut dicurigai.',
-      'Pola bullish: garis tren dari puncak A ke C. Target 0,382 sering bertemu garis ini.',
-      'Pembalikan valid biasanya curam dan tegas; bergerak menyamping adalah tanda awal kegagalan.',
-    ],
+    id: 'm-alur', bagian: 'Metodologi', judul: 'Alur kerja di halaman ini', sub: 'Dari pemilihan saham sampai kesimpulan',
+    tabel: { kolom: ['Langkah', 'Tombol', 'Hasil'], baris: [
+      ['1', 'Pilih saham dan gaya trading', 'Timeframe menyesuaikan (swing 1D, invest 1W)'],
+      ['2', 'XABCD', 'Nama pola, arah, PRZ, alasan rasio, alasan titik X, konfirmasi, tren'],
+      ['3', 'Fib retracement', 'Letak B dan D pada kaki XA'],
+      ['4', 'Trend-based fib extension', 'Proyeksi AB=CD dan pertemuannya dengan PRZ'],
+      ['5', 'Elliott', 'Konteks gelombang tren'],
+      ['6', 'Long atau Short', 'Entry, stop loss, target, R:R, jumlah lot'],
+      ['7', 'Unduh analisa (PDF)', 'Dokumen analisa untuk dicatat di jurnal'],
+    ] },
   },
+]
+
+const PENERAPAN = [
   {
-    id: 'gagal', judul: 'Pola gagal', sub: 'Semua pola tidak sama, semua pembalikan tidak sama',
-    poin: [
-      'Bila harga menembus T-bar dan PRZ, pola gagal: tren dominan masih kuat.',
-      'Kebanyakan pola hanya memberi reaksi singkat, bukan pembalikan besar.',
-      'Support harmonik yang jebol sering berubah menjadi resistance, dan sebaliknya.',
-      'Panah putus-putus di chart menunjukkan jalur bila pola gagal (stop tertembus).',
+    id: 'saham', bagian: 'Penerapan di Saham BEI', judul: 'Penyesuaian untuk saham BEI', sub: 'Yang berbeda dari contoh di buku',
+    paragraf: [
+      'Prinsip Carney berlaku di semua pasar dan timeframe, tetapi karakter saham BEI mengubah cara menerapkannya. Bagian ini merangkum penyesuaian yang dipakai di halaman ini.',
     ],
-    alat: 'xabcd',
-  },
-  {
-    id: 'saham', judul: 'Rekomendasi penerapan di saham BEI', sub: 'Yang perlu disesuaikan dari buku ke saham',
     poin: [
       'Utamakan candle harian dan mingguan. Saham hanya diperdagangkan di jam bursa dan sering gap antarhari, jadi timeframe kecil penuh pola palsu.',
       'Pilih saham likuid (nilai transaksi rata-rata minimal sekitar Rp1 miliar per hari); swing saham sepi tidak representatif.',
@@ -172,7 +168,77 @@ export const SLIDE = [
     ],
   },
   {
-    id: 'periksa', judul: 'Daftar periksa sebelum masuk', sub: 'Centang satu per satu sebelum entry', periksa: true,
+    id: 'saham-tf', bagian: 'Penerapan di Saham BEI', judul: 'Timeframe menurut gaya trading', sub: 'Pola di timeframe besar lebih kuat',
+    paragraf: [
+      'Carney menekankan bahwa kaki harga yang lebih besar menghasilkan angka yang lebih signifikan, sehingga pola mingguan lebih berbobot daripada pola harian. Prinsip praktisnya: cari pola di timeframe utama, lalu pastikan arahnya tidak melawan timeframe di atasnya.',
+    ],
+    tabel: { kolom: ['Gaya', 'Timeframe utama', 'Konfirmasi', 'Ketersediaan di halaman ini'], baris: [
+      ['Scalping', '1–5 menit', '15 menit', 'Belum tersedia; 1D hanya untuk peta area'],
+      ['Intraday', '15 menit–1 jam', '4 jam / 1D', 'Belum tersedia; 1D untuk arah dan area'],
+      ['Swing', '1D', '1W', 'Tersedia'],
+      ['Invest', '1W', '1M', 'Tersedia'],
+    ] },
+  },
+  {
+    id: 'saham-baca', bagian: 'Penerapan di Saham BEI', judul: 'Cara membaca hasil screening', sub: 'Contoh baris screening tanggal 12 November 2026',
+    paragraf: [
+      'Tab Screening menampilkan setiap pola aktif beserta alasannya. Contoh di bawah diambil dari hasil screening Radar Backdoor tanggal 12 November 2026 untuk AYLS, dan dipakai hanya untuk menunjukkan cara membaca kolom-kolomnya.',
+    ],
+    tabel: { kolom: ['Kolom', 'Isi contoh', 'Cara membaca'], baris: [
+      ['Pola', 'Gartley bearish', 'Struktur Gartley dengan D sebagai puncak: area potensi berbalik turun'],
+      ['Status', 'Berbalik dari PRZ', 'D sudah terkonfirmasi dan harga mulai turun dari zona'],
+      ['PRZ', '201–204', 'Zona tempat rasio XA dan proyeksi BC bertemu'],
+      ['Konfirmasi', 'pin bar 6 Nov 2026', 'Ada candle pembalikan di D; divergence RSI tidak ada'],
+      ['Tindak lanjut', 'Klik baris', 'Chart terbuka di tab Saham dengan XABCD aktif untuk dicek ulang'],
+    ] },
+    alat: 'xabcd',
+  },
+]
+
+const PENUTUP = [
+  {
+    id: 'simpulan', bagian: 'Penutup', judul: 'Kesimpulan', sub: 'Jawaban atas rumusan masalah',
+    paragraf: [
+      'Pola harmonik adalah struktur lima titik (atau empat titik untuk AB=CD) yang hanya sah bila rasio Fibonacci tiap titiknya sesuai aturan pola. Titik B dan titik D adalah pembeda utama: Gartley di 0,618 dan 0,786, Bat di bawah 0,618 dan 0,886, Butterfly di 0,786 dan 1,27, Crab di 0,618 atau kurang dan 1,618.',
+      'Nilai sebuah pola terletak pada PRZ, yaitu zona tempat beberapa angka Fibonacci berkumpul. Eksekusi yang baik menunggu harga menguji seluruh zona dan menunjukkan pembalikan, dengan stop loss di luar PRZ dan target di retracement 0,382 lalu 0,618 dari rentang pola.',
+      'Pada saham BEI, aturan itu dapat dijalankan secara otomatis dengan tambahan penyaring likuiditas, tren besar, konfirmasi di D, dan pembulatan fraksi harga, sehingga hasilnya dapat diulang dan diperiksa.',
+    ],
+  },
+  {
+    id: 'keterbatasan', bagian: 'Penutup', judul: 'Keterbatasan', sub: 'Yang perlu diingat saat memakai hasilnya',
+    poin: [
+      'Deteksi bergantung pada ambang zigzag; swing yang berbeda dapat menghasilkan titik X atau A yang berbeda.',
+      'Data hanya candle harian dan mingguan; pola intraday tidak terbaca, dan candle bulanan disusun dari candle mingguan.',
+      'Toleransi ±5% memberi ruang pada rasio; pola yang lolos belum tentu sama rapinya dengan contoh di buku.',
+      'Konfirmasi dan tren adalah penyaring statistik sederhana, bukan jaminan arah harga.',
+      'Hasil historis dan contoh di buku tidak membuktikan keandalan pola di masa depan.',
+    ],
+  },
+  {
+    id: 'saran', bagian: 'Penutup', judul: 'Saran', sub: 'Langkah selanjutnya untuk pemakai',
+    poin: [
+      'Berlatih di grafik historis lebih dulu: temukan dua contoh untuk tiap pola, catat rasio dan reaksi harganya.',
+      'Selalu tulis entry, stop loss, target, dan ukuran lot sebelum transaksi, lalu catat hasilnya di jurnal.',
+      'Utamakan pola di timeframe besar yang searah tren besar dan memiliki minimal dua konfirmasi di D.',
+      'Lewati peluang dengan R:R di bawah 2 atau pada saham yang sepi, bernotasi khusus, atau rawan suspensi.',
+    ],
+  },
+  {
+    id: 'pustaka', bagian: 'Penutup', judul: 'Daftar pustaka', sub: 'Sumber yang dirangkum',
+    poin: [
+      'Carney, Scott M. (2010). Harmonic Trading, Volume One: Profiting from the Natural Order of the Financial Markets. FT Press. Terjemahan Indonesia: Harmonic Trading Vol. 1.',
+      'Astronacci. (31 Juli 2026). Belajar Harmonic Pattern: Pengertian, Cara Kerja, dan Jenis-Jenisnya.',
+      'Astronacci. (7 Agustus 2026). Cara Menggunakan Harmonic Pattern untuk Menentukan Area Entry.',
+      'Maxco. Cara Mudah Belajar Harmonic Pattern: Panduan Praktis Trading untuk Pemula.',
+      'Harmonic Pattern: Seni Membaca Ritme Market Biar Gak Cuma Tebak-tebakan (artikel).',
+      'Harmonic Pattern Next Level dari Fibonacci Retracement dan Extension (materi video, lembar contekan pola).',
+    ],
+  },
+]
+
+const LAMPIRAN = [
+  {
+    id: 'periksa', bagian: 'Lampiran', judul: 'Daftar periksa sebelum masuk', sub: 'Centang satu per satu sebelum entry', periksa: true,
     poin: [
       'Ada pola, dan saya tahu namanya.',
       'Saya tahu di mana AB=CD selesai.',
@@ -185,7 +251,7 @@ export const SLIDE = [
     ],
   },
   {
-    id: 'belajar', judul: 'Rencana belajar 7 hari', sub: 'Centang hari yang sudah selesai', belajar: true,
+    id: 'belajar', bagian: 'Lampiran', judul: 'Rencana belajar 7 hari', sub: 'Centang hari yang sudah selesai', belajar: true,
     tabel: { kolom: ['Hari', 'Fokus', 'Latihan di halaman ini'], baris: [
       ['1', 'Konsep dan rasio Fibonacci (Bab 1–3)', 'Hafalkan tabel rasio; klik Fib di beberapa saham'],
       ['2', 'Pola AB=CD (Bab 4)', 'Klik Ext, cek level 1 dan 1,27 dekat PRZ'],
@@ -198,7 +264,9 @@ export const SLIDE = [
   },
 ]
 
-export const totalSlide = SLIDE.length + 1   // slide terakhir: kuis (dari harmonikBelajar.KUIS)
+export const SLIDE = [...PENDAHULUAN, ...BAB_1_6, ...BAB_7_12, ...METODOLOGI, ...PENERAPAN, ...PENUTUP, ...LAMPIRAN]
+
+export const totalSlide = SLIDE.length + 1   // slide terakhir: kuis (dari harmonikBelajar.KUIS), bagian Lampiran
 
 // Bentuk AB=CD ideal (C 0,618 AB, CD = AB) dalam kotak 0..1 untuk diagram slide.
 export function diagramAbcd(arah = 'bullish') {
