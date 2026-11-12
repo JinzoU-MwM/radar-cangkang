@@ -1,15 +1,4 @@
-// Materi pemula Harmonic Pattern (POV): kalkulator Fibonacci, ukuran posisi, dan kuis. Fungsi murni.
-
-// Level Fibonacci dari kaki X -> A: retracement (kembali ke arah X) dan extension (melewati X).
-export const FIB_RET = [0.382, 0.5, 0.618, 0.786, 0.886]
-export const FIB_EXT = [1.13, 1.27, 1.414, 1.618]
-export function fibLevels(x, a) {
-  x = Number(x); a = Number(a)
-  if (!x || !a || x === a) return []
-  const k = a - x
-  return [...FIB_RET.map(r => ({ r, jenis: 'retracement', harga: Math.round(a - k * r) })),
-    ...FIB_EXT.map(r => ({ r, jenis: 'extension', harga: Math.round(a - k * r) }))]
-}
+// Ukuran posisi (lot) dan kuis harmonic: dipakai tab Saham (Long/Short) dan tab Materi halaman Harmonic Pattern.
 
 // Ukuran posisi saham BEI (1 lot = 100 lembar): risiko rupiah = modal x risiko%; lot = risiko / (selisih entry-stop x 100).
 export function ukuranPosisi({ modal, risikoPct, entry, stop, target } = {}) {

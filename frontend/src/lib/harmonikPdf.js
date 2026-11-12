@@ -1,16 +1,12 @@
-// Analisa Harmonic Pattern satu saham (PDF, A4 tegak) dengan format riset yang sama (sampul berpita, halaman
-// berbingkai, disclaimer): chart candlestick + XABCD/PRZ/stop/target, struktur kaki, validasi rasio, konfirmasi,
-// rencana, rincian skor, konteks teknikal, ringkasan, dan skenario. Data dari /api/harmonik?ticker= (sama dengan
-// tampilan). Tanpa warna merah: turun/stop memakai oranye.
-import { MUTED, GOOD, BAD, INK, PRIMER, GOLD, LINE, frame, heading, para, kpi } from './ihsgPdf.js'
-import { sampul, tabel, disclaimer } from './ihsgModelPdf.js'
+// Chart candlestick vektor untuk PDF (cadangan bila foto chart di layar gagal diambil): candle + volume, garis XABCD,
+// pita PRZ, stop, dan target, atau swing terakhir bila tanpa pola. Dipakai harmonicViewPdf.js.
+import { MUTED, GOOD, BAD, INK, PRIMER, GOLD, LINE } from './ihsgPdf.js'
 import { pdfText } from './deckPdf.js'
-import { HM_STATUS, analisaHarmonik, cekRasio, przTeks, rentang, idxTanggal, detailHarmonik, kandidatTerdekat } from './harmonik.js'
+import { idxTanggal } from './harmonik.js'
 
 const BLN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 const tgl = d => { const x = new Date(String(d || '').slice(0, 10)); return isNaN(x) ? String(d || '-') : `${x.getDate()} ${BLN[x.getMonth()]} ${x.getFullYear()}` }
 const n = v => v == null || isNaN(v) ? '-' : Number(v).toLocaleString('id-ID', { maximumFractionDigits: 2 })
-const BAWAH = 272
 
 // Chart candlestick dalam kotak (x, y, w, h); 78% tinggi untuk harga, sisanya volume.
 export function chartPdf(doc, bars, r, pivot, x, y, w, h) {
@@ -78,115 +74,3 @@ export function chartPdf(doc, bars, r, pivot, x, y, w, h) {
     doc.setTextColor(INK); doc.text(pdfText(t), lx + 5.5, ly); lx += doc.getTextWidth(pdfText(t)) + 11
   }
 }
-
-// d = respons /api/harmonik?ticker=; pilih = indeks pola yang sedang ditampilkan.
-export async function harmonikPdf(d, pilih, jsPDF) {
-  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
-  const pola = d.pola || [], r = d.rows?.[pilih] || null
-  const meta = pola.find(p => p.k === r?.pola) || {}
-  const a = r ? analisaHarmonik(r, d.bars, pola, d.likuid) : null
-  const akhir = d.bars[d.bars.length - 1] || {}
-  const seri = `Harmonic Pattern ${d.t}`
-  let hal = 1, y = 0, judulKini = ''
-  const halaman = judul => { judulKini = judul; doc.addPage(); hal += 1; frame(doc, judul, hal, seri); heading(doc, judul, 26); y = 37 }
-  const ruang = h => { if (y + h > BAWAH) halaman(`${judulKini.replace(/ \(lanjutan\)$/, '')} (lanjutan)`) }
-  const sub = (t, warna = PRIMER) => {
-    ruang(20)
-    doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(warna); doc.text(pdfText(t), 14, y)
-    doc.setDrawColor(warna); doc.setLineWidth(0.4); doc.line(14, y + 1.6, 196, y + 1.6); y += 7
-  }
-  const butir = (rows, warna = INK) => {
-    for (const t of rows) {
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.8)
-      const lines = doc.splitTextToSize(pdfText(`• ${t}`), 178), h = lines.length * 8.8 * 0.3528 * 1.4 + 1.4
-      ruang(h)
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.8); doc.setTextColor(warna)
-      doc.text(lines, 18, y, { lineHeightFactor: 1.4 }); y += h
-    }
-  }
-  const tbl = (cols, rows) => { ruang(16); y = tabel(doc, 14, y + 2, cols, rows, 8.5, { baru: () => { halaman(`${judulKini} (lanjutan)`); return y }, bawah: BAWAH }) + 2 }
-
-  sampul(doc, {
-    besar: d.t, judul: 'Analisa Harmonic Pattern', label: `${d.nama || d.t} · ${tgl(akhir.d)}`,
-    sub: r ? `${meta.nama} ${r.arah}, status ${HM_STATUS[r.status][0].toLowerCase()}. PRZ ${przTeks(r)}, stop ${n(r.stop)}, target ${n(r.target?.[0])} / ${n(r.target?.[1])}.`
-      : 'Swing terakhir belum memenuhi rasio Gartley, Bat, Butterfly, Crab, maupun Cypher (toleransi ±5%).',
-    updated: String(akhir.d || '').slice(0, 10), seri: d.bars.slice(-120).map(b => b.c),
-    box: r ? [['Pola', `${meta.nama} ${r.arah}`], ['Status', HM_STATUS[r.status][0]], ['Skor kualitas', `${a.skor}/100 ${a.label}`], ['Harga terakhir', n(akhir.c)]]
-      : [['Pola', 'Belum ada'], ['Harga terakhir', n(akhir.c)], ['Swing terbaca', String((d.pivot || []).length)]],
-    catatan: `Disusun otomatis dari ${d.sumber} (${d.bars.length} bar harian) dengan rasio Fibonacci tiap pola; PRZ = retracement XA bertemu extension BC. Bukan ajakan membeli atau menjual efek.`,
-  })
-
-  halaman('Chart dan struktur pola')
-  chartPdf(doc, d.bars, r, d.pivot, 14, y - 2, 182, 92)
-  y += 107
-  if (!r) {
-    sub('Belum ada pola harmonik valid')
-    butir([`Swing terakhir ${d.t} belum memenuhi rasio pola harmonik dengan toleransi ±5%, atau D sudah menembus PRZ. Pola harmonik jarang terbentuk sempurna; jangan dipaksakan.`,
-      `Swing terakhir: ${(d.pivot || []).map(p => `${p.k === 'H' ? 'puncak' : 'lembah'} ${n(p.p)} (${p.d})`).join(' → ')}.`])
-    const k = kandidatTerdekat(d.pivot || [], pola)
-    if (k) {
-      sub(`Pola terdekat: ${k.nama} ${k.arah} (${k.cocok} dari ${k.total} syarat terpenuhi)`)
-      butir([`Lima swing terakhir dibaca sebagai ${k.titik.map(t => `${t.n} ${n(t.p)} (${t.d})`).join(', ')}.${k.titik.length < 5 ? ' Titik D belum terbentuk.' : ''}`,
-        ...k.cek.map(c => `${c.ok ? 'Sesuai' : 'Di luar'}: ${c.label} ${n(c.nilai)} (kriteria ${rentang(c.kriteria)})`),
-        'Pola baru dianggap valid bila semua syarat terpenuhi dan PRZ tidak ditembus. Pantau lagi setelah swing baru terbentuk.'])
-    }
-  } else {
-    const det = detailHarmonik(r, meta, akhir.c)
-    sub('Keterangan titik')
-    tbl([{ t: 'Titik', w: 14 }, { t: 'Tanggal', w: 26 }, { t: 'Harga', w: 24, align: 'right' }, { t: 'vs kini', w: 22, align: 'right' }, { t: 'Peran', w: 96 }],
-      det.titik.map(t => [{ t: t.n, bold: true }, t.d, n(t.p), t.jarak == null ? '-' : `${t.jarak > 0 ? '+' : ''}${n(t.jarak)}%`, t.peran]))
-    sub('Struktur kaki')
-    tbl([{ t: 'Kaki', w: 30 }, { t: 'Perubahan', w: 40, align: 'right' }, { t: 'Hari bursa', w: 35, align: 'right' }, { t: 'Titik', w: 77 }],
-      a.kaki.map((k, i) => [{ t: k.n, bold: true }, { t: `${k.pct > 0 ? '+' : ''}${n(k.pct)}%`, color: k.pct >= 0 ? GOOD : BAD }, String(k.bar),
-        `${r.titik[i].n} ${n(r.titik[i].p)} (${r.titik[i].d}) → ${r.titik[i + 1].n} ${n(r.titik[i + 1].p)} (${r.titik[i + 1].d})`]))
-    sub('Validasi rasio')
-    butir([...cekRasio(r, pola).map(c => `${c.ok ? 'Sesuai' : 'Di luar'}: ${c.label} ${n(c.nilai)} (kriteria ${rentang(c.kriteria)})`),
-      `PRZ ${przTeks(r)}: retracement XA bertemu extension BC.`,
-      ...(a.simetri ? [`AB=CD: CD ${n(a.simetri.harga)}× AB, durasi ${n(a.simetri.waktu)}× (ideal mendekati 1).`] : [])])
-    sub('Asal-usul PRZ')
-    butir(det.prz)
-    sub('Konfirmasi di PRZ')
-    butir(r.konfirmasi?.length ? r.konfirmasi : [r.status === 'menuju' ? 'Titik D belum terbentuk.' : 'Belum ada candle pembalikan, divergence RSI, atau tembus struktur minor.'])
-    sub(`Level penting vs harga terakhir ${n(akhir.c)}`)
-    tbl([{ t: 'Level', w: 60 }, { t: 'Harga', w: 60, align: 'right' }, { t: 'Jarak dari harga terakhir', w: 62, align: 'right' }],
-      det.level.map(l => [{ t: l.k, bold: true }, l.teks, l.jarak == null ? '-' : { t: `${l.jarak > 0 ? '+' : ''}${n(l.jarak)}%`, color: l.jarak >= 0 ? GOOD : BAD }]))
-
-    halaman('Rencana, skor, dan skenario')
-    const rc = a.rencana, kw = 43.25
-    kpi(doc, 14, y - 4, kw, 'Area entry', przTeks(r), PRIMER)
-    kpi(doc, 14 + (kw + 3.7), y - 4, kw, 'Stop loss', `${n(r.stop)} (${n(rc?.risikoPct)}%)`, BAD)
-    kpi(doc, 14 + 2 * (kw + 3.7), y - 4, kw, 'Target 0,382 / 0,618', `${n(rc?.t1)} / ${n(rc?.t2)}`, GOOD)
-    kpi(doc, 14 + 3 * (kw + 3.7), y - 4, kw, 'R:R target 1 / 2', `${n(rc?.rr1)} / ${n(rc?.rr2)}`, GOLD)
-    y += 24
-    y = para(doc, r.targetCA ? `Target alternatif (Maxco): titik C ${n(r.targetCA[0])} lalu titik A ${n(r.targetCA[1])}. Entry setelah konfirmasi di PRZ; stop di balik X atau di luar PRZ (Astronacci).`
-      : 'Cypher: target diukur dari kaki CD. Entry setelah konfirmasi di PRZ.', 14, y, 182, 8.5, MUTED)
-    sub(`Skor kualitas ${a.skor}/100 (${a.label})`)
-    tbl([{ t: 'Komponen', w: 45 }, { t: 'Nilai', w: 22, align: 'right' }, { t: 'Keterangan', w: 115 }],
-      a.rincian.map(x => [{ t: x.k, bold: true }, `${Math.round(x.nilai)}/${x.maks}`, x.ket]))
-    sub('Konteks teknikal')
-    tbl([{ t: 'Ukuran', w: 60 }, { t: 'Nilai', w: 122 }], [
-      ['Tren besar', `${a.tren} (pola ${a.searah ? 'searah' : 'tidak searah'} tren)`],
-      ['EMA50 / EMA200', `${n(a.e50 && Math.round(a.e50))} / ${n(a.e200 && Math.round(a.e200))}`],
-      ['RSI(14)', n(a.rsi)],
-      ...(a.volD != null ? [['Volume di D', `${n(a.volD)}× rata-rata 20 hari`]] : []),
-      ['Likuiditas', `nilai transaksi rata-rata 20 hari Rp${n(Math.round(d.nilai / 1e6))} juta${d.likuid ? '' : ' (di bawah batas screening)'}`]])
-    sub('Ringkasan analisa')
-    butir(a.narasi)
-    sub('Skenario', GOLD)
-    butir(a.skenario.map(x => `${x.k}. ${x.teks}`))
-    if (meta.ket) { ruang(12); y = para(doc, `${meta.nama}: ${meta.ket}`, 14, y + 1, 182, 8.5, MUTED) }
-    sub('Cara membaca analisa ini')
-    butir(['Status: Menuju PRZ = X-A-B-C terbentuk, harga bergerak ke zona D; Di PRZ = titik D sedang di zona; Berbalik dari PRZ = D terkonfirmasi dan harga mulai berbalik.',
-      'PRZ adalah area, bukan satu harga: pertemuan retracement kaki XA dengan proyeksi extension kaki BC.',
-      'Skor kualitas menjumlahkan presisi rasio (30), konfirmasi di PRZ (25), keselarasan dengan tren besar EMA50/EMA200 (20), simetri AB=CD (15), dan likuiditas (10). Skor bukan peluang berhasil.',
-      'Konfirmasi: candle pembalikan (pin bar, engulfing, outside bar), divergence RSI antara B dan D, atau penutupan menembus struktur minor 3 bar sebelum D.',
-      'Stop sedikit di balik X (Gartley, Bat, Cypher) atau di luar PRZ (Butterfly, Crab). R:R dihitung dari tepi PRZ (atau harga kini bila sudah berbalik).'], MUTED)
-  }
-  disclaimer(doc, ++hal, String(akhir.d || '').slice(0, 10),
-    'Pola dideteksi otomatis dari harga harian (pivot zigzag 6/10/15%, toleransi rasio ±5%). Rasio pola mengikuti artikel Astronacci "Belajar Harmonic Pattern" (31 Juli 2026); '
-    + 'PRZ, konfirmasi, stop, dan target 0,382/0,618 AD mengikuti Astronacci "Cara Menggunakan Harmonic Pattern untuk Menentukan Area Entry" (7 Agustus 2026); target alternatif C/A dari Maxco. '
-    + 'Skor kualitas adalah ringkasan internal Radar Backdoor, bukan ukuran peluang berhasil.')
-  return doc
-}
-
-export const harmonikPdfName = t => `Harmonic-${t}_${new Date().toISOString().slice(0, 10)}.pdf`
