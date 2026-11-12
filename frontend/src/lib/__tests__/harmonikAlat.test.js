@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { alasanPola, alasanX, candleBalik, konfirmasiD, rsi, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag } from '../harmonikAlat.js'
+import { alasanPola, alasanX, candleBalik, skenarioD, konfirmasiD, rsi, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag } from '../harmonikAlat.js'
 
 // Bar sintetis: harga bergerak lurus antar titik, 10 bar per kaki, tanggal hari kerja berurutan.
 function bangun(titik, per = 10) {
@@ -205,5 +205,21 @@ describe('konfirmasi di D', () => {
     expect(k.cek.find(c => c.k === 'volume').ok).toBe(true)
     expect(k.cek.find(c => c.k === 'struktur').ok).toBe(true)
     expect(konfirmasiD(bars, { ...g, titik: g.titik.map((t, j) => j === 4 ? { ...t, proyeksi: true } : t) })).toBeNull()
+  })
+})
+
+describe('skenarioD', () => {
+  it('panah ke TP1, TP2, C, dan jalur gagal di balik stop', () => {
+    const g = cariXabcd(bangun([150, X, A, B, C, D])).find(r => r.pola === 'gartley')
+    const sk = skenarioD(g)
+    expect(sk.map(x => x.k)).toEqual(['t1', 't2', 'c', 'gagal'])
+    expect(sk[0].ke.p).toBeCloseTo(g.target[0], 6)
+    expect(sk[2].ke.p).toBeCloseTo(C, 6)
+    expect(sk[3].ke.p).toBeLessThan(g.stop)            // bullish: gagal = turun menembus stop
+    expect(sk.every(x => x.ke.i > g.titik[4].i)).toBe(true)
+  })
+  it('tanpa pola: tidak ada panah', () => {
+    expect(skenarioD(null)).toEqual([])
+    expect(skenarioD({ pola: null, titik: [] })).toEqual([])
   })
 })
