@@ -1,7 +1,7 @@
 // Materi presentasi tab "Materi" halaman Harmonic Pattern, disusun seperti presentasi makalah/penelitian:
 // Pendahuluan, Landasan Teori dan Pembahasan Pola (ringkasan Bab 1–12 Scott M. Carney, Harmonic Trading Vol. 1,
 // terjemahan Indonesia; di materiCarney16.js dan materiCarney712.js), Metodologi (cara halaman ini bekerja),
-// Penerapan di Saham BEI, Penutup, dan Lampiran (daftar periksa, rencana belajar, kuis). Semua ditulis ulang dengan
+// Penerapan di Saham BEI, Penutup, dan Lampiran (daftar periksa, rencana belajar). Semua ditulis ulang dengan
 // kata sendiri. Data murni.
 //
 // Skema slide: id, bagian, judul, sub, paragraf [..], poin [..], tabel { kolom, baris }, pola (diagram ideal:
@@ -266,7 +266,7 @@ const LAMPIRAN = [
 
 export const SLIDE = [...PENDAHULUAN, ...BAB_1_6, ...BAB_7_12, ...METODOLOGI, ...PENERAPAN, ...PENUTUP, ...LAMPIRAN]
 
-export const totalSlide = SLIDE.length + 1   // slide terakhir: kuis (dari harmonikBelajar.KUIS), bagian Lampiran
+export const totalSlide = SLIDE.length
 
 // Bentuk AB=CD ideal (C 0,618 AB, CD = AB) dalam kotak 0..1 untuk diagram slide.
 export function diagramAbcd(arah = 'bullish') {
