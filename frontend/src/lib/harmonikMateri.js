@@ -16,11 +16,12 @@ const PENDAHULUAN = [
     id: 'judul', bagian: 'Pendahuluan', judul: 'Harmonic Pattern pada Saham Bursa Efek Indonesia',
     sub: 'Kajian Harmonic Trading Vol. 1 (Scott M. Carney) dan penerapannya di Radar Backdoor',
     paragraf: [
+      'Harmonic Pattern adalah pola harga lima titik (X, A, B, C, D) yang divalidasi dengan rasio Fibonacci untuk menemukan zona tempat harga berpeluang berbalik arah, lengkap dengan batas rugi dan target yang bisa dihitung sebelum transaksi.',
       'Presentasi ini merangkum dua belas bab buku Harmonic Trading Vol. 1 karya Scott M. Carney, lalu menjelaskan bagaimana konsepnya diterapkan secara otomatis pada saham Bursa Efek Indonesia (BEI) di halaman ini.',
       'Susunannya mengikuti format makalah: latar belakang dan rumusan masalah, landasan teori, pembahasan tiap pola, eksekusi dan manajemen posisi, metodologi penerapan, penerapan pada saham BEI, lalu kesimpulan dan saran.',
     ],
     tabel: { kolom: ['Bagian', 'Isi'], baris: [
-      ['I. Pendahuluan', 'Latar belakang, rumusan masalah, tujuan, ruang lingkup'],
+      ['I. Pendahuluan', 'Apa itu Harmonic Pattern, latar belakang, rumusan masalah, tujuan, ruang lingkup'],
       ['II. Landasan Teori', 'Perdagangan harmonis, rasio Fibonacci, identifikasi pola (Bab 1–3)'],
       ['III. Pembahasan Pola', 'AB=CD, Bat, Gartley, Crab, Butterfly (Bab 4–8)'],
       ['IV. Eksekusi dan Manajemen', 'Eksekusi, aksi harga di PRZ, manajemen, pelanggaran pola (Bab 9–12)'],
@@ -28,6 +29,33 @@ const PENDAHULUAN = [
       ['VI. Penerapan di Saham BEI', 'Penyesuaian karakter BEI dan cara membaca hasil'],
       ['VII. Penutup', 'Kesimpulan, keterbatasan, saran, daftar pustaka'],
     ] },
+  },
+  {
+    id: 'apa', bagian: 'Pendahuluan', judul: 'Apa itu Harmonic Pattern?', sub: 'Definisi, fungsi, dan arti tiap titik',
+    paragraf: [
+      'Harmonic Pattern adalah pola grafik harga berbentuk lima titik (X, A, B, C, D) yang panjang tiap gelombangnya saling berhubungan dengan rasio Fibonacci tertentu. Bila semua rasio itu terpenuhi, titik D menandai zona tempat harga berpeluang besar berbalik arah, yang disebut PRZ (Potential Reversal Zone).',
+      'Akar polanya dari H.M. Gartley (1935); Scott M. Carney kemudian menetapkan rasio yang presisi untuk tiap pola dan menyusunnya menjadi metode Harmonic Trading. Pola dibaca dari aksi harga saja, tanpa bergantung pada berita.',
+    ],
+    poin: [
+      'Fungsi 1: menemukan area beli (pola bullish) atau area jual dan ambil untung (pola bearish) sebelum harga sampai di sana.',
+      'Fungsi 2: menentukan stop loss yang objektif, yaitu batas tempat pola dinyatakan batal.',
+      'Fungsi 3: menentukan target terukur (retracement 0,382 dan 0,618 kaki AD) serta menghitung rasio untung-rugi dan jumlah lot sebelum transaksi.',
+    ],
+    pola: 'gartley', alat: 'xabcd', rujukan: 'Carney, Bab 1 dan 3',
+  },
+  {
+    id: 'istilah', bagian: 'Pendahuluan', judul: 'Arti setiap titik dan istilah', sub: 'Bahasa dasar untuk membaca semua pola',
+    tabel: { kolom: ['Istilah', 'Keterangan'], baris: [
+      ['X', 'Titik awal pola: swing low untuk pola bullish, swing high untuk pola bearish'],
+      ['A', 'Ujung gerak pertama; kaki XA menjadi penggaris semua rasio'],
+      ['B', 'Koreksi dari kaki XA; rasio B paling menentukan jenis pola'],
+      ['C', 'Koreksi dari kaki AB'],
+      ['D', 'Titik akhir pola, tempat harga diperkirakan berbalik'],
+      ['PRZ', 'Zona di sekitar D tempat beberapa angka Fibonacci bertemu; area entry'],
+      ['Bullish / bearish', 'D berupa lembah (potensi naik) / D berupa puncak (potensi turun)'],
+      ['Retracement / ekstensi', 'D di dalam kaki XA (Gartley, Bat) / D melewati X (Butterfly, Crab)'],
+    ] },
+    pola: 'gartley', rujukan: 'Carney, Bab 3',
   },
   {
     id: 'latar', bagian: 'Pendahuluan', judul: 'Latar belakang', sub: 'Mengapa pendekatan harmonik relevan untuk saham',
