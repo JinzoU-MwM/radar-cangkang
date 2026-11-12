@@ -110,6 +110,7 @@ export function harmonicViewPdf(s, jsPDF) {
     butir([`Impuls ${e.naik ? 'naik' : 'turun'}, ${e.status}. ` + e.aturan.map(a => `${a.ok ? 'sesuai' : 'tidak sesuai'}: ${a.teks.toLowerCase()}`).join('; ') + '.',
       'Rasio: ' + e.panduan.map(p => `${p.k} ${r3(p.v)} (panduan ${p.ideal})`).join(', ') + '.',
       ...(e.proyeksi ? ['Proyeksi gelombang 5: ' + e.proyeksi.map(p => `${p.k} ${n(p.p)}`).join(', ') + '.'] : []),
+      ...(s.ketElliott ? [s.ketElliott] : []),
       'Pola harmonik searah tren di akhir gelombang 2 atau 4 lebih layak daripada di akhir gelombang 5.'])
   } else butir(['Belum ada rangkaian swing terbaru yang memenuhi aturan impuls lima gelombang di timeframe ini.'])
 

@@ -584,3 +584,17 @@ export function nilaiTren(tren, arahPola) {
     : `${posisi}: pola ${arahPola} melawan tren besar. Lebih sering hanya memberi reaksi singkat; kecilkan posisi atau tunggu konfirmasi lebih kuat.`
   return { searah, teks }
 }
+
+// Keterangan bila impuls Elliott terakhir sudah lama selesai (garisnya jauh dari swing terakhir/XABCD): kapan selesai,
+// berapa bar lalu, dan kenapa swing sesudahnya tidak digambar. null bila impuls masih berjalan atau baru selesai.
+export function jarakElliott(e, bars = [], satuan = 'bar') {
+  if (!e?.titik?.length || /berjalan|menuju/.test(e.status)) return null
+  const akhir = e.titik[e.titik.length - 1], umur = bars.length - 1 - akhir.i
+  if (umur < 5) return null
+  const iso = String(bars[akhir.i]?.d || '').slice(0, 10), [y, m, d] = iso.split('-')
+  const tgl = y && m ? `${Number(d)} ${['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][Number(m) - 1]} ${y}` : iso
+  return { tgl, umur, i: akhir.i, teks: `Impuls ${e.naik ? 'naik' : 'turun'} ini selesai ${tgl} di gelombang 5 (${umur} ${satuan} lalu). `
+    + 'Swing sesudahnya belum membentuk impuls lima gelombang baru yang memenuhi aturan, jadi tidak digambar. Menurut Elliott, '
+    + 'setelah impuls selesai biasanya terjadi koreksi tiga gelombang (A-B-C), dan fase itulah yang berjalan sejak gelombang 5. '
+    + 'Karena itu garis Elliott bisa jauh dari XABCD, yang selalu memakai lima swing terakhir.' }
+}

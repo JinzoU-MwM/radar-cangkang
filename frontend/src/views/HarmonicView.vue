@@ -10,7 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { createChart, CrosshairMode, LineStyle } from 'lightweight-charts'
 import { api } from '../api.js'
 import { store, toast } from '../store.js'
-import { SKALA, TF, POLA, PEMBEDA, alasanPola, alasanX, diagramIdeal, konfirmasiD, skenarioD, trenBesar, nilaiTren, cariElliott, cariXabcd, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
+import { SKALA, TF, POLA, PEMBEDA, alasanPola, alasanX, diagramIdeal, konfirmasiD, skenarioD, trenBesar, nilaiTren, jarakElliott, cariElliott, cariXabcd, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
 import { ukuranPosisi } from '../lib/harmonikBelajar.js'
 import { ema } from '../lib/ta.js'
 import PolaDiagram from '../components/PolaDiagram.vue'
@@ -99,6 +99,8 @@ const konf = computed(() => polaAcuan.value ? konfirmasiD(bars.value, polaAcuan.
 // Tren besar (EMA50/EMA200) sebagai penyaring: searah atau melawan arah pola.
 const tren = computed(() => trenBesar(bars.value))
 const trenPola = computed(() => nilaiTren(tren.value, polaAcuan.value?.arah))
+const SATUAN = { D: 'hari bursa', W: 'minggu', M: 'bulan' }
+const ketElliott = computed(() => jarakElliott(hasil.value.elliott, bars.value, SATUAN[tf.value]))
 // Pola terpilih didahulukan untuk Long/Short bila arahnya cocok.
 const urutPosisi = computed(() => polaAcuan.value ? [polaAcuan.value, ...polaList.value.filter(r => r !== polaAcuan.value)] : polaList.value)
 const hasil = computed(() => {
@@ -436,6 +438,9 @@ const gambar = computed(() => {
         jalur: p.map(t => `${t.x},${t.y}`).join(' '),
         titik: p.map((t, j) => ({ ...t, atas: j === 0 ? t.p > p[1].p : t.p > p[j - 1].p })),
         proyeksi: t4 && e.proyeksi ? e.proyeksi.map(z => ({ ...z, y: Y(z.p), x1: t4.x, x2: Math.min(W, t4.x + 90) })).filter(z => ok(z.y)) : [],
+        // Label akhir impuls yang sudah lama selesai: menjelaskan kenapa garis berhenti jauh dari swing terakhir.
+        akhir: ketElliott.value ? (() => { const t = p[p.length - 1], naik = e.naik
+          return { x: t.x, y: naik ? t.y - 30 : t.y + 34, teks: `akhir impuls ${ketElliott.value.tgl}; sesudahnya fase koreksi` } })() : null,
       }
     }
   }
@@ -589,7 +594,7 @@ async function unduh() {
       t: kode.value, nama: nama.value, tfNama: tfNama.value.nama, bars: bars.value, hasil: hasil.value, foto,
       alatAktif: aktif.value.map(k => ALAT.find(a => a.k === k).nama), rasio: barisRasio.value,
       alasan: x?.pola ? alasanPola(x) : [], teksX: teksX.value, pembeda: PEMBEDA[x?.pola] || '', status: STATUS[x?.status] || '',
-      kesimpulan: ringkasan.value, konf: konf.value, tren: trenPola.value?.teks || '', modal: modal.value, risiko: risiko.value, lot: { long: lot('long'), short: lot('short') },
+      kesimpulan: ringkasan.value, konf: konf.value, ketElliott: ketElliott.value?.teks || '', tren: trenPola.value?.teks || '', modal: modal.value, risiko: risiko.value, lot: { long: lot('long'), short: lot('short') },
     }, jsPDF)
     doc.save(P.harmonicViewPdfName(kode.value, tfNama.value.pendek))
   } catch (e) {
@@ -739,6 +744,7 @@ async function unduh() {
               <line :x1="p.x1" :x2="p.x2" :y1="p.y" :y2="p.y" class="ewp" />
               <text :x="p.x2 + 3" :y="p.y + 4" class="ewpt">{{ p.k }} {{ fmtH(p.p) }}</text>
             </g>
+            <text v-if="gambar.elliott.akhir" :x="gambar.elliott.akhir.x" :y="gambar.elliott.akhir.y" class="ewpt ewakhir">{{ gambar.elliott.akhir.teks }}</text>
             <g v-for="t in gambar.elliott.titik" :key="t.n">
               <circle :cx="t.x" :cy="t.atas ? t.y - 13 : t.y + 13" r="8" class="ewc" />
               <text :x="t.x" :y="(t.atas ? t.y - 13 : t.y + 13) + 4" class="ewt">{{ t.n }}</text>
@@ -833,6 +839,7 @@ async function unduh() {
                 <tbody><tr v-for="p in hasil.elliott.panduan" :key="p.k"><td>{{ p.k }}</td><td>{{ fmtR(p.v) }}</td><td>{{ p.ideal }}</td></tr></tbody>
               </table>
               <dl v-if="hasil.elliott.proyeksi" class="dl"><template v-for="p in hasil.elliott.proyeksi" :key="p.k"><dt>{{ p.k }}</dt><dd>{{ fmtH(p.p) }}</dd></template></dl>
+              <p v-if="ketElliott" class="small ketew"><b>Kenapa jauh dari XABCD?</b> {{ ketElliott.teks }}</p>
             </template>
             <p v-else class="small">Belum ada rangkaian swing terbaru yang memenuhi aturan impuls lima gelombang di timeframe ini. Coba timeframe lain.</p>
           </template>
@@ -1038,6 +1045,7 @@ async function unduh() {
 .nt{fill:var(--pc);text-anchor:middle;font-weight:800;font-size:13px !important}
 .xket{fill:var(--ink-2);text-anchor:middle;font-size:10px !important}
 .konf{margin:6px 0;font-size:12px}
+.ketew{margin-top:6px !important;color:var(--ink) !important}
 .kx{margin:6px 0;font-size:12px}.kx summary{cursor:pointer;font-weight:700;color:var(--ink)}.kx p.small{margin:4px 0 0 !important;color:var(--ink) !important}
 .panah line{stroke-width:1.8}.panah text{font-weight:700;font-size:10.5px !important}
 .bull .panah.target line,.bear .panah.gagal line{stroke:var(--good)}.bull .panah.target polygon,.bear .panah.gagal polygon{fill:var(--good)}.bull .panah.target text,.bear .panah.gagal text{fill:var(--good)}
@@ -1055,6 +1063,7 @@ async function unduh() {
 .ewt{fill:var(--viz-b);text-anchor:middle;font-weight:800;stroke:none !important}
 .ewp{stroke:var(--viz-b);stroke-dasharray:5 4}
 .ewpt{fill:var(--viz-b);font-weight:600}
+.ewakhir{text-anchor:middle;font-size:10px !important}
 /* Posisi */
 .untung{fill:var(--good);fill-opacity:.18;stroke:var(--good);stroke-opacity:.5}
 .rugi{fill:var(--strong);fill-opacity:.18;stroke:var(--strong);stroke-opacity:.5}

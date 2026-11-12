@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nilaiTren, trenBesar, alasanPola, alasanX, candleBalik, skenarioD, konfirmasiD, rsi, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag } from '../harmonikAlat.js'
+import { jarakElliott, nilaiTren, trenBesar, alasanPola, alasanX, candleBalik, skenarioD, konfirmasiD, rsi, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag } from '../harmonikAlat.js'
 
 // Bar sintetis: harga bergerak lurus antar titik, 10 bar per kaki, tanggal hari kerja berurutan.
 function bangun(titik, per = 10) {
@@ -272,5 +272,23 @@ describe('tren besar EMA', () => {
     expect(t.acuanNama).toBe('EMA50')
     expect(nilaiTren(t, 'bullish').teks).toMatch(/EMA200 belum bisa dihitung/)
     expect(trenBesar(naik.slice(0, 30))).toBeNull()
+  })
+})
+
+describe('jarakElliott', () => {
+  it('impuls lama: tanggal selesai, umur, dan alasan', () => {
+    const bars = bangun([100, 150, 125, 220, 190, 250, 200, 230, 210])   // impuls 0-5, lalu swing koreksi
+    const e = { status: 'lengkap', naik: true, titik: [0, 10, 20, 30, 40, 50].map((i, j) => ({ n: String(j), i, p: bars[i].c })) }
+    const j = jarakElliott(e, bars, 'hari bursa')
+    expect(j.umur).toBe(bars.length - 1 - 50)
+    const [y, m, d] = bars[50].d.split('-')
+    expect(j.tgl).toBe(`${Number(d)} ${['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][Number(m) - 1]} ${y}`)
+    expect(j.teks).toMatch(/koreksi tiga gelombang \(A-B-C\)/)
+  })
+  it('impuls masih berjalan atau baru selesai: tanpa keterangan', () => {
+    const bars = bangun([100, 150, 125, 220, 190, 250])
+    expect(jarakElliott({ status: 'gelombang 5 berjalan', titik: [{ i: 50 }] }, bars)).toBeNull()
+    expect(jarakElliott({ status: 'lengkap', titik: [{ i: 49 }] }, bars)).toBeNull()
+    expect(jarakElliott(null, bars)).toBeNull()
   })
 })
