@@ -344,6 +344,20 @@ describe('pola tambahan: 5-0, AB=CD, Three Drives', () => {
     expect(r.stop).toBeGreaterThan(r.titik[5].p)          // bearish: stop di atas dorongan ketiga
     expect(r.target[0]).toBeLessThan(r.titik[5].p)
   })
+  it('AB=CD yang belum sampai PRZ tidak ditampilkan', () => {
+    const C = 150 + 0.618 * 50
+    expect(cariPola(bangun([170, 200, 150, C, C - 25]), [0.04]).filter(x => x.bentuk === 'abcd')).toEqual([])
+  })
+  it('Three Drives: dorongan ketiga di antara 1,27 dan 1,618 tidak dianggap di PRZ; PRZ sempit', () => {
+    const dasar = [110, 100, 150]
+    dasar.push(150 - 0.618 * 50); dasar.push(dasar[3] + 1.27 * (150 - dasar[3])); dasar.push(dasar[4] - 0.618 * (dasar[4] - dasar[3]))
+    const antara = cariPola(bangun([...dasar, dasar[5] + 1.45 * (dasar[4] - dasar[5]), 120]), [0.04]).filter(x => x.pola === 'tigadorongan' && x.status !== 'menuju')
+    expect(antara).toEqual([])
+    const pas = cariPola(bangun([...dasar, dasar[5] + 1.618 * (dasar[4] - dasar[5])]), [0.04]).find(x => x.pola === 'tigadorongan')
+    expect(pas.level).toBe(1.618)
+    const kakiB = dasar[4] - dasar[5]
+    expect(pas.prz[1] - pas.prz[0]).toBeCloseTo(2 * 0.03 * kakiB, 6)
+  })
   it('pola empat titik tetap punya konfirmasi dan panah skenario', () => {
     const C = 150 + 0.618 * 50
     const bars = bangun([170, 200, 150, C, C - 50, C - 40])

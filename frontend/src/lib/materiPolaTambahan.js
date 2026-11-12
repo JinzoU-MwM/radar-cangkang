@@ -14,7 +14,7 @@ export const POLA_TAMBAHAN = [
       ['Alternate Bat', '5 (X-A-B-C-D)', 'B dangkal, D melewati X sedikit (1,13 XA)', 'Lembar pola'],
       ['Shark', '5 (X-A-B-C-D)', 'C melewati A, D kembali ke sekitar X', 'Lembar pola'],
       ['5-0', '5 (X-A-B-C-D)', 'B melewati X, C melewati A, D di 0,50 BC', 'Lembar pola'],
-      ['Three Drives', '6 (0-1-A-2-B-3)', 'Tiga dorongan searah yang memanjang 1,27–1,618', 'Lembar pola'],
+      ['Three Drives', '6 (0-1-A-2-B-3)', 'Tiga dorongan searah; dorongan ketiga di 1,27 atau 1,618', 'Lembar pola'],
       ['AB=CD mandiri', '4 (A-B-C-D)', 'Kaki CD setara atau 1,27–1,618 kali AB', 'Carney, Bab 4'],
     ] },
   },
@@ -48,16 +48,16 @@ export const POLA_TAMBAHAN = [
   {
     id: 'pt-3d', bagian: 'Pembahasan Pola', judul: 'Three Drives', sub: 'Tiga dorongan yang makin melelahkan tren',
     paragraf: [
-      'Three Drives terdiri dari tiga dorongan searah (1, 2, 3) yang dipisahkan dua koreksi (A dan B). Dorongan kedua dan ketiga masing-masing 1,27–1,618 kali koreksi sebelumnya. Setelah dorongan ketiga, tren diharapkan berbalik.',
+      'Three Drives terdiri dari tiga dorongan searah (1, 2, 3) yang dipisahkan dua koreksi (A dan B). Dorongan kedua 1,27–1,618 kali koreksi A, dan dorongan ketiga selesai di salah satu level 1,27 atau 1,618 kali koreksi B. PRZ dibuat sempit di sekitar level itu supaya titik entry jelas. Setelah dorongan ketiga, tren diharapkan berbalik.',
       'Di saham, pola ini relevan pada kenaikan atau penurunan berjenjang yang mulai kehilangan tenaga. Konfirmasi volume dan candle pembalikan di dorongan ketiga penting, karena tren kuat bisa memberi dorongan keempat.',
     ],
-    tabel: { kolom: ['Bagian', 'Syarat'], baris: [['Dorongan 2', '1,27–1,618 kali koreksi A'], ['Dorongan 3', '1,27–1,618 kali koreksi B (PRZ)'], ['Struktur', 'Puncak/lembah makin tinggi atau makin rendah'], ['Stop / target', 'Luar PRZ / 0,382 lalu 0,618 seluruh pola']] },
+    tabel: { kolom: ['Bagian', 'Syarat'], baris: [['Dorongan 2', '1,27–1,618 kali koreksi A'], ['Dorongan 3 (PRZ)', 'Level 1,27 atau 1,618 kali koreksi B, ±3% kaki koreksi'], ['Struktur', 'Puncak/lembah makin tinggi atau makin rendah'], ['Stop / target', 'Luar PRZ / 0,382 lalu 0,618 seluruh pola']] },
     pola: 'tigadorongan', rujukan: 'Lembar pola harmonik',
   },
   {
     id: 'pt-abcd', bagian: 'Pembahasan Pola', judul: 'AB=CD sebagai pola mandiri', sub: 'Pola paling dasar, juga dideteksi otomatis',
     paragraf: [
-      'Halaman ini juga mendeteksi AB=CD tanpa titik X. PRZ adalah irisan antara panjang kaki CD (setara AB, atau 1,27–1,618 AB untuk Alternate AB=CD) dan proyeksi BC 1,13–2,618.',
+      'Halaman ini juga mendeteksi AB=CD tanpa titik X. PRZ adalah irisan antara panjang kaki CD (setara AB, atau 1,27–1,618 AB untuk Alternate AB=CD) dan proyeksi BC 1,13–2,618. AB=CD hanya ditampilkan setelah D sampai di PRZ, karena AB=CD yang belum selesai muncul di hampir semua saham.',
       'AB=CD paling sering muncul sehingga paling banyak sinyal palsu bila berdiri sendiri. Nilainya naik bila titik D bertemu angka lain, misalnya retracement XA dari pola lima titik atau support/resistance lama.',
     ],
     tabel: { kolom: ['Varian', 'Syarat kaki CD', 'Titik C', 'Proyeksi BC'], baris: [['AB=CD', 'Sama dengan AB', '0,382–0,886 AB', '1,13–2,618'], ['Alternate AB=CD', '1,27–1,618 kali AB', '0,382–0,886 AB', '1,13–2,618']] },

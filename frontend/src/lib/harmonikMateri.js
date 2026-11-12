@@ -137,7 +137,7 @@ const METODOLOGI = [
       ['5-0', '1,13–1,618 (melewati X)', '1,618–2,24 AB (melewati A)', '0,50 kaki BC', '–'],
       ['AB=CD', '–', '0,382–0,886 AB', 'CD = AB', '1,13–2,618'],
       ['Alternate AB=CD', '–', '0,382–0,886 AB', 'CD = 1,27–1,618 AB', '1,13–2,618'],
-      ['Three Drives', '–', 'Koreksi A dan B', 'Dorongan 3 = 1,27–1,618 koreksi B', '–'],
+      ['Three Drives', '–', 'Koreksi A dan B', 'Dorongan 3 di 1,27 atau 1,618 koreksi B', '–'],
     ] },
   },
   {

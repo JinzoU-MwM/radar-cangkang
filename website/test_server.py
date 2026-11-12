@@ -566,6 +566,20 @@ class HarmonikTest(unittest.TestCase):
         self.assertEqual([t["n"] for t in r["titik"]], ["0", "1", "A", "2", "B", "3"])
         self.assertGreater(r["stop"], r["titik"][-1]["p"])
 
+    def test_rapikan_abcd_dan_tiga_dorongan(self):
+        import harmonik
+        c = 150 + 0.618 * 50
+        # AB=CD belum sampai PRZ: tidak ditampilkan.
+        self.assertFalse([x for x in harmonik.cari(self.bars([170, 200, 150, c, c - 25])) if x["pola"] in ("abcd", "altabcd")])
+        # Three Drives di level 1,618: PRZ sempit (±3% kaki koreksi B) dan alasan menyebut level itu.
+        P = [110, 100, 150, 150 - 0.618 * 50]
+        P += [P[3] + 1.27 * (150 - P[3])]
+        P += [P[4] - 0.618 * (P[4] - P[3])]
+        P += [P[5] + 1.618 * (P[4] - P[5])]
+        r = next(x for x in harmonik.cari(self.bars(P)) if x["pola"] == "tigadorongan")
+        self.assertLess(r["prz"][1] - r["prz"][0], 0.07 * (P[4] - P[5]) + 1)
+        self.assertTrue(r["alasan"][-1].endswith("(kriteria 1,618)"))
+
     def test_pola_batal(self):
         import harmonik
         # Gartley lengkap lalu harga turun menembus X (stop): tidak tampil lagi.

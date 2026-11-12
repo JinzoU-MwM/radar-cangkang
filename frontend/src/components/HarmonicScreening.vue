@@ -84,7 +84,7 @@ const posisi = r => r.status === 'menuju' ? `${fh(r.jarak)}% dari PRZ` : r.statu
           </tbody>
         </table>
       </div>
-      <p class="small mute">Screening malam memakai aturan yang sama dengan tab Saham: Gartley, Bat, Alternate Bat, Butterfly, Crab, Deep Crab, Cypher, Shark, 5-0, Three Drives, AB=CD, dan Alternate AB=CD pada candle harian (maksimal empat pola per saham; pola "menuju" hanya bila harga dalam 12% dari PRZ). Status: Di PRZ = D sedang terbentuk di zona; Berbalik = D terkonfirmasi dan harga mulai berbalik; Menuju = X-A-B-C terbentuk, D belum.</p>
+      <p class="small mute">Screening malam memakai aturan yang sama dengan tab Saham: Gartley, Bat, Alternate Bat, Butterfly, Crab, Deep Crab, Cypher, Shark, 5-0, Three Drives, AB=CD, dan Alternate AB=CD pada candle harian (maksimal empat pola per saham; pola "menuju" hanya bila harga dalam 12% dari PRZ; AB=CD hanya bila D sudah di PRZ). Status: Di PRZ = D sedang terbentuk di zona; Berbalik = D terkonfirmasi dan harga mulai berbalik; Menuju = X-A-B-C terbentuk, D belum.</p>
     </template>
   </section>
 </template>

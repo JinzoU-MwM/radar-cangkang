@@ -42,14 +42,14 @@ POLA_LAIN = {
              "ket": "Pola empat titik paling dasar: kaki CD sama panjang dengan AB setelah koreksi C 0,382-0,886."},
     "altabcd": {"nama": "Alternate AB=CD", "cd": (1.27, 1.618),
                 "ket": "Varian AB=CD: kaki CD memanjang 1,27-1,618 kali AB."},
-    "tigadorongan": {"nama": "Three Drives", "dorong": (1.27, 1.618),
-                     "ket": "Tiga dorongan searah; tiap dorongan 1,27-1,618 kali koreksi sebelumnya, lalu tren berbalik."},
+    "tigadorongan": {"nama": "Three Drives", "dorong": (1.27, 1.618), "level": (1.27, 1.618),
+                     "ket": "Tiga dorongan searah; dorongan kedua 1,27-1,618 kali koreksi, dorongan ketiga selesai di 1,27 atau 1,618 kali koreksi."},
 }
 ABCD_C, ABCD_E = (0.382, 0.886), (1.13, 2.618)
 STOP_PRZ = {"altbat", "butterfly", "crab", "deepcrab", "shark"}   # D melewati/menyentuh X: stop di sisi luar PRZ
 # Versi aturan pemindai: naikkan setiap kali pola/rasio/aturan berubah. Server memindai ulang saat start bila hasil
 # tersimpan (.harmonik.json) dibuat dengan versi lain, tanpa menunggu jadwal malam.
-VERSI_ATURAN = 2
+VERSI_ATURAN = 3   # 3: AB=CD hanya di PRZ/berbalik; PRZ Three Drives di level 1,27 atau 1,618
 TOL = 0.05            # toleransi relatif batas rasio (±5%)
 PRZ_LEBAR = 0.03      # lebar PRZ = ±3% panjang kaki acuan di sekitar level D
 SKALA = (0.06, 0.10, 0.15)   # ambang zigzag (pembalikan minimal) dari swing kecil ke besar
@@ -382,7 +382,7 @@ def _cari_abcd(bars, rs, th, pv, hasil):
             prz = [lo, hi]
             cd, e = _r3(abs(D["p"] - C["p"]) / abs(ab)), _r3(abs(D["p"] - C["p"]) / abs(C["p"] - B["p"]))
             status = _status(bars, mode, D, prz, bull, _dalam(cd, p["cd"]) and _dalam(e, ABCD_E, 2 * TOL))
-            if not status:
+            if not status or status == "menuju":   # AB=CD hanya bila D sudah di PRZ atau berbalik
                 continue
             d_ref = D["p"] if status != "menuju" else (lo + hi) / 2
             stop = prz[0] if bull else prz[1]
@@ -411,9 +411,16 @@ def _cari_tiga_dorongan(bars, rs, th, pv, hasil):
         r1 = _r3(abs(P3["p"] - P2["p"]) / abs(P1["p"] - P2["p"]))
         if not _dalam(r1, p["dorong"]):
             continue
-        prz = sorted([P4["p"] + (P3["p"] - P4["p"]) * p["dorong"][0] * (1 - TOL), P4["p"] + (P3["p"] - P4["p"]) * p["dorong"][1] * (1 + TOL)])
-        r2 = _r3(abs(P5["p"] - P4["p"]) / abs(P3["p"] - P4["p"]))
-        status = _status(bars, mode, P5, prz, bull, _dalam(r2, p["dorong"]))
+        # PRZ sempit (±PRZ_LEBAR kaki koreksi B) di level 1,27 lalu 1,618; dipakai level pertama yang cocok/belum terlewati.
+        r2, kaki_b = _r3(abs(P5["p"] - P4["p"]) / abs(P3["p"] - P4["p"])), abs(P3["p"] - P4["p"])
+        status = prz = lv = None
+        for L in p["level"]:
+            pusat = P4["p"] + (P3["p"] - P4["p"]) * L
+            rg = [pusat - PRZ_LEBAR * kaki_b, pusat + PRZ_LEBAR * kaki_b]
+            status = _status(bars, mode, P5, rg, bull, True)
+            if status:
+                prz, lv = rg, L
+                break
         if not status:
             continue
         d_ref = P5["p"] if status != "menuju" else (prz[0] + prz[1]) / 2
@@ -424,8 +431,8 @@ def _cari_tiga_dorongan(bars, rs, th, pv, hasil):
         r = {"r1": r1} if status == "menuju" else {"r1": r1, "r2": r2}
         alasan = [f"Dorongan 2 {_teks(r1)} x koreksi (kriteria {_rg(p['dorong'])})"]
         if status != "menuju":
-            alasan.append(f"Dorongan 3 {_teks(r2)} x koreksi (kriteria {_rg(p['dorong'])})")
-        skor = round(_jarak(r1, p["dorong"]) + (0 if status == "menuju" else _jarak(r2, p["dorong"])), 3)
+            alasan.append(f"Dorongan 3 {_teks(r2)} x koreksi (kriteria {_teks(lv)})")
+        skor = round(_jarak(r1, p["dorong"]) + (0 if status == "menuju" else abs(r2 / lv - 1)), 3)
         row = _baris(bars, rs, "tigadorongan", p["nama"], bull, status, th, w, ["0", "1", "A", "2", "B", "3"], prz, stop, target, r, alasan, skor)
         kunci = ("tigadorongan", row["arah"], P2["i"], P4["i"], "p" if status == "menuju" else P5["i"])
         if kunci not in hasil or row["skor"] < hasil[kunci]["skor"]:
