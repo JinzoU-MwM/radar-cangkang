@@ -17,7 +17,7 @@ describe('materi harmonic', () => {
       if (s.pola) expect(s.pola === 'abcd' || POLA[s.pola], s.id).toBeTruthy()
       if (s.alat) expect(['xabcd', 'fib', 'ext', 'elliott', 'long', 'short']).toContain(s.alat)
     }
-    expect(totalSlide).toBe(SLIDE.length + 1)
+    expect(totalSlide).toBe(SLIDE.length)
   })
   it('urutan bagian mengikuti susunan makalah', () => {
     const urut = SLIDE.map(s => BAGIAN.indexOf(s.bagian))

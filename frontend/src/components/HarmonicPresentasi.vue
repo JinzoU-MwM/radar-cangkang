@@ -1,10 +1,10 @@
 <script setup>
 // Mode presentasi tab Materi: slide 16:9 layar penuh dengan isi muncul bertahap (klik, spasi, atau panah kanan),
 // transisi antarslide, diagram pola beranimasi, lab pola interaktif pada slide pola, ikhtisar semua slide (O),
-// dan kuis interaktif di akhir. Esc keluar. Data sama dengan tampilan Materi biasa (lib/harmonikMateri.js).
+// tanpa kuis (fokus materi). Esc keluar. Data sama dengan tampilan Materi biasa (lib/harmonikMateri.js).
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { BAGIAN, SLIDE, butirSlide, diagramAbcd, totalSlide } from '../lib/harmonikMateri.js'
-import { KUIS, nilaiKuis } from '../lib/harmonikBelajar.js'
+import { BAGIAN, SLIDE, butirSlide, diagramAbcd } from '../lib/harmonikMateri.js'
+import { RINGKAS } from '../lib/presentasiRingkas.js'
 import PolaDiagram from './PolaDiagram.vue'
 import PolaLab from './PolaLab.vue'
 
@@ -13,25 +13,35 @@ const emit = defineEmits(['tutup', 'coba', 'pindah'])
 const NAMA_ALAT = { xabcd: 'XABCD', fib: 'Fib retracement', ext: 'Trend-based fib extension', elliott: 'Elliott', long: 'Long position', short: 'Short position' }
 const ROMAWI = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']
 
-const ke = ref(Math.min(totalSlide - 1, Math.max(0, props.mulai)))
-const slide = computed(() => SLIDE[ke.value] || null)   // null = kuis
+// Versi deck: ringkas (inti tiap bagian, bawaan) atau lengkap (seluruh materi). Pilihan diingat di browser.
+let versiAwal = 'ringkas'
+try { versiAwal = localStorage.getItem('radar-cangkang.hm-versi') === 'lengkap' ? 'lengkap' : 'ringkas' } catch {}
+const versi = ref(versiAwal)
+const deck = computed(() => versi.value === 'lengkap' ? SLIDE : RINGKAS)
+const totalSlide = computed(() => deck.value.length)
+const ke = ref(versi.value === 'lengkap' ? Math.min(SLIDE.length - 1, Math.max(0, props.mulai)) : 0)
+const slide = computed(() => deck.value[ke.value] || null)
 const butir = computed(() => butirSlide(slide.value))
 const bertahap = ref(true)
 // Butir pertama langsung tampil saat masuk slide (slide tidak tampak kosong); sisanya muncul per klik.
-const awalLangkah = i => Math.min(1, butirSlide(SLIDE[i]).length)
-const langkah = ref(awalLangkah(Math.min(totalSlide - 1, Math.max(0, props.mulai))))
+const awalLangkah = i => Math.min(1, butirSlide(deck.value[i]).length)
+const langkah = ref(awalLangkah(ke.value))
 const arah = ref('maju')
-watch(ke, v => emit('pindah', v))
+watch(ke, v => { if (versi.value === 'lengkap') emit('pindah', v) })
+watch(versi, v => {
+  try { localStorage.setItem('radar-cangkang.hm-versi', v) } catch {}
+  ke.value = 0; langkah.value = awalLangkah(0); ikhtisar.value = false
+})
 const tampil = j => !bertahap.value || j < langkah.value
 const indeks = (jenis, i) => butir.value.findIndex(x => x.jenis === jenis && x.i === i)
 
 function maju() {
   if (bertahap.value && langkah.value < butir.value.length) { langkah.value++; return }
-  if (ke.value < totalSlide - 1) { arah.value = 'maju'; ke.value++; langkah.value = awalLangkah(ke.value) }
+  if (ke.value < totalSlide.value - 1) { arah.value = 'maju'; ke.value++; langkah.value = awalLangkah(ke.value) }
 }
 function mundur() {
   if (bertahap.value && langkah.value > awalLangkah(ke.value)) { langkah.value--; return }
-  if (ke.value > 0) { arah.value = 'mundur'; ke.value--; langkah.value = butirSlide(SLIDE[ke.value]).length }
+  if (ke.value > 0) { arah.value = 'mundur'; ke.value--; langkah.value = butirSlide(deck.value[ke.value]).length }
 }
 function lompat(i) { arah.value = i >= ke.value ? 'maju' : 'mundur'; ke.value = i; langkah.value = awalLangkah(i); ikhtisar.value = false }
 
@@ -50,7 +60,7 @@ function tombol(e) {
   const aksi = {
     ArrowRight: maju, ' ': maju, PageDown: maju, Enter: maju, ArrowDown: maju,
     ArrowLeft: mundur, PageUp: mundur, Backspace: mundur, ArrowUp: mundur,
-    Home: () => lompat(0), End: () => lompat(totalSlide - 1),
+    Home: () => lompat(0), End: () => lompat(totalSlide.value - 1),
     Escape: () => { if (ikhtisar.value) ikhtisar.value = false; else tutup() },
     o: () => { ikhtisar.value = !ikhtisar.value }, O: () => { ikhtisar.value = !ikhtisar.value },
     f: layarPenuh, F: layarPenuh,
@@ -62,7 +72,7 @@ function tombol(e) {
 }
 // Klik di area slide = lanjut (kecuali klik pada tombol, tautan, input, atau lab).
 function klikSlide(e) {
-  if (e.target.closest('button, a, input, label, .lab, .kuis')) return
+  if (e.target.closest('button, a, input, label, .lab')) return
   maju()
 }
 onMounted(() => {
@@ -78,10 +88,8 @@ onBeforeUnmount(() => {
 const diagram = computed(() => slide.value?.pola === 'abcd' ? diagramAbcd('bullish') : null)
 const noBagian = b => ROMAWI[BAGIAN.indexOf(b)] || ''
 const bagianKini = computed(() => slide.value?.bagian || 'Lampiran')
-const daftar = computed(() => [...SLIDE.map((s, i) => ({ i, judul: s.judul, bagian: s.bagian })), { i: totalSlide - 1, judul: 'Kuis', bagian: 'Lampiran' }])
+const daftar = computed(() => deck.value.map((s, i) => ({ i, judul: s.judul, bagian: s.bagian })))
 
-const jawab = ref({})
-const nilai = computed(() => nilaiKuis(jawab.value))
 const centang = ref({})
 </script>
 
@@ -90,6 +98,10 @@ const centang = ref({})
     <header class="atas">
       <span class="bag">Bagian {{ noBagian(bagianKini) }} · {{ bagianKini }}</span>
       <div class="kanan">
+        <div class="versi" role="group" aria-label="Versi presentasi">
+          <button type="button" :class="{ on: versi === 'ringkas' }" :aria-pressed="String(versi === 'ringkas')" @click="versi = 'ringkas'">Ringkas ({{ RINGKAS.length }})</button>
+          <button type="button" :class="{ on: versi === 'lengkap' }" :aria-pressed="String(versi === 'lengkap')" @click="versi = 'lengkap'">Lengkap ({{ SLIDE.length }})</button>
+        </div>
         <label class="tg"><input v-model="bertahap" type="checkbox" /> Tampil bertahap</label>
         <button type="button" class="ik" :aria-pressed="String(ikhtisar)" title="Ikhtisar semua slide (O)" @click="ikhtisar = !ikhtisar">Ikhtisar</button>
         <button type="button" class="ik" title="Layar penuh (F)" @click="layarPenuh">Layar penuh</button>
@@ -98,8 +110,9 @@ const centang = ref({})
     </header>
 
     <div class="panggung" @click="klikSlide">
-      <Transition :name="'geser-' + arah" mode="out-in">
-        <article :key="ke" class="kanvas">
+      <!-- Slide dipasang ulang per indeks (key) dengan animasi masuk saja; transisi keluar-masuk bisa tersangkut
+           saat tombol ditekan cepat berturut-turut. -->
+        <article :key="versi + ke" class="kanvas" :class="'masuk-' + arah">
           <template v-if="slide">
             <div class="kepala">
               <h1>{{ slide.judul }}</h1>
@@ -130,21 +143,7 @@ const centang = ref({})
               <button v-if="slide.alat" type="button" class="coba" @click="emit('coba', slide.alat)">Coba di chart: {{ NAMA_ALAT[slide.alat] }}</button>
             </footer>
           </template>
-          <template v-else>
-            <div class="kepala"><h1>Kuis</h1><p class="sub">{{ nilai.benar }} benar dari {{ nilai.total }} soal ({{ nilai.dijawab }} dijawab)</p></div>
-            <ol class="kuis">
-              <li v-for="(k, i) in KUIS" :key="i">
-                <p>{{ k.q }}</p>
-                <div class="pil">
-                  <button v-for="(p, j) in k.pilihan" :key="j" type="button" :disabled="jawab[i] != null"
-                    :class="{ benar: jawab[i] != null && j === k.benar, salah: jawab[i] === j && j !== k.benar }" @click="jawab = { ...jawab, [i]: j }">{{ p }}</button>
-                </div>
-                <p v-if="jawab[i] != null" class="kt" :class="jawab[i] === k.benar ? 'up' : 'dn'">{{ jawab[i] === k.benar ? 'Benar.' : 'Kurang tepat.' }} {{ k.ket }}</p>
-              </li>
-            </ol>
-          </template>
         </article>
-      </Transition>
     </div>
 
     <footer class="bawah">
@@ -178,6 +177,9 @@ const centang = ref({})
 .atas{justify-content:space-between;border-bottom:1px solid var(--rule)}
 .bag{font-weight:700;color:var(--accent-ink)}
 .kanan{display:flex;gap:6px;align-items:center}
+.versi{display:flex;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.versi button{border:0;background:var(--sheet);color:var(--ink-2);padding:4px 10px;font:600 12px var(--f-body);cursor:pointer}
+.versi button.on{background:var(--accent);color:var(--sheet)}
 .tg{display:flex;gap:4px;align-items:center;cursor:pointer}
 .ik{border:1px solid var(--rule);background:var(--sheet);color:var(--ink);border-radius:6px;padding:4px 10px;cursor:pointer;font:600 12px var(--f-body)}
 .ik[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-ink)}
@@ -209,14 +211,6 @@ const centang = ref({})
 .ket{margin:0;color:var(--ink-2);font-size:1.25cqi}
 .kaki{display:flex;justify-content:space-between;align-items:center;gap:2cqi;margin-top:1.5cqi;font-size:1.2cqi;color:var(--ink-2);border-top:1px solid var(--rule-2);padding-top:1cqi}
 .coba{border:0;background:var(--accent);color:var(--sheet);border-radius:8px;padding:.7cqi 1.6cqi;font:700 1.3cqi var(--f-body);cursor:pointer}
-.kuis{margin:1cqi 0 0;padding-left:2.4cqi;display:grid;gap:1.6cqi;font-size:1.45cqi;cursor:default}
-.kuis p{margin:0 0 .6cqi}
-.pil{display:flex;flex-wrap:wrap;gap:.6cqi}
-.pil button{border:1px solid var(--rule);background:var(--sheet-2);color:var(--ink);border-radius:6px;padding:.5cqi 1.2cqi;cursor:pointer;font:inherit}
-.pil button.benar{background:var(--good-bg);border-color:var(--good);color:var(--good)}
-.pil button.salah{background:var(--strong-bg);border-color:var(--strong);color:var(--strong)}
-.kt{font-size:1.25cqi}
-.up{color:var(--good)}.dn{color:var(--strong)}
 .bawah{border-top:1px solid var(--rule)}
 .nv{width:40px;height:40px;border-radius:50%;border:1px solid var(--rule);background:var(--sheet);color:var(--ink);font-size:22px;cursor:pointer;flex:none}
 .nv:disabled{opacity:.35;cursor:default}
@@ -230,19 +224,21 @@ const centang = ref({})
 .kartu{display:flex;gap:8px;align-items:flex-start;text-align:left;border:1px solid var(--rule);background:var(--sheet);color:var(--ink);border-radius:8px;padding:10px;min-height:62px;cursor:pointer;font:13px var(--f-body)}
 .kartu.on{border-color:var(--accent);background:var(--accent-soft)}
 .kartu .no{font:700 12px var(--f-data);color:var(--ink-2)}
-/* Transisi slide. */
-.geser-maju-enter-active,.geser-maju-leave-active,.geser-mundur-enter-active,.geser-mundur-leave-active{transition:opacity .28s ease, transform .28s ease}
-.geser-maju-enter-from,.geser-mundur-leave-to{opacity:0;transform:translateX(30px)}
-.geser-maju-leave-to,.geser-mundur-enter-from{opacity:0;transform:translateX(-30px)}
+/* Animasi masuk slide sesuai arah navigasi. */
+.masuk-maju{animation:masukKanan .3s ease-out}
+.masuk-mundur{animation:masukKiri .3s ease-out}
+@keyframes masukKanan{from{opacity:0;transform:translateX(30px)}}
+@keyframes masukKiri{from{opacity:0;transform:translateX(-30px)}}
 .pudar-enter-active,.pudar-leave-active{transition:opacity .2s}
 .pudar-enter-from,.pudar-leave-to{opacity:0}
 @media (prefers-reduced-motion: reduce){
-  .geser-maju-enter-active,.geser-maju-leave-active,.geser-mundur-enter-active,.geser-mundur-leave-active,.prosa,.poin li,.tb tbody tr{transition:none}
+  .masuk-maju,.masuk-mundur{animation:none}
+  .prosa,.poin li,.tb tbody tr{transition:none}
 }
 @media (max-width: 900px){
   .kanvas{aspect-ratio:auto;width:100%;height:100%}
   .badan.dua{grid-template-columns:1fr}
-  .kepala h1{font-size:6cqi}.sub{font-size:3.4cqi}.prosa,.poin{font-size:3.4cqi}.tb{font-size:3cqi}.visual,.kaki,.kuis{font-size:3cqi}
+  .kepala h1{font-size:6cqi}.sub{font-size:3.4cqi}.prosa,.poin{font-size:3.4cqi}.tb{font-size:3cqi}.visual,.kaki{font-size:3cqi}
   .pintas{display:none}
 }
 </style>

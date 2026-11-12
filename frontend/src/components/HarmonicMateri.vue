@@ -2,11 +2,10 @@
 // Tab Materi halaman Harmonic Pattern: presentasi bergaya makalah (Pendahuluan sampai Penutup dan Lampiran) dari
 // Harmonic Trading Vol. 1 (Carney) untuk saham BEI. Daftar isi per bagian di kiri, slide di kanan (panah kiri/kanan),
 // paragraf, tabel, diagram pola ideal, rujukan bab, daftar periksa dan rencana belajar yang bisa dicentang (tersimpan
-// di browser), kuis di slide terakhir, dan tombol "Coba di chart" yang membuka tab Saham dengan alat terkait aktif.
+// di browser), dan tombol "Coba di chart" yang membuka tab Saham dengan alat terkait aktif.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { BAGIAN, SLIDE, diagramAbcd, totalSlide } from '../lib/harmonikMateri.js'
 import { diagramIdeal } from '../lib/harmonikAlat.js'
-import { KUIS, nilaiKuis } from '../lib/harmonikBelajar.js'
 import PolaDiagram from './PolaDiagram.vue'
 import HarmonicPresentasi from './HarmonicPresentasi.vue'
 
@@ -19,7 +18,7 @@ const simpan = (k, v) => { try { localStorage.setItem('radar-cangkang.hm-' + k, 
 
 const ke = ref(Math.min(totalSlide - 1, Math.max(0, Number(baca('slide', 0)) || 0)))
 watch(ke, v => simpan('slide', v))
-const slide = computed(() => SLIDE[ke.value] || null)   // null = slide kuis
+const slide = computed(() => SLIDE[ke.value] || null)
 const maju = () => { if (ke.value < totalSlide - 1) ke.value++ }
 const mundur = () => { if (ke.value > 0) ke.value-- }
 function tombol(e) {
@@ -41,10 +40,10 @@ watch(centang, v => simpan('centang', v), { deep: true })
 const kunciC = (id, i) => `${id}:${i}`
 const jumlahCentang = id => Object.keys(centang.value).filter(k => k.startsWith(id + ':') && centang.value[k]).length
 
-// Daftar isi per bagian (nomor Romawi); slide kuis masuk Lampiran.
+// Daftar isi per bagian (nomor Romawi).
 const ROMAWI = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']
 const isi = computed(() => BAGIAN.map((b, n) => ({ b, no: ROMAWI[n],
-  slide: [...SLIDE.map((s, i) => ({ i, judul: s.judul, bagian: s.bagian })), { i: totalSlide - 1, judul: 'Kuis', bagian: 'Lampiran' }].filter(x => x.bagian === b) }))
+  slide: SLIDE.map((s, i) => ({ i, judul: s.judul, bagian: s.bagian })).filter(x => x.bagian === b) }))
   .filter(g => g.slide.length))
 const bagianKini = computed(() => slide.value?.bagian || 'Lampiran')
 const noBagian = b => ROMAWI[BAGIAN.indexOf(b)] || ''
@@ -62,12 +61,10 @@ async function unduh() {
   busyPdf.value = true
   try {
     const [{ jsPDF }, P] = await Promise.all([import('jspdf'), import('../lib/materiPdf.js')])
-    P.materiPdf({ slide: SLIDE, bagian: BAGIAN, kuis: KUIS }, jsPDF).save(P.materiPdfName())
+    P.materiPdf({ slide: SLIDE, bagian: BAGIAN }, jsPDF).save(P.materiPdfName())
   } finally { busyPdf.value = false }
 }
 
-const jawab = ref({})
-const nilai = computed(() => nilaiKuis(jawab.value))
 </script>
 
 <template>
@@ -121,24 +118,6 @@ const nilai = computed(() => nilaiKuis(jawab.value))
           </div>
           <p v-if="slide.rujukan" class="rujukan small mute">Rujukan: {{ slide.rujukan }}</p>
         </template>
-        <template v-else>
-          <header>
-            <span class="no">Bagian {{ noBagian('Lampiran') }} · Lampiran · slide {{ ke + 1 }} / {{ totalSlide }}</span>
-            <h2>Kuis</h2>
-            <p class="sub">Cek pemahaman: {{ nilai.benar }} benar dari {{ nilai.total }} soal ({{ nilai.dijawab }} dijawab)</p>
-          </header>
-          <ol class="kuis">
-            <li v-for="(k, i) in KUIS" :key="i">
-              <p>{{ k.q }}</p>
-              <div class="pil">
-                <button v-for="(p, j) in k.pilihan" :key="j" type="button" :disabled="jawab[i] != null"
-                  :class="{ benar: jawab[i] != null && j === k.benar, salah: jawab[i] === j && j !== k.benar }" @click="jawab = { ...jawab, [i]: j }">{{ p }}</button>
-              </div>
-              <p v-if="jawab[i] != null" class="small" :class="jawab[i] === k.benar ? 'up' : 'dn'">{{ jawab[i] === k.benar ? 'Benar.' : 'Kurang tepat.' }} {{ k.ket }}</p>
-            </li>
-          </ol>
-          <button type="button" class="btn" @click="jawab = {}">Ulangi kuis</button>
-        </template>
       </article>
       <footer class="nav">
         <button type="button" class="btn" :disabled="ke === 0" @click="mundur">‹ Sebelumnya</button>
@@ -185,13 +164,6 @@ const nilai = computed(() => nilaiKuis(jawab.value))
 .tb tr.done td{color:var(--good)}
 .gambar{margin:0;border:1px solid var(--rule);border-radius:8px;padding:10px;background:var(--sheet-2);align-self:start}
 .gambar figcaption{margin-top:4px}
-.kuis{margin:0;padding-left:20px;display:grid;gap:14px;font-size:14px}
-.kuis p{margin:0 0 6px}
-.pil{display:flex;flex-wrap:wrap;gap:6px}
-.pil button{border:1px solid var(--rule);background:var(--sheet-2);color:var(--ink);border-radius:6px;padding:5px 10px;cursor:pointer;font:inherit}
-.pil button:disabled{cursor:default}
-.pil button.benar{background:var(--good-bg);border-color:var(--good);color:var(--good)}
-.pil button.salah{background:var(--strong-bg);border-color:var(--strong);color:var(--strong)}
 .nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .nav .mute{margin-right:auto}
 .coba{background:var(--accent);color:var(--sheet);border-color:var(--accent)}

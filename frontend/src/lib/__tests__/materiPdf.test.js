@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { jsPDF } from 'jspdf'
 import { lebarKolom, materiPdf } from '../materiPdf.js'
 import { BAGIAN, SLIDE } from '../harmonikMateri.js'
-import { KUIS } from '../harmonikBelajar.js'
 
 describe('materiPdf', () => {
   it('lebar kolom total 182 mm, minimal 18 mm', () => {
@@ -11,10 +10,10 @@ describe('materiPdf', () => {
     expect(Math.min(...w)).toBeGreaterThanOrEqual(18 * 182 / w.reduce((a, b) => a + b, 0) - 1e-9)
   })
   it('membuat dokumen bergaya makalah dari seluruh slide', () => {
-    const doc = materiPdf({ slide: SLIDE, bagian: BAGIAN, kuis: KUIS }, jsPDF)
+    const doc = materiPdf({ slide: SLIDE, bagian: BAGIAN }, jsPDF)
     expect(doc.getNumberOfPages()).toBeGreaterThan(BAGIAN.length)
     const isi = doc.output()
     expect(isi).toContain('Daftar isi')
-    expect(isi).toContain('Kuis dan kunci jawaban')
+    expect(isi).not.toContain('Kuis')
   })
 })

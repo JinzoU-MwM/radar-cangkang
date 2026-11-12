@@ -1,5 +1,5 @@
 // Unduhan tab Materi sebagai dokumen bergaya makalah (PDF, A4 tegak): sampul, daftar isi per bagian, isi tiap slide
-// (judul, paragraf, poin, tabel, rujukan) bab demi bab, lalu lampiran kuis beserta kunci jawaban. Format sama dengan
+// (judul, paragraf, poin, tabel, rujukan) bab demi bab. Format sama dengan
 // PDF riset lain (sampul berpita, halaman berbingkai).
 import { MUTED, INK, PRIMER, GOLD, frame, heading } from './ihsgPdf.js'
 import { sampul, tabel } from './ihsgModelPdf.js'
@@ -17,7 +17,7 @@ export function lebarKolom(kolom, baris, total = 182) {
   return w.map(x => x * skala)
 }
 
-export function materiPdf({ slide, bagian, kuis }, jsPDF) {
+export function materiPdf({ slide, bagian }, jsPDF) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
   const seri = 'Materi Harmonic Pattern'
   let hal = 1, y = 0, judulKini = ''
@@ -40,7 +40,7 @@ export function materiPdf({ slide, bagian, kuis }, jsPDF) {
     besar: 'XABCD', judul: 'Harmonic Pattern pada Saham BEI', label: 'Kajian Harmonic Trading Vol. 1 (Scott M. Carney)',
     sub: 'Pendahuluan, landasan teori, pembahasan pola, eksekusi dan manajemen, metodologi deteksi otomatis, penerapan di saham Bursa Efek Indonesia, dan penutup.',
     updated: new Date().toISOString().slice(0, 10), seri: [],
-    box: [['Bagian', String(bagian.length)], ['Slide', String(slide.length + 1)], ['Sumber utama', 'Carney (2010)']],
+    box: [['Bagian', String(bagian.length)], ['Slide', String(slide.length)], ['Sumber utama', 'Carney (2010)']],
     catatan: 'Ringkasan dengan kata sendiri, disesuaikan untuk saham BEI. Bahan belajar analisa teknikal, bukan saran membeli atau menjual efek.',
   })
 
@@ -48,10 +48,9 @@ export function materiPdf({ slide, bagian, kuis }, jsPDF) {
   halaman('Daftar isi')
   bagian.forEach((b, n) => {
     const isi = slide.filter(s => s.bagian === b)
-    if (!isi.length && b !== 'Lampiran') return
+    if (!isi.length) return
     teks(`${ROMAWI[n]}. ${b}`, { size: 11, font: 'bold', warna: PRIMER, jarak: 1 })
     for (const s of isi) teks(s.judul, { size: 9.5, indent: 22, lebar: 170, jarak: 0.5 })
-    if (b === 'Lampiran') teks('Kuis dan kunci jawaban', { size: 9.5, indent: 22, lebar: 170, jarak: 0.5 })
     y += 2
   })
 
@@ -77,13 +76,6 @@ export function materiPdf({ slide, bagian, kuis }, jsPDF) {
     }
   })
 
-  // Lampiran kuis.
-  sub('Kuis dan kunci jawaban')
-  kuis.forEach((k, i) => {
-    teks(`${i + 1}. ${k.q}`, { size: 9.5, font: 'bold' })
-    k.pilihan.forEach((p, j) => teks(`${String.fromCharCode(97 + j)}. ${p}`, { size: 9.2, indent: 20, lebar: 174, jarak: 0.6 }))
-    teks(`Kunci: ${String.fromCharCode(97 + k.benar)}. ${k.ket}`, { size: 8.8, warna: MUTED, indent: 20, lebar: 174, jarak: 3 })
-  })
   return doc
 }
 
