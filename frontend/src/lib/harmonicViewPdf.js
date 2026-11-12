@@ -77,8 +77,8 @@ export function harmonicViewPdf(s, jsPDF) {
   }
   sub('Titik pola')
   tbl([{ t: 'Titik', w: 18 }, { t: 'Tanggal', w: 40 }, { t: 'Harga', w: 34, align: 'right' }, { t: 'Keterangan', w: 90 }],
-    (x?.titik || []).map(t => [{ t: t.n, bold: true }, t.proyeksi ? 'proyeksi' : tgl(bars[t.i]?.d), n(t.p),
-      t.n === 'X' ? 'awal pola, swing ' + (x.arah === 'bullish' ? 'low' : 'high') : t.n === 'D' ? (t.proyeksi ? 'pusat PRZ (belum terbentuk)' : 'akhir pola, area pembalikan') : '']))
+    (x?.titik || []).map((t, j, ts) => [{ t: t.n, bold: true }, t.proyeksi ? 'proyeksi' : tgl(bars[t.i]?.d), n(t.p),
+      j === 0 ? 'awal pola, swing ' + (ts[1].p > t.p ? 'low' : 'high') : j === ts.length - 1 ? (t.proyeksi ? 'pusat PRZ (belum terbentuk)' : 'akhir pola, area pembalikan') : '']))
   sub('Kenapa titik X di sini')
   butir(s.teksX)
 
@@ -88,8 +88,8 @@ export function harmonicViewPdf(s, jsPDF) {
     const kw = 43.25
     kpi(doc, 14, y - 4, kw, 'PRZ', `${n(x.prz[0])}–${n(x.prz[1])}`, GOLD)
     kpi(doc, 14 + (kw + 3.7), y - 4, kw, 'Stop (pola batal)', n(x.stop), BAD)
-    kpi(doc, 14 + 2 * (kw + 3.7), y - 4, kw, `Target 1 (0,382 ${x.kaki || 'AD'})`, n(x.target[0]), GOOD)
-    kpi(doc, 14 + 3 * (kw + 3.7), y - 4, kw, `Target 2 (0,618 ${x.kaki || 'AD'})`, n(x.target[1]), GOOD)
+    kpi(doc, 14 + 2 * (kw + 3.7), y - 4, kw, `Target 1 (${x.ketTarget?.[0] || '0,382 AD'})`, n(x.target[0]), GOOD)
+    kpi(doc, 14 + 3 * (kw + 3.7), y - 4, kw, `Target 2 (${x.ketTarget?.[1] || '0,618 AD'})`, n(x.target[1]), GOOD)
     y += 24
   }
   for (const [k, judul] of [['fib', 'Fib retracement'], ['ext', 'Trend-based fib extension']]) {

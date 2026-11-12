@@ -8,6 +8,7 @@
 // kunci POLA harmonikAlat atau 'abcd'), alat (tombol "Coba di chart"), rujukan, periksa/belajar (bisa dicentang).
 import { BAB_1_6 } from './materiCarney16.js'
 import { BAB_7_12 } from './materiCarney712.js'
+import { POLA_TAMBAHAN } from './materiPolaTambahan.js'
 
 export const BAGIAN = ['Pendahuluan', 'Landasan Teori', 'Pembahasan Pola', 'Eksekusi dan Manajemen', 'Metodologi', 'Penerapan di Saham BEI', 'Penutup', 'Lampiran']
 
@@ -23,7 +24,7 @@ const PENDAHULUAN = [
     tabel: { kolom: ['Bagian', 'Isi'], baris: [
       ['I. Pendahuluan', 'Apa itu Harmonic Pattern, latar belakang, rumusan masalah, tujuan, ruang lingkup'],
       ['II. Landasan Teori', 'Perdagangan harmonis, rasio Fibonacci, identifikasi pola (Bab 1–3)'],
-      ['III. Pembahasan Pola', 'AB=CD, Bat, Gartley, Crab, Butterfly (Bab 4–8)'],
+      ['III. Pembahasan Pola', 'AB=CD, Bat, Gartley, Crab, Butterfly (Bab 4–8), lalu pola tambahan: Alternate Bat, Shark, 5-0, Three Drives'],
       ['IV. Eksekusi dan Manajemen', 'Eksekusi, aksi harga di PRZ, manajemen, pelanggaran pola (Bab 9–12)'],
       ['V. Metodologi', 'Data, deteksi swing, pencocokan rasio, konfirmasi, rencana posisi'],
       ['VI. Penerapan di Saham BEI', 'Penyesuaian karakter BEI dan cara membaca hasil'],
@@ -89,7 +90,7 @@ const PENDAHULUAN = [
     id: 'lingkup', bagian: 'Pendahuluan', judul: 'Ruang lingkup dan batasan', sub: 'Apa yang dibahas dan apa yang tidak',
     poin: [
       'Objek: saham yang tercatat di BEI, memakai candle harian (1 tahun) dan mingguan (3 tahun) dari Stockbit; candle bulanan disusun dari candle mingguan.',
-      'Pola utama dari Carney: AB=CD, Bat, Gartley, Crab, dan Butterfly. Halaman ini juga mengenali Alternate Bat, Deep Crab, Cypher, dan Shark dari sumber pelengkap.',
+      'Pola utama dari Carney: AB=CD, Bat, Gartley, Crab, dan Butterfly. Halaman ini juga mengenali Alternate Bat, Deep Crab, Cypher, Shark, 5-0, dan Three Drives dari sumber pelengkap.',
       'Elliott wave dan EMA50/EMA200 dipakai sebagai konteks tren, bukan syarat pola.',
       'Timeframe intraday (menit atau jam) tidak dibahas karena datanya tidak tersedia di sumber yang dipakai.',
       'Materi ini adalah bahan belajar analisa teknikal, bukan saran membeli atau menjual efek.',
@@ -133,6 +134,10 @@ const METODOLOGI = [
       ['Deep Crab', '0,886', '0,382–0,886 AB', '1,618 XA', '2,24–3,618'],
       ['Cypher', '0,382–0,618', '1,272–1,414 XA (melewati A)', '0,786 XC', '–'],
       ['Shark', '0,382–0,886', '1,13–1,618 AB (melewati A)', '0,886–1,13 XC', '1,618–2,24'],
+      ['5-0', '1,13–1,618 (melewati X)', '1,618–2,24 AB (melewati A)', '0,50 kaki BC', '–'],
+      ['AB=CD', '–', '0,382–0,886 AB', 'CD = AB', '1,13–2,618'],
+      ['Alternate AB=CD', '–', '0,382–0,886 AB', 'CD = 1,27–1,618 AB', '1,13–2,618'],
+      ['Three Drives', '–', 'Koreksi A dan B', 'Dorongan 3 = 1,27–1,618 koreksi B', '–'],
     ] },
   },
   {
@@ -292,7 +297,10 @@ const LAMPIRAN = [
   },
 ]
 
-export const SLIDE = [...PENDAHULUAN, ...BAB_1_6, ...BAB_7_12, ...METODOLOGI, ...PENERAPAN, ...PENUTUP, ...LAMPIRAN]
+// Pola tambahan disisipkan di akhir bagian Pembahasan Pola (setelah Butterfly, sebelum Bab 9).
+const iEksekusi = BAB_7_12.findIndex(s => s.bagian === 'Eksekusi dan Manajemen')
+export const SLIDE = [...PENDAHULUAN, ...BAB_1_6, ...BAB_7_12.slice(0, iEksekusi), ...POLA_TAMBAHAN, ...BAB_7_12.slice(iEksekusi),
+  ...METODOLOGI, ...PENERAPAN, ...PENUTUP, ...LAMPIRAN]
 
 export const totalSlide = SLIDE.length
 

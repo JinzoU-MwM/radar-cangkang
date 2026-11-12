@@ -10,20 +10,24 @@ const emit = defineEmits(['buka'])
 const data = ref(null), err = ref('')
 onMounted(() => api.get('/api/harmonik').then(v => { data.value = v }, e => { err.value = e.message || String(e) }))
 
-const fStatus = ref('semua'), fArah = ref('semua'), fRadar = ref(false), q = ref('')
+const fStatus = ref('semua'), fArah = ref('semua'), fRadar = ref(false), q = ref(''), fPola = ref('')
 const rows = computed(() => data.value?.rows || [])
 const n = computed(() => hitungHarmonik(rows.value))
 const tampil = computed(() => {
   const x = q.value.trim().toLowerCase()
   return rows.value.filter(r => (fStatus.value === 'semua' || r.status === fStatus.value) && (fArah.value === 'semua' || r.arah === fArah.value)
+    && (!fPola.value || r.pola === fPola.value)
     && (!fRadar.value || r.radar) && (!x || r.t.toLowerCase().startsWith(x) || (r.nama || '').toLowerCase().includes(x)))
 })
 const kriteria = computed(() => Object.fromEntries((data.value?.pola || []).map(p => [p.k, p])))
+// Jenis pola yang muncul di hasil, untuk saringan.
+const jenisPola = computed(() => [...new Set(rows.value.map(r => r.pola))].map(k => ({ k, nama: kriteria.value[k]?.nama || k, n: rows.value.filter(r => r.pola === k).length })))
 const fh = v => v == null ? '–' : Number(v).toLocaleString('id-ID', { maximumFractionDigits: v < 200 ? 1 : 0 })
 const fr = v => v == null ? '–' : Number(v).toLocaleString('id-ID', { maximumFractionDigits: 3 })
 
 // Alasan: rasio terukur dibanding kriteria pola di server (B dari XA, C dari AB atau XC dari XA).
 function alasan(r) {
+  if (r.alasan?.length) return r.alasan.join(' · ')   // server baru: rasio aktual vs kriteria materi
   const p = kriteria.value[r.pola] || {}, a = r.rasio || {}, out = []
   if (a.b != null) out.push(`B ${fr(a.b)} XA (kriteria ${rentang(p.b)})`)
   if (a.c != null) out.push(`C ${fr(a.c)} AB (kriteria ${rentang(p.c)})`)
@@ -54,6 +58,10 @@ const posisi = r => r.status === 'menuju' ? `${fh(r.jarak)}% dari PRZ` : r.statu
         <div class="seg" role="group" aria-label="Arah pola">
           <button v-for="a in ['semua', 'bullish', 'bearish']" :key="a" type="button" :class="{ on: fArah === a }" @click="fArah = a">{{ a === 'semua' ? 'Semua arah' : a }} <b v-if="a !== 'semua'">{{ n[a] || 0 }}</b></button>
         </div>
+        <select v-model="fPola" class="sel" aria-label="Jenis pola">
+          <option value="">Semua pola</option>
+          <option v-for="p in jenisPola" :key="p.k" :value="p.k">{{ p.nama }} ({{ p.n }})</option>
+        </select>
         <label class="small"><input v-model="fRadar" type="checkbox" /> Hanya saham radar</label>
         <input v-model="q" class="q" placeholder="Cari kode/nama" aria-label="Cari kode atau nama saham" />
       </div>
@@ -61,7 +69,7 @@ const posisi = r => r.status === 'menuju' ? `${fh(r.jarak)}% dari PRZ` : r.statu
         <table class="tb">
           <thead><tr><th>Saham</th><th>Pola</th><th>Status</th><th class="r">Harga</th><th class="r">PRZ</th><th>Posisi harga</th><th>Alasan</th><th>Konfirmasi di D</th><th class="r">Stop / Target</th></tr></thead>
           <tbody>
-            <tr v-for="r in tampil" :key="[r.t, r.pola, r.arah, r.titik[0].d, r.titik[1]?.d].join('|')" tabindex="0" @click="emit('buka', r)" @keydown.enter="emit('buka', r)">
+            <tr v-for="r in tampil" :key="[r.t, r.pola, r.arah, r.status, ...r.titik.map(x => x.d)].join('|')" tabindex="0" @click="emit('buka', r)" @keydown.enter="emit('buka', r)">
               <td><b class="kode">{{ r.t }}</b><span v-if="r.radar" class="tag">radar</span><br><span class="small mute">{{ r.nama }}</span></td>
               <td :class="r.arah === 'bullish' ? 'up' : 'dn'"><b>{{ kriteria[r.pola]?.nama || r.pola }}</b><br>{{ r.arah }}</td>
               <td><span class="st" :class="r.status">{{ HM_STATUS[r.status][0] }}</span></td>
@@ -76,7 +84,7 @@ const posisi = r => r.status === 'menuju' ? `${fh(r.jarak)}% dari PRZ` : r.statu
           </tbody>
         </table>
       </div>
-      <p class="small mute">Screening malam memakai pola Gartley, Bat, Butterfly, Crab, dan Cypher pada candle harian. Tab Saham juga mengenali Alternate Bat, Deep Crab, dan Shark, jadi hasil di chart bisa memuat pola tambahan. Status: Di PRZ = D sedang terbentuk di zona; Berbalik = D terkonfirmasi dan harga mulai berbalik; Menuju = X-A-B-C terbentuk, D belum.</p>
+      <p class="small mute">Screening malam memakai aturan yang sama dengan tab Saham: Gartley, Bat, Alternate Bat, Butterfly, Crab, Deep Crab, Cypher, Shark, 5-0, Three Drives, AB=CD, dan Alternate AB=CD pada candle harian (maksimal empat pola per saham; pola "menuju" hanya bila harga dalam 12% dari PRZ). Status: Di PRZ = D sedang terbentuk di zona; Berbalik = D terkonfirmasi dan harga mulai berbalik; Menuju = X-A-B-C terbentuk, D belum.</p>
     </template>
   </section>
 </template>
@@ -90,6 +98,7 @@ const posisi = r => r.status === 'menuju' ? `${fh(r.jarak)}% dari PRZ` : r.statu
 .seg button{border:1px solid var(--rule);background:var(--sheet);color:var(--ink-2);border-radius:14px;padding:4px 10px;cursor:pointer;font:600 12px var(--f-body);text-transform:capitalize}
 .seg button.on{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
 .seg b{font-family:var(--f-data);margin-left:2px}
+.sel{font:13px var(--f-body);padding:5px 8px;border:1px solid var(--rule);border-radius:6px;background:var(--sheet);color:var(--ink)}
 .q{font:13px var(--f-body);padding:5px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--sheet);color:var(--ink);margin-left:auto}
 .wrap{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--sheet)}
 .tb{border-collapse:collapse;width:100%;font-size:13px}

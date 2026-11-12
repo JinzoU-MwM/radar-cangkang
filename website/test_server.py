@@ -543,6 +543,35 @@ class HarmonikTest(unittest.TestCase):
         # D menembus X: bukan Gartley lagi.
         self.assertFalse([x for x in harmonik.cari(self.bars([150, 100, 200, 138.2, 175.3, 95])) if x["pola"] == "gartley"])
 
+    def test_pola_tambahan(self):
+        import harmonik
+        # 5-0 bullish: X 150, A 200, B 130 (1,4 XA), C 263 (1,9 AB), D 196,5 (0,50 BC).
+        r = next(x for x in harmonik.cari(self.bars([180, 150, 200, 130, 263, 196.5])) if x["pola"] == "fiveo")
+        self.assertEqual((r["arah"], r["status"]), ("bullish", "prz"))
+        self.assertAlmostEqual(r["rasio"]["dbc"], 0.5, delta=0.02)          # bar uji punya ekor ±0,4%
+        c_ = r["titik"][3]["p"]                                     # target 2 = titik C, dibulatkan ke bawah ke fraksi 2
+        self.assertTrue(c_ - 2 < r["target"][1] <= c_)
+        # AB=CD bullish: A 200, B 150, C 180,9 (0,618 AB), D 130,9 (CD = AB).
+        c = 150 + 0.618 * 50
+        r = next(x for x in harmonik.cari(self.bars([170, 200, 150, c, c - 50])) if x["pola"] == "abcd")
+        self.assertEqual((r["arah"], r["status"], [t["n"] for t in r["titik"]]), ("bullish", "prz", list("ABCD")))
+        self.assertTrue(any(a.startswith("CD/AB 0,99") and "kriteria 1)" in a for a in r["alasan"]))
+        # Three Drives bearish: dorongan naik 1,27 kali koreksi.
+        P = [110, 100, 150, 150 - 0.618 * 50]
+        P += [P[3] + 1.27 * (150 - P[3])]
+        P += [P[4] - 0.618 * (P[4] - P[3])]
+        P += [P[5] + 1.27 * (P[4] - P[5])]
+        r = next(x for x in harmonik.cari(self.bars(P)) if x["pola"] == "tigadorongan")
+        self.assertEqual((r["arah"], r["status"]), ("bearish", "prz"))
+        self.assertEqual([t["n"] for t in r["titik"]], ["0", "1", "A", "2", "B", "3"])
+        self.assertGreater(r["stop"], r["titik"][-1]["p"])
+
+    def test_pola_batal(self):
+        import harmonik
+        # Gartley lengkap lalu harga turun menembus X (stop): tidak tampil lagi.
+        r = harmonik.cari(self.bars([150, 100, 200, 138.2, 175.3, 121.4, 130, 90]))
+        self.assertFalse([x for x in r if x["pola"] == "gartley" and x["titik"][0]["p"] == 100])
+
     def test_candle_balik(self):
         import harmonik
         pin = [{"o": 10, "h": 10.2, "l": 9.8, "c": 9.9}, {"o": 10, "h": 10.1, "l": 9.0, "c": 10.05}]
@@ -562,7 +591,8 @@ class HarmonikTest(unittest.TestCase):
             r = server.harmonik_api()
         tmp.cleanup()
         self.assertEqual([(x["t"], x["nama"], x["radar"]) for x in r["rows"]], [("AAAA", "Aaaa Tbk", False), ("BBBB", "", True)])
-        self.assertEqual({p["k"] for p in r["pola"]}, {"gartley", "bat", "butterfly", "crab", "cypher"})
+        self.assertEqual({p["k"] for p in r["pola"]}, {"gartley", "bat", "altbat", "butterfly", "crab", "deepcrab", "cypher", "shark",
+                                                      "fiveo", "abcd", "altabcd", "tigadorongan"})
 
     def test_saham_live_dan_cadangan(self):
         bars = self.bars([150, 100, 200, 138.2, 175.3, 121.4])

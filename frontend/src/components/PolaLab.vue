@@ -6,7 +6,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { POLA, labPola, rasioContoh } from '../lib/harmonikAlat.js'
 
 const props = defineProps({ awal: { type: String, default: 'gartley' } })
-const PILIHAN = ['gartley', 'bat', 'altbat', 'butterfly', 'crab', 'deepcrab', 'cypher', 'shark']
+const PILIHAN = ['gartley', 'bat', 'altbat', 'butterfly', 'crab', 'deepcrab', 'cypher', 'shark', 'fiveo']
 const b = ref(0.618), c = ref(0.618), d = ref(0.786)
 let raf = 0
 const reduksi = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches

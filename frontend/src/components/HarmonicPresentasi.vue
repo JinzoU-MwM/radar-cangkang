@@ -7,6 +7,7 @@ import { BAGIAN, SLIDE, butirSlide, diagramAbcd } from '../lib/harmonikMateri.js
 import { RINGKAS } from '../lib/presentasiRingkas.js'
 import PolaDiagram from './PolaDiagram.vue'
 import PolaLab from './PolaLab.vue'
+import { POLA, diagramIdeal } from '../lib/harmonikAlat.js'
 
 const props = defineProps({ mulai: { type: Number, default: 0 } })
 const emit = defineEmits(['tutup', 'coba', 'pindah'])
@@ -85,7 +86,12 @@ onBeforeUnmount(() => {
   document.body.style.overflow = ''
 })
 
-const diagram = computed(() => slide.value?.pola === 'abcd' ? diagramAbcd('bullish') : null)
+// Pola X-A-B-C-D memakai lab interaktif; AB=CD dan Three Drives memakai diagram beranimasi.
+const diagram = computed(() => {
+  const k = slide.value?.pola
+  if (!k || POLA[k]) return null
+  return k === 'abcd' ? diagramAbcd('bullish') : diagramIdeal(k, 'bullish')
+})
 const noBagian = b => ROMAWI[BAGIAN.indexOf(b)] || ''
 const bagianKini = computed(() => slide.value?.bagian || 'Lampiran')
 const daftar = computed(() => deck.value.map((s, i) => ({ i, judul: s.judul, bagian: s.bagian })))
@@ -135,7 +141,7 @@ const centang = ref({})
               <aside v-if="slide.pola" class="visual">
                 <PolaDiagram v-if="diagram" :key="'d' + ke" :diagram="diagram" :w="300" :h="170" animasi />
                 <PolaLab v-else :awal="slide.pola" />
-                <p class="ket">{{ diagram ? 'Bentuk ideal AB=CD (bullish).' : 'Geser titik atau klik nama pola untuk melihat syaratnya berubah.' }}</p>
+                <p class="ket">{{ diagram ? 'Bentuk ideal (bullish); bearish adalah cerminannya.' : 'Geser titik atau klik nama pola untuk melihat syaratnya berubah.' }}</p>
               </aside>
             </div>
             <footer class="kaki">

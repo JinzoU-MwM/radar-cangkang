@@ -24,6 +24,9 @@ export const POLA = {
     ket: 'C melewati A (1,272–1,414 XA); D di 0,786 kaki XC. Muncul di pasar dengan swing kompleks.' },
   shark: { nama: 'Shark', b: [0.382, 0.886], c: [1.13, 1.618], dc: [0.886, 1.13], e: [1.618, 2.24],
     ket: 'C melewati A (1,13–1,618 AB); D kembali ke sekitar level X (0,886–1,13 XC).' },
+  // 5-0 (lembar pola): B melewati X (1,13–1,618 XA), C melewati A (1,618–2,24 AB), D = retracement 0,50 kaki BC.
+  fiveo: { nama: '5-0', b: [1.13, 1.618], c: [1.618, 2.24], dbc: [0.5, 0.5],
+    ket: 'Pola koreksi setelah gerak berlebihan: B melewati X, C melewati A, lalu D di retracement 0,50 kaki BC.' },
 }
 // Pola yang D-nya melewati atau menyentuh X: stop memakai sisi luar PRZ, bukan X.
 const STOP_PRZ = new Set(['altbat', 'butterfly', 'crab', 'deepcrab', 'shark'])
@@ -100,6 +103,7 @@ export function rasioXabcd(X, A, B, C, D = null) {
     d: D == null ? null : r3(Math.abs(A - D) / xa),
     e: D == null ? null : r3(Math.abs(D - C) / bc),
     dc: D == null ? null : r3(Math.abs(D - C) / xc),
+    dbc: D == null ? null : r3(Math.abs(D - C) / bc),
   }
 }
 
@@ -108,6 +112,7 @@ export function przPola(k, X, A, B, C, tol = TOL) {
   const p = POLA[k], xa = Math.abs(A - X), s = Math.sign(A - X)
   let rg, acuan
   if (p.d) { rg = [A - s * xa * p.d[0], A - s * xa * p.d[1]]; acuan = xa }
+  else if (p.dbc) { rg = [C + (B - C) * p.dbc[0], C + (B - C) * p.dbc[1]]; acuan = Math.abs(B - C) }
   else { rg = [C - (C - X) * p.dc[0], C - (C - X) * p.dc[1]]; acuan = Math.abs(C - X) }
   rg = [Math.min(...rg), Math.max(...rg)]
   if (rg[1] - rg[0] < 2 * PRZ_LEBAR * acuan) {
@@ -137,6 +142,7 @@ export function skorPola(k, r, tol = TOL) {
   if (r.d != null) {
     if (p.d) cek.push([r.d, p.d])
     if (p.dc) cek.push([r.dc, p.dc])
+    if (p.dbc) cek.push([r.dbc, p.dbc])
     if (p.e) cek.push([r.e, p.e])
   }
   let s = 0
@@ -155,15 +161,29 @@ function bentukOk(k, X, A, B, C) {
   const s = Math.sign(A - X)
   if (!s || Math.sign(B - A) !== -s || Math.sign(C - B) !== s) return false
   const lewatA = s > 0 ? C > A : C < A
+  if (k === 'fiveo') return lewatA && (s > 0 ? B < X : B > X)   // 5-0: B melewati X dan C melewati A
   return k === 'cypher' || k === 'shark' ? lewatA : !lewatA
 }
 
-function targetStop(k, X, A, C, D, prz, bull) {
+const bulatArah = (t, bull) => bull ? floorTick(t) : ceilTick(t)
+function targetStop(k, X, A, B, C, D, prz, bull) {
+  // 5-0: harga diharapkan kembali ke C; target 0,618 kaki DC lalu titik C, stop di retracement 0,618 kaki BC.
+  if (k === 'fiveo') return { target: [D + (C - D) * 0.618, C].map(t => bulatArah(t, bull)), stop: C + (B - C) * 0.618 }
   const acuan = k === 'cypher' ? C : A
   // Target dibulatkan ke fraksi harga BEI ke arah konservatif (bullish ke bawah, bearish ke atas).
-  const target = [0.382, 0.618].map(r => D + (acuan - D) * r).map(t => bull ? floorTick(t) : ceilTick(t))
+  const target = [0.382, 0.618].map(r => D + (acuan - D) * r).map(t => bulatArah(t, bull))
   const stopMentah = STOP_PRZ.has(k) ? (bull ? prz[0] : prz[1]) : X
   return { target, stop: stopMentah }
+}
+const KAKI = { cypher: 'CD', fiveo: 'DC' }
+
+// Garis rasio (indeks titik) yang digambar di chart, mengikuti kriteria pola: B, C, D, dan proyeksi BC.
+export function garisXabcd(k, r) {
+  const p = POLA[k] || { c: 1, d: 1, e: 1 }
+  return [{ a: 0, b: 2, v: r.b, k: 'AB/XA' },
+    p.cx ? { a: 0, b: 3, v: r.cx, k: 'XC/XA' } : { a: 1, b: 3, v: r.c, k: 'BC/AB' },
+    p.dc ? { a: 3, b: 4, v: r.dc, k: 'CD/XC' } : p.dbc ? { a: 2, b: 4, v: r.dbc, k: 'DC/BC' } : { a: 0, b: 4, v: r.d, k: 'AD/XA' },
+    ...(p.e ? [{ a: 2, b: 4, v: r.e, k: 'CD/BC' }] : [])].filter(g => g.v != null)
 }
 
 // Semua pola XABCD aktif di ujung data (paling relevan dulu):
@@ -206,7 +226,7 @@ export function cariXabcd(bars = [], skala = SKALA.D, umurD = 30) {
           titikD = { n: 'D', i: Math.max(n - 1, C.i) + Math.max(3, Math.round((C.i - B.i) * 0.8)), p: (prz[0] + prz[1]) / 2, proyeksi: true }
         } else continue
         if ((k === 'gartley' || k === 'bat') && (bull ? titikD.p < X.p : titikD.p > X.p)) continue
-        const { target, stop } = targetStop(k, X.p, A.p, C.p, titikD.p, prz, bull)
+        const { target, stop } = targetStop(k, X.p, A.p, B.p, C.p, titikD.p, prz, bull)
         // Pola batal: setelah D ada penutupan yang menembus stop (X / sisi luar PRZ); bukan pola aktif lagi.
         if (!titikD.proyeksi && bars.slice(D.i + 1).some(b => bull ? b.c < stop : b.c > stop)) continue
         // Kunci tanpa X/A: skala zigzag berbeda bisa memilih bar berbeda untuk harga ekstrem yang sama (harga kembar),
@@ -216,8 +236,11 @@ export function cariXabcd(bars = [], skala = SKALA.D, umurD = 30) {
           kunci, pola: k, nama: POLA[k].nama, ket: POLA[k].ket, arah: bull ? 'bullish' : 'bearish', status, skala: th, skor,
           titik: [{ n: 'X', i: X.i, p: X.p }, { n: 'A', i: A.i, p: A.p }, { n: 'B', i: B.i, p: B.p }, { n: 'C', i: C.i, p: C.p }, titikD],
           rasio: status === 'menuju' ? rasioXabcd(X.p, A.p, B.p, C.p) : r, prz, target, stop, harga: akhir,
-          kaki: k === 'cypher' ? 'CD' : 'AD',   // kaki acuan target 0,382/0,618
+          kaki: KAKI[k] || 'AD',   // kaki acuan target
+          ketTarget: k === 'fiveo' ? ['0,618 DC', 'titik C'] : [`0,382 ${KAKI[k] || 'AD'}`, `0,618 ${KAKI[k] || 'AD'}`],
+          bentuk: 'xabcd', segi: [[0, 1, 2], [2, 3, 4]],
         }
+        row.garis = garisXabcd(k, row.rasio)
         const lama = hasil.get(kunci)
         if (!lama || row.skor < lama.skor) hasil.set(kunci, row)
       }
@@ -225,6 +248,135 @@ export function cariXabcd(bars = [], skala = SKALA.D, umurD = 30) {
   }
   const urut = { prz: 0, berbalik: 1, menuju: 2 }
   return [...hasil.values()].sort((a, b) => urut[a.status] - urut[b.status] || a.skor - b.skor || b.titik[0].i - a.titik[0].i)
+}
+
+// ------------------------------------------------- AB=CD dan Three Drives ----
+// Pola di luar kerangka X-A-B-C-D. AB=CD (Carney Bab 4): C retracement 0,382–0,886 AB, proyeksi BC 1,13–2,618, dan
+// CD setara AB (AB=CD) atau 1,27–1,618 AB (Alternate AB=CD). Three Drives (lembar pola): tiga dorongan searah, tiap
+// dorongan berikutnya 1,27–1,618 kali koreksi sebelumnya; pembalikan diharapkan setelah dorongan ketiga.
+export const POLA_LAIN = {
+  abcd: { nama: 'AB=CD', bentuk: 'abcd', cd: [1, 1],
+    ket: 'Pola empat titik paling dasar: kaki CD sama panjang dengan AB setelah koreksi C 0,382–0,886.' },
+  altabcd: { nama: 'Alternate AB=CD', bentuk: 'abcd', cd: [1.27, 1.618],
+    ket: 'Varian AB=CD: kaki CD memanjang 1,27–1,618 kali AB, umum di saham yang bergerak kuat.' },
+  tigadorongan: { nama: 'Three Drives', bentuk: 'tigadorongan', dorong: [1.27, 1.618],
+    ket: 'Tiga dorongan searah yang makin melemah; tiap dorongan 1,27–1,618 kali koreksi sebelumnya, lalu tren berbalik.' },
+}
+const ABCD_C = [0.382, 0.886], ABCD_E = [1.13, 2.618]
+export const namaPola = k => POLA[k]?.nama || POLA_LAIN[k]?.nama || ''
+
+// Jendela pivot N titik: titik akhir = ekstrem berjalan, atau terkonfirmasi satu sampai dua swing lalu (umurD bar).
+function jendela(pv, N, n, umurD) {
+  const out = []
+  if (pv.length >= N) out.push({ w: pv.slice(-N), mode: 'jalan' })
+  for (let m = 1; m <= 2 && pv.length >= N + m; m++) {
+    const w = pv.slice(-N - m, -m)
+    if (w[N - 1].i >= n - umurD) out.push({ w, mode: 'tetap' })
+  }
+  return out
+}
+const irisan = (a, b) => { const lo = Math.max(a[0], b[0]), hi = Math.min(a[1], b[1]); return lo > hi ? null : [lo, hi] }
+const urutkan = (a, b) => [Math.min(a, b), Math.max(a, b)]
+
+// Status titik akhir pola (sama dengan XABCD): di PRZ, berbalik, atau menuju (titik akhir diproyeksikan).
+function statusAkhir({ bars, mode, akhirPt, prz, bull, lengkapOk, iProyeksi, label }) {
+  const n = bars.length, akhir = bars[n - 1].c
+  const diPrz = akhirPt.p >= prz[0] && akhirPt.p <= prz[1]
+  const lewat = bull ? akhirPt.p < prz[0] : akhirPt.p > prz[1]
+  if (diPrz && lengkapOk) return { status: mode === 'jalan' ? 'prz' : 'berbalik', titik: { n: label, i: akhirPt.i, p: akhirPt.p } }
+  if (mode !== 'jalan' || lewat || diPrz) return null
+  const tepi = bull ? prz[1] : prz[0]
+  if ((bull ? akhir < tepi : akhir > tepi) || Math.abs(akhir / tepi - 1) > MENUJU_MAKS) return null
+  return { status: 'menuju', titik: { n: label, i: iProyeksi, p: (prz[0] + prz[1]) / 2, proyeksi: true } }
+}
+const batal = (bars, t, stop, bull) => !t.proyeksi && bars.slice(t.i + 1).some(b => bull ? b.c < stop : b.c > stop)
+const cekRasio = (teks, v, rg, longgar = 1) => v == null ? null : { teks, aktual: v, ideal: teksRg(rg), ok: jarak(v, rg) <= TOL * longgar }
+
+export function cariAbcd(bars = [], skala = SKALA.D, umurD = 30) {
+  const n = bars.length
+  if (n < 30) return []
+  const hasil = new Map()
+  for (const th of skala) {
+    for (const { w, mode } of jendela(zigzag(bars, th), 4, n, umurD)) {
+      const [A, B, C, D] = w, bull = A.p > B.p   // A puncak, D lembah: bullish
+      const ab = B.p - A.p, c = r3(Math.abs(C.p - B.p) / Math.abs(ab))
+      if (jarak(c, ABCD_C) > TOL) continue
+      const proyBC = urutkan(C.p + (B.p - C.p) * ABCD_E[0] * (1 - 2 * TOL), C.p + (B.p - C.p) * ABCD_E[1] * (1 + 2 * TOL))
+      for (const k of ['abcd', 'altabcd']) {
+        const p = POLA_LAIN[k]
+        const prz = irisan(urutkan(C.p + ab * p.cd[0] * (1 - TOL), C.p + ab * p.cd[1] * (1 + TOL)), proyBC)
+        if (!prz) continue
+        const r = { c, cd: r3(Math.abs(D.p - C.p) / Math.abs(ab)), e: r3(Math.abs(D.p - C.p) / Math.abs(C.p - B.p)) }
+        const lengkapOk = jarak(r.cd, p.cd) <= TOL && jarak(r.e, ABCD_E) <= TOL * 2
+        const st = statusAkhir({ bars, mode, akhirPt: D, prz, bull, lengkapOk, label: 'D',
+          iProyeksi: Math.max(n - 1, C.i) + Math.max(3, Math.round((C.i - B.i) * 0.8)) })
+        if (!st) continue
+        const Dt = st.titik, stop = bull ? prz[0] : prz[1]
+        if (batal(bars, Dt, stop, bull)) continue
+        const rasio = st.status === 'menuju' ? { c } : r
+        const kunci = `${k}|${bull ? 'b' : 's'}|${B.i}|${C.i}|${Dt.proyeksi ? 'p' : D.i}`
+        const row = {
+          kunci, pola: k, bentuk: 'abcd', nama: p.nama, ket: p.ket, arah: bull ? 'bullish' : 'bearish', status: st.status, skala: th,
+          skor: Math.round((jarak(c, ABCD_C) + (st.status === 'menuju' ? 0 : jarak(r.cd, p.cd) + jarak(r.e, ABCD_E))) * 1000) / 1000,
+          titik: [{ n: 'A', i: A.i, p: A.p }, { n: 'B', i: B.i, p: B.p }, { n: 'C', i: C.i, p: C.p }, Dt],
+          rasio, prz, stop, harga: bars[n - 1].c, kaki: 'AD', ketTarget: ['0,382 AD', '0,618 AD'],
+          target: [0.382, 0.618].map(x => bulatArah(Dt.p + (A.p - Dt.p) * x, bull)),
+          segi: [[0, 1, 2], [1, 2, 3]],
+          garis: [{ a: 0, b: 2, v: rasio.c, k: 'BC/AB' }, { a: 1, b: 3, v: rasio.e, k: 'CD/BC' }, { a: 0, b: 3, v: rasio.cd, k: 'CD/AB' }].filter(g => g.v != null),
+          alasan: [cekRasio('Titik C: retracement BC/AB', c, ABCD_C), cekRasio('Panjang CD/AB', rasio.cd, p.cd),
+            cekRasio('Proyeksi CD/BC', rasio.e, ABCD_E, 2)].filter(Boolean),
+        }
+        const lama = hasil.get(kunci)
+        if (!lama || row.skor < lama.skor) hasil.set(kunci, row)
+      }
+    }
+  }
+  return [...hasil.values()]
+}
+
+export function cariTigaDorongan(bars = [], skala = SKALA.D, umurD = 30) {
+  const n = bars.length
+  if (n < 30) return []
+  const p = POLA_LAIN.tigadorongan, hasil = new Map()
+  for (const th of skala) {
+    for (const { w, mode } of jendela(zigzag(bars, th), 6, n, umurD)) {
+      const [P0, P1, P2, P3, P4, P5] = w, s = Math.sign(P1.p - P0.p), bull = s < 0   // dorongan naik: bearish
+      // Dorongan makin tinggi (atau makin rendah) dan koreksi tidak menembus titik awal dorongan sebelumnya.
+      if (!(s * (P3.p - P1.p) > 0 && s * (P2.p - P0.p) > 0 && s * (P4.p - P2.p) > 0)) continue
+      const r1 = r3(Math.abs(P3.p - P2.p) / Math.abs(P1.p - P2.p))
+      if (jarak(r1, p.dorong) > TOL) continue
+      const prz = urutkan(P4.p + (P3.p - P4.p) * p.dorong[0] * (1 - TOL), P4.p + (P3.p - P4.p) * p.dorong[1] * (1 + TOL))
+      const r2 = r3(Math.abs(P5.p - P4.p) / Math.abs(P3.p - P4.p))
+      const st = statusAkhir({ bars, mode, akhirPt: P5, prz, bull, lengkapOk: jarak(r2, p.dorong) <= TOL, label: '3',
+        iProyeksi: Math.max(n - 1, P4.i) + Math.max(3, P3.i - P2.i) })
+      if (!st) continue
+      const T = st.titik, stop = bull ? prz[0] : prz[1]
+      if (batal(bars, T, stop, bull)) continue
+      const rasio = st.status === 'menuju' ? { r1 } : { r1, r2 }
+      const kunci = `tigadorongan|${bull ? 'b' : 's'}|${P2.i}|${P4.i}|${T.proyeksi ? 'p' : P5.i}`
+      const row = {
+        kunci, pola: 'tigadorongan', bentuk: 'tigadorongan', nama: p.nama, ket: p.ket, arah: bull ? 'bullish' : 'bearish', status: st.status,
+        skala: th, skor: Math.round((jarak(r1, p.dorong) + (rasio.r2 != null ? jarak(r2, p.dorong) : 0)) * 1000) / 1000,
+        titik: [{ n: '0', i: P0.i, p: P0.p }, { n: '1', i: P1.i, p: P1.p }, { n: 'A', i: P2.i, p: P2.p }, { n: '2', i: P3.i, p: P3.p },
+          { n: 'B', i: P4.i, p: P4.p }, T],
+        rasio, prz, stop, harga: bars[n - 1].c, kaki: '0–3', ketTarget: ['0,382 pola', '0,618 pola'],
+        target: [0.382, 0.618].map(x => bulatArah(T.p + (P0.p - T.p) * x, bull)),
+        segi: [],
+        garis: [{ a: 1, b: 3, v: rasio.r1, k: 'Dorongan 2' }, { a: 3, b: 5, v: rasio.r2, k: 'Dorongan 3' }].filter(g => g.v != null),
+        alasan: [cekRasio('Dorongan 2: (2 − A) / (1 − A)', r1, p.dorong), cekRasio('Dorongan 3: (3 − B) / (2 − B)', rasio.r2, p.dorong)].filter(Boolean),
+      }
+      const lama = hasil.get(kunci)
+      if (!lama || row.skor < lama.skor) hasil.set(kunci, row)
+    }
+  }
+  return [...hasil.values()]
+}
+
+// Semua pola aktif (XABCD, Three Drives, AB=CD): status dulu, lalu pola lima/enam titik sebelum AB=CD, lalu skor.
+export function cariPola(bars = [], skala = SKALA.D, umurD = 30) {
+  const urut = { prz: 0, berbalik: 1, menuju: 2 }, kelas = { xabcd: 0, tigadorongan: 1, abcd: 2 }
+  return [...cariXabcd(bars, skala, umurD), ...cariTigaDorongan(bars, skala, umurD), ...cariAbcd(bars, skala, umurD)]
+    .sort((a, b) => urut[a.status] - urut[b.status] || kelas[a.bentuk] - kelas[b.bentuk] || a.skor - b.skor)
 }
 
 // Swing X-A-B-C-D terakhir apa adanya (dengan rasio sebenarnya) saat tidak ada pola yang cocok. Dengan daftar skala:
@@ -236,7 +388,8 @@ export function swingXabcd(bars = [], th = 0.06) {
   if (pv.length < 5) return null
   const w = pv.slice(-5), [X, A, B, C, D] = w
   return { pola: null, nama: 'Swing terakhir', arah: A.p > X.p ? 'bullish' : 'bearish', status: 'tidak cocok', skala: th,
-    titik: w.map((x, j) => ({ n: 'XABCD'[j], i: x.i, p: x.p })), rasio: rasioXabcd(X.p, A.p, B.p, C.p, D.p), prz: null }
+    titik: w.map((x, j) => ({ n: 'XABCD'[j], i: x.i, p: x.p })), rasio: rasioXabcd(X.p, A.p, B.p, C.p, D.p), prz: null,
+    bentuk: 'xabcd', segi: [[0, 1, 2], [2, 3, 4]], garis: garisXabcd(null, rasioXabcd(X.p, A.p, B.p, C.p, D.p)) }
 }
 
 // ---------------------------------------------------------------- Fibonacci ----
@@ -251,7 +404,7 @@ function legTerakhir(bars, th, jumlah) {
 export function fibRetracement(bars = [], pola = null, th = 0.1) {
   let a, b, dasar
   if (pola?.titik?.length >= 2 && pola.pola) {
-    a = pola.titik[0]; b = pola.titik[1]; dasar = `kaki XA pola ${pola.nama}`
+    a = pola.titik[0]; b = pola.titik[1]; dasar = `kaki ${a.n}${b.n} pola ${pola.nama}`
   } else {
     const leg = legTerakhir(bars, th, 2) || legTerakhir(bars, th / 2, 2)
     if (!leg) return null
@@ -267,7 +420,9 @@ export function fibRetracement(bars = [], pola = null, th = 0.1) {
 // dari C (AB=CD), sehingga level 1 = CD sama panjang dengan AB.
 export function fibExtension(bars = [], pola = null, th = 0.1) {
   let p1, p2, p3, dasar
-  if (pola?.titik?.length >= 4 && pola.pola && pola.pola !== 'cypher' && pola.pola !== 'shark') {
+  if (pola?.bentuk === 'abcd') {
+    ;[p1, p2, p3] = pola.titik; dasar = `A→B diproyeksikan dari C pola ${pola.nama}`
+  } else if (pola?.titik?.length === 5 && pola.pola && !['cypher', 'shark', 'fiveo'].includes(pola.pola)) {
     ;[, p1, p2, p3] = pola.titik; dasar = `A→B diproyeksikan dari C (AB=CD) pola ${pola.nama}`
   } else {
     const leg = legTerakhir(bars, th, 3) || legTerakhir(bars, th / 2, 3)
@@ -357,7 +512,7 @@ export function rencanaPosisi(bars = [], arah = 'long', polaList = [], th = 0.06
   const pola = polaList.find(r => r.arah === (long ? 'bullish' : 'bearish'))
   let entry, stop, target, i0, dasar, polaRef = null
   if (pola) {
-    const D = pola.titik[4]
+    const D = pola.titik[pola.titik.length - 1]
     entry = D.proyeksi ? (long ? pola.prz[1] : pola.prz[0]) : D.p
     stop = pola.stop
     target = pola.target
@@ -391,7 +546,7 @@ export function rencanaPosisi(bars = [], arah = 'long', polaList = [], th = 0.06
     arah, dasar, pola: polaRef, entry, stop, target, i0, harga: akhir,
     stopPct: pct(entry, stop), targetPct: target.map(t => pct(entry, t)),
     rr: target.map(t => risiko ? Math.round(Math.abs(t - entry) / risiko * 100) / 100 : null),
-    aktif: polaRef ? (polaRef.titik[4].proyeksi ? 'menunggu harga masuk PRZ' : polaRef.status === 'prz' ? 'harga di PRZ' : 'sudah berbalik dari D') : 'harga terakhir',
+    aktif: polaRef ? (polaRef.titik.at(-1).proyeksi ? 'menunggu harga masuk PRZ' : polaRef.status === 'prz' ? 'harga di PRZ' : 'sudah berbalik dari D') : 'harga terakhir',
   }
 }
 
@@ -406,6 +561,10 @@ export const PEMBEDA = {
   deepcrab: 'B dalam di 0,886 XA, D di 1,618 XA.',
   cypher: 'C melewati A (1,272–1,414 XA), D di 0,786 kaki XC.',
   shark: 'C melewati A (1,13–1,618 AB), D kembali ke sekitar level X (0,886–1,13 XC).',
+  fiveo: 'B melewati X (1,13–1,618 XA), C melewati A (1,618–2,24 AB), dan D tepat di retracement 0,50 kaki BC.',
+  abcd: 'Hanya empat titik: C koreksi 0,382–0,886 AB dan kaki CD sama panjang dengan AB.',
+  altabcd: 'Empat titik seperti AB=CD, tetapi kaki CD memanjang 1,27–1,618 kali AB.',
+  tigadorongan: 'Tiga dorongan searah; dorongan kedua dan ketiga masing-masing 1,27–1,618 kali koreksi sebelumnya.',
 }
 const tgh = r => r ? (r[0] + r[1]) / 2 : null
 const teksRg = r => r[0] === r[1] ? String(r[0]).replace('.', ',') : `${String(r[0]).replace('.', ',')}–${String(r[1]).replace('.', ',')}`
@@ -413,13 +572,14 @@ const teksRg = r => r[0] === r[1] ? String(r[0]).replace('.', ',') : `${String(r
 // Bentuk ideal pola (nilai tengah tiap rentang rasio) dalam kotak 0..1: titik X-A-B-C-D (x, y; y 0 = atas) dan garis
 // rasio putus-putus berlabel rentang baku, seperti tabel ilustrasi pola.
 export function diagramIdeal(k, arah = 'bullish') {
+  if (POLA_LAIN[k]) return diagramLain(k, arah)
   const p = POLA[k]
   if (!p) return null
   const v = { X: 0, A: 1 }
   v.B = 1 - tgh(p.b)
   if (p.cx) v.C = tgh(p.cx)
   else v.C = v.B + tgh(p.c) * (1 - v.B)
-  v.D = p.d ? 1 - tgh(p.d) : v.C - tgh(p.dc) * (v.C - v.X)
+  v.D = p.d ? 1 - tgh(p.d) : p.dbc ? v.C + (v.B - v.C) * tgh(p.dbc) : v.C - tgh(p.dc) * (v.C - v.X)
   const nilai = Object.values(v), lo = Math.min(...nilai), hi = Math.max(...nilai)
   const bull = arah === 'bullish'
   const titik = ['X', 'A', 'B', 'C', 'D'].map((n, j) => {
@@ -431,12 +591,36 @@ export function diagramIdeal(k, arah = 'bullish') {
   if (p.cx) garis.push({ a: X, b: C, teks: teksRg(p.cx) })
   else garis.push({ a: A, b: C, teks: teksRg(p.c) })
   if (p.e) garis.push({ a: B, b: D, teks: teksRg(p.e) })
-  garis.push({ a: p.d ? X : C, b: D, teks: teksRg(p.d || p.dc) })
+  if (p.dbc) garis.push({ a: B, b: D, teks: teksRg(p.dbc) })
+  else garis.push({ a: p.d ? X : C, b: D, teks: teksRg(p.d || p.dc) })
   return { titik, garis, bull }
+}
+
+// Bentuk ideal AB=CD (empat titik) dan Three Drives (enam titik) dalam kotak 0..1; bullish = titik akhir di bawah.
+function diagramLain(k, arah) {
+  const p = POLA_LAIN[k], bull = arah === 'bullish'
+  let nama, v, garis
+  if (p.bentuk === 'abcd') {
+    const cd = tgh(p.cd), c = 0.618
+    v = [1, 0, c, c - cd]; nama = ['A', 'B', 'C', 'D']
+    garis = [[0, 2, teksRg(ABCD_C)], [1, 3, teksRg(ABCD_E)], [0, 3, 'CD ' + teksRg(p.cd) + ' AB']]
+  } else {   // Three Drives turun (bullish): koreksi 0,618, dorongan tengah rentang
+    const d = tgh(p.dorong)
+    const P = [1, 0.45]
+    P.push(P[1] + 0.618 * (P[0] - P[1])); P.push(P[2] - d * (P[2] - P[1]))
+    P.push(P[3] + 0.618 * (P[2] - P[3])); P.push(P[4] - d * (P[4] - P[3]))
+    v = P; nama = ['0', '1', 'A', '2', 'B', '3']
+    garis = [[1, 3, teksRg(p.dorong)], [3, 5, teksRg(p.dorong)]]
+  }
+  const lo = Math.min(...v), hi = Math.max(...v), N = v.length
+  // v makin besar makin tinggi; bullish = titik akhir terendah, bearish dibalik.
+  const titik = v.map((x, j) => { const t = (x - lo) / (hi - lo); return { n: nama[j], x: j / (N - 1), y: bull ? 1 - t : t } })
+  return { titik, garis: garis.map(([a, b, teks]) => ({ a: titik[a], b: titik[b], teks })), bull }
 }
 
 // Alasan pola terdeteksi: tiap rasio aktual dibanding rentang baku pola (dengan toleransi TOL).
 export function alasanPola(row, tol = TOL) {
+  if (row?.alasan) return row.alasan
   const p = row && POLA[row.pola]
   if (!p) return []
   const r = row.rasio || {}, out = []
@@ -450,6 +634,7 @@ export function alasanPola(row, tol = TOL) {
   if (r.d != null) {
     if (p.d) tambah('Titik D: AD/XA', r.d, p.d)
     if (p.dc) tambah('Titik D: CD/XC', r.dc, p.dc)
+    if (p.dbc) tambah('Titik D: retracement DC/BC', r.dbc, p.dbc)
     if (p.e) tambah('Proyeksi CD/BC', r.e, p.e, 2)
   }
   return out
@@ -463,15 +648,16 @@ export function alasanX(row, bars = []) {
   const [x, a] = t, bull = a.p > x.p, tgl = i => String(bars[i]?.d || '').slice(0, 10)
   const fh = p => Number(p).toLocaleString('id-ID', { maximumFractionDigits: p < 200 ? 1 : 0 })
   const naik = Math.abs(a.p / x.p - 1) * 100
+  const X = x.n, A = a.n   // nama titik awal (X, A, atau 0) dan titik kedua pola
   const out = [
-    `X = ${bull ? 'swing low' : 'swing high'} ${fh(x.p)} (${tgl(x.i)}): ${bull ? 'titik terendah' : 'titik tertinggi'} sebelum harga ${bull ? 'naik' : 'turun'} ${naik.toLocaleString('id-ID', { maximumFractionDigits: 1 })}% ke A ${fh(a.p)} (${tgl(a.i)}). Di antara X dan A tidak ada harga yang ${bull ? 'lebih rendah dari X' : 'lebih tinggi dari X'}.`,
+    `${X} = ${bull ? 'swing low' : 'swing high'} ${fh(x.p)} (${tgl(x.i)}): ${bull ? 'titik terendah' : 'titik tertinggi'} sebelum harga ${bull ? 'naik' : 'turun'} ${naik.toLocaleString('id-ID', { maximumFractionDigits: 1 })}% ke ${A} ${fh(a.p)} (${tgl(a.i)}). Di antara ${X} dan ${A} tidak ada harga yang ${bull ? 'lebih rendah dari ' + X : 'lebih tinggi dari ' + X}.`,
     `Swing dicari otomatis dengan zigzag: titik baru diakui bila harga berbalik minimal ${Math.round((row.skala || 0) * 100)}% dari ekstrem sebelumnya, sehingga gerak kecil diabaikan.`,
   ]
   if (row.pola) {
-    out.push(`X dipakai karena dari kaki XA inilah B, C, dan D cocok dengan rasio ${row.nama}. Swing lain sebelum atau sesudahnya tidak menghasilkan rasio yang cocok.`)
-    out.push(STOP_PRZ.has(row.pola)
-      ? `Pada ${row.nama}, D boleh melewati X; batas batal pola adalah sisi luar PRZ.`
-      : `X juga batas batal: bila harga menembus ${fh(x.p)}, pola ${row.nama} gugur.`)
+    out.push(`${X} dipakai karena dari kaki ${X}${A} inilah titik-titik berikutnya cocok dengan rasio ${row.nama}. Swing lain sebelum atau sesudahnya tidak menghasilkan rasio yang cocok.`)
+    out.push(row.stop === x.p
+      ? `${X} juga batas batal: bila harga menembus ${fh(x.p)}, pola ${row.nama} gugur.`
+      : `Batas batal ${row.nama} ada di ${fh(row.stop)} (${STOP_PRZ.has(row.pola) || POLA_LAIN[row.pola] ? 'sisi luar PRZ' : 'aturan pola'}), bukan di ${X}.`)
   } else {
     out.push('Rasio dari kaki XA ini belum cocok dengan pola baku, jadi X di sini hanya awal lima swing terakhir, bukan awal pola.')
   }
@@ -510,8 +696,9 @@ export function candleBalik(bars, i, bull) {
 // ditambah volume di D sesuai materi). Pola "menuju" (D belum terbentuk) tidak punya konfirmasi.
 export function konfirmasiD(bars = [], row = null) {
   const t = row?.titik
-  if (!row?.pola || !t || t.length < 5 || t[4].proyeksi) return null
-  const bull = row.arah === 'bullish', B = t[2], D = t[4], n = bars.length
+  if (!row?.pola || !t || t.length < 4 || t[t.length - 1].proyeksi) return null
+  // B = swing sejenis sebelum titik akhir (dua titik sebelumnya), D = titik akhir pola.
+  const bull = row.arah === 'bullish', B = t[t.length - 3], D = t[t.length - 1], n = bars.length
   const cek = []
   let candle = null
   for (let i = D.i; i < n; i++) { const c = candleBalik(bars, i, bull); if (c) { candle = { i, nama: c }; break } }
@@ -542,16 +729,17 @@ export function konfirmasiD(bars = [], row = null) {
 // Jarak waktu panah hanya ilustrasi (kelipatan durasi kaki CD), bukan proyeksi waktu.
 export function skenarioD(row) {
   const t = row?.titik
-  if (!row?.pola || !t || t.length < 5 || !row.target) return []
-  const C = t[3], D = t[4], bull = row.arah === 'bullish', s = bull ? 1 : -1
+  if (!row?.pola || !t || t.length < 4 || !row.target) return []
+  const C = t[t.length - 2], D = t[t.length - 1], bull = row.arah === 'bullish', s = bull ? 1 : -1
+  const ketT = row.ketTarget || ['0,382 ' + (row.kaki || 'AD'), '0,618 ' + (row.kaki || 'AD')]
   const lebar = Math.max(5, D.i - C.i), ke = k => D.i + Math.round(lebar * k)
   const fh = p => Number(p).toLocaleString('id-ID', { maximumFractionDigits: p < 200 ? 1 : 0 })
   const out = [
     // Bullish: target naik (untuk beli/Long). Bearish: target turun (untuk jual, ambil untung, atau Short).
-    { k: 't1', jenis: 'target', label: `Target ${bull ? 'naik' : 'turun'} 1 (0,382 ${row.kaki || 'AD'}) ${fh(row.target[0])}`, dari: D, ke: { i: ke(0.6), p: row.target[0] } },
-    { k: 't2', jenis: 'target', label: `Target ${bull ? 'naik' : 'turun'} 2 (0,618 ${row.kaki || 'AD'}) ${fh(row.target[1])}`, dari: D, ke: { i: ke(1), p: row.target[1] } },
+    { k: 't1', jenis: 'target', label: `Target ${bull ? 'naik' : 'turun'} 1 (${ketT[0]}) ${fh(row.target[0])}`, dari: D, ke: { i: ke(0.6), p: row.target[0] } },
+    { k: 't2', jenis: 'target', label: `Target ${bull ? 'naik' : 'turun'} 2 (${ketT[1]}) ${fh(row.target[1])}`, dari: D, ke: { i: ke(1), p: row.target[1] } },
   ]
-  if (s * (C.p - row.target[1]) > 0) out.push({ k: 'c', jenis: 'target', label: `Target ${bull ? 'naik' : 'turun'} lanjutan: titik C ${fh(C.p)}`, dari: D, ke: { i: ke(1.4), p: C.p } })
+  if (s * (C.p - row.target[1]) > 0) out.push({ k: 'c', jenis: 'target', label: `Target ${bull ? 'naik' : 'turun'} lanjutan: titik ${C.n} ${fh(C.p)}`, dari: D, ke: { i: ke(1.4), p: C.p } })
   // Jalur gagal: panah sedikit melewati level stop; level stop sendiri digambar sebagai garis batas berlabel.
   const lewat = Math.max(Math.abs(D.p - row.stop) * 0.35, D.p * 0.01)
   out.push({ k: 'gagal', jenis: 'gagal', label: `Batal bila close menembus ${fh(row.stop)}`, dari: D, ke: { i: ke(0.6), p: row.stop - s * lewat }, stop: row.stop })
@@ -618,6 +806,10 @@ export function rasioContoh(k) {
   const p = POLA[k], t = rg => (rg[0] + rg[1]) / 2
   if (!p) return null
   const b = t(p.b)
+  if (p.dbc) {   // 5-0: C = B + c x (A - B) melewati A, D = retracement dbc kaki BC
+    const B = 1 - b, c = t(p.c), C = B + c * (1 - B), D = C + (B - C) * t(p.dbc)
+    return { b, c, d: 1 - D }
+  }
   if (p.cx) {   // C = cx x XA di atas X; D = C - dc x XC
     const C = t(p.cx), B = 1 - b, c = (C - B) / (1 - B), D = C - t(p.dc) * C
     return { b, c, d: 1 - D }

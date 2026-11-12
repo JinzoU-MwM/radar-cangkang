@@ -10,7 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { createChart, CrosshairMode, LineStyle } from 'lightweight-charts'
 import { api } from '../api.js'
 import { store, toast } from '../store.js'
-import { SKALA, TF, POLA, PEMBEDA, alasanPola, alasanX, diagramIdeal, konfirmasiD, skenarioD, trenBesar, nilaiTren, jarakElliott, cariElliott, cariXabcd, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
+import { SKALA, TF, POLA, PEMBEDA, alasanPola, alasanX, diagramIdeal, konfirmasiD, skenarioD, trenBesar, nilaiTren, jarakElliott, cariElliott, cariPola, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
 import { ukuranPosisi } from '../lib/harmonikBelajar.js'
 import { ema } from '../lib/ta.js'
 import PolaDiagram from '../components/PolaDiagram.vue'
@@ -89,7 +89,8 @@ function pilih(t) {
 const nama = computed(() => (kodeBei.value || []).find(k => k.t === kode.value)?.nama || store.items.find(i => i.ticker === kode.value)?.name || '')
 
 // --------------------------------------------------------------- analisa ----
-const polaList = computed(() => bars.value.length ? cariXabcd(bars.value, skala.value, tf.value === 'D' ? 30 : 12) : [])
+// Semua pola aktif: XABCD (termasuk 5-0), Three Drives, dan AB=CD.
+const polaList = computed(() => bars.value.length ? cariPola(bars.value, skala.value, tf.value === 'D' ? 30 : 12) : [])
 const pilihPola = ref(0)
 watch(polaList, () => { pilihPola.value = 0 })
 const xabcd = computed(() => polaList.value[pilihPola.value] || (bars.value.length ? swingXabcd(bars.value, skala.value) : null))
@@ -379,21 +380,15 @@ const gambar = computed(() => {
   if (aktif.value.includes('xabcd') && h.xabcd) {
     const x = h.xabcd, p = titikXY(x.titik)
     if (p.every(t => ok(t.x, t.y))) {
-      const [Xp, A, B, C, D] = p, r = x.rasio || {}
-      // Garis rasio mengikuti kriteria pola: B (AB/XA), C (BC/AB atau XC/XA untuk Cypher), D (AD/XA atau CD/XC),
-      // dan proyeksi BC (CD/BC). Tanpa pola: rasio dasar XABCD.
-      const kr = POLA[x.pola] || { b: 1, c: 1, d: 1, e: 1 }
-      const garis = [[Xp, B, r.b, 'AB/XA'],
-        kr.cx ? [Xp, C, r.cx, 'XC/XA'] : [A, C, r.c, 'BC/AB'],
-        kr.dc ? [C, D, r.dc, 'CD/XC'] : [Xp, D, r.d, 'AD/XA'],
-        ...(kr.e ? [[B, D, r.e, 'CD/BC']] : [])]
+      // Pola 4 titik (AB=CD), 5 titik (XABCD, 5-0), atau 6 titik (Three Drives): garis rasio dan segitiga dari lib.
+      const C = p[p.length - 2], D = p[p.length - 1]
       out.xabcd = {
         bull: x.arah === 'bullish',
-        segi: [[Xp, A, B], [B, C, D]].map(s => s.map(t => `${t.x},${t.y}`).join(' ')),
-        jalur: p.slice(0, 4).map(t => `${t.x},${t.y}`).join(' '),
+        segi: (x.segi || []).map(s => s.map(j => `${p[j].x},${p[j].y}`).join(' ')),
+        jalur: p.slice(0, -1).map(t => `${t.x},${t.y}`).join(' '),
         cd: { a: C, b: D, proyeksi: !!D.proyeksi },
-        rasio: garis.filter(g => g[2] != null).map(([a, b, v, k]) => ({ a, b, m: tengah(a, b), teks: r2(v), k })),
-        titik: p.map((t, j) => ({ ...t, atas: j === 0 ? t.p >= p[1].p : t.p >= (p[j - 1]?.p ?? 0) })),
+        rasio: (x.garis || []).map(g => ({ a: p[g.a], b: p[g.b], m: tengah(p[g.a], p[g.b]), teks: r2(g.v), k: g.k })),
+        titik: p.map((t, j) => ({ ...t, awal: j === 0, atas: j === 0 ? t.p >= p[1].p : t.p >= (p[j - 1]?.p ?? 0) })),
         prz: x.prz && ok(Y(x.prz[0]), Y(x.prz[1])) ? { x1: C.x, x2: Math.min(W, D.x + Math.max(40, (D.x - C.x) * 0.6)), y1: Y(x.prz[1]), y2: Y(x.prz[0]) } : null,
         label: x.pola ? `${x.nama} ${x.arah}` : 'Swing terakhir (bukan pola)',
         // Panah skenario dari D: garis + kepala panah (segitiga) di ujung.
@@ -480,13 +475,15 @@ const IDEAL = k => {
   const p = POLA[k]
   if (!p) return {}
   const t = rg => rg[0] === rg[1] ? r2(rg[0]) : `${r2(rg[0])}–${r2(rg[1])}`
-  return { b: p.b && t(p.b), c: p.c && t(p.c), cx: p.cx && t(p.cx), d: p.d && t(p.d), dc: p.dc && t(p.dc), e: p.e && t(p.e) }
+  return { b: p.b && t(p.b), c: p.c && t(p.c), cx: p.cx && t(p.cx), d: p.d && t(p.d), dc: p.dc && t(p.dc), dbc: p.dbc && t(p.dbc), e: p.e && t(p.e) }
 }
 const barisRasio = computed(() => {
   const x = hasil.value.xabcd
   if (!x) return []
+  // Pola dengan alasan siap pakai (AB=CD, Three Drives): rasio aktual dan rentang materinya.
+  if (x.alasan) return x.alasan.map(a => [a.teks, a.aktual, a.ideal])
   const id = IDEAL(x.pola), r = x.rasio || {}
-  const semua = [['b', 'AB/XA (titik B)'], ['c', 'BC/AB (titik C)'], ['cx', 'XC/XA (C melewati A)'], ['d', 'AD/XA (titik D)'], ['dc', 'CD/XC'], ['e', 'CD/BC (proyeksi BC)']]
+  const semua = [['b', 'AB/XA (titik B)'], ['c', 'BC/AB (titik C)'], ['cx', 'XC/XA (C melewati A)'], ['d', 'AD/XA (titik D)'], ['dc', 'CD/XC'], ['dbc', 'DC/BC (titik D)'], ['e', 'CD/BC (proyeksi BC)']]
   // Tanpa pola: rasio dasar XABCD saja; dengan pola: rasio yang dipakai pola itu.
   return semua.filter(([k]) => r[k] != null && (x.pola ? id[k] : ['b', 'c', 'd', 'e'].includes(k))).map(([k, nm]) => [nm, r[k], id[k]])
 })
@@ -716,10 +713,10 @@ async function unduh() {
               <line :x1="g.a.x" :y1="g.a.y" :x2="g.b.x" :y2="g.b.y" class="rasio" />
               <text :x="g.m.x" :y="g.m.y" class="rt">{{ g.teks }}</text>
             </g>
-            <g v-for="t in gambar.xabcd.titik" :key="t.n">
+            <g v-for="t in gambar.xabcd.titik" :key="t.n + t.i">
               <circle :cx="t.x" :cy="t.y" r="4" class="pt" :class="{ proy: t.proyeksi }" />
               <text :x="t.x" :y="t.atas ? t.y - 10 : t.y + 19" class="nt">{{ t.n }}</text>
-              <text v-if="t.n === 'X'" :x="t.x" :y="t.atas ? t.y - 24 : t.y + 33" class="xket">{{ gambar.xabcd.bull ? 'swing low awal pola' : 'swing high awal pola' }}</text>
+              <text v-if="t.awal" :x="t.x" :y="t.atas ? t.y - 24 : t.y + 33" class="xket">{{ gambar.xabcd.bull ? 'swing low awal pola' : 'swing high awal pola' }}</text>
             </g>
             <g v-for="p in gambar.xabcd.panah" :key="p.k" class="panah" :class="p.jenis">
               <line :x1="p.x1" :y1="p.y1" :x2="p.x2" :y2="p.y2" />
@@ -735,7 +732,7 @@ async function unduh() {
               <path :d="gambar.xabcd.tanda.bull ? `M${gambar.xabcd.tanda.x},${gambar.xabcd.tanda.y} l-5,9 h10 z` : `M${gambar.xabcd.tanda.x},${gambar.xabcd.tanda.y} l-5,-9 h10 z`" />
               <text :x="gambar.xabcd.tanda.x" :y="gambar.xabcd.tanda.bull ? gambar.xabcd.tanda.y + 21 : gambar.xabcd.tanda.y - 13">{{ gambar.xabcd.tanda.nama }}</text>
             </g>
-            <text :x="gambar.xabcd.titik[4].x + 8" :y="gambar.xabcd.titik[4].y + (gambar.xabcd.bull ? 34 : -26)" class="nama">{{ gambar.xabcd.label }}</text>
+            <text :x="gambar.xabcd.titik.at(-1).x + 8" :y="gambar.xabcd.titik.at(-1).y + (gambar.xabcd.bull ? 34 : -26)" class="nama">{{ gambar.xabcd.label }}</text>
           </g>
           <!-- Elliott -->
           <g v-if="gambar.elliott" class="ew">
@@ -814,8 +811,8 @@ async function unduh() {
             <dl v-if="hasil.xabcd.pola" class="dl">
               <dt>PRZ</dt><dd>{{ fmtH(hasil.xabcd.prz[0]) }}–{{ fmtH(hasil.xabcd.prz[1]) }}</dd>
               <dt>Stop (pola batal)</dt><dd class="dn">{{ fmtH(hasil.xabcd.stop) }}</dd>
-              <dt>Target 1 · 0,382 {{ hasil.xabcd.kaki }}</dt><dd :class="hasil.xabcd.arah === 'bullish' ? 'up' : 'dn'">{{ fmtH(hasil.xabcd.target[0]) }}</dd>
-              <dt>Target 2 · 0,618 {{ hasil.xabcd.kaki }}</dt><dd :class="hasil.xabcd.arah === 'bullish' ? 'up' : 'dn'">{{ fmtH(hasil.xabcd.target[1]) }}</dd>
+              <dt>Target 1 · {{ hasil.xabcd.ketTarget?.[0] }}</dt><dd :class="hasil.xabcd.arah === 'bullish' ? 'up' : 'dn'">{{ fmtH(hasil.xabcd.target[0]) }}</dd>
+              <dt>Target 2 · {{ hasil.xabcd.ketTarget?.[1] }}</dt><dd :class="hasil.xabcd.arah === 'bullish' ? 'up' : 'dn'">{{ fmtH(hasil.xabcd.target[1]) }}</dd>
             </dl>
           </template>
           <!-- Fib -->
@@ -883,7 +880,7 @@ async function unduh() {
       <div class="grid">
         <article>
           <h3>XABCD pattern</h3>
-          <p>Menandai lima swing terakhir X-A-B-C-D, lalu mencocokkan rasio Fibonacci antarkaki dengan pola harmonik: Gartley, Bat, Alternate Bat, Butterfly, Crab, Deep Crab, Cypher, dan Shark.
+          <p>Menandai swing terakhir lalu mencocokkan rasio Fibonacci antarkaki dengan pola harmonik: Gartley, Bat, Alternate Bat, Butterfly, Crab, Deep Crab, Cypher, Shark, dan 5-0 (lima titik X-A-B-C-D), Three Drives (enam titik, tiga dorongan), serta AB=CD dan Alternate AB=CD (empat titik).
             Kotak PRZ (Potential Reversal Zone) adalah area tempat D diperkirakan selesai dan harga berpotensi berbalik. Bullish berarti potensi naik dari D, bearish potensi turun.
             Bila ada beberapa pola, tombol ‹ › di panel kanan berpindah antarpola. Pola batal bila harga menembus X (Gartley, Bat, Cypher) atau sisi luar PRZ.</p>
         </article>
