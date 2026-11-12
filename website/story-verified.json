@@ -91,9 +91,9 @@
                  "injectType":  "Akuisisi saham (29,88%)",
                  "injectTarget":  "PT Sinergi Inti Andalan Prima Tbk (INET)",
                  "nominal":  "Rp2,01 T",
-                 "target":  "RUPSLB 9 November 2026",
-                 "sourceDate":  "2026-10-01",
-                 "sourceTitle":  "Rencana Transaksi Material Dengan Persetujuan RUPS",
+                 "target":  "Disetujui RUPSLB 9 November 2026; menunggu pernyataan efektif PMHMETD I",
+                 "sourceDate":  "2026-11-10",
+                 "sourceTitle":  "Ringkasan Risalah Rapat Umum Para Pemegang Saham Luar Biasa",
                  "note":  "Akuisisi dilakukan lewat entitas anak dan didanai pinjaman pemegang saham hingga Rp2 T. Ada juga rencana PMHMETD I maksimal 154,78 miliar saham yang menunggu RUPSLB yang sama. Tender wajib Rp148 berakhir nihil (4 Nov 2026); keterbukaan tambahan 5 Nov 2026 menegaskan pinjaman SII hingga Rp5 T (penarikan awal Rp2 T) dan rasio PMHMETD 20:1."
              },
     "EPAC":  {
@@ -203,10 +203,10 @@
                  "injectType":  "Penambahan modal (HMETD)",
                  "injectTarget":  "",
                  "nominal":  "",
-                 "sourceDate":  "2026-09-29",
-                 "sourceTitle":  "Penjelasan atas Permintaan Penjelasan Bursa",
+                 "sourceDate":  "2026-11-10",
+                 "sourceTitle":  "Informasi atau fakta material sehubungan dengan perubahan pengendalian terhadap Perseroan",
                  "note":  "PT Nawasena Nugra Investama mengambil alih 66,58%; PMHMETD baru sebatas rencana tanpa nilai, jadwal, atau bisnis baru yang disebutkan.",
-                 "target":  "Belum ditetapkan; nilai dan jadwal penyelesaian akuisisi masih dinegosiasikan. Agenda terdekat: RUPSLB 23 Oktober 2026 (perubahan pengurus dan penyesuaian Pasal 3 AD ke KBLI 2025)",
+                 "target":  "Tender wajib oleh PT Nawasena Nugra Investama (harga dan jadwal belum diumumkan); pengambilalihan 66,58% di Rp53,73 tuntas",
                  "sumberTambahan":  [
                                         "Saham IDEA Melonjak usai Nawa Capital Bidik Akuisisi 66,58% — Fortune IDN, 2026-09-16",
                                         "Nawasena Nugra Negosiasi Akuisisi 66,58% Idea Indonesia Akademi (IDEA) — Investortrust, 2026-09-16",
@@ -459,7 +459,7 @@
                  "sourceDate":  "2026-07-23",
                  "sourceTitle":  "Tanggapan atas Permintaan Penjelasan Bursa",
                  "injectTarget":  "PT Sumber Prima Anugrah Abadi (pengolahan daging; porsi belum diungkap) dan kerja sama strategis Bakso Sumber Seleras (ejaan IDX Channel)",
-                 "note":  "Visionary Capital Global mengambil alih 56,84% senilai Rp40,6 M (harga akuisisi pengendali, bukan injeksi). Rights issue akhir 2026 tanpa nilai. Dana rights issue (PMHMETD) direncanakan untuk pengembangan usaha, termasuk akuisisi PT Sumber Prima Anugrah Abadi; pelaksanaan ditargetkan akhir 2026 dengan syarat pencabutan suspensi, kondisi pasar, dan persetujuan regulator. Jumlah saham, harga, dan nilai belum diungkap.",
+                 "note":  "Visionary Capital Global mengambil alih 56,84% senilai Rp40,6 M (harga akuisisi pengendali, bukan injeksi). Rights issue akhir 2026 tanpa nilai. Dana rights issue (PMHMETD) direncanakan untuk pengembangan usaha, termasuk akuisisi PT Sumber Prima Anugrah Abadi; pelaksanaan ditargetkan akhir 2026 dengan syarat pencabutan suspensi, kondisi pasar, dan persetujuan regulator. Jumlah saham, harga, dan nilai belum diungkap. Tender wajib Rp56 per saham (maks. 21,47%) berlangsung 9 Nov-8 Des 2026.",
                  "sumberTambahan":  [
                                         "Keterbukaan Informasi atas Informasi atau Fakta Material — Stockbit Reports, 2026-10-05",
                                         "Laporan Hasil Public Expose - Tahunan — Stockbit Reports, 2026-06-15",
@@ -474,9 +474,9 @@
                  "injectType":  "Inbreng saham (PMHMETD IV)",
                  "injectTarget":  "PT Frisian Flag Indonesia (100%)",
                  "nominal":  "Rp14,57 T",
-                 "target":  "RUPSLB 27 Oktober 2026",
-                 "sourceDate":  "2026-09-18",
-                 "sourceTitle":  "Rencana Transaksi Material Dengan Persetujuan RUPS",
+                 "target":  "Disetujui RUPSLB 6 November 2026; perdagangan HMETD 14-20 Januari 2027",
+                 "sourceDate":  "2026-11-10",
+                 "sourceTitle":  "Penyampaian Prospektus",
                  "note":  "FrieslandCampina International Holding B.V. akan menjadi pengendali baru. Tanggal penyelesaian inbreng belum disebut."
              },
     "VISI":  {
@@ -610,9 +610,9 @@
                  "injectType":  "Penambahan modal tanpa HMETD (private placement)",
                  "injectTarget":  "",
                  "nominal":  "Rp125 M",
-                 "target":  "Pencatatan BEI 11 Desember 2026",
-                 "sourceDate":  "2026-09-29",
-                 "sourceTitle":  "Penambahan modal tanpa HMETD - Penempatan Terbatas (Private Placement)",
+                 "target":  "RUPSLB 6 November 2026 dibatalkan; jadwal pengganti dan pencatatan belum diumumkan",
+                 "sourceDate":  "2026-11-11",
+                 "sourceTitle":  "Pembatalan Rapat Umum Pemegang Saham Luar Biasa",
                  "note":  "Dana PP untuk penyertaan modal anak (79,2%) dan pelunasan utang; terpisah, INPS mengakuisisi 90% PT Tri Satria Indah Motor senilai Rp5,8 M (5 Okt 2026); RUPSLB 3 November 2026.",
                  "sumberTambahan":  [
                                         "Tender Wajib Indah Prakasa (INPS) Sepi Peminat, Graha Inti Hanya Serap 5.000 Saham — Kontan, 2026-07-27",
