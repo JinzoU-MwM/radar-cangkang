@@ -1,10 +1,10 @@
 <script setup>
-// Tab Materi halaman Harmonic Pattern: presentasi ringkasan Harmonic Trading Vol. 1 (Carney) untuk saham BEI.
-// Daftar isi di kiri, slide di kanan (panah kiri/kanan untuk pindah), diagram pola ideal, daftar periksa dan rencana
-// belajar yang bisa dicentang (tersimpan di browser), kuis di slide terakhir, dan tombol "Coba di chart" yang
-// membuka tab Saham dengan alat terkait aktif.
+// Tab Materi halaman Harmonic Pattern: presentasi bergaya makalah (Pendahuluan sampai Penutup dan Lampiran) dari
+// Harmonic Trading Vol. 1 (Carney) untuk saham BEI. Daftar isi per bagian di kiri, slide di kanan (panah kiri/kanan),
+// paragraf, tabel, diagram pola ideal, rujukan bab, daftar periksa dan rencana belajar yang bisa dicentang (tersimpan
+// di browser), kuis di slide terakhir, dan tombol "Coba di chart" yang membuka tab Saham dengan alat terkait aktif.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { SLIDE, diagramAbcd, totalSlide } from '../lib/harmonikMateri.js'
+import { BAGIAN, SLIDE, diagramAbcd, totalSlide } from '../lib/harmonikMateri.js'
 import { diagramIdeal } from '../lib/harmonikAlat.js'
 import { KUIS, nilaiKuis } from '../lib/harmonikBelajar.js'
 import PolaDiagram from './PolaDiagram.vue'
@@ -40,6 +40,27 @@ watch(centang, v => simpan('centang', v), { deep: true })
 const kunciC = (id, i) => `${id}:${i}`
 const jumlahCentang = id => Object.keys(centang.value).filter(k => k.startsWith(id + ':') && centang.value[k]).length
 
+// Daftar isi per bagian (nomor Romawi); slide kuis masuk Lampiran.
+const ROMAWI = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']
+const isi = computed(() => BAGIAN.map((b, n) => ({ b, no: ROMAWI[n],
+  slide: [...SLIDE.map((s, i) => ({ i, judul: s.judul, bagian: s.bagian })), { i: totalSlide - 1, judul: 'Kuis', bagian: 'Lampiran' }].filter(x => x.bagian === b) }))
+  .filter(g => g.slide.length))
+const bagianKini = computed(() => slide.value?.bagian || 'Lampiran')
+const noBagian = b => ROMAWI[BAGIAN.indexOf(b)] || ''
+const terbuka = ref({})
+watch(bagianKini, b => { terbuka.value = { ...terbuka.value, [b]: true } }, { immediate: true })
+
+// Unduh seluruh materi sebagai dokumen bergaya makalah (jsPDF dimuat saat tombol ditekan).
+const busyPdf = ref(false)
+async function unduh() {
+  if (busyPdf.value) return
+  busyPdf.value = true
+  try {
+    const [{ jsPDF }, P] = await Promise.all([import('jspdf'), import('../lib/materiPdf.js')])
+    P.materiPdf({ slide: SLIDE, bagian: BAGIAN, kuis: KUIS }, jsPDF).save(P.materiPdfName())
+  } finally { busyPdf.value = false }
+}
+
 const jawab = ref({})
 const nilai = computed(() => nilaiKuis(jawab.value))
 </script>
@@ -47,11 +68,14 @@ const nilai = computed(() => nilaiKuis(jawab.value))
 <template>
   <section class="mt">
     <nav class="isi" aria-label="Daftar isi materi">
-      <p class="small mute">Daftar isi</p>
-      <ol>
-        <li v-for="(s, i) in SLIDE" :key="s.id"><button type="button" :class="{ on: ke === i }" @click="ke = i">{{ s.judul }}</button></li>
-        <li><button type="button" :class="{ on: ke === totalSlide - 1 }" @click="ke = totalSlide - 1">Kuis</button></li>
-      </ol>
+      <button type="button" class="btn unduhM" :disabled="busyPdf" @click="unduh">{{ busyPdf ? 'Menyiapkan PDF…' : 'Unduh materi (PDF)' }}</button>
+      <p class="small mute">Daftar isi · {{ totalSlide }} slide</p>
+      <details v-for="g in isi" :key="g.b" class="grup" :open="terbuka[g.b]" @toggle="e => terbuka = { ...terbuka, [g.b]: e.target.open }">
+        <summary :class="{ kini: g.b === bagianKini }"><b>{{ g.no }}.</b> {{ g.b }} <span class="mute">({{ g.slide.length }})</span></summary>
+        <ol>
+          <li v-for="x in g.slide" :key="x.i"><button type="button" :class="{ on: ke === x.i }" @click="ke = x.i">{{ x.judul }}</button></li>
+        </ol>
+      </details>
     </nav>
 
     <div class="panggung">
@@ -59,12 +83,13 @@ const nilai = computed(() => nilaiKuis(jawab.value))
       <article class="slide" aria-live="polite">
         <template v-if="slide">
           <header>
-            <span class="no">{{ ke + 1 }} / {{ totalSlide }}</span>
+            <span class="no">Bagian {{ noBagian(slide.bagian) }} · {{ slide.bagian }} · slide {{ ke + 1 }} / {{ totalSlide }}</span>
             <h2>{{ slide.judul }}</h2>
             <p v-if="slide.sub" class="sub">{{ slide.sub }}</p>
           </header>
           <div class="isiSlide" :class="{ dg: diagram }">
             <div>
+              <p v-for="(t, i) in slide.paragraf || []" :key="'p' + i" class="prosa">{{ t }}</p>
               <ul v-if="slide.poin && !slide.periksa" class="poin">
                 <li v-for="(p, i) in slide.poin" :key="i">{{ p }}</li>
               </ul>
@@ -88,10 +113,11 @@ const nilai = computed(() => nilaiKuis(jawab.value))
               <figcaption class="small mute">Bentuk ideal (bullish). Bearish adalah cerminannya.</figcaption>
             </figure>
           </div>
+          <p v-if="slide.rujukan" class="rujukan small mute">Rujukan: {{ slide.rujukan }}</p>
         </template>
         <template v-else>
           <header>
-            <span class="no">{{ ke + 1 }} / {{ totalSlide }}</span>
+            <span class="no">Bagian {{ noBagian('Lampiran') }} · Lampiran · slide {{ ke + 1 }} / {{ totalSlide }}</span>
             <h2>Kuis</h2>
             <p class="sub">Cek pemahaman: {{ nilai.benar }} benar dari {{ nilai.total }} soal ({{ nilai.dijawab }} dijawab)</p>
           </header>
@@ -121,9 +147,14 @@ const nilai = computed(() => nilaiKuis(jawab.value))
 
 <style scoped>
 .mt{display:grid;grid-template-columns:220px minmax(0,1fr);gap:14px;align-items:start}
-.isi{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:10px;position:sticky;top:10px}
+.isi{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:10px;position:sticky;top:10px;max-height:calc(100vh - 40px);overflow:auto}
 .isi p{margin:0 0 6px}
-.isi ol{margin:0;padding-left:20px;display:grid;gap:2px;font-size:13px}
+.isi ol{margin:2px 0 6px;padding-left:20px;display:grid;gap:1px;font-size:12.5px}
+.grup summary{cursor:pointer;font-size:13px;padding:4px 2px;color:var(--ink-2);border-radius:4px}
+.grup summary.kini{color:var(--ink);font-weight:700}
+.unduhM{width:100%;margin-bottom:8px}
+.prosa{margin:0 0 10px;font-size:15px;line-height:1.65;color:var(--ink);text-align:justify}
+.rujukan{margin:14px 0 0;border-top:1px solid var(--rule-2);padding-top:6px}
 .isi button{background:none;border:0;padding:3px 4px;text-align:left;color:var(--ink-2);cursor:pointer;font:inherit;border-radius:4px;width:100%}
 .isi button:hover{background:var(--zebra);color:var(--ink)}
 .isi button.on{color:var(--accent-ink);background:var(--accent-soft);font-weight:700}
@@ -137,7 +168,7 @@ const nilai = computed(() => nilaiKuis(jawab.value))
 .sub{margin:0;color:var(--ink-2);font-size:15px}
 .isiSlide{display:grid;gap:20px}
 .isiSlide.dg{grid-template-columns:minmax(0,1fr) 270px}
-.poin{margin:0;padding-left:20px;display:grid;gap:8px;font-size:15px;line-height:1.55;color:var(--ink)}
+.poin{margin:0 0 6px;padding-left:20px;display:grid;gap:8px;font-size:15px;line-height:1.55;color:var(--ink)}
 .cek{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:15px}
 .cek label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
 .tb{border-collapse:collapse;font-size:14px;margin-top:12px;width:100%}

@@ -1,18 +1,27 @@
 import { describe, expect, it } from 'vitest'
-import { SLIDE, diagramAbcd, totalSlide } from '../harmonikMateri.js'
+import { BAGIAN, SLIDE, diagramAbcd, totalSlide } from '../harmonikMateri.js'
 import { POLA } from '../harmonikAlat.js'
 
+const KUNCI = new Set(['id', 'bagian', 'judul', 'sub', 'paragraf', 'poin', 'tabel', 'pola', 'alat', 'rujukan', 'periksa', 'belajar'])
+
 describe('materi harmonic', () => {
-  it('setiap slide punya id unik, judul, dan isi', () => {
+  it('setiap slide valid: id unik, bagian dikenal, isi ada, tabel rapi', () => {
     expect(new Set(SLIDE.map(s => s.id)).size).toBe(SLIDE.length)
     for (const s of SLIDE) {
-      expect(s.judul).toBeTruthy()
-      expect((s.poin?.length || 0) + (s.tabel?.baris?.length || 0)).toBeGreaterThan(0)
-      if (s.tabel) s.tabel.baris.forEach(b => expect(b).toHaveLength(s.tabel.kolom.length))
-      if (s.pola) expect(s.pola === 'abcd' || POLA[s.pola]).toBeTruthy()
+      for (const k of Object.keys(s)) expect(KUNCI.has(k), `${s.id}: kunci ${k}`).toBe(true)
+      expect(BAGIAN, s.id).toContain(s.bagian)
+      expect(s.judul, s.id).toBeTruthy()
+      expect((s.paragraf?.length || 0) + (s.poin?.length || 0) + (s.tabel?.baris?.length || 0), s.id).toBeGreaterThan(0)
+      if (s.paragraf) s.paragraf.forEach(p => expect(typeof p).toBe('string'))
+      if (s.tabel) s.tabel.baris.forEach(b => expect(b, s.id).toHaveLength(s.tabel.kolom.length))
+      if (s.pola) expect(s.pola === 'abcd' || POLA[s.pola], s.id).toBeTruthy()
       if (s.alat) expect(['xabcd', 'fib', 'ext', 'elliott', 'long', 'short']).toContain(s.alat)
     }
     expect(totalSlide).toBe(SLIDE.length + 1)
+  })
+  it('urutan bagian mengikuti susunan makalah', () => {
+    const urut = SLIDE.map(s => BAGIAN.indexOf(s.bagian))
+    expect(urut).toEqual([...urut].sort((a, b) => a - b))
   })
   it('AB=CD bullish: A di atas, D paling bawah', () => {
     const d = diagramAbcd('bullish'), y = Object.fromEntries(d.titik.map(t => [t.n, t.y]))

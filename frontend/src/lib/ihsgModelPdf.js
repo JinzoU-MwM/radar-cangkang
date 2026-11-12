@@ -63,7 +63,8 @@ export function tabel(doc, x, y, cols, rows, size = 8.5, opt = {}) {
     if (opt.baru && y + h > (opt.bawah || 278)) { y = opt.baru() + 4; kepala() }
     cx = x
     cols.forEach((c, i) => {
-      doc.setTextColor(r[i]?.color || INK); doc.setFont('helvetica', r[i]?.bold ? 'bold' : 'normal')
+      // Sel string biasa: String.prototype.bold adalah fungsi (truthy), jadi cek === true agar tidak semua tebal.
+      doc.setTextColor(r[i]?.color || INK); doc.setFont('helvetica', r[i]?.bold === true ? 'bold' : 'normal')
       doc.text(lines[i], c.align === 'right' ? cx + c.w - 1.5 : cx + 1.5, y, { align: c.align === 'right' ? 'right' : 'left', lineHeightFactor: 1.3 })
       cx += c.w
     })
