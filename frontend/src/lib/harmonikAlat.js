@@ -598,3 +598,40 @@ export function jarakElliott(e, bars = [], satuan = 'bar') {
     + 'setelah impuls selesai biasanya terjadi koreksi tiga gelombang (A-B-C), dan fase itulah yang berjalan sejak gelombang 5. '
     + 'Karena itu garis Elliott bisa jauh dari XABCD, yang selalu memakai lima swing terakhir.' }
 }
+
+// ------------------------------------------------------------ lab pola ----
+// Lab interaktif (tab Materi): dari rasio pilihan pengguna AB/XA (b), BC/AB (c), dan AD/XA (d) dibentuk titik
+// X-A-B-C-D bullish (X 0, A 1), lalu dicari pola yang cocok dengan aturan dan toleransi yang sama dengan pendeteksi.
+export function labPola(b, c, d) {
+  const X = 0, A = 1, B = A - b, C = B + c * (A - B), D = A - d
+  const r = rasioXabcd(X, A, B, C, D)
+  const cocok = Object.keys(POLA)
+    .filter(k => bentukOk(k, X, A, B, C))
+    .map(k => ({ k, nama: POLA[k].nama, skor: skorPola(k, r) }))
+    .filter(x => x.skor != null)
+    .sort((x, y) => x.skor - y.skor)
+  return { titik: { X, A, B, C, D }, rasio: r, cocok }
+}
+
+// Contoh rasio ideal tiap pola untuk tombol "pasang" di lab (nilai tengah rentang; Cypher/Shark dari kaki XC).
+export function rasioContoh(k) {
+  const p = POLA[k], t = rg => (rg[0] + rg[1]) / 2
+  if (!p) return null
+  const b = t(p.b)
+  if (p.cx) {   // C = cx x XA di atas X; D = C - dc x XC
+    const C = t(p.cx), B = 1 - b, c = (C - B) / (1 - B), D = C - t(p.dc) * C
+    return { b, c, d: 1 - D }
+  }
+  if (p.dc) {   // Shark: D di dc x XC dari C; c dan b dipilih supaya CD/BC di tengah rentangnya
+    const dc = t(p.dc), e = t(p.e)
+    for (let i = 0; i <= 40; i++) {
+      const bb = p.b[0] + (p.b[1] - p.b[0]) * i / 40, B = 1 - bb
+      const c = dc * B / ((1 - B) * (e - dc))   // dari e = dc x C / (c x (A - B)), C = B + c x (A - B)
+      if (c >= p.c[0] && c <= p.c[1]) { const C = B + c * (1 - B); return { b: bb, c, d: 1 - (C - dc * C) } }
+    }
+    return null
+  }
+  // C dipilih supaya proyeksi CD/BC jatuh di tengah rentangnya: e = (B - D) / (c x (A - B)) + 1.
+  const B = 1 - b, D = 1 - t(p.d), cIdeal = (B - D) / ((t(p.e) - 1) * (1 - B))
+  return { b, c: Math.min(p.c[1], Math.max(p.c[0], cIdeal)), d: t(p.d) }
+}

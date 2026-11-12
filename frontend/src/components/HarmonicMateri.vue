@@ -8,6 +8,7 @@ import { BAGIAN, SLIDE, diagramAbcd, totalSlide } from '../lib/harmonikMateri.js
 import { diagramIdeal } from '../lib/harmonikAlat.js'
 import { KUIS, nilaiKuis } from '../lib/harmonikBelajar.js'
 import PolaDiagram from './PolaDiagram.vue'
+import HarmonicPresentasi from './HarmonicPresentasi.vue'
 
 const emit = defineEmits(['coba'])
 const NAMA_ALAT = { xabcd: 'XABCD', fib: 'Fib retracement', ext: 'Trend-based fib extension', elliott: 'Elliott', long: 'Long position', short: 'Short position' }
@@ -50,6 +51,10 @@ const noBagian = b => ROMAWI[BAGIAN.indexOf(b)] || ''
 const terbuka = ref({})
 watch(bagianKini, b => { terbuka.value = { ...terbuka.value, [b]: true } }, { immediate: true })
 
+// Mode presentasi layar penuh, mulai dari slide yang sedang dibuka.
+const presentasi = ref(false)
+function cobaDariPresentasi(alat) { presentasi.value = false; emit('coba', alat) }
+
 // Unduh seluruh materi sebagai dokumen bergaya makalah (jsPDF dimuat saat tombol ditekan).
 const busyPdf = ref(false)
 async function unduh() {
@@ -68,6 +73,7 @@ const nilai = computed(() => nilaiKuis(jawab.value))
 <template>
   <section class="mt">
     <nav class="isi" aria-label="Daftar isi materi">
+      <button type="button" class="btn mulai" @click="presentasi = true">▶ Mulai presentasi</button>
       <button type="button" class="btn unduhM" :disabled="busyPdf" @click="unduh">{{ busyPdf ? 'Menyiapkan PDF…' : 'Unduh materi (PDF)' }}</button>
       <p class="small mute">Daftar isi · {{ totalSlide }} slide</p>
       <details v-for="g in isi" :key="g.b" class="grup" :open="terbuka[g.b]" @toggle="e => terbuka = { ...terbuka, [g.b]: e.target.open }">
@@ -142,6 +148,7 @@ const nilai = computed(() => nilaiKuis(jawab.value))
       </footer>
       <p class="small mute sumber">Ringkasan dengan kata sendiri dari Scott M. Carney, <i>Harmonic Trading Vol. 1</i> (2010, terjemahan Indonesia), disesuaikan untuk saham BEI. Bahan belajar, bukan saran investasi.</p>
     </div>
+    <HarmonicPresentasi v-if="presentasi" :mulai="ke" @tutup="presentasi = false" @pindah="v => { ke = v }" @coba="cobaDariPresentasi" />
   </section>
 </template>
 
@@ -153,6 +160,7 @@ const nilai = computed(() => nilaiKuis(jawab.value))
 .grup summary{cursor:pointer;font-size:13px;padding:4px 2px;color:var(--ink-2);border-radius:4px}
 .grup summary.kini{color:var(--ink);font-weight:700}
 .unduhM{width:100%;margin-bottom:8px}
+.mulai{width:100%;margin-bottom:6px;background:var(--accent);color:var(--sheet);border-color:var(--accent);font-weight:700}
 .prosa{margin:0 0 10px;font-size:15px;line-height:1.65;color:var(--ink);text-align:justify}
 .rujukan{margin:14px 0 0;border-top:1px solid var(--rule-2);padding-top:6px}
 .isi button{background:none;border:0;padding:3px 4px;text-align:left;color:var(--ink-2);cursor:pointer;font:inherit;border-radius:4px;width:100%}
