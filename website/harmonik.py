@@ -47,6 +47,9 @@ POLA_LAIN = {
 }
 ABCD_C, ABCD_E = (0.382, 0.886), (1.13, 2.618)
 STOP_PRZ = {"altbat", "butterfly", "crab", "deepcrab", "shark"}   # D melewati/menyentuh X: stop di sisi luar PRZ
+# Versi aturan pemindai: naikkan setiap kali pola/rasio/aturan berubah. Server memindai ulang saat start bila hasil
+# tersimpan (.harmonik.json) dibuat dengan versi lain, tanpa menunggu jadwal malam.
+VERSI_ATURAN = 2
 TOL = 0.05            # toleransi relatif batas rasio (±5%)
 PRZ_LEBAR = 0.03      # lebar PRZ = ±3% panjang kaki acuan di sekitar level D
 SKALA = (0.06, 0.10, 0.15)   # ambang zigzag (pembalikan minimal) dari swing kecil ke besar

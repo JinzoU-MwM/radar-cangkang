@@ -572,6 +572,17 @@ class HarmonikTest(unittest.TestCase):
         r = harmonik.cari(self.bars([150, 100, 200, 138.2, 175.3, 121.4, 130, 90]))
         self.assertFalse([x for x in r if x["pola"] == "gartley" and x["titik"][0]["p"] == 100])
 
+    def test_pindai_ulang_bila_aturan_berubah(self):
+        tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        jalur = Path(tmp.name) / ".harmonik.json"
+        with unittest.mock.patch.object(server, "HARMONIK_PATH", jalur):
+            self.assertFalse(server.harmonik_usang())                       # belum ada hasil: dibangun oleh loop awal
+            jalur.write_text(json.dumps({"updated": "x", "rows": []}), encoding="utf-8")
+            self.assertTrue(server.harmonik_usang())                        # hasil lama tanpa versi
+            jalur.write_text(json.dumps({"versi": server.HM.VERSI_ATURAN, "rows": []}), encoding="utf-8")
+            self.assertFalse(server.harmonik_usang())
+        tmp.cleanup()
+
     def test_candle_balik(self):
         import harmonik
         pin = [{"o": 10, "h": 10.2, "l": 9.8, "c": 9.9}, {"o": 10, "h": 10.1, "l": 9.0, "c": 10.05}]
