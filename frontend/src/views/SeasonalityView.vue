@@ -3,7 +3,7 @@
 // alasan historis (aksi korporasi). Data dari /api/seasonality (diperbarui otomatis Senin-Sabtu pukul 00.01 WIB).
 // Tampilan ringkas & interaktif: penjelasan di balik tombol "Cara membaca", sektor sebagai saringan, tabel saham
 // dapat diurutkan/disaring, dan baris saham dapat dibuka untuk heatmap tahun x bulan serta trading plan.
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, reactive, ref, watch } from 'vue'
 import { api } from '../api.js'
 import { fmt } from '../lib/domain.js'
 import { useRoute, useRouter } from 'vue-router'
@@ -23,11 +23,13 @@ import SeasonBukti from '../components/SeasonBukti.vue'
 import { namaSaham } from '../lib/namaSaham.js'
 import RingPct from '../components/RingPct.vue'
 import { HSC_OPSI, isHsc, lolosHsc, hscInfo } from '../lib/hsc.js'
+// POV (dulu menu sendiri) kini tab di IHSG; dimuat saat tab dibuka.
+const PovView = defineAsyncComponent(() => import('./PovView.vue'))
 
 const route = useRoute(), router = useRouter()
 // Tab halaman (urutan tampil): 'astro' (Astronacci), 'ts' (Time Series), 'season', 'broker' (Pola Broker), 'recovery', 'live',
 // tersimpan di URL (?tab=...); tanpa ?tab = Seasonality.
-const TABS = ['astro', 'ts', 'hsc', 'lk', 's50', 'broker', 'recovery', 'low', 'live']
+const TABS = ['astro', 'ts', 'hsc', 'lk', 's50', 'broker', 'recovery', 'low', 'pov', 'live']
 // Urutan & keterangan tab: analisa IHSG dulu (Seasonality, Live, Astronacci, Time Series, HSC), lalu pilih saham.
 const TAB_INFO = [
   { k: 'season', l: 'Seasonality', grup: 'Analisa IHSG', ket: 'pola bulanan berulang IHSG, sektor, dan saham (5/10 tahun) beserta trading plan.' },
@@ -41,6 +43,7 @@ const TAB_INFO = [
   { k: 'broker', l: 'Pola Broker', grup: 'Pilih saham', ket: 'akumulasi dan distribusi broker (asing/domestik) per bulan atau per hari.' },
   { k: 'recovery', l: 'Recovery', grup: 'Pilih saham', ket: 'saham yang sudah turun dalam dan mulai pulih, dengan potensi rebound.' },
   { k: 'low', l: 'Low', grup: 'Pilih saham', ket: 'saham di titik terendah dan daftar penurunan per periode 1D–10Y.' },
+  { k: 'pov', l: 'POV', grup: 'Pilih saham', ket: 'membaca pikiran pengendali: analisa mendalam per saham, pola pikir akun Stockbit, POV AH, dan KakdrWay.' },
 ]
 const tabAktif = computed(() => TAB_INFO.find(x => x.k === tab.value) || TAB_INFO[0])
 const tab = computed({ get: () => TABS.includes(route.query.tab) ? route.query.tab : 'season', set: v => router.replace({ query: { ...route.query, tab: TABS.includes(v) ? v : undefined } }) })
@@ -127,6 +130,7 @@ const heat = v => v == null ? '' : v >= 10 ? 'h3' : v >= 3 ? 'h2' : v > 0 ? 'h1'
     <BrokerPola v-else-if="tab === 'broker'" />
     <RecoveryPanel v-else-if="tab === 'recovery'" />
     <LowPanel v-else-if="tab === 'low'" />
+    <PovView v-else-if="tab === 'pov'" tertanam />
     <LkPanel v-else-if="tab === 'lk'" />
     <Saham50Panel v-else-if="tab === 's50'" />
     <HscPanel v-else-if="tab === 'hsc'" />
