@@ -8,7 +8,8 @@ export const router = createRouter({
     { path: '/berita', name: 'berita', component: () => import('./views/BeritaView.vue') },
     // Intel Pasar dihapus (sumber tradersaham tidak tersedia); tautan lama diarahkan ke Monitor.
     { path: '/intel', redirect: '/' },
-    { path: '/pov', name: 'pov', component: () => import('./views/PovView.vue') },
+    // POV kini tab di halaman IHSG; tautan lama diarahkan ke sana.
+    { path: '/pov', redirect: { path: '/seasonality', query: { tab: 'pov' } } },
     { path: '/harmonic', name: 'harmonic', component: () => import('./views/HarmonicView.vue') },
     { path: '/seasonality', name: 'seasonality', component: () => import('./views/SeasonalityView.vue') },
     { path: '/bandingkan', name: 'bandingkan', component: () => import('./views/CompareView.vue') },

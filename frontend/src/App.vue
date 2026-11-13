@@ -125,7 +125,6 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
       <RouterLink class="nav" to="/" :class="{ on: $route.name === 'monitor' || $route.name === 'emiten' }">Monitor <span class="cnt">{{ nMonitor }}</span></RouterLink>
       <RouterLink class="nav" to="/kandidat" active-class="on">Kandidat <span class="cnt">{{ nKandidat }}</span></RouterLink>
       <RouterLink class="nav" to="/seasonality" active-class="on">IHSG <span class="cnt"></span></RouterLink>
-      <RouterLink class="nav" to="/pov" active-class="on">POV <span class="cnt"></span></RouterLink>
       <RouterLink class="nav" to="/harmonic" active-class="on">Harmonic Pattern <span class="cnt"></span></RouterLink>
       <div class="foot">
         <ChangelogPanel />

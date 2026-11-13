@@ -8,6 +8,9 @@ import PovDetail from '../components/PovDetail.vue'
 import PovDalam from '../components/PovDalam.vue'
 import PovAh from '../components/PovAh.vue'
 
+// tertanam: tampil sebagai tab di halaman IHSG (judul halaman sudah ada di sana).
+defineProps({ tertanam: { type: Boolean, default: false } })
+
 const data = ref(null), err = ref(''), kd = ref(null)
 // Analisa KakdrWay disembunyikan sampai tombolnya diklik.
 const kdOpen = ref(false)
@@ -61,7 +64,7 @@ const namaPilih = computed(() => (kodeBei.value || []).find(k => k.t === pilih.v
 
 <template>
   <div class="pov">
-    <header>
+    <header v-if="!tertanam">
       <h1>POV</h1>
       <p class="small ket">Membaca pikiran pengendali: afiliasi, potensi backdoor, arah saham, dan jejak bandar. Bukan rekomendasi beli/jual.</p>
     </header>
