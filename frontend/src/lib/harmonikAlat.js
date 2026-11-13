@@ -158,7 +158,7 @@ export function skorPola(k, r, tol = TOL) {
 }
 
 // Bentuk dasar: C di antara A dan B (pola retracement C), kecuali Cypher/Shark yang C-nya melewati A.
-function bentukOk(k, X, A, B, C) {
+export function bentukOk(k, X, A, B, C) {
   const s = Math.sign(A - X)
   if (!s || Math.sign(B - A) !== -s || Math.sign(C - B) !== s) return false
   const lewatA = s > 0 ? C > A : C < A

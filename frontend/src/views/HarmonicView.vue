@@ -16,11 +16,14 @@ import { ema } from '../lib/ta.js'
 import PolaDiagram from '../components/PolaDiagram.vue'
 import HarmonicMateri from '../components/HarmonicMateri.vue'
 import HarmonicScreening from '../components/HarmonicScreening.vue'
+import HarmonicTitik from '../components/HarmonicTitik.vue'
 
 const route = useRoute(), router = useRouter()
 
-// Tab halaman: Materi (presentasi), Saham (chart), Screening (daftar pola); ?tab= di URL, tanpa ?tab = Saham.
-const TAB = [{ k: 'materi', nama: 'Materi' }, { k: 'saham', nama: 'Saham' }, { k: 'screening', nama: 'Screening' }]
+// Tab halaman: Materi (presentasi), Saham (chart), Screening (daftar pola), Titik (materi menentukan titik XABCD);
+// ?tab= di URL, tanpa ?tab = Saham.
+const TAB = [{ k: 'materi', nama: 'Materi' }, { k: 'saham', nama: 'Saham' }, { k: 'screening', nama: 'Screening' },
+  { k: 'titik', nama: 'Menentukan Titik XABCD' }]
 const tab = ref(TAB.some(x => x.k === route.query.tab) ? route.query.tab : 'saham')
 watch(tab, v => {
   if (v === 'saham') nextTick(() => { if (!chart) bangunBilaTampil(); segar() })
@@ -611,6 +614,7 @@ async function unduh() {
     </nav>
     <HarmonicMateri v-if="tab === 'materi'" @coba="cobaAlat" />
     <HarmonicScreening v-else-if="tab === 'screening'" @buka="bukaScreening" />
+    <HarmonicTitik v-else-if="tab === 'titik'" @coba="cobaAlat" />
     <div v-show="tab === 'saham'" class="sahamTab">
     <header class="top">
       <div class="cari" @focusin="bukaCari" @focusout="tutupCari">
