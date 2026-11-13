@@ -13,6 +13,7 @@ import { store, toast } from '../store.js'
 import { SKALA, TF, POLA, PEMBEDA, FIB_KUNCI, alasanPola, alasanX, diagramIdeal, konfirmasiD, skenarioD, trenBesar, nilaiTren, jarakElliott, cariElliott, cariPola, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
 import { ukuranPosisi } from '../lib/harmonikBelajar.js'
 import { ema } from '../lib/ta.js'
+import { bacaPosisi, geserPanel, jepitPanel } from '../lib/geserPanel.js'
 import PolaDiagram from '../components/PolaDiagram.vue'
 import HarmonicMateri from '../components/HarmonicMateri.vue'
 import HarmonicScreening from '../components/HarmonicScreening.vue'
@@ -548,6 +549,38 @@ const insetPos = computed(() => {
   return kandidat.map(c => ({ ...c, s: skor(c) + (c.y > 60 ? 0.5 : 0) })).sort((a, b) => a.s - b.s)[0]
 })
 
+// Kotak gambar bisa ditarik ke mana saja di dalam chart; posisi tarikan disimpan per penampil dan dipakai untuk
+// semua saham. Klik dua kali judul kotak untuk kembali ke posisi otomatis (sudut yang paling sedikit menutup candle).
+const KUNCI_INSET = 'radar-cangkang.hp-inset'
+let posAwal = null
+try { posAwal = bacaPosisi(localStorage.getItem(KUNCI_INSET)) } catch {}
+const posGeser = ref(posAwal), menarik = ref(false)
+const ukuranInset = () => ({ w: Math.min(IW, panel.value.w - 8), h: tinggiInset.value })
+const posInset = computed(() => posGeser.value ? jepitPanel(posGeser.value, ukuranInset(), panel.value)
+  : insetPos.value && { x: Math.max(0, insetPos.value.x), y: insetPos.value.y })
+let tarik = null
+function mulaiTarik(e) {
+  if (e.button !== 0 || e.target.closest('button, summary, a, input') || !posInset.value) return
+  tarik = { id: e.pointerId, awal: { ...posInset.value }, mulai: { x: e.clientX, y: e.clientY } }
+  try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}   // pointer sintetis (tes) tidak bisa ditangkap
+  menarik.value = true
+  e.preventDefault()
+}
+function saatTarik(e) {
+  if (!tarik || e.pointerId !== tarik.id) return
+  posGeser.value = geserPanel(tarik.awal, tarik.mulai, { x: e.clientX, y: e.clientY }, ukuranInset(), panel.value)
+}
+function akhirTarik(e) {
+  if (!tarik || e.pointerId !== tarik.id) return
+  tarik = null
+  menarik.value = false
+  try { if (posGeser.value) localStorage.setItem(KUNCI_INSET, JSON.stringify(posGeser.value)) } catch {}
+}
+function insetOtomatis() {
+  posGeser.value = null
+  try { localStorage.removeItem(KUNCI_INSET) } catch {}
+}
+
 const teksX = computed(() => alasanX(hasil.value.xabcd, bars.value))
 
 const modal = ref(100000000), risiko = ref(1)
@@ -681,8 +714,9 @@ async function unduh() {
           <span v-if="emaTampil && tren" class="vol"><b class="e50">EMA50</b> {{ fmtH(tren.e50) }}<template v-if="tren.e200 != null"> · <b class="e200">EMA200</b> {{ fmtH(tren.e200) }}</template></span>
         </div>
         <p v-if="err" class="err" role="alert">{{ err }}</p>
-        <div v-if="inset && insetPos && !insetTutup" ref="elInset" class="inset" :style="{ left: Math.max(0, insetPos.x) + 'px', top: insetPos.y + 'px', width: Math.min(IW, panel.w - 8) + 'px' }" role="note" aria-label="Pola harmonik terdeteksi">
-          <div class="ih"><b :class="inset.bull ? 'up' : 'dn'">{{ inset.nama }}</b><button type="button" class="ix" title="Sembunyikan gambar pola" aria-label="Sembunyikan gambar pola" @click="insetTutup = true">×</button></div>
+        <div v-if="inset && posInset && !insetTutup" ref="elInset" class="inset" :class="{ menarik }" :style="{ left: posInset.x + 'px', top: posInset.y + 'px', width: Math.min(IW, panel.w - 8) + 'px' }" role="note" aria-label="Pola harmonik terdeteksi"
+          @pointerdown="mulaiTarik" @pointermove="saatTarik" @pointerup="akhirTarik" @pointercancel="akhirTarik">
+          <div class="ih" :title="posGeser ? 'Tarik untuk memindahkan · klik dua kali untuk kembali ke posisi otomatis' : 'Tarik untuk memindahkan'" @dblclick="insetOtomatis"><b :class="inset.bull ? 'up' : 'dn'">{{ inset.nama }}</b><button type="button" class="ix" title="Sembunyikan gambar pola" aria-label="Sembunyikan gambar pola" @click="insetTutup = true">×</button></div>
           <PolaDiagram class="ideal" :diagram="inset.diagram" />
           <p class="ip">Kenapa {{ inset.nama.split(' ').slice(0, -1).join(' ') }}: {{ inset.pembeda }}</p>
           <p v-if="trenPola" class="ip" :class="trenPola.searah ? 'up' : 'dn'"><b>Tren besar:</b> {{ trenPola.searah ? 'searah' : 'melawan' }} ({{ tren.arah === 'naik' ? 'di atas' : 'di bawah' }} {{ tren.acuanNama }})</p>
@@ -1101,6 +1135,9 @@ async function unduh() {
 .bawah .small{margin-left:auto}
 .bukaInset{position:absolute;z-index:4;top:52px;right:8px;max-width:calc(100% - 16px);border:1px solid var(--rule);background:var(--sheet);color:var(--ink);border-radius:14px;padding:4px 10px;font:600 12px var(--f-body);cursor:pointer;box-shadow:var(--shadow)}
 .inset{position:absolute;z-index:4;background:var(--sheet);border:1px solid var(--rule);border-radius:8px;box-shadow:var(--shadow);padding:8px 10px;font-size:11.5px;line-height:1.4;opacity:.96}
+.inset{cursor:grab;touch-action:none;user-select:none}
+.inset.menarik{cursor:grabbing;opacity:.85}
+.inset summary,.inset button{cursor:pointer}
 .ih{display:flex;justify-content:space-between;align-items:center;font:700 14px var(--f-display)}
 .ix{border:0;background:none;color:var(--ink-2);font-size:18px;line-height:1;cursor:pointer;padding:0 2px}
 .ideal{width:100%;height:auto;display:block;margin:2px 0}
