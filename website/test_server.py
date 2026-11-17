@@ -1477,6 +1477,26 @@ class RekomendasiTest(unittest.TestCase):
         if d:
             self.assertTrue(any("hindari" in x.lower() for x in d["risiko"]))
 
+    def test_rencana_harus_masuk_akal(self):
+        """Kasus DSSA: pola bullish sudah berbalik dan harga di atas kedua target. Rencana dari pola itu tidak dipakai
+        (target di bawah entry), poin harmonik kecil, dan rencana diambil dari sumber lain bila ada."""
+        import rekomendasi as RK
+        src = {"harga": {"DSSA": {"h": 720}}, "bulan": 11,
+               "harmonik": [{"t": "DSSA", "pola": "tigadorongan", "nama": "Three Drives", "arah": "bullish", "status": "berbalik", "harga": 720,
+                             "prz": [560, 590], "target": [655, 710], "stop": 574}],
+               "recovery": [{"t": "DSSA", "skor": 80, "status": "Mulai pulih", "alasan": ["Turun 50% dari puncak"],
+                             "plan": {"entry": [690, 715], "sl": 640, "tp1": 820, "tp2": 900}}],
+               "lk": [{"t": "DSSA", "kategori": "bagus", "periode": "9M26", "laba": {"pct": 30}}]}
+        r = RK.nilai(src, 2000, 10)["rows"][0]
+        self.assertEqual(r["komponen"]["Harmonic Pattern"], 5)
+        self.assertTrue(any("melewati target pertama" in x for x in r["alasan"]))
+        self.assertEqual(r["plan"]["sumber"], "Recovery")
+        self.assertLess(r["plan"]["stop"], r["plan"]["entry"])
+        self.assertLess(r["plan"]["entry"], r["plan"]["tp1"])
+        src.pop("recovery")
+        src["seasonality"] = [{"t": "DSSA", "prob": 70, "skor": 60, "up": 7, "n": 10}]
+        self.assertIsNone(RK.nilai(src, 2000, 10)["rows"][0]["plan"])   # tidak ada rencana yang masuk akal
+
     def test_jumlah_dibatasi(self):
         import rekomendasi as RK
         self.assertLessEqual(len(RK.nilai(self.src(), 2000, 1)["rows"]), 1)

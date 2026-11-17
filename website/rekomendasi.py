@@ -49,9 +49,14 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
         a["risiko"].append((poin, teks))
 
     def rencana(t, plan, prioritas):
+        """Rencana beli hanya dipakai bila urutannya masuk akal: stop < entry < target 1 (entry kosong = harga terakhir).
+        Rencana yang targetnya sudah terlewati dilewati, sehingga rencana dari sumber lain yang dipakai."""
         a = acc.setdefault(t, {"komponen": {}, "alasan": [], "risiko": [], "plan": None})
-        if plan and (a["plan"] is None or prioritas > a["plan"]["_p"]):
-            a["plan"] = {**plan, "_p": prioritas}
+        e = plan.get("entry") or harga.get(t)
+        if not (e and plan.get("stop") and plan.get("tp1") and plan["stop"] < e < plan["tp1"]):
+            return
+        if a["plan"] is None or prioritas > a["plan"]["_p"]:
+            a["plan"] = {**plan, "entry": e, "_p": prioritas}
 
     # Harmonic Pattern: pola bullish yang sudah di PRZ atau berbalik (terbaik per saham); bearish di PRZ = risiko.
     STATUS = {"berbalik": (25, "sudah berbalik dari D"), "prz": (20, "harga sedang di PRZ"), "menuju": (8, "harga menuju PRZ")}
@@ -65,6 +70,11 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
                 continue
             poin, teks = STATUS[st]
             prz, tg = r.get("prz") or [None, None], r.get("target") or [None, None]
+            h = r.get("harga") or harga.get(t)
+            if tg[0] and h and h >= tg[0]:
+                # Harga sudah melewati target pertama: kesempatan dari pola ini sudah berjalan, poin kecil dan tanpa rencana.
+                tambah(t, "harmonik", 5, f"Pola {pola} bullish sudah berbalik dari PRZ {_rp(prz[0])}–{_rp(prz[1])} dan harga sudah melewati target pertama {_rp(tg[0])}; kesempatan dari pola ini sudah berjalan.")
+                continue
             tambah(t, "harmonik", poin, f"Pola {pola} bullish, {teks}. PRZ {_rp(prz[0])}–{_rp(prz[1])}, target {_rp(tg[0])} dan {_rp(tg[1])}, batal di bawah {_rp(r.get('stop'))}.")
             if r.get("stop") and tg[0]:
                 masuk = r.get("harga") if st != "menuju" else (prz[1] if prz[1] else None)
