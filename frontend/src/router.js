@@ -11,6 +11,7 @@ export const router = createRouter({
     // POV kini tab di halaman IHSG; tautan lama diarahkan ke sana.
     { path: '/pov', redirect: { path: '/seasonality', query: { tab: 'pov' } } },
     { path: '/harmonic', name: 'harmonic', component: () => import('./views/HarmonicView.vue') },
+    { path: '/rekomendasi', name: 'rekomendasi', component: () => import('./views/RekomendasiView.vue') },
     { path: '/seasonality', name: 'seasonality', component: () => import('./views/SeasonalityView.vue') },
     { path: '/bandingkan', name: 'bandingkan', component: () => import('./views/CompareView.vue') },
     { path: '/emiten/:ticker', name: 'emiten', component: () => import('./views/EmitenView.vue'), props: true },
