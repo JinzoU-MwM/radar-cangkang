@@ -5162,11 +5162,13 @@ def rekomendasi_kumpul() -> tuple[dict, dict]:
     ambil("backdoor_pd", pd_semua)
     ambil("pengendali", lambda: _json_berkas("pengendali-verified.json"))
     ambil("sikap", lambda: {t: v.get("sikap") for t, v in _json_berkas("pandangan-analis.json").items() if isinstance(v, dict)})
+    ambil("hsc", lambda: json.loads((ROOT / "hsc.json").read_text(encoding="utf-8")).get("kode") or [])
     return src, n
 
 
 def rekomendasi_build() -> dict:
-    """Hitung rekomendasi hari ini (10 saham terbaik di bawah REKO_BATAS) dan simpan ke .rekomendasi.json."""
+    """Hitung rekomendasi hari ini (10 saham Non HSC dan 10 saham HSC terbaik di bawah REKO_BATAS) dan simpan ke
+    .rekomendasi.json."""
     src, n = rekomendasi_kumpul()
     res = RK.nilai(src, REKO_BATAS)
     now = datetime.now(WIB)
@@ -5182,14 +5184,14 @@ def rekomendasi_api() -> dict:
     hari = datetime.now(WIB).strftime("%Y-%m-%d")
     try:
         d = json.loads(REKO_PATH.read_text(encoding="utf-8"))
-        if d.get("tanggal") == hari:
+        if d.get("tanggal") == hari and "hsc" in d:
             return d
     except (OSError, ValueError):
         pass
     with _reko_lock:
         try:
             d = json.loads(REKO_PATH.read_text(encoding="utf-8"))
-            if d.get("tanggal") == hari:
+            if d.get("tanggal") == hari and "hsc" in d:
                 return d
         except (OSError, ValueError):
             pass

@@ -1,5 +1,5 @@
 <script setup>
-// Rekomendasi harian: 10 saham terbaik dengan harga di bawah Rp2.000, gabungan semua screening Radar (Harmonic,
+// Rekomendasi harian: 10 saham Non HSC dan 10 saham HSC terbaik dengan harga di bawah Rp2.000, gabungan semua screening Radar (Harmonic,
 // Recovery, Seasonality, Pola Broker, laporan keuangan, Saham 50, KakdrWay) dan sinyal backdoor. Dihitung server sekali
 // sehari (/api/rekomendasi, website/rekomendasi.py); halaman ini hanya menampilkan peringkat, alasan, risiko, dan rencana.
 import { computed, onMounted, ref } from 'vue'
@@ -7,24 +7,34 @@ import { api } from '../api.js'
 
 const data = ref(null), err = ref('')
 onMounted(() => api.get('/api/rekomendasi').then(v => { data.value = v }, e => { err.value = e.message || String(e) }))
-const rows = computed(() => data.value?.rows || [])
+// Kelompok: Non HSC (masuk IHSG) dan HSC (konsentrasi kepemilikan tinggi, dikeluarkan dari IHSG), peringkat terpisah.
+const KELOMPOK = [{ k: 'non', nama: 'Non HSC' }, { k: 'hsc', nama: 'HSC' }]
+const kel = ref('non')
+const daftarKel = k => (k === 'hsc' ? data.value?.hsc : data.value?.rows) || []
+const rows = computed(() => daftarKel(kel.value))
 const maks = computed(() => Math.max(1, ...rows.value.map(r => r.skor)))
 const rp = v => v == null ? '–' : 'Rp' + Number(v).toLocaleString('id-ID', { maximumFractionDigits: v < 200 ? 1 : 0 })
 const n1 = v => Number(v).toLocaleString('id-ID', { maximumFractionDigits: 1 })
 const pct = (a, b) => a && b ? `${a >= b ? '+' : ''}${n1((a / b - 1) * 100)}%` : ''
-const buka = ref({})
 </script>
 
 <template>
   <div class="rk">
     <header>
       <h1>Rekomendasi</h1>
-      <p class="small ket">10 saham terbaik hari ini dengan harga di bawah {{ rp(data?.batasHarga || 2000) }}, dipilih dari gabungan semua screening Radar dan sinyal backdoor. Diperbarui setiap hari pukul 00.01 WIB.</p>
-      <p v-if="data" class="small muted">Dihitung {{ data.updated }} · {{ data.dinilai }} saham dinilai, {{ data.lolos }} lolos syarat (harga di bawah batas dan didukung minimal dua sumber).</p>
+      <p class="small ket">10 saham terbaik hari ini dengan harga di bawah {{ rp(data?.batasHarga || 2000) }}, dipisah antara saham Non HSC dan HSC, dipilih dari gabungan semua screening Radar dan sinyal backdoor. Diperbarui setiap hari pukul 00.01 WIB.</p>
+      <p v-if="data" class="small muted">Dihitung {{ data.updated }} · {{ data.dinilai }} saham dinilai; lolos syarat {{ data.lolos }} Non HSC dan {{ data.lolosHsc ?? 0 }} HSC (harga di bawah batas dan didukung minimal dua sumber).</p>
     </header>
+    <div v-if="data" class="kel" role="tablist" aria-label="Kelompok saham">
+      <button v-for="x in KELOMPOK" :key="x.k" type="button" role="tab" :aria-selected="String(kel === x.k)" :class="{ on: kel === x.k }" @click="kel = x.k">
+        {{ x.nama }} <b>{{ daftarKel(x.k).length }}</b></button>
+    </div>
+    <p v-if="data" class="small muted kelket">{{ kel === 'hsc'
+      ? 'Saham HSC: konsentrasi kepemilikan tinggi dan dikeluarkan dari perhitungan IHSG. Biasanya lebih tidak likuid dan mudah digerakkan, jadi pakai posisi lebih kecil.'
+      : 'Saham Non HSC: masih masuk perhitungan IHSG, kepemilikan publik lebih tersebar.' }}</p>
     <p v-if="err" class="err" role="alert">{{ err }}</p>
     <p v-else-if="!data" class="small muted">Menghitung rekomendasi…</p>
-    <p v-else-if="!rows.length" class="small muted">Belum ada saham yang memenuhi syarat hari ini.</p>
+    <p v-else-if="!rows.length" class="small muted">Belum ada saham {{ kel === 'hsc' ? 'HSC' : 'Non HSC' }} yang memenuhi syarat hari ini.</p>
     <ol v-else class="daftar">
       <li v-for="r in rows" :key="r.t" class="kartu">
         <div class="atas">
@@ -85,6 +95,11 @@ const buka = ref({})
 header h1{margin:0}
 .ket{margin:4px 0 2px;max-width:760px}
 .muted{color:var(--ink-2)}.small{font-size:12px}.err{color:var(--strong)}
+.kel{display:flex;gap:4px}
+.kel button{border:1px solid var(--rule);background:var(--sheet);color:var(--ink-2);border-radius:16px;padding:5px 14px;cursor:pointer;font:600 13px var(--f-body)}
+.kel button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.kel b{font-family:var(--f-data);margin-left:3px}
+.kelket{margin:-6px 0 0}
 .daftar{list-style:none;margin:0;padding:0;display:grid;gap:12px}
 .kartu{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);display:grid;gap:10px}
 .atas{display:grid;grid-template-columns:auto minmax(0,1fr) auto 160px;gap:14px;align-items:center}
