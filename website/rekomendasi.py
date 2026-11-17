@@ -11,7 +11,7 @@ import re
 from datetime import date
 
 # Naikkan bila aturan berubah: rekomendasi hari ini yang tersimpan dengan versi lama dihitung ulang.
-VERSI = 11
+VERSI = 12
 BOBOT = {"harmonik": 25, "recovery": 20, "backdoor": 20, "seasonality": 15, "broker": 15, "lk": 15, "saham50": 10, "kakdr": 10,
          "momentum": 15, "broksum": 15}
 NAMA_SUMBER = {"harmonik": "Harmonic Pattern", "recovery": "Recovery", "backdoor": "Backdoor", "seasonality": "Seasonality",
@@ -91,6 +91,15 @@ def _rentang(lo, hi) -> str:
 
 def _pct(v) -> str:
     return "–" if v is None else (f"{v:+.1f}".replace(".", ",") + "%")
+
+
+def _lebih(v, batas) -> str:
+    """Persen yang melewati batas, cukup desimal supaya tidak tampil sama dengan batasnya (15,04 -> '15,04', bukan '15,0')."""
+    for n in (1, 2, 3):
+        t = f"{v:.{n}f}"
+        if float(t) > batas:
+            break
+    return t.replace(".", ",")
 
 
 def _r(v) -> str:
@@ -391,7 +400,7 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
                 sebab.append(f"{nm}: entry {_rp(e)} jauh dari harga {_rp(h)}")
                 continue
             if (1 - sl / e) * 100 > STOP_MAKS:
-                sebab.append(f"{nm}: stop {_rp(sl)} turun {round((1 - sl / e) * 100)}% dari entry, lebih dari {STOP_MAKS}%")
+                sebab.append(f"{nm}: stop {_rp(sl)} turun {_lebih((1 - sl / e) * 100, STOP_MAKS)}% dari entry, lebih dari {STOP_MAKS}%")
                 continue
             naik = lambda x: (x / e - 1) * 100
             def cari(lo, hi, min_harga):
