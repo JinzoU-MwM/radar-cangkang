@@ -6,6 +6,8 @@ mengumpulkan datanya dari berkas lokal lalu memanggil nilai().
 Skor = jumlah poin dari setiap sumber yang mendukung (maks. per sumber pada BOBOT) dikurangi poin risiko. Saham hanya
 masuk daftar bila harganya di bawah batas harga dan didukung minimal dua sumber. Bukan saran investasi personal."""
 
+# Naikkan bila aturan berubah: rekomendasi hari ini yang tersimpan dengan versi lama dihitung ulang.
+VERSI = 2
 BOBOT = {"harmonik": 25, "recovery": 20, "backdoor": 20, "seasonality": 15, "broker": 15, "lk": 15, "saham50": 10, "kakdr": 10}
 NAMA_SUMBER = {"harmonik": "Harmonic Pattern", "recovery": "Recovery", "backdoor": "Backdoor", "seasonality": "Seasonality",
                "broker": "Pola Broker", "lk": "Laporan keuangan", "saham50": "Saham 50", "kakdr": "KakdrWay"}
@@ -205,5 +207,5 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
     for grup in (non, dgn):
         for i, r in enumerate(grup):
             r["peringkat"] = i + 1
-    return {"batasHarga": batas_harga, "dinilai": len(acc), "lolos": sum(not r["hsc"] for r in rows), "lolosHsc": sum(r["hsc"] for r in rows),
+    return {"versi": VERSI, "batasHarga": batas_harga, "dinilai": len(acc), "lolos": sum(not r["hsc"] for r in rows), "lolosHsc": sum(r["hsc"] for r in rows),
             "rows": non, "hsc": dgn, "bobot": {NAMA_SUMBER[k]: v for k, v in BOBOT.items()}}
