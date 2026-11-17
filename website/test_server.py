@@ -594,6 +594,8 @@ class HarmonikTest(unittest.TestCase):
             jalur.write_text(json.dumps({"updated": "x", "rows": []}), encoding="utf-8")
             self.assertTrue(server.harmonik_usang())                        # hasil lama tanpa versi
             jalur.write_text(json.dumps({"versi": server.HM.VERSI_ATURAN, "rows": []}), encoding="utf-8")
+            self.assertTrue(server.harmonik_usang())                        # belum ada ringkasan momentum Rekomendasi
+            jalur.write_text(json.dumps({"versi": server.HM.VERSI_ATURAN, "versiMomentum": server.RK.VERSI, "rows": []}), encoding="utf-8")
             self.assertFalse(server.harmonik_usang())
         tmp.cleanup()
 
@@ -1518,6 +1520,47 @@ class RekomendasiTest(unittest.TestCase):
         self.assertIn("Three Drives", r["tp1Ket"])
         self.assertEqual(r["tp2"], 220)                          # +40% dari target Seasonality
         self.assertLessEqual(-r["turunStop"], RK.STOP_MAKS)
+
+    def test_momentum_dan_broksum(self):
+        """Volume besar + breakout menambah poin Momentum; broksum akumulasi bersih menambah poin, distribusi jadi risiko."""
+        import rekomendasi as RK
+        bars = [{"d": f"2026-10-{i + 1:02d}", "o": 100, "h": 102, "l": 98, "c": 100, "v": 1000} for i in range(30)]
+        bars += [{"d": "2026-11-16", "o": 101, "h": 112, "l": 100, "c": 110, "v": 5000}]     # volume 5x, tembus 102
+        m = RK.momentum(bars)
+        self.assertEqual((m["vol"], m["volTgl"], m["breakout"]), (5.0, "2026-11-16", "2026-11-16"))
+        src = {"harga": {"AAAA": {"h": 110}, "BBBB": {"h": 110}}, "bars": {"AAAA": bars, "BBBB": bars},
+               "broksum": {"tanggal": ["2026-11-16", "2026-11-13", "2026-11-12", "2026-11-11", "2026-11-10"],
+                           "saham": {"AAAA": {"net": 2e10, "hariAkum": 4, "kemarin": 3e9}, "BBBB": {"net": -2e9, "hariAkum": 1, "kemarin": -2e9}}},
+               "recovery": [{"t": t, "skor": 80, "status": "Mulai pulih", "plan": {"entry": [105, 110], "sl": 100, "tp1": 125, "tp2": 150}}
+                            for t in ("AAAA", "BBBB")]}
+        r = {x["t"]: x for x in RK.nilai(src, 2000, 10)["rows"]}
+        a = r["AAAA"]
+        self.assertEqual(a["komponen"]["Broksum harian"], 13.8)        # 3 + 6 + 4 x 1,2
+        self.assertEqual(a["komponen"]["Momentum"], round(2 + 6 * 5 / 8 + 5 + 2, 1))   # + 2: di atas puncak 60 hari
+        self.assertTrue(any("volume 5 kali" in x and "16 Nov" in x for x in a["alasan"]))
+        self.assertTrue(any("akumulasi bersih Rp20,0 M" in x and "termasuk kemarin" in x for x in a["alasan"]))
+        b = r["BBBB"]
+        self.assertNotIn("Broksum harian", b["komponen"])
+        self.assertTrue(any("distribusi bersih Rp2,0 M" in x for x in b["risiko"]))
+        self.assertAlmostEqual(b["skor"], round(sum(b["komponen"].values()) - 6, 1))     # 5 + 5 x 0,2
+
+    def test_rencana_breakout_dari_resistance(self):
+        """Saham momentum tanpa rencana lain: entry penutupan terakhir, stop terendah 5 hari, target dari puncak
+        sebelumnya di chart (bukan angka karangan)."""
+        import rekomendasi as RK
+        bars = []
+        for i in range(60):    # dua puncak lama: 125 (hari ke-10) dan 140 (hari ke-30), lalu sideways di 100
+            h = 125 if i == 10 else 140 if i == 30 else 102
+            bars.append({"d": f"2026-09-{(i % 28) + 1:02d}", "o": 100, "h": h, "l": 98, "c": 100, "v": 1000})
+        bars[-1] = {"d": "2026-11-16", "o": 101, "h": 111, "l": 99, "c": 110, "v": 6000}
+        self.assertEqual([h for h, _ in RK.resistensi(bars)], [125, 140])
+        src = {"harga": {"SMGR": {"h": 110}}, "bars": {"SMGR": bars},
+               "broksum": {"tanggal": ["2026-11-16"], "saham": {"SMGR": {"net": 1.6e10, "hariAkum": 5, "kemarin": 3e9}}},
+               "lk": [{"t": "SMGR", "kategori": "bagus", "periode": "9M26", "laba": {"pct": 25}}]}
+        p = RK.nilai(src, 2000, 5)["rows"][0]["plan"]
+        self.assertEqual((p["entry"], p["stop"], p["tp1"], p["tp2"]), (110, 98, 125, 140))
+        self.assertTrue(p["sumber"].startswith("Momentum"))
+        self.assertIn("resistance puncak", p["tp1Ket"])
 
     def test_jumlah_dibatasi(self):
         import rekomendasi as RK

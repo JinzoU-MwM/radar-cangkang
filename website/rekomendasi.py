@@ -9,10 +9,12 @@ masuk daftar bila harganya di bawah batas harga, didukung minimal dua sumber, da
 tidak sedang ada pola harmonik bearish di PRZ atau yang sudah berbalik turun. Bukan saran investasi personal."""
 
 # Naikkan bila aturan berubah: rekomendasi hari ini yang tersimpan dengan versi lama dihitung ulang.
-VERSI = 4
-BOBOT = {"harmonik": 25, "recovery": 20, "backdoor": 20, "seasonality": 15, "broker": 15, "lk": 15, "saham50": 10, "kakdr": 10}
+VERSI = 5
+BOBOT = {"harmonik": 25, "recovery": 20, "backdoor": 20, "seasonality": 15, "broker": 15, "lk": 15, "saham50": 10, "kakdr": 10,
+         "momentum": 15, "broksum": 15}
 NAMA_SUMBER = {"harmonik": "Harmonic Pattern", "recovery": "Recovery", "backdoor": "Backdoor", "seasonality": "Seasonality",
-               "broker": "Pola Broker", "lk": "Laporan keuangan", "saham50": "Saham 50", "kakdr": "KakdrWay"}
+               "broker": "Pola Broker", "lk": "Laporan keuangan", "saham50": "Saham 50", "kakdr": "KakdrWay",
+               "momentum": "Momentum", "broksum": "Broksum harian"}
 TAHAP = {"spa": "perjanjian jual beli (SPA)", "tender": "tender offer", "rupslb": "RUPSLB", "injeksi": "injeksi aset"}
 SINYAL = {"akuisisi": "akuisisi", "kbli": "perubahan KBLI", "rights": "rights issue", "direksi": "pergantian pengurus", "uma": "UMA"}
 # Syarat rencana: naik target 1 dan target 2 dari entry (persen), R:R minimal ke target 1, stop terjauh di bawah entry,
@@ -25,6 +27,52 @@ BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustu
 
 def _rp(v) -> str:
     return "–" if v is None else f"{round(v):,}".replace(",", ".")
+
+
+def _tgl(d) -> str:
+    """'2026-11-11' -> '11 Nov'."""
+    try:
+        return f"{int(str(d)[8:10])} {BULAN[int(str(d)[5:7]) - 1][:3]}"
+    except (ValueError, IndexError):
+        return str(d)
+
+
+def _miliar(v) -> str:
+    return f"Rp{abs(v) / 1e9:.1f} M".replace(".", ",")
+
+
+def momentum(bars: list[dict], hari: int = 5) -> dict | None:
+    """Volume besar dan breakout dalam `hari` bar terakhir (bar harian {d,o,h,l,c,v}, terlama ke terbaru):
+    volume terbesar dibanding rata-rata 20 bar sebelumnya, penutupan pertama di atas tertinggi 20 bar sebelumnya,
+    penutupan terakhir di atas puncak 60 bar sebelum jendela, dan penutupan di bawah terendah 20 bar (breakdown)."""
+    b = [x for x in bars or [] if x.get("v") is not None and x.get("c") is not None]
+    if len(b) < 30:
+        return None
+    vol, vtgl, bo, bdown = 0.0, None, None, None
+    for k in range(len(b) - hari, len(b)):
+        prev = b[k - 20:k]
+        rata = sum(x["v"] for x in prev) / 20
+        r = b[k]["v"] / rata if rata else 0
+        if r > vol:
+            vol, vtgl = r, b[k]["d"]
+        if bo is None and b[k]["c"] > max(x["h"] for x in prev):
+            bo = b[k]["d"]
+        if b[k]["c"] < min(x["l"] for x in prev):
+            bdown = b[k]["d"]
+    atas60 = b[-1]["c"] > max(x["h"] for x in b[-65:-hari]) if len(b) > hari + 20 else False
+    return {"vol": round(vol, 1), "volTgl": vtgl, "breakout": bo, "atas60": atas60, "breakdown": bdown}
+
+
+def resistensi(bars: list[dict], lebar: int = 5, abaikan: int = 5) -> list[tuple]:
+    """Puncak-puncak sebelumnya (swing high: lebih tinggi dari `lebar` bar ke kiri dan kanan) di luar `abaikan` bar
+    terakhir, sebagai level resistance nyata dari chart: [(harga, tanggal)], dari yang terendah."""
+    b = [x for x in bars or [] if x.get("h") is not None]
+    out = []
+    for i in range(lebar, len(b) - max(lebar, abaikan)):
+        h = b[i]["h"]
+        if h > max(x["h"] for j, x in enumerate(b[i - lebar:i + lebar + 1]) if j != lebar):
+            out.append((h, b[i]["d"]))
+    return sorted(set(out))
 
 
 def _rentang(lo, hi) -> str:
@@ -44,7 +92,9 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
     harga {t: {h}}, nama {t: nama}, bulan (1-12),
     harmonik [baris .harmonik.json], recovery [saham recovery_api], seasonality [saham season_api],
     broker {"bulan": m, "akumulasi": [{s, bandar}], "distribusi": [{s, bandar}]}, lk [baris lk_api],
-    saham50 [baris], kakdr [baris], items [Monitor], kandidat [item kandidat], backdoor_pd {t: skor 0-100},
+    saham50 [baris], kakdr [baris], momentum {t: momentum() + res, l5, c} (ringkasan dari pemindaian Harmonic malam),
+    bars {t: bar harian} (cadangan bila ringkasan momentum belum ada), broksum {"tanggal": [...], "saham": {t: {net, hariAkum, kemarin}}},
+    items [Monitor], kandidat [item kandidat], backdoor_pd {t: skor 0-100},
     pengendali {t: {...}} (pengendali-verified.json), sikap {t: sikap pandangan analis}, hsc [kode saham HSC].
     Hasil: rows = Non HSC terbaik, hsc = HSC terbaik (masing-masing paling banyak `jumlah`, peringkat sendiri)."""
     harga = {t: (v or {}).get("h") for t, v in (src.get("harga") or {}).items()}
@@ -160,6 +210,50 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
             level.setdefault(t, []).append((r["target"]["harga"], f"Saham 50: {r['target'].get('dasar') or 'resistance'}"))
         if t and sk >= 50:
             tambah(t, "saham50", sk * 0.1, f"Saham 50 skor {round(sk)}: {(r.get('potensi') or ['potensi kenaikan dari harga dasar'])[0]}")
+
+    # Momentum harian: volume besar (>= 2x rata-rata 20 hari) dan breakout tertinggi 20 hari dalam 5 hari bursa terakhir.
+    # Puncak sebelumnya di chart (resistance) masuk ke kumpulan level target semua saham yang punya bar harian.
+    mom = dict(src.get("momentum") or {})
+    for t, bars in (src.get("bars") or {}).items():
+        m = momentum(bars)
+        if m and t not in mom:
+            b5 = [x for x in bars[-5:] if x.get("l") is not None]
+            mom[t] = {**m, "res": resistensi(bars), "l5": min(x["l"] for x in b5) if b5 else None, "c": bars[-1].get("c")}
+    for t, m in mom.items():
+        res = [tuple(x) for x in m.get("res") or []]
+        level.setdefault(t, []).extend((h, f"resistance puncak {_tgl(d)}") for h, d in res)
+        if m["breakdown"] and not m["breakout"]:
+            risiko(t, 5, f"Harga menembus ke bawah terendah 20 hari pada {_tgl(m['breakdown'])}.")
+            continue
+        poin, teks = 0.0, []
+        if m["vol"] >= 2:
+            poin += 2 + 6 * min(m["vol"], 8) / 8
+            teks.append(f"volume {_r(m['vol']).rstrip('0').rstrip(',')} kali rata-rata 20 hari pada {_tgl(m['volTgl'])}")
+        if m["breakout"]:
+            poin += 5
+            teks.append(f"harga menembus tertinggi 20 hari pada {_tgl(m['breakout'])}")
+        if m["atas60"] and teks:
+            poin += 2
+            teks.append("penutupan terakhir di atas puncak 60 hari")
+        if teks:
+            tambah(t, "momentum", poin, "Momentum: " + ", ".join(teks) + ".")
+            # Rencana momentum: entry di penutupan terakhir, stop di terendah 5 hari terakhir, target dari resistance.
+            if m.get("l5") and m.get("c"):
+                e = harga.get(t) or m["c"]
+                rencana(t, 1.5, e, m["l5"], [(h, f"resistance puncak {_tgl(d)}") for h, d in res if h > e],
+                        "Momentum (stop di terendah 5 hari)")
+
+    # Broksum harian beberapa hari bursa terakhir: akumulasi bersih menambah poin, distribusi bersih jadi risiko.
+    bs = src.get("broksum") or {}
+    nh = len(bs.get("tanggal") or []) or 5
+    for t, o in (bs.get("saham") or {}).items():
+        net, ha = o.get("net") or 0, o.get("hariAkum") or 0
+        kmr = " termasuk kemarin" if (o.get("kemarin") or 0) > 0 else ""
+        if net > 0:
+            tambah(t, "broksum", 3 + 6 * min(net / 1e10, 1) + 1.2 * ha,
+                   f"Broksum {nh} hari bursa terakhir: akumulasi bersih {_miliar(net)}, akumulasi {ha} dari {nh} hari{kmr}.")
+        elif net < 0:
+            risiko(t, 5 + 5 * min(-net / 1e10, 1), f"Broksum {nh} hari bursa terakhir: distribusi bersih {_miliar(net)}.")
 
     # KakdrWay (valuasi dan kualitas).
     for r in src.get("kakdr") or []:
