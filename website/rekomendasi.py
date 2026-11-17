@@ -11,7 +11,7 @@ import re
 from datetime import date
 
 # Naikkan bila aturan berubah: rekomendasi hari ini yang tersimpan dengan versi lama dihitung ulang.
-VERSI = 9
+VERSI = 10
 BOBOT = {"harmonik": 25, "recovery": 20, "backdoor": 20, "seasonality": 15, "broker": 15, "lk": 15, "saham50": 10, "kakdr": 10,
          "momentum": 15, "broksum": 15}
 NAMA_SUMBER = {"harmonik": "Harmonic Pattern", "recovery": "Recovery", "backdoor": "Backdoor", "seasonality": "Seasonality",
@@ -28,6 +28,9 @@ SINYAL = {"akuisisi": "akuisisi", "kbli": "perubahan KBLI", "rights": "rights is
 TARGET1, TARGET2 = (10, 20), (25, 100)
 RR_MIN, STOP_MAKS, ENTRY_BAWAH = 1.0, 15, 5
 SKOR_MIN = 20      # skor gabungan minimal supaya sinyal lemah tidak ikut direkomendasikan
+# Pantauan: saham berpotensi yang belum masuk daftar utama (cadangan di luar 5 besar, atau skor tinggi tetapi belum ada
+# rencana yang memenuhi syarat), plus sinyal tunggal yang kuat (poin sumber minimal PANTAU_SINYAL dari bobotnya).
+PANTAU_MAKS, PANTAU_SINYAL = 15, 0.6
 BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
 
 
@@ -267,7 +270,9 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
         m = momentum(bars)
         if m and t not in mom:
             b5 = [x for x in bars[-5:] if x.get("l") is not None]
-            mom[t] = {**m, "res": resistensi(bars), "l5": min(x["l"] for x in b5) if b5 else None, "c": bars[-1].get("c")}
+            b20 = [x for x in bars[-20:] if x.get("l") is not None]
+            mom[t] = {**m, "res": resistensi(bars), "l5": min(x["l"] for x in b5) if b5 else None,
+                      "l20": min(x["l"] for x in b20) if b20 else None, "c": bars[-1].get("c")}
     for t, m in mom.items():
         res = [tuple(x) for x in m.get("res") or []]
         level.setdefault(t, []).extend((h, f"resistance puncak {_tgl(d)}") for h, d in res)
@@ -286,11 +291,15 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
             teks.append("penutupan terakhir di atas puncak 60 hari")
         if teks:
             tambah(t, "momentum", poin, "Momentum: " + ", ".join(teks) + ".")
-            # Rencana momentum: entry di penutupan terakhir, stop di terendah 5 hari terakhir, target dari resistance.
-            if m.get("l5") and m.get("c"):
-                e = harga.get(t) or m["c"]
-                rencana(t, 1.5, e, m["l5"], [(h, f"resistance puncak {_tgl(d)}") for h, d in res if h > e],
-                        "Momentum (stop di terendah 5 hari)")
+        # Rencana dari chart: entry di harga terakhir, stop di terendah 5 hari terakhir, target dari resistance (puncak
+        # sebelumnya). Untuk saham bermomentum prioritasnya di atas Seasonality; untuk saham lain jadi cadangan terakhir
+        # supaya saham berskor tinggi tanpa pola/recovery tetap punya rencana bila chart-nya memenuhi syarat.
+        # Harga di terendah 5 hari (stop = entry): stop pindah ke terendah 20 hari.
+        e = harga.get(t) or m.get("c")
+        sl, lbl = next(((x, k) for x, k in ((m.get("l5"), "5"), (m.get("l20"), "20")) if x and e and x < e * 0.995), (None, ""))
+        if sl:
+            rencana(t, 1.5 if teks else 0.5, e, sl, [(h, f"resistance puncak {_tgl(d)}") for h, d in res if h > e],
+                    f"Momentum (stop di terendah {lbl} hari)" if teks else f"Support-resistance chart (stop di terendah {lbl} hari)")
 
     # Broksum harian beberapa hari bursa terakhir: akumulasi bersih menambah poin, distribusi bersih jadi risiko.
     bs = src.get("broksum") or {}
@@ -367,10 +376,22 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
     def pilih_rencana(t, h):
         """Rencana dengan prioritas sumber tertinggi yang memenuhi syarat: stop paling jauh STOP_MAKS% di bawah entry,
         entry paling jauh ENTRY_BAWAH% di bawah harga terakhir, target 1 naik TARGET1% dan target 2 naik TARGET2% dari
-        entry, R:R ke target 1 minimal RR_MIN. Target diambil dari sumber rencana itu dulu, lalu dari level sumber lain."""
+        entry, R:R ke target 1 minimal RR_MIN. Target diambil dari sumber rencana itu dulu, lalu dari level sumber lain.
+        Hasil: (rencana, None) atau (None, sebab tidak ada rencana) untuk daftar Pantauan."""
+        sebab = []
+        if not calon.get(t):
+            return None, "belum ada entry dan stop dari sumber mana pun (Harmonic, Recovery, Momentum, Seasonality)"
         for p, e, sl, tg, sumber in sorted(calon.get(t) or [], key=lambda c: -c[0]):
             e = e or h
-            if not (sl and e and sl < e and e <= h * 1.02 and e >= h * (1 - ENTRY_BAWAH / 100) and (1 - sl / e) * 100 <= STOP_MAKS):
+            nm = sumber.split(" (")[0]
+            if not (sl and e and sl < e):
+                sebab.append(f"{nm}: stop tidak di bawah entry")
+                continue
+            if not (e <= h * 1.02 and e >= h * (1 - ENTRY_BAWAH / 100)):
+                sebab.append(f"{nm}: entry {_rp(e)} jauh dari harga {_rp(h)}")
+                continue
+            if (1 - sl / e) * 100 > STOP_MAKS:
+                sebab.append(f"{nm}: stop {_rp(sl)} turun {round((1 - sl / e) * 100)}% dari entry, lebih dari {STOP_MAKS}%")
                 continue
             naik = lambda x: (x / e - 1) * 100
             def cari(lo, hi, min_harga):
@@ -382,26 +403,50 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
             t1 = cari(*TARGET1, e)
             t2 = cari(*TARGET2, t1[0]) if t1 else None
             if not t1 or not t2:
+                sebab.append(f"{nm}: tidak ada level target " + (f"1 naik {TARGET1[0]}–{TARGET1[1]}%" if not t1 else f"2 naik {TARGET2[0]}–{TARGET2[1]}%")
+                             + f" dari entry {_rp(e)}")
                 continue
             rr = (t1[0] - e) / (e - sl)
             if rr < RR_MIN:
+                sebab.append(f"{nm}: R:R {_r(rr)} di bawah {RR_MIN:g}")
                 continue
             return {"entry": e, "stop": sl, "tp1": t1[0], "tp1Ket": t1[1], "tp2": t2[0], "tp2Ket": t2[1], "sumber": sumber,
-                    "rr": round(rr, 2), "naik1": round(naik(t1[0]), 1), "naik2": round(naik(t2[0]), 1), "turunStop": round((sl / e - 1) * 100, 1)}
-        return None
+                    "rr": round(rr, 2), "naik1": round(naik(t1[0]), 1), "naik2": round(naik(t2[0]), 1), "turunStop": round((sl / e - 1) * 100, 1)}, None
+        return None, "; ".join(dict.fromkeys(sebab))
 
     rows, dibuang = [], []
     item_by = {it.get("ticker"): it for it in src.get("items") or [] if it.get("ticker")}
+    pantau = []
+    hsc = set(src.get("hsc") or [])
+
+    def calon_pantau(t, a, h, skor, sebab):
+        """Saham yang tidak masuk daftar utama tetap dicatat bila berpotensi: skor sudah memenuhi, atau ada satu sinyal kuat."""
+        kuat = [NAMA_SUMBER[k] for k, v in a["komponen"].items() if v >= BOBOT[k] * PANTAU_SINYAL]
+        if skor < SKOR_MIN and not kuat:
+            return
+        urut = sorted(a["alasan"], key=lambda x: -a["komponen"].get(x[0], 0))
+        pantau.append({"t": t, "nama": nama.get(t, ""), "harga": h, "skor": skor, "hsc": t in hsc, "jenis": "belum",
+                       "komponen": {NAMA_SUMBER[k]: v for k, v in sorted(a["komponen"].items(), key=lambda x: -x[1])},
+                       "alasan": [s for _, s in urut][:2], "risiko": [s for _, s in a["risiko"]][:2], "sebab": sebab})
+
     for t, a in acc.items():
         h = harga.get(t)
-        if not h or h >= batas_harga or len(a["komponen"]) < 2 or t in bearish:
+        if not h or h >= batas_harga:
             continue
         kurang = sum(p for p, _ in a["risiko"])
         skor = round(sum(a["komponen"].values()) - kurang, 1)
-        if skor < SKOR_MIN:
+        if t in bearish:
+            calon_pantau(t, a, h, skor, "ada pola harmonik bearish yang aktif (di PRZ atau sudah berbalik turun)")
             continue
-        plan = pilih_rencana(t, h)
+        if len(a["komponen"]) < 2:
+            calon_pantau(t, a, h, skor, "baru didukung satu sumber; tunggu konfirmasi sumber lain")
+            continue
+        if skor < SKOR_MIN:
+            calon_pantau(t, a, h, skor, f"skor {_r(skor).rstrip('0').rstrip(',')} di bawah syarat {SKOR_MIN}")
+            continue
+        plan, sebab = pilih_rencana(t, h)
         if plan is None:
+            calon_pantau(t, a, h, skor, "rencana belum memenuhi syarat: " + sebab)
             continue      # tidak ada rencana dengan target 1 naik 10-20% dan target 2 naik 25-100%
         if plan["entry"] < h * 0.99:
             a["risiko"].append((0, f"Entry {_rp(plan['entry'])} di bawah harga terakhir {_rp(h)}: tunggu harga turun ke area entry, jangan dikejar."))
@@ -415,13 +460,21 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
             dibuang.append({"t": t, "skor": skor, "masalah": salah})
     rows.sort(key=lambda r: (-r["skor"], -r["jumlahSumber"], r["t"]))
     # Saham HSC (konsentrasi kepemilikan tinggi, dikeluarkan dari IHSG) diperingkat terpisah dari saham Non HSC.
-    hsc = set(src.get("hsc") or [])
     for r in rows:
         r["hsc"] = r["t"] in hsc
-    non, dgn = [r for r in rows if not r["hsc"]][:jumlah], [r for r in rows if r["hsc"]][:jumlah]
+    non, dgn = [r for r in rows if not r["hsc"]], [r for r in rows if r["hsc"]]
+    # Yang lolos semua syarat tetapi di luar daftar utama menjadi cadangan di Pantauan (rencana lengkap ikut).
+    for r in non[jumlah:] + dgn[jumlah:]:
+        pantau.append({**r, "jenis": "cadangan", "alasan": r["alasan"][:2], "risiko": r["risiko"][:2],
+                       "sebab": f"lolos semua syarat, di luar {jumlah} besar"})
+    non, dgn = non[:jumlah], dgn[:jumlah]
     for grup in (non, dgn):
         for i, r in enumerate(grup):
             r["peringkat"] = i + 1
+    # Cadangan dulu, lalu skor tertinggi; masing-masing kelompok paling banyak PANTAU_MAKS.
+    pantau.sort(key=lambda r: (r["jenis"] != "cadangan", -r["skor"], r["t"]))
+    pantau = [r for r in pantau if not r["hsc"]][:PANTAU_MAKS] + [r for r in pantau if r["hsc"]][:PANTAU_MAKS]
     return {"versi": VERSI, "syarat": {"target1": TARGET1, "target2": TARGET2, "rrMin": RR_MIN, "stopMaks": STOP_MAKS, "skorMin": SKOR_MIN}, "batasHarga": batas_harga, "dinilai": len(acc), "lolos": sum(not r["hsc"] for r in rows), "lolosHsc": sum(r["hsc"] for r in rows),
             "rows": non, "hsc": dgn, "bobot": {NAMA_SUMBER[k]: v for k, v in BOBOT.items()},
-            "dibuang": sorted(dibuang, key=lambda x: -x["skor"])[:20]}
+            "dibuang": sorted(dibuang, key=lambda x: -x["skor"])[:20], "pantauan": pantau,
+            "syaratPantau": {"maks": PANTAU_MAKS, "sinyal": PANTAU_SINYAL}}
