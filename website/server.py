@@ -5111,6 +5111,7 @@ def harmonik_api() -> dict:
 # ---------------------------------------------------------------- Rekomendasi ----
 REKO_PATH = ROOT / ".rekomendasi.json"
 REKO_BATAS = 2000   # harga maksimal saham yang direkomendasikan
+REKO_JUMLAH = 5     # jumlah saham per kelompok (Non HSC dan HSC)
 _reko_lock = threading.Lock()
 
 
@@ -5167,10 +5168,10 @@ def rekomendasi_kumpul() -> tuple[dict, dict]:
 
 
 def rekomendasi_build() -> dict:
-    """Hitung rekomendasi hari ini (10 saham Non HSC dan 10 saham HSC terbaik di bawah REKO_BATAS) dan simpan ke
+    """Hitung rekomendasi hari ini (REKO_JUMLAH saham Non HSC dan HSC terbaik di bawah REKO_BATAS) dan simpan ke
     .rekomendasi.json."""
     src, n = rekomendasi_kumpul()
-    res = RK.nilai(src, REKO_BATAS)
+    res = RK.nilai(src, REKO_BATAS, REKO_JUMLAH)
     now = datetime.now(WIB)
     res.update({"tanggal": now.strftime("%Y-%m-%d"), "updated": now.strftime("%Y-%m-%d %H:%M"), "sumber": n})
     tmp = REKO_PATH.with_suffix(".tmp")
