@@ -11,7 +11,7 @@ import re
 from datetime import date
 
 # Naikkan bila aturan berubah: rekomendasi hari ini yang tersimpan dengan versi lama dihitung ulang.
-VERSI = 8
+VERSI = 9
 BOBOT = {"harmonik": 25, "recovery": 20, "backdoor": 20, "seasonality": 15, "broker": 15, "lk": 15, "saham50": 10, "kakdr": 10,
          "momentum": 15, "broksum": 15}
 NAMA_SUMBER = {"harmonik": "Harmonic Pattern", "recovery": "Recovery", "backdoor": "Backdoor", "seasonality": "Seasonality",
@@ -92,6 +92,48 @@ def _pct(v) -> str:
 
 def _r(v) -> str:
     return f"{v:.2f}".replace(".", ",")
+
+
+def periksa(r: dict, batas_harga: float, items: dict | None = None) -> list[str]:
+    """Pemeriksaan mandiri satu baris rekomendasi sebelum ditampilkan: angka rencana harus konsisten dengan syarat, dan
+    klaim backdoor di alasan harus sesuai data Monitor. Hasil: daftar masalah (kosong = lolos)."""
+    salah = []
+    h, p = r.get("harga"), r.get("plan") or {}
+    e, sl, t1, t2 = p.get("entry"), p.get("stop"), p.get("tp1"), p.get("tp2")
+    if not (h and 0 < h < batas_harga):
+        salah.append(f"harga {h} di luar batas")
+    if not all(isinstance(x, (int, float)) and x > 0 for x in (e, sl, t1, t2)):
+        return salah + ["angka rencana tidak lengkap"]
+    if not sl < e < t1 < t2:
+        salah.append(f"urutan stop {sl} < entry {e} < target 1 {t1} < target 2 {t2} tidak terpenuhi")
+    if not (h * (1 - ENTRY_BAWAH / 100) <= e <= h * 1.02):
+        salah.append(f"entry {e} terlalu jauh dari harga {h}")
+    n1, n2, st = (t1 / e - 1) * 100, (t2 / e - 1) * 100, (1 - sl / e) * 100
+    if not TARGET1[0] - 0.05 <= n1 <= TARGET1[1] + 0.05:
+        salah.append(f"target 1 naik {n1:.1f}% di luar {TARGET1[0]}-{TARGET1[1]}%")
+    if not TARGET2[0] - 0.05 <= n2 <= TARGET2[1] + 0.05:
+        salah.append(f"target 2 naik {n2:.1f}% di luar {TARGET2[0]}-{TARGET2[1]}%")
+    if st > STOP_MAKS + 0.05:
+        salah.append(f"stop {st:.1f}% di bawah entry, lebih dari {STOP_MAKS}%")
+    rr = (t1 - e) / (e - sl) if e > sl else 0
+    if rr < RR_MIN - 0.005 or abs(rr - (p.get("rr") or 0)) > 0.01:
+        salah.append(f"R:R {rr:.2f} tidak sesuai syarat atau angka tampilan")
+    for k, n in (("naik1", n1), ("naik2", n2)):
+        if abs((p.get(k) or 0) - n) > 0.1:
+            salah.append(f"{k} tampilan {p.get(k)} tidak sama dengan hitungan {n:.1f}")
+    if not p.get("tp1Ket") or not p.get("tp2Ket"):
+        salah.append("asal target tidak disebut")
+    if (r.get("skor") or 0) < SKOR_MIN or (r.get("jumlahSumber") or 0) < 2:
+        salah.append("skor atau jumlah sumber di bawah syarat")
+    # Klaim backdoor: tahap dan tender offer harus berasal dari item Monitor yang bukan deteksi otomatis belum terkonfirmasi.
+    it = (items or {}).get(r.get("t")) or {}
+    teks = " ".join(r.get("alasan") or [])
+    if "Di Monitor backdoor tercatat" in teks and (not it or it.get("autoJenis") in ("rencana", "rencana-ditolak")):
+        salah.append("klaim tahap backdoor tanpa item Monitor terkonfirmasi")
+    m = re.search(r"tender offer Rp([\d.]+) periode", teks)
+    if m and _rp((it.get("tender") or {}).get("price") or 0) != m.group(1):
+        salah.append(f"harga tender offer Rp{m.group(1)} tidak sama dengan data Monitor")
+    return salah
 
 
 def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
@@ -348,7 +390,8 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
                     "rr": round(rr, 2), "naik1": round(naik(t1[0]), 1), "naik2": round(naik(t2[0]), 1), "turunStop": round((sl / e - 1) * 100, 1)}
         return None
 
-    rows = []
+    rows, dibuang = [], []
+    item_by = {it.get("ticker"): it for it in src.get("items") or [] if it.get("ticker")}
     for t, a in acc.items():
         h = harga.get(t)
         if not h or h >= batas_harga or len(a["komponen"]) < 2 or t in bearish:
@@ -366,6 +409,10 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
         rows.append({"t": t, "nama": nama.get(t, ""), "harga": h, "skor": skor,
                      "komponen": {NAMA_SUMBER[k]: v for k, v in sorted(a["komponen"].items(), key=lambda x: -x[1])},
                      "jumlahSumber": len(a["komponen"]), "alasan": [s for _, s in urut], "risiko": [s for _, s in a["risiko"]], "plan": plan})
+        salah = periksa(rows[-1], batas_harga, item_by)
+        if salah:
+            rows.pop()      # gagal pemeriksaan mandiri: tidak ditampilkan, alasannya dicatat
+            dibuang.append({"t": t, "skor": skor, "masalah": salah})
     rows.sort(key=lambda r: (-r["skor"], -r["jumlahSumber"], r["t"]))
     # Saham HSC (konsentrasi kepemilikan tinggi, dikeluarkan dari IHSG) diperingkat terpisah dari saham Non HSC.
     hsc = set(src.get("hsc") or [])
@@ -376,4 +423,5 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
         for i, r in enumerate(grup):
             r["peringkat"] = i + 1
     return {"versi": VERSI, "syarat": {"target1": TARGET1, "target2": TARGET2, "rrMin": RR_MIN, "stopMaks": STOP_MAKS, "skorMin": SKOR_MIN}, "batasHarga": batas_harga, "dinilai": len(acc), "lolos": sum(not r["hsc"] for r in rows), "lolosHsc": sum(r["hsc"] for r in rows),
-            "rows": non, "hsc": dgn, "bobot": {NAMA_SUMBER[k]: v for k, v in BOBOT.items()}}
+            "rows": non, "hsc": dgn, "bobot": {NAMA_SUMBER[k]: v for k, v in BOBOT.items()},
+            "dibuang": sorted(dibuang, key=lambda x: -x["skor"])[:20]}

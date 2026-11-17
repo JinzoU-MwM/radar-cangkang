@@ -38,6 +38,7 @@ from pathlib import Path
 
 import brokerpola as BP
 import rekomendasi as RK
+import auditdata as AD
 import povdalam as PD
 import povarah as PA
 import povpindai as PP
@@ -1732,14 +1733,15 @@ def nama_khas(nama: str) -> str:
     return ""
 
 
-def rencana_cocok(t: str, teks: str, nama: str = "") -> bool:
+def rencana_cocok(t: str, teks: str, nama: str = "", resmi: bool = False) -> bool:
     """Judul menyebut rencana pengambilalihan emiten `t` sendiri (bukan emiten yang membeli pihak lain):
     - pola RENCANA_RX dan tidak batal;
     - judul harus menyebut `t`: kodenya ("(KDTN)", "$KDTN", atau "KDTN") atau kata khas namanya;
     - bila judul menyebut kode lain dalam kurung/$, `t` harus termasuk; bila objeknya "saham XXXX" dengan kode lain,
       ditolak (mis. "Beli 5,84% Saham ENRG Jelang MSCI" bukan tentang MSCI);
     - `t` (kode atau namanya) disebut sebelum kata kerja aktif: emiten itulah pembelinya, ditolak (bentuk pasif
-      "Dicaplok ..." tetap dihitung); pengendali lama yang menambah porsi ("Pengendali ... Beli 5% Saham") ditolak."""
+      "Dicaplok ..." tetap dihitung); pengendali lama yang menambah porsi ("Pengendali ... Beli 5% Saham") ditolak;
+    - `resmi`: judul keterbukaan emiten itu sendiri (akun laporan Stockbit), boleh tanpa menyebut kodenya."""
     teks = teks or ""
     if not RENCANA_RX.search(teks) or RENCANA_BATAL_RX.search(teks):
         return False
@@ -1754,9 +1756,17 @@ def rencana_cocok(t: str, teks: str, nama: str = "") -> bool:
     if khas:
         posisi += [m.start() for m in re.finditer(rf"\b{re.escape(khas)}", teks, re.I)]
     if not posisi:
-        return False
+        # Keterbukaan resmi emiten itu sendiri (tanpa menyebut kodenya): PPJB/tender atas saham perseroan berarti emiten
+        # itu targetnya, kecuali objeknya perusahaan lain ("... dalam PT X", "anak usaha").
+        return bool(resmi and re.search(r"\bppjb|perjanjian (pengikatan |bersyarat |)jual beli saham|penawaran tender|tender (wajib|sukarela)", teks, re.I)
+                    and not re.search(r"\b(dalam|terhadap)\s+PT\b|atas saham(-saham)? PT\b|anak (usaha|perusahaan)", teks, re.I))
     kerja = re.search(r"(?<![a-z])(akuisisi|caplok|membeli|beli|serap)", teks, re.I)
     if kerja and re.search(r"(?<!calon )\bpengendali\b(?! baru)", teks[:kerja.start()], re.I):
+        return False
+    # Bentuk pasif dengan pelaku tepat sesudahnya ("Sahamnya Dicaplok AKR (AKRA)"): emiten itu pelakunya (pembeli).
+    # Bila dipisah koma ("Usai Dicaplok Haji Isam, Bayan (BYAN)"), emiten itu tetap target.
+    pelaku = [rf"\b{t}\b"] + ([rf"\b{re.escape(khas)}"] if khas else [])
+    if any(re.search(rf"\bdi(caplok|akuisisi|ambil ?alih|beli)\s+(oleh\s+)?[^,.;]{{0,25}}{p}", teks, re.I) for p in pelaku):
         return False
     # Kode/nama emiten disebut sebelum kata kerja aktif (bukan "di-"): emiten itulah pembelinya, mis.
     # "Semen Baturaja (SMBR) Caplok Anak Usaha". Bentuk pasif ("Dicaplok ..., Bayan (BYAN)") tetap dihitung.
@@ -1804,12 +1814,18 @@ def auto_monitor(kd: dict, now: datetime | None = None) -> list[str]:
         if it.get("auto") and it.get("autoJenis") == "rencana" and n.startswith(awal) \
                 and set(k for k, v in (it.get("ms") or {}).items() if v) <= {"spa", "akuisisi", "to_umum"}:
             judul = re.sub(r" \(\d{4}-\d\d-\d\d\)\.$", "", n[len(awal):])
-            if not rencana_cocok(it["ticker"], judul, it.get("name") or ""):
+            resmi = bool(re.match(r"(Keterbukaan Informasi|Penyampaian|Laporan|Pengumuman)\b", judul))
+            if not rencana_cocok(it["ticker"], judul, it.get("name") or "", resmi):
                 item_put({**it, "stage": "radar", "ms": {}, "autoJenis": "rencana-ditolak",
                           "notes": f"Otomatis, dicek ulang: judul \"{judul}\" tidak menunjukkan {it['ticker']} akan diambil alih "
                                    "(emiten ini pembeli, atau berita tentang emiten lain). Tinjau lalu hapus dari Monitor bila tidak relevan.",
                           "updatedAt": datetime.now(timezone.utc).isoformat()})
                 continue
+        # Item yang sudah ditolak tetap di Penyaringan tanpa tonggak (jangan dinaikkan lagi dari judul di catatannya).
+        if it.get("autoJenis") == "rencana-ditolak":
+            if any((it.get("ms") or {}).values()) or (it.get("stage") or "radar") != "radar":
+                item_put({**it, "stage": "radar", "ms": {}, "updatedAt": datetime.now(timezone.utc).isoformat()})
+            continue
         if it.get("auto") and not it.get("ms") and (it.get("stage") or "radar") == "radar":
             ev = ((it.get("signals") or {}).get("akuisisi") or {}).get("ev") or []
             st, ms = tahap_otomatis([e.get("text") or "" for e in ev] + [it.get("notes") or ""])
@@ -1830,7 +1846,8 @@ def auto_monitor(kd: dict, now: datetime | None = None) -> list[str]:
         if t in ada:
             continue
         if not (k.get("pengendaliBaru") and lap):
-            ren = [e for e in ev if (e.get("d") or "") >= batas and rencana_cocok(t, e.get("text") or "", k.get("name") or "")]
+            ren = [e for e in ev if (e.get("d") or "") >= batas and rencana_cocok(t, e.get("text") or "", k.get("name") or "",
+                                                                                     "stockbit.com/post/" in (e.get("src") or ""))]
             if not ren or rencana >= RENCANA_MAKS:
                 continue
             rencana += 1
@@ -5280,10 +5297,55 @@ def rekomendasi_api() -> dict:
         return rekomendasi_build()
 
 
+AUDIT_PATH = ROOT / ".audit-monitor.json"
+
+
+def audit_monitor_build() -> dict:
+    """Audit harian Monitor: tonggak tiap item dicocokkan dengan daftar tender offer Stockbit dan judul keterbukaan/berita
+    emiten itu. Hasilnya daftar "perlu dicek" untuk tim; data tim tidak diubah."""
+    items = [it for it in items_all() if it.get("ticker")]
+    batas = (datetime.now(WIB) - timedelta(days=90)).strftime("%Y-%m-%d")
+    tenders, galat = {}, []
+    try:
+        for x in tender_data(load_config()).get("items") or []:
+            # Tender offer lama (berakhir > 90 hari lalu) milik transaksi sebelumnya, tidak dipakai sebagai bukti.
+            if x.get("start") and (x.get("end") or "") >= batas:
+                tenders[x["ticker"]] = x
+    except Exception as e:
+        galat.append(f"tender offer: {e}"[:160])
+    laporan = {}
+    for it in items:
+        t = it["ticker"]
+        b = berita_saham(t)
+        if b.get("error") and not b.get("items"):
+            galat.append(f"{t}: {b['error']}"[:160])
+        laporan[t] = [{"date": str(x.get("date") or ""), "title": str(x.get("title") or ""), "source": str(x.get("source") or "")}
+                      for x in b.get("items") or []]
+        time.sleep(0.3)
+    now = datetime.now(WIB)
+    res = {"tanggal": now.strftime("%Y-%m-%d"), "updated": now.strftime("%Y-%m-%d %H:%M"), "jumlahItem": len(items),
+           "temuan": AD.audit_monitor(items, tenders, laporan, now.strftime("%Y-%m-%d")), "galat": galat[:20]}
+    tmp = AUDIT_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(res, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(AUDIT_PATH)
+    print(f"[audit-monitor] {len(res['temuan'])} temuan dari {len(items)} item", file=sys.stderr)
+    return res
+
+
+def audit_monitor_api() -> dict:
+    """Hasil audit terakhir. Temuan untuk item yang sudah dihapus dari Monitor tidak ditampilkan lagi."""
+    try:
+        d = json.loads(AUDIT_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"temuan": [], "updated": None}
+    ada = {it.get("ticker") for it in items_all()}
+    return {**d, "temuan": [x for x in d.get("temuan") or [] if x.get("t") in ada]}
+
+
 def daily_builds() -> None:
-    """Pembaruan terjadwal: Seasonality, Pola Broker, Recovery, Harmonic Pattern, lalu Rekomendasi; masing-masing dicoba ulang
-    tiap 30 menit (maks. 3 jam)."""
-    for fn in (season_build, broker_build, recovery_build, harmonik_build, rekomendasi_build):
+    """Pembaruan terjadwal: Seasonality, Pola Broker, Recovery, Harmonic Pattern, Rekomendasi, lalu audit Monitor; masing-masing
+    dicoba ulang tiap 30 menit (maks. 3 jam)."""
+    for fn in (season_build, broker_build, recovery_build, harmonik_build, rekomendasi_build, audit_monitor_build):
         for _ in range(6):
             try:
                 fn()
@@ -6002,6 +6064,12 @@ def season_loop() -> None:
             harmonik_build()
         except Exception as e:
             print(f"[harmonik] pindai ulang gagal: {e}", file=sys.stderr)
+    # Audit Monitor belum pernah dibuat (deploy pertama fitur ini): buat sekarang.
+    if get_token() and not AUDIT_PATH.exists():
+        try:
+            audit_monitor_build()
+        except Exception as e:
+            print(f"[audit-monitor] gagal: {e}", file=sys.stderr)
     # Jadwal 00.01 terlewat (server mati/restart melewati jam itu): kejar sekali sekarang.
     if get_token() and any(jadwal_terlewat(p, datetime.now(timezone.utc)) for p in (SEASON_PATH, BROKER_PATH)):
         print("[seasonality] jadwal harian terlewat; memperbarui sekarang", file=sys.stderr)
@@ -6336,6 +6404,62 @@ def sinkron_loop() -> None:
         if sinkron_peer() and sinkron_kunci():
             sinkron_jalan()
         time.sleep(SINKRON_GAP)
+
+
+def tender_data(cfg: dict, fresh: bool = False) -> dict:
+    """Daftar tender offer Stockbit (persentase minimal sesuai konfigurasi) ditambah emiten backdoor.include dari
+    corporate action masing-masing; galat Stockbit (NoToken/HTTPError) diteruskan ke pemanggil."""
+    res = stockbit_api(cfg["tenders"]["url"], fresh)
+    min_pct = float(cfg["tenders"].get("minPercent") or 0)
+    by = {}
+    for t in res.get("data", {}).get("tender") or []:
+        sym = str(t.get("company_symbol") or "")
+        if not re.match(r"^[A-Z]{4}$", sym):
+            continue
+        try:
+            if float(t.get("tender_percentage") or 0) < min_pct:
+                continue
+        except (TypeError, ValueError):
+            continue
+        if sym not in by or str(t.get("tender_start") or "") > str(by[sym].get("start") or ""):
+            by[sym] = {"ticker": sym, "name": t.get("company_name"),
+                       "price": float(t.get("tender_price") or 0),
+                       "percent": float(t.get("tender_percentage") or 0),
+                       "shares": str(t.get("tender_shares") or ""),
+                       "start": str(t.get("tender_start") or ""),
+                       "end": str(t.get("tender_end") or ""),
+                       "paydate": str(t.get("tender_paydate") or ""),
+                       "active": bool(t.get("corp_action_active"))}
+    bd = cfg.get("backdoor") or {}
+    include = [s for s in (bd.get("include") or []) if re.match(r"^[A-Z]{4}$", str(s))]
+    for sym in include:
+        if sym in by:
+            by[sym]["confirmed"] = True
+            continue
+        entry = {"ticker": sym, "name": "", "confirmed": True}
+        try:
+            ca = stockbit_api(bd.get("corpactionUrl", "").replace("{ticker}", sym), fresh)
+            tos = sorted((a.get("action_info", {}).get("tenderoffer")
+                          for a in ca.get("data") or []
+                          if a.get("action_type") == "tenderoffer" and a.get("action_info")),
+                         key=lambda t: str(t.get("tender_start") or ""), reverse=True)
+            if tos:
+                to = tos[0]
+                entry.update({"name": to.get("company_name"),
+                              "price": float(to.get("tender_price") or 0),
+                              "percent": float(to.get("tender_percentage") or 0),
+                              "shares": str(to.get("tender_shares") or ""),
+                              "start": str(to.get("tender_start") or ""),
+                              "end": str(to.get("tender_end") or ""),
+                              "paydate": str(to.get("tender_paydate") or ""),
+                              "active": bool(to.get("corp_action_active"))})
+        except Exception:
+            pass
+        by[sym] = entry
+        time.sleep(0.3)
+    for x in bd.get("exclude") or []:
+        by.pop(str(x), None)
+    return {"items": list(by.values()), "exclude": bd.get("exclude") or []}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -6685,6 +6809,8 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json(ah_screen())
         elif path == "api/rekomendasi":
             self.reply_json(rekomendasi_api())
+        elif path == "api/audit-monitor":
+            self.reply_json(audit_monitor_api())
         elif path == "api/harmonik":
             t = self.qs("ticker").upper()
             if not t:
@@ -6934,69 +7060,16 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json({"error": "Bagian tenders belum ada di stockbit.config.json."}, 500)
             return
         try:
-            res = stockbit_api(cfg["tenders"]["url"], fresh)
+            self.reply_json(tender_data(cfg, fresh))
         except NoToken:
             self.reply_json({"error": "Token belum diisi. Simpan di file .stockbit-token."}, 401)
-            return
         except urllib.error.HTTPError as e:
             if e.code == 401:
                 self.reply_json({"error": "Token ditolak Stockbit (kedaluwarsa?). Ambil token baru."}, 401)
             else:
                 self.reply_json({"error": f"Gagal memanggil Stockbit: HTTP {e.code}"}, 502)
-            return
         except Exception as e:
             self.reply_json({"error": f"Gagal memanggil Stockbit: {e}"}, 502)
-            return
-        min_pct = float(cfg["tenders"].get("minPercent") or 0)
-        by = {}
-        for t in res.get("data", {}).get("tender") or []:
-            sym = str(t.get("company_symbol") or "")
-            if not re.match(r"^[A-Z]{4}$", sym):
-                continue
-            try:
-                if float(t.get("tender_percentage") or 0) < min_pct:
-                    continue
-            except (TypeError, ValueError):
-                continue
-            if sym not in by or str(t.get("tender_start") or "") > str(by[sym].get("start") or ""):
-                by[sym] = {"ticker": sym, "name": t.get("company_name"),
-                           "price": float(t.get("tender_price") or 0),
-                           "percent": float(t.get("tender_percentage") or 0),
-                           "shares": str(t.get("tender_shares") or ""),
-                           "start": str(t.get("tender_start") or ""),
-                           "end": str(t.get("tender_end") or ""),
-                           "paydate": str(t.get("tender_paydate") or ""),
-                           "active": bool(t.get("corp_action_active"))}
-        bd = cfg.get("backdoor") or {}
-        include = [s for s in (bd.get("include") or []) if re.match(r"^[A-Z]{4}$", str(s))]
-        for sym in include:
-            if sym in by:
-                by[sym]["confirmed"] = True
-                continue
-            entry = {"ticker": sym, "name": "", "confirmed": True}
-            try:
-                ca = stockbit_api(bd.get("corpactionUrl", "").replace("{ticker}", sym), fresh)
-                tos = sorted((a.get("action_info", {}).get("tenderoffer")
-                              for a in ca.get("data") or []
-                              if a.get("action_type") == "tenderoffer" and a.get("action_info")),
-                             key=lambda t: str(t.get("tender_start") or ""), reverse=True)
-                if tos:
-                    to = tos[0]
-                    entry.update({"name": to.get("company_name"),
-                                  "price": float(to.get("tender_price") or 0),
-                                  "percent": float(to.get("tender_percentage") or 0),
-                                  "shares": str(to.get("tender_shares") or ""),
-                                  "start": str(to.get("tender_start") or ""),
-                                  "end": str(to.get("tender_end") or ""),
-                                  "paydate": str(to.get("tender_paydate") or ""),
-                                  "active": bool(to.get("corp_action_active"))})
-            except Exception:
-                pass
-            by[sym] = entry
-            time.sleep(0.3)
-        for x in bd.get("exclude") or []:
-            by.pop(str(x), None)
-        self.reply_json({"items": list(by.values()), "exclude": bd.get("exclude") or []})
 
     def api_reports(self, cfg, ticker: str, fresh: bool) -> None:
         if not cfg.get("reports"):
