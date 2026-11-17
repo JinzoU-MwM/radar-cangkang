@@ -1718,19 +1718,49 @@ RENCANA_RX = re.compile(r"(akuisisi|caplok|membeli|beli|serap)\D{0,40}\d+([.,]\d
 RENCANA_BATAL_RX = re.compile(r"\bbatal|dibatalkan|urung|tidak jadi", re.I)
 
 
-def rencana_cocok(t: str, teks: str) -> bool:
-    """Judul menyebut rencana pengambilalihan emiten `t` sendiri: pola RENCANA_RX, tidak batal, dan bila judul
-    menyebut kode saham (mis. "(KDTN)" atau "$KDTN"), kode `t` harus termasuk."""
-    if not RENCANA_RX.search(teks or "") or RENCANA_BATAL_RX.search(teks or ""):
+NAMA_UMUM = {"pt", "tbk", "persero", "bank", "indonesia", "indo", "nusantara", "jaya", "makmur", "sejahtera", "utama", "abadi",
+             "prima", "mitra", "sinar", "global", "internasional", "international", "perkasa", "group", "grup", "multi", "putra",
+             "investama", "sentosa", "mandiri", "lestari", "dua", "tiga", "dan", "the"}
+
+
+def nama_khas(nama: str) -> str:
+    """Kata pertama yang khas dari nama perusahaan (mis. "indokripto" dari "Indokripto Koin Semesta Tbk"), untuk
+    mengenali emiten di judul berita yang tidak menyebut kodenya; kosong bila semua kata umum."""
+    for w in re.findall(r"[A-Za-z]+", nama or ""):
+        if len(w) >= 4 and w.lower() not in NAMA_UMUM:
+            return w.lower()
+    return ""
+
+
+def rencana_cocok(t: str, teks: str, nama: str = "") -> bool:
+    """Judul menyebut rencana pengambilalihan emiten `t` sendiri (bukan emiten yang membeli pihak lain):
+    - pola RENCANA_RX dan tidak batal;
+    - judul harus menyebut `t`: kodenya ("(KDTN)", "$KDTN", atau "KDTN") atau kata khas namanya;
+    - bila judul menyebut kode lain dalam kurung/$, `t` harus termasuk; bila objeknya "saham XXXX" dengan kode lain,
+      ditolak (mis. "Beli 5,84% Saham ENRG Jelang MSCI" bukan tentang MSCI);
+    - `t` (kode atau namanya) disebut sebelum kata kerja aktif: emiten itulah pembelinya, ditolak (bentuk pasif
+      "Dicaplok ..." tetap dihitung); pengendali lama yang menambah porsi ("Pengendali ... Beli 5% Saham") ditolak."""
+    teks = teks or ""
+    if not RENCANA_RX.search(teks) or RENCANA_BATAL_RX.search(teks):
         return False
-    kode = {a or b for a, b in re.findall(r"\(([A-Z]{4})\)|\$([A-Z]{4})\b", teks or "")}
+    kode = {a or b for a, b in re.findall(r"\(([A-Z]{4})\)|\$([A-Z]{4})\b", teks)}
     if kode and t not in kode:
         return False
-    # Kode emiten disebut sebelum kata kerja aktif (bukan "di-"): emiten itulah pembelinya, mis.
+    objek = re.findall(r"[Ss]aham\s+([A-Z]{4})\b", teks)
+    if objek and t not in objek:
+        return False
+    khas = nama_khas(nama)
+    posisi = [m.start() for m in re.finditer(rf"\b{t}\b", teks)]
+    if khas:
+        posisi += [m.start() for m in re.finditer(rf"\b{re.escape(khas)}", teks, re.I)]
+    if not posisi:
+        return False
+    kerja = re.search(r"(?<![a-z])(akuisisi|caplok|membeli|beli|serap)", teks, re.I)
+    if kerja and re.search(r"(?<!calon )\bpengendali\b(?! baru)", teks[:kerja.start()], re.I):
+        return False
+    # Kode/nama emiten disebut sebelum kata kerja aktif (bukan "di-"): emiten itulah pembelinya, mis.
     # "Semen Baturaja (SMBR) Caplok Anak Usaha". Bentuk pasif ("Dicaplok ..., Bayan (BYAN)") tetap dihitung.
-    kerja = re.search(r"(?<![a-z])(akuisisi|caplok|membeli|beli|serap)", teks or "", re.I)
-    posisi = [m.start() for m in re.finditer(rf"\b{t}\b", teks or "")]
-    return not (kerja and posisi and min(posisi) < kerja.start())
+    return not (kerja and min(posisi) < kerja.start())
 RENCANA_HARI, RENCANA_MAKS = 14, 5
 
 
@@ -1766,7 +1796,20 @@ def auto_monitor(kd: dict, now: datetime | None = None) -> list[str]:
     kecuali item otomatis yang masih di tahap penyaringan tanpa tonggak: tahapnya dinaikkan sesuai bukti."""
     semua = items_all()
     ada = {i["ticker"] for i in semua}
+    awal = "Otomatis: rencana pengambilalihan, belum terkonfirmasi di KSEI. "
     for it in semua:
+        # Item "rencana" lama dicek ulang dengan aturan terbaru; yang ternyata bukan rencana pengambilalihan emiten
+        # itu (emiten itu pembeli, atau berita tentang emiten lain) dikosongkan tonggaknya dan ditandai untuk ditinjau.
+        n = it.get("notes") or ""
+        if it.get("auto") and it.get("autoJenis") == "rencana" and n.startswith(awal) \
+                and set(k for k, v in (it.get("ms") or {}).items() if v) <= {"spa", "akuisisi", "to_umum"}:
+            judul = re.sub(r" \(\d{4}-\d\d-\d\d\)\.$", "", n[len(awal):])
+            if not rencana_cocok(it["ticker"], judul, it.get("name") or ""):
+                item_put({**it, "stage": "radar", "ms": {}, "autoJenis": "rencana-ditolak",
+                          "notes": f"Otomatis, dicek ulang: judul \"{judul}\" tidak menunjukkan {it['ticker']} akan diambil alih "
+                                   "(emiten ini pembeli, atau berita tentang emiten lain). Tinjau lalu hapus dari Monitor bila tidak relevan.",
+                          "updatedAt": datetime.now(timezone.utc).isoformat()})
+                continue
         if it.get("auto") and not it.get("ms") and (it.get("stage") or "radar") == "radar":
             ev = ((it.get("signals") or {}).get("akuisisi") or {}).get("ev") or []
             st, ms = tahap_otomatis([e.get("text") or "" for e in ev] + [it.get("notes") or ""])
@@ -1787,7 +1830,7 @@ def auto_monitor(kd: dict, now: datetime | None = None) -> list[str]:
         if t in ada:
             continue
         if not (k.get("pengendaliBaru") and lap):
-            ren = [e for e in ev if (e.get("d") or "") >= batas and rencana_cocok(t, e.get("text") or "")]
+            ren = [e for e in ev if (e.get("d") or "") >= batas and rencana_cocok(t, e.get("text") or "", k.get("name") or "")]
             if not ren or rencana >= RENCANA_MAKS:
                 continue
             rencana += 1

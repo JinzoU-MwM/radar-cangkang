@@ -700,6 +700,31 @@ class AutoMonitorTest(unittest.TestCase):
         self.assertEqual([(x["ticker"], x["stage"], x["ms"]) for x in simpan],
                          [("IPAC", "tender", {"to_umum": True}), ("ANDI", "tender", {"akuisisi": True})])
 
+    def test_kasus_salah_deteksi_nyata(self):
+        """Judul nyata yang dulu salah masuk Monitor: emiten pembeli (RAJA, COIN), berita emiten lain (BNII, MSCI),
+        pengendali lama menambah porsi (ENRG). Yang benar tetap lolos (INET target, TGUK tender wajib)."""
+        tolak = [("RAJA", "Emiten Hapsoro Caplok 90 Persen Saham Kapalindo, Simak Tujuannya", "Rukun Raharja Tbk."),
+                 ("COIN", "Strategis, Indokripto Caplok 10 Persen Saham MIG", "Indokripto Koin Semesta Tbk."),
+                 ("BNII", "Raih utang bank, RAJA milik Hapsoro caplok Kapalindo Nusantara", "Bank Maybank Indonesia Tbk."),
+                 ("MSCI", "Pengendali Gelontor Triliunan Rupiah Beli 5,84% Saham ENRG Jelang MSCI", "Indosterling Technomedia Tbk."),
+                 ("ENRG", "Pengendali Gelontor Triliunan Rupiah Beli 5,84% Saham ENRG Jelang MSCI", "Energi Mega Persada Tbk.")]
+        for t, j, n in tolak:
+            self.assertFalse(server.rencana_cocok(t, j, n), t)
+        self.assertTrue(server.rencana_cocok("INET", "DOOH Caplok INET, Nilai Transaksi Capai Rp2 Triliun", "Sinergi Inti Andalan Prima Tbk."))
+        self.assertTrue(server.rencana_cocok("TGUK", "VCG Tawarkan Tender Wajib TGUK Rp56 per Saham", "Platinum Wahab Nusantara Tbk."))
+
+    def test_cek_ulang_item_rencana_lama(self):
+        awal = "Otomatis: rencana pengambilalihan, belum terkonfirmasi di KSEI. "
+        lama = [{"ticker": "RAJA", "name": "Rukun Raharja Tbk.", "auto": True, "autoJenis": "rencana", "stage": "spa", "ms": {"spa": True},
+                 "notes": awal + "Emiten Hapsoro Caplok 90 Persen Saham Kapalindo, Simak Tujuannya (2026-11-09)."},
+                {"ticker": "INET", "name": "Sinergi Inti Andalan Prima Tbk.", "auto": True, "autoJenis": "rencana", "stage": "spa", "ms": {"spa": True},
+                 "notes": awal + "DOOH Caplok INET, Nilai Transaksi Capai Rp2 Triliun (2026-11-06)."}]
+        simpan = []
+        with unittest.mock.patch.object(server, "items_all", return_value=lama),                 unittest.mock.patch.object(server, "data_rows", return_value=[]),                 unittest.mock.patch.object(server, "item_put", side_effect=simpan.append):
+            server.auto_monitor({"items": []})
+        self.assertEqual([(x["ticker"], x["stage"], x["ms"], x["autoJenis"]) for x in simpan], [("RAJA", "radar", {}, "rencana-ditolak")])
+        self.assertIn("Tinjau lalu hapus", simpan[0]["notes"])
+
     def test_batas_per_putaran(self):
         items = [self.kd(f"A{c}AA", f"Investor Siap Caplok 20 Persen Saham A{c}AA") for c in "BCDEFGH"]
         hasil, _ = self.jalan(items)
@@ -1448,7 +1473,7 @@ class RekomendasiTest(unittest.TestCase):
             "broker": {"bulan": 11, "akumulasi": [{"s": "AAAA", "bandar": 5e9}, {"s": "BBBB", "bandar": 1e9}], "distribusi": [{"s": "DDDD", "bandar": -2e9}]},
             "lk": [{"t": "BBBB", "kategori": "bagus", "periode": "9M26", "laba": {"pct": 40}}, {"t": "FFFF", "kategori": "berbalik", "periode": "9M26"}, {"t": "DDDD", "kategori": "berbalik", "periode": "9M26"},
                    {"t": "EEEE", "kategori": "naik", "periode": "9M26"}],
-            "items": [{"ticker": "BBBB", "stage": "spa"}, {"ticker": "DDDD", "stage": "radar", "flags": {"rights": True}}],
+            "items": [{"ticker": "BBBB", "stage": "spa", "ms": {"spa": True}}, {"ticker": "DDDD", "stage": "radar", "flags": {"rights": True}}],
             "backdoor_pd": {"EEEE": 30},
             "sikap": {"DDDD": "Hindari"},
             "hsc": ["BBBB"],
@@ -1561,6 +1586,36 @@ class RekomendasiTest(unittest.TestCase):
         self.assertEqual((p["entry"], p["stop"], p["tp1"], p["tp2"]), (110, 98, 125, 140))
         self.assertTrue(p["sumber"].startswith("Momentum"))
         self.assertIn("resistance puncak", p["tp1Ket"])
+
+    def test_tahap_backdoor_dari_tonggak(self):
+        """Kasus DPUM: tahap Monitor "tender" tetapi tonggaknya akuisisi + pengumuman TO terdeteksi otomatis, dan catatan
+        tim menyebut belum terverifikasi: teks tidak boleh menyebut "sudah tahap tender offer", poin dibatasi."""
+        import rekomendasi as RK
+        src = {"harga": {"DPUM": {"h": 92}, "SPAA": {"h": 100}},
+               "items": [{"ticker": "DPUM", "stage": "tender", "ms": {"spa": True, "akuisisi": True, "to_umum": True},
+                          "msAuto": {"akuisisi": "2026-01-22", "to_umum": "2026-08-28"}, "ctrlName": "PT RAMA INDONESIA", "ctrlPct": 59.24,
+                          "notes": "Penawaran tender wajib dan laporan pengambilalihan belum ditemukan di Stockbit; tahap belum terverifikasi."},
+                         {"ticker": "SPAA", "stage": "tender", "ms": {"spa": True}}],
+               "lk": [{"t": t, "kategori": "berbalik", "periode": "9M26"} for t in ("DPUM", "SPAA")],
+               "recovery": [{"t": t, "skor": 80, "status": "Mulai pulih", "plan": {"entry": [h - 2, h], "sl": h * 0.92, "tp1": h * 1.15, "tp2": h * 1.4}}
+                            for t, h in (("DPUM", 92), ("SPAA", 100))]}
+        r = {x["t"]: x for x in RK.nilai(src, 2000, 5)["rows"]}
+        d = next(a for a in r["DPUM"]["alasan"] if "Monitor" in a)
+        self.assertNotIn("sudah tahap tender offer", d)
+        self.assertIn("rencana tender offer wajib yang sudah diumumkan (belum ada pelaksanaan tender offer di Stockbit) (terdeteksi otomatis 28 Agu)", d)
+        self.assertIn("belum terverifikasi", d)
+        self.assertEqual(r["DPUM"]["komponen"]["Backdoor"], 10)
+        s = next(a for a in r["SPAA"]["alasan"] if "Monitor" in a)
+        self.assertIn("perjanjian jual beli (SPA)", s)                   # label "tender" Monitor diabaikan, pakai tonggak
+        self.assertEqual(r["SPAA"]["komponen"]["Backdoor"], 14)
+
+    def test_item_otomatis_belum_terkonfirmasi_tidak_dihitung(self):
+        import rekomendasi as RK
+        src = {"harga": {"RAJA": {"h": 494}}, "lk": [{"t": "RAJA", "kategori": "berbalik", "periode": "9M26"}],
+               "items": [{"ticker": "RAJA", "stage": "spa", "ms": {"spa": True}, "auto": True, "autoJenis": "rencana"}],
+               "recovery": [{"t": "RAJA", "skor": 90, "status": "Mulai pulih", "plan": {"entry": [480, 494], "sl": 450, "tp1": 560, "tp2": 700}}]}
+        r = RK.nilai(src, 2000, 5)["rows"]
+        self.assertTrue(all("Backdoor" not in x["komponen"] for x in r))
 
     def test_jumlah_dibatasi(self):
         import rekomendasi as RK
