@@ -7,15 +7,20 @@ Skor = jumlah poin dari setiap sumber yang mendukung (maks. per sumber pada BOBO
 masuk daftar bila harganya di bawah batas harga, didukung minimal dua sumber, dan punya rencana dengan target 1 naik
 10-20% serta target 2 naik 25-100% dari entry (R:R minimal 1, stop paling jauh 15%), skornya minimal SKOR_MIN, dan
 tidak sedang ada pola harmonik bearish di PRZ atau yang sudah berbalik turun. Bukan saran investasi personal."""
+import re
 
 # Naikkan bila aturan berubah: rekomendasi hari ini yang tersimpan dengan versi lama dihitung ulang.
-VERSI = 5
+VERSI = 7
 BOBOT = {"harmonik": 25, "recovery": 20, "backdoor": 20, "seasonality": 15, "broker": 15, "lk": 15, "saham50": 10, "kakdr": 10,
          "momentum": 15, "broksum": 15}
 NAMA_SUMBER = {"harmonik": "Harmonic Pattern", "recovery": "Recovery", "backdoor": "Backdoor", "seasonality": "Seasonality",
                "broker": "Pola Broker", "lk": "Laporan keuangan", "saham50": "Saham 50", "kakdr": "KakdrWay",
                "momentum": "Momentum", "broksum": "Broksum harian"}
-TAHAP = {"spa": "perjanjian jual beli (SPA)", "tender": "tender offer", "rupslb": "RUPSLB", "injeksi": "injeksi aset"}
+# Tonggak backdoor di Monitor (item.ms), dari yang paling lanjut; poin bila tercatat. Label tahap Monitor ("tender")
+# terlalu lebar (akuisisi pun masuk tahap tender), jadi teks memakai tonggak yang benar-benar tercatat.
+TONGGAK = [("bisnis", "perubahan bisnis selesai", 0), ("inbreng", "inbreng aset", 20), ("kjpp", "penilaian aset oleh KJPP", 20),
+           ("rights", "rights issue", 20), ("rupslb", "RUPSLB", 20), ("to_selesai", "tender offer selesai", 20),
+           ("to_umum", "pengumuman tender offer", 18), ("akuisisi", "akuisisi (pengambilalihan)", 16), ("spa", "perjanjian jual beli (SPA)", 14)]
 SINYAL = {"akuisisi": "akuisisi", "kbli": "perubahan KBLI", "rights": "rights issue", "direksi": "pergantian pengurus", "uma": "UMA"}
 # Syarat rencana: naik target 1 dan target 2 dari entry (persen), R:R minimal ke target 1, stop terjauh di bawah entry,
 # dan entry paling jauh di bawah harga terakhir (rencana "tunggu turun ke area entry").
@@ -264,11 +269,32 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
     # Backdoor: tahap di Monitor, sinyal Kandidat, skor POV-Dalam, pengendali terverifikasi.
     bd: dict[str, list] = {}
     for it in src.get("items") or []:
-        t, stg = it.get("ticker"), it.get("stage") or "radar"
-        if not t or stg == "selesai":
+        t, ms, auto = it.get("ticker"), it.get("ms") or {}, it.get("msAuto") or {}
+        if not t or ms.get("bisnis") or it.get("stage") == "selesai":
             continue
-        if stg in TAHAP:
-            bd.setdefault(t, []).append((20, f"Di Monitor backdoor sudah tahap {TAHAP[stg]}."))
+        # Item otomatis dari berita yang belum terkonfirmasi KSEI (atau sudah ditolak saat dicek ulang) tidak dihitung:
+        # judul berita bisa salah tangkap (emiten itu pembeli, atau berita tentang emiten lain).
+        if it.get("autoJenis") in ("rencana", "rencana-ditolak"):
+            continue
+        top = next((x for x in TONGGAK if ms.get(x[0])), None)
+        if top:
+            k, label, poin = top
+            belum = bool(re.search(r"belum (terverifikasi|ditemukan)", it.get("notes") or "", re.I))
+            td = it.get("tender") or {}
+            if k == "to_umum":
+                # Tender offer: dengan data tender sebut periode dan harganya; tanpa data, baru rencana yang diumumkan.
+                label = (f"tender offer Rp{_rp(td['price'])} periode {_tgl(td['start'])}–{_tgl(td['end'])}" if td.get("price") and td.get("start") and td.get("end")
+                         else "rencana tender offer wajib yang sudah diumumkan (belum ada pelaksanaan tender offer di Stockbit)")
+            teks = f"Di Monitor backdoor tercatat {label}"
+            if k in auto:
+                teks += f" (terdeteksi otomatis {_tgl(auto[k])})"
+                poin -= 2
+            if it.get("ctrlName"):
+                teks += f"; pengendali {it['ctrlName']}" + (f" {str(round(it['ctrlPct'], 2)).replace('.', ',')}%" if it.get("ctrlPct") else "")
+            if belum:
+                teks += "; catatan tim: tahap belum terverifikasi"
+                poin = min(poin, 10)
+            bd.setdefault(t, []).append((poin, teks + "."))
         else:
             fl = [SINYAL[k] for k, v in (it.get("flags") or {}).items() if v and k in SINYAL]
             bd.setdefault(t, []).append((10 + 2 * len(fl), "Masuk radar backdoor" + (f" dengan sinyal {', '.join(fl)}." if fl else ".")))
@@ -282,7 +308,10 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
             bd.setdefault(t, []).append((sk * 0.2, f"Skor backdoor POV-Dalam {round(sk)} dari 100."))
     for t, v in (src.get("pengendali") or {}).items():
         if isinstance(v, dict) and t != "_info" and not v.get("bukanPengambilAlih") and v.get("siapa"):
-            bd.setdefault(t, []).append((8, f"Pengendali baru terverifikasi: {v['siapa']}."))
+            # Nama pihaknya saja: sampai sebelum keterangan pertama (kurung, koma, atau kata kerja).
+            siapa = re.split(r" \(|, | membeli| mengambil| melalui| yang | sebagai ", v["siapa"])[0].strip()
+            tgl = f" (sumber {_tgl(v['sumberTanggal'])} {str(v['sumberTanggal'])[:4]})" if v.get("sumberTanggal") else ""
+            bd.setdefault(t, []).append((8, f"Pengendali baru terverifikasi{tgl}: {siapa}."))
     for t, xs in bd.items():
         xs.sort(key=lambda x: -x[0])
         tambah(t, "backdoor", sum(p for p, _ in xs[:2]), " ".join(s for _, s in xs[:2]))
