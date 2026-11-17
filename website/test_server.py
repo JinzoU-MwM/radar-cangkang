@@ -712,6 +712,16 @@ class AutoMonitorTest(unittest.TestCase):
             self.assertFalse(server.rencana_cocok(t, j, n), t)
         self.assertTrue(server.rencana_cocok("INET", "DOOH Caplok INET, Nilai Transaksi Capai Rp2 Triliun", "Sinergi Inti Andalan Prima Tbk."))
         self.assertTrue(server.rencana_cocok("TGUK", "VCG Tawarkan Tender Wajib TGUK Rp56 per Saham", "Platinum Wahab Nusantara Tbk."))
+        # Kalimat pasif dengan emiten sebagai pelaku ("Sahamnya Dicaplok AKR (AKRA)"): AKRA pembeli, bukan target.
+        self.assertFalse(server.rencana_cocok("AKRA", "BP Cabut dari Bisnis SPBU di RI, Sahamnya Dicaplok AKR (AKRA)", "AKR Corporindo Tbk."))
+        self.assertTrue(server.rencana_cocok("BYAN", "Usai Dicaplok Haji Isam, Bayan (BYAN) Rombak Direksi-Komisaris", "Bayan Resources Tbk."))
+        # Keterbukaan resmi emiten sendiri tanpa kode: PPJB atas saham perseroan dihitung, pengambilalihan PT lain tidak.
+        self.assertTrue(server.rencana_cocok("HRME", "Keterbukaan Informasi atas Penandatanganan Perjanjian Pengikatan Jual Beli Saham "
+                                                     "oleh PT Wijaya Wisesa Realty", "Menteng Heritage Realty Tbk.", True))
+        self.assertFalse(server.rencana_cocok("RAJA", "Pengambilalihan saham sebesar 90% dalam PT Kapalindo Nusantara Jaya oleh PT Banawa",
+                                              "Rukun Raharja Tbk.", True))
+        self.assertFalse(server.rencana_cocok("HRME", "Keterbukaan Informasi atas Penandatanganan Perjanjian Pengikatan Jual Beli Saham "
+                                                      "oleh PT Wijaya Wisesa Realty", "Menteng Heritage Realty Tbk."))
 
     def test_cek_ulang_item_rencana_lama(self):
         awal = "Otomatis: rencana pengambilalihan, belum terkonfirmasi di KSEI. "
@@ -725,10 +735,82 @@ class AutoMonitorTest(unittest.TestCase):
         self.assertEqual([(x["ticker"], x["stage"], x["ms"], x["autoJenis"]) for x in simpan], [("RAJA", "radar", {}, "rencana-ditolak")])
         self.assertIn("Tinjau lalu hapus", simpan[0]["notes"])
 
+    def test_item_ditolak_tidak_naik_tahap_lagi(self):
+        """Item yang sudah ditandai keliru tidak boleh dinaikkan tahapnya lagi; yang terlanjur terisi dikosongkan."""
+        lama = [{"ticker": "RAJA", "name": "Rukun Raharja Tbk.", "auto": True, "autoJenis": "rencana-ditolak", "stage": "spa",
+                 "ms": {"spa": True}, "notes": "Otomatis: rencana pengambilalihan. Emiten Hapsoro Caplok 90 Persen Saham Kapalindo"},
+                {"ticker": "COIN", "name": "Indokripto Koin Semesta Tbk.", "auto": True, "autoJenis": "rencana-ditolak", "stage": "radar",
+                 "ms": {}, "notes": "Otomatis: rencana pengambilalihan. Strategis, Indokripto Caplok 10 Persen Saham MIG"}]
+        simpan = []
+        with unittest.mock.patch.object(server, "items_all", return_value=lama),                 unittest.mock.patch.object(server, "data_rows", return_value=[]),                 unittest.mock.patch.object(server, "item_put", side_effect=simpan.append):
+            server.auto_monitor({"items": []})
+        self.assertEqual([(x["ticker"], x["stage"], x["ms"], x["autoJenis"]) for x in simpan], [("RAJA", "radar", {}, "rencana-ditolak")])
+
     def test_batas_per_putaran(self):
         items = [self.kd(f"A{c}AA", f"Investor Siap Caplok 20 Persen Saham A{c}AA") for c in "BCDEFGH"]
         hasil, _ = self.jalan(items)
         self.assertEqual(len(hasil), server.RENCANA_MAKS)
+
+
+class AuditDataTest(unittest.TestCase):
+    """Audit Monitor terhadap daftar tender offer Stockbit dan judul keterbukaan/berita (kasus nyata November 2026)."""
+
+    def item(self, t, nama, ms=None, stage="radar", notes="", **kw):
+        return {"ticker": t, "name": nama, "ms": ms or {}, "stage": stage, "notes": notes, **kw}
+
+    def jalan(self, items, tenders=None, laporan=None):
+        import auditdata
+        return [(x["t"], x["jenis"]) for x in auditdata.audit_monitor(items, tenders or {}, laporan or {}, "2026-11-17")]
+
+    def test_tender_offer(self):
+        to = {"TGUK": {"price": 56, "start": "2026-11-09", "end": "2026-12-08"},
+              "NAYZ": {"price": 75, "start": "2026-10-05", "end": "2026-11-03"}}
+        hasil = self.jalan([self.item("TGUK", "Platinum Wahab Nusantara Tbk.", {"spa": True}),
+                            self.item("NAYZ", "Hassana Boga Sejahtera Tbk.", {"to_umum": True}),
+                            self.item("DPUM", "Dua Putra Utama Makmur Tbk.", {"akuisisi": True, "to_umum": True}),
+                            self.item("XXXX", "Contoh Tbk.", {"to_umum": True})], to,
+                           {"DPUM": [{"date": "2026-08-29", "title": "Kebakaran Pabrik, Rama Indonesia Jadwal Ulang Tender Offer Saham DPUM"}]})
+        self.assertEqual(hasil, [("TGUK", "to_belum"), ("NAYZ", "to_selesai_belum"), ("XXXX", "to_tanpa_bukti"), ("DPUM", "to_rencana")])
+
+    def test_pengendali_dan_positif_palsu(self):
+        lap = {"ULTJ": [{"date": "2026-11-10", "title": "FrieslandCampina Jadi Pengendali ULTJ, Sabana Prawirawidjaja Tetap Jabat Presiden Direktur"}],
+               "LOPI": [{"date": "2026-11-01", "title": "Pemegang Saham Lama Tetap Jadi Pengendali LOPI"}],
+               "BNII": [{"date": "2026-11-09", "title": "Pengambilalihan saham dalam PT Maybank Finance oleh BNII"}]}
+        hasil = self.jalan([self.item("ULTJ", "Ultra Jaya Milk Industry Tbk."), self.item("LOPI", "Logisticsplus International Tbk."),
+                            self.item("BNII", "Bank Maybank Indonesia Tbk.")], laporan=lap)
+        self.assertEqual(hasil, [("ULTJ", "pengendali_belum")])
+
+    def test_batal(self):
+        nama = "Puri Sentul Permai Tbk."
+        lap = {"KDTN": [{"date": "2026-11-05", "title": "Pengakhiran atas Rencana Pengambilalihan PT Puri Sentul Permai Tbk oleh Ruby Mining "
+                                                        "Hongkong Limited (Calon Pengendali Baru)"},
+                        {"date": "2026-06-22", "title": "KDTN Rombak Manajemen, Perubahan Pengendali Semakin Dekat"}],
+               # Objek yang batal emiten lain, dan sesudahnya ada tender offer: bukan pembatalan NAYZ.
+               "NAYZ": [{"date": "2026-04-24", "title": "Batal Akuisisi SPRE, Saiko Bidik HBS Food (NAYZ)"}],
+               "PTMR": [{"date": "2026-03-03", "title": "Bahas Akuisisi dan Jual Aset, PTMR Malah Batal RUPSLB dan RUPS Independen Hari Ini!"}]}
+        belum = "Penawaran tender wajib belum ditemukan di Stockbit; tahap belum terverifikasi."
+        hasil = self.jalan([self.item("KDTN", nama, {"spa": True, "akuisisi": True}, "tender", belum),
+                            self.item("NAYZ", "Hassana Boga Sejahtera Tbk.", {"spa": True}, "spa"),
+                            self.item("PTMR", "Master Print Tbk.", {"spa": True}, "spa")], laporan=lap)
+        self.assertEqual(hasil, [("KDTN", "batal")])
+
+    def test_item_otomatis(self):
+        hasil = self.jalan([self.item("AKRA", "AKR Corporindo Tbk.", autoJenis="rencana-ditolak"),
+                            self.item("INET", "Sinergi Inti Andalan Prima Tbk.", {"spa": True}, "spa", autoJenis="rencana")])
+        self.assertEqual(hasil, [("INET", "rencana_belum"), ("AKRA", "rencana_ditolak")])
+
+
+    def test_build_dan_api(self):
+        """Bangun audit dari data tiruan (tanpa Stockbit), simpan, lalu API hanya menampilkan item yang masih ada di Monitor."""
+        items = [{"ticker": "TGUK", "name": "Platinum Wahab Nusantara Tbk.", "ms": {"spa": True}},
+                 {"ticker": "LAMA", "name": "Lama Tbk.", "ms": {"to_umum": True, "to_selesai": True}}]
+        tender = {"items": [{"ticker": "TGUK", "price": 56, "start": "2026-11-09", "end": "2099-12-08"},
+                            {"ticker": "LAMA", "price": 99, "start": "2020-01-01", "end": "2020-02-01"}]}  # TO lama diabaikan
+        with tempfile.TemporaryDirectory() as d,                 unittest.mock.patch.object(server, "AUDIT_PATH", Path(d) / ".audit-monitor.json"),                 unittest.mock.patch.object(server, "items_all", return_value=items),                 unittest.mock.patch.object(server, "load_config", return_value={}),                 unittest.mock.patch.object(server, "tender_data", return_value=tender),                 unittest.mock.patch.object(server, "berita_saham", return_value={"items": []}),                 unittest.mock.patch.object(server.time, "sleep"):
+            res = server.audit_monitor_build()
+            self.assertEqual([(x["t"], x["jenis"]) for x in res["temuan"]], [("TGUK", "to_belum"), ("LAMA", "to_tanpa_bukti")])
+            with unittest.mock.patch.object(server, "items_all", return_value=items[:1]):
+                self.assertEqual([x["t"] for x in server.audit_monitor_api()["temuan"]], ["TGUK"])
 
 
 class PovDalamLatarTest(unittest.TestCase):
@@ -1450,6 +1532,21 @@ class TsaTokenTest(unittest.TestCase):
 
 class RekomendasiTest(unittest.TestCase):
     """Rekomendasi harian: gabungan screening + backdoor, batas harga, minimal dua sumber, dan simpanan per hari."""
+
+    def test_periksa_mandiri(self):
+        """Baris dengan angka tidak konsisten atau klaim backdoor tanpa item terkonfirmasi tidak lolos."""
+        import rekomendasi as RK
+        plan = {"entry": 100, "stop": 90, "tp1": 115, "tp2": 140, "tp1Ket": "resistance", "tp2Ket": "resistance",
+                "rr": 1.5, "naik1": 15.0, "naik2": 40.0, "turunStop": -10.0}
+        baik = {"t": "AAAA", "harga": 100, "skor": 40, "jumlahSumber": 2, "alasan": ["Pola Bat."], "plan": plan}
+        self.assertEqual(RK.periksa(baik, 2000), [])
+        self.assertTrue(RK.periksa({**baik, "plan": {**plan, "tp1": 105, "naik1": 5.0, "rr": 0.5}}, 2000))   # target 1 < 10%
+        self.assertTrue(RK.periksa({**baik, "plan": {**plan, "tp2": 110}}, 2000))                            # tp2 < tp1
+        self.assertTrue(RK.periksa({**baik, "plan": {**plan, "tp1Ket": ""}}, 2000))                         # asal target kosong
+        klaim = {**baik, "alasan": ["Di Monitor backdoor tercatat tender offer Rp56 periode 9 Nov–8 Des."]}
+        self.assertTrue(RK.periksa(klaim, 2000, {"AAAA": {"ticker": "AAAA", "autoJenis": "rencana"}}))
+        self.assertTrue(RK.periksa(klaim, 2000, {"AAAA": {"ticker": "AAAA", "tender": {"price": 60}}}))
+        self.assertEqual(RK.periksa(klaim, 2000, {"AAAA": {"ticker": "AAAA", "tender": {"price": 56}}}), [])
 
     def src(self):
         import rekomendasi as RK  # noqa: F401

@@ -92,3 +92,5 @@ website/tsa-*.json
 **/.server-err.log
 **/.rekomendasi.json
 **/.rekomendasi.tmp
+**/.audit-monitor.json
+**/.audit-monitor.tmp

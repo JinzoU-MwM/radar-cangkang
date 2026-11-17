@@ -87,6 +87,13 @@ const pct = (a, b) => a && b ? `${a >= b ? '+' : ''}${n1((a / b - 1) * 100)}%` :
         <tr><th>Sumber</th><th>Bobot maks.</th></tr>
         <tr v-for="(v, k) in data.bobot" :key="k"><td>{{ k }}</td><td>{{ v }}</td></tr>
       </table>
+      <p class="small">Sebelum tampil, setiap saham diperiksa ulang: urutan stop, entry, dan target; persen target dan stop sesuai syarat; R:R dan persen yang ditampilkan sama dengan hitungannya; asal target disebut; dan klaim tahap backdoor atau tender offer cocok dengan data Monitor yang sudah terkonfirmasi. Saham yang gagal diganti saham berikutnya.</p>
+      <template v-if="data.dibuang?.length">
+        <p class="small"><b>Tidak lolos pemeriksaan hari ini:</b></p>
+        <ul class="small muted">
+          <li v-for="x in data.dibuang" :key="x.t"><b>{{ x.t }}</b>: {{ x.masalah.join('; ') }}</li>
+        </ul>
+      </template>
       <p class="small muted">Bahan belajar dan kerangka berpikir, bukan rekomendasi beli atau jual. Tetap tunggu konfirmasi dan pasang stop.</p>
     </details>
   </div>

@@ -16,6 +16,7 @@ import Modal from '../components/emiten/Modal.vue'
 import PotensiCells from '../components/monitor/PotensiCells.vue'
 import StoryCells from '../components/monitor/StoryCells.vue'
 import NetworkMap from '../components/NetworkMap.vue'
+import AuditBox from '../components/monitor/AuditBox.vue'
 
 const TRACK = ['PPJB', 'PTW', 'RUPSLB', 'Injeksi', 'Selesai']
 const SIKAP = [['Hindari', 'Hindari'], ['Spekulatif tinggi', 'Spekulatif'], ['Netral', 'Netral'], ['Asimetri positif', 'Asimetri+']]
@@ -319,6 +320,7 @@ onMounted(() => autoRefresh('stockbit'))
     </header>
 
     <AgendaBlock v-if="!buka || set !== 'hari'":note="agendaNote" :can-mark="nNew > 0" @seen="markSeen" />
+    <AuditBox />
 
     <div class="bar-row">
       <div class="fbar">
