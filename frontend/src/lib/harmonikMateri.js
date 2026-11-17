@@ -232,8 +232,8 @@ const PENUTUP = [
   {
     id: 'simpulan', bagian: 'Penutup', judul: 'Kesimpulan', sub: 'Jawaban atas rumusan masalah',
     paragraf: [
-      'Pola harmonik adalah struktur lima titik (atau empat titik untuk AB=CD) yang hanya sah bila rasio Fibonacci tiap titiknya sesuai aturan pola. Titik B dan titik D adalah pembeda utama: Gartley di 0,618 dan 0,786, Bat di bawah 0,618 dan 0,886, Butterfly di 0,786 dan 1,27, Crab di 0,618 atau kurang dan 1,618.',
-      'Nilai sebuah pola terletak pada PRZ, yaitu zona tempat beberapa angka Fibonacci berkumpul. Eksekusi yang baik menunggu harga menguji seluruh zona dan menunjukkan pembalikan, dengan stop loss di luar PRZ dan target di retracement 0,382 lalu 0,618 dari rentang pola.',
+      'Pola harmonik adalah struktur lima titik (atau empat titik untuk AB=CD) yang hanya sah bila rasio Fibonacci tiap titiknya sesuai aturan pola. Titik B dan titik D adalah pembeda utama: Gartley di 0,618 dan 0,786, Bat di bawah 0,618 dan 0,886, Butterfly di 0,786 dan 1,27, Crab di 0,618 atau kurang dan 1,618. Di dalam setiap pola harus ada AB=CD: kaki CD minimal sama panjang dengan AB (Crab 1,27–1,618 kali AB); pola yang belum memenuhinya ditandai dan turun peringkat.',
+      'Nilai sebuah pola terletak pada PRZ, yaitu zona tempat beberapa angka Fibonacci berkumpul. Eksekusi yang baik menunggu harga menguji seluruh zona dan menunjukkan pembalikan, dengan stop loss di luar X untuk Gartley dan Bat, atau di luar PRZ untuk pola yang D-nya melewati X, dan target di retracement 0,382 lalu 0,618 dari kaki AD.',
       'Pada saham BEI, aturan itu dapat dijalankan secara otomatis dengan tambahan penyaring likuiditas, tren besar, konfirmasi di D, dan pembulatan fraksi harga, sehingga hasilnya dapat diulang dan diperiksa.',
     ],
   },

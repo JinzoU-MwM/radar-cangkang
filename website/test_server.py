@@ -532,6 +532,18 @@ class HarmonikTest(unittest.TestCase):
         self.assertTrue(121.4 < g["target"][0] < g["target"][1] < 200)        # 0,382 lalu 0,618 kaki AD
         self.assertEqual(g["targetCA"], [176, 201])                          # titik C lalu A
 
+    def test_abcd_di_dalam_pola(self):
+        """AB=CD (Carney: syarat minimum) dicek: CD 0,87 AB lolos, CD 0,65 AB ditandai belum terpenuhi dan turun peringkat."""
+        import harmonik
+        g = next(x for x in harmonik.cari(self.bars([150, 100, 200, 138.2, 175.3, 121.4])) if x["pola"] == "gartley")
+        self.assertTrue(g["abcd"]["ok"])
+        self.assertEqual(g["abcd"]["kriteria"], [1.0, 1.27])
+        # C dangkal (0,382 AB): CD hanya 40,4 dibanding AB 61,8.
+        h = next(x for x in harmonik.cari(self.bars([150, 100, 200, 138.2, 161.8, 121.4])) if x["pola"] == "gartley")
+        self.assertFalse(h["abcd"]["ok"])
+        self.assertTrue(any("belum terpenuhi" in a for a in h["alasan"]))
+        self.assertGreater(h["skor"], g["skor"])
+
     def test_menuju_dan_tidak_likuid(self):
         import harmonik
         r = harmonik.cari(self.bars([150, 100, 200, 138.2, 175.3, 135]))

@@ -173,6 +173,17 @@ describe('diagram ideal dan alasan', () => {
   })
 })
 
+describe('AB=CD di dalam pola', () => {
+  it('CD minimal 0,85 AB; yang lebih pendek ditandai, tidak dibuang', () => {
+    const g = cariXabcd(bangun([150, X, A, B, C, D])).find(r => r.pola === 'gartley')
+    expect(g.abcd).toMatchObject({ kriteria: [1, 1.27], ok: true })
+    const pendek = cariXabcd(bangun([150, X, A, B, B + 0.45 * 61.8, D])).find(r => r.pola === 'gartley')
+    expect(pendek.abcd.ok).toBe(false)
+    expect(alasanPola(pendek).find(a => /AB=CD/.test(a.teks))).toMatchObject({ ok: false, ideal: '1–1,27' })
+    expect(pendek.skor).toBeGreaterThan(g.skor)
+  })
+})
+
 describe('alasanX', () => {
   it('menjelaskan X sebagai swing low awal kaki XA dan batas batal Gartley', () => {
     const bars = bangun([150, X, A, B, C, D])
