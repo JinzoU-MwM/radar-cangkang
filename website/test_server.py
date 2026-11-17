@@ -1651,6 +1651,10 @@ class RekomendasiTest(unittest.TestCase):
         r = RK.nilai(src, 2000, 5)
         self.assertEqual(r["rows"], [])
         self.assertIn("tidak ada level target 1 naik 10–20%", r["pantauan"][0]["sebab"])
+        # Persen stop satu desimal: 15,4% tidak tampil sebagai "turun 15%, lebih dari 15%".
+        src["momentum"]["HHHH"].update({"res": [[115, "2026-09-01"], [130, "2026-06-01"]], "l5": 84.6, "l20": 84.6})
+        r = RK.nilai(src, 2000, 5)
+        self.assertIn("turun 15,4% dari entry, lebih dari 15%", r["pantauan"][0]["sebab"])
 
     def test_rencana_harus_masuk_akal(self):
         """Kasus DSSA: pola bullish sudah berbalik dan harga di atas kedua target. Rencana dari pola itu tidak dipakai
