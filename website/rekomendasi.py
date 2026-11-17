@@ -6,6 +6,8 @@ mengumpulkan datanya dari berkas lokal lalu memanggil nilai().
 Skor = jumlah poin dari setiap sumber yang mendukung (maks. per sumber pada BOBOT) dikurangi poin risiko. Saham hanya
 masuk daftar bila harganya di bawah batas harga dan didukung minimal dua sumber. Bukan saran investasi personal."""
 
+# Naikkan bila aturan berubah: rekomendasi hari ini yang tersimpan dengan versi lama dihitung ulang.
+VERSI = 2
 BOBOT = {"harmonik": 25, "recovery": 20, "backdoor": 20, "seasonality": 15, "broker": 15, "lk": 15, "saham50": 10, "kakdr": 10}
 NAMA_SUMBER = {"harmonik": "Harmonic Pattern", "recovery": "Recovery", "backdoor": "Backdoor", "seasonality": "Seasonality",
                "broker": "Pola Broker", "lk": "Laporan keuangan", "saham50": "Saham 50", "kakdr": "KakdrWay"}
@@ -49,9 +51,14 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
         a["risiko"].append((poin, teks))
 
     def rencana(t, plan, prioritas):
+        """Rencana beli hanya dipakai bila urutannya masuk akal: stop < entry < target 1 (entry kosong = harga terakhir).
+        Rencana yang targetnya sudah terlewati dilewati, sehingga rencana dari sumber lain yang dipakai."""
         a = acc.setdefault(t, {"komponen": {}, "alasan": [], "risiko": [], "plan": None})
-        if plan and (a["plan"] is None or prioritas > a["plan"]["_p"]):
-            a["plan"] = {**plan, "_p": prioritas}
+        e = plan.get("entry") or harga.get(t)
+        if not (e and plan.get("stop") and plan.get("tp1") and plan["stop"] < e < plan["tp1"]):
+            return
+        if a["plan"] is None or prioritas > a["plan"]["_p"]:
+            a["plan"] = {**plan, "entry": e, "_p": prioritas}
 
     # Harmonic Pattern: pola bullish yang sudah di PRZ atau berbalik (terbaik per saham); bearish di PRZ = risiko.
     STATUS = {"berbalik": (25, "sudah berbalik dari D"), "prz": (20, "harga sedang di PRZ"), "menuju": (8, "harga menuju PRZ")}
@@ -65,6 +72,11 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
                 continue
             poin, teks = STATUS[st]
             prz, tg = r.get("prz") or [None, None], r.get("target") or [None, None]
+            h = r.get("harga") or harga.get(t)
+            if tg[0] and h and h >= tg[0]:
+                # Harga sudah melewati target pertama: kesempatan dari pola ini sudah berjalan, poin kecil dan tanpa rencana.
+                tambah(t, "harmonik", 5, f"Pola {pola} bullish sudah berbalik dari PRZ {_rp(prz[0])}–{_rp(prz[1])} dan harga sudah melewati target pertama {_rp(tg[0])}; kesempatan dari pola ini sudah berjalan.")
+                continue
             tambah(t, "harmonik", poin, f"Pola {pola} bullish, {teks}. PRZ {_rp(prz[0])}–{_rp(prz[1])}, target {_rp(tg[0])} dan {_rp(tg[1])}, batal di bawah {_rp(r.get('stop'))}.")
             if r.get("stop") and tg[0]:
                 masuk = r.get("harga") if st != "menuju" else (prz[1] if prz[1] else None)
@@ -195,5 +207,5 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
     for grup in (non, dgn):
         for i, r in enumerate(grup):
             r["peringkat"] = i + 1
-    return {"batasHarga": batas_harga, "dinilai": len(acc), "lolos": sum(not r["hsc"] for r in rows), "lolosHsc": sum(r["hsc"] for r in rows),
+    return {"versi": VERSI, "batasHarga": batas_harga, "dinilai": len(acc), "lolos": sum(not r["hsc"] for r in rows), "lolosHsc": sum(r["hsc"] for r in rows),
             "rows": non, "hsc": dgn, "bobot": {NAMA_SUMBER[k]: v for k, v in BOBOT.items()}}

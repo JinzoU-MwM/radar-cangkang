@@ -5180,18 +5180,18 @@ def rekomendasi_build() -> dict:
 
 
 def rekomendasi_api() -> dict:
-    """Rekomendasi hari ini; dihitung ulang sekali bila berkas belum ada atau masih tanggal kemarin."""
+    """Rekomendasi hari ini; dihitung ulang sekali bila berkas belum ada, masih tanggal kemarin, atau versi aturannya lama."""
     hari = datetime.now(WIB).strftime("%Y-%m-%d")
     try:
         d = json.loads(REKO_PATH.read_text(encoding="utf-8"))
-        if d.get("tanggal") == hari and "hsc" in d:
+        if d.get("tanggal") == hari and d.get("versi") == RK.VERSI:
             return d
     except (OSError, ValueError):
         pass
     with _reko_lock:
         try:
             d = json.loads(REKO_PATH.read_text(encoding="utf-8"))
-            if d.get("tanggal") == hari and "hsc" in d:
+            if d.get("tanggal") == hari and d.get("versi") == RK.VERSI:
                 return d
         except (OSError, ValueError):
             pass
