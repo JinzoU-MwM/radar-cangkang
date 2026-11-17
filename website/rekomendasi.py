@@ -11,7 +11,7 @@ import re
 from datetime import date
 
 # Naikkan bila aturan berubah: rekomendasi hari ini yang tersimpan dengan versi lama dihitung ulang.
-VERSI = 10
+VERSI = 11
 BOBOT = {"harmonik": 25, "recovery": 20, "backdoor": 20, "seasonality": 15, "broker": 15, "lk": 15, "saham50": 10, "kakdr": 10,
          "momentum": 15, "broksum": 15}
 NAMA_SUMBER = {"harmonik": "Harmonic Pattern", "recovery": "Recovery", "backdoor": "Backdoor", "seasonality": "Seasonality",
@@ -30,7 +30,7 @@ RR_MIN, STOP_MAKS, ENTRY_BAWAH = 1.0, 15, 5
 SKOR_MIN = 20      # skor gabungan minimal supaya sinyal lemah tidak ikut direkomendasikan
 # Pantauan: saham berpotensi yang belum masuk daftar utama (cadangan di luar 5 besar, atau skor tinggi tetapi belum ada
 # rencana yang memenuhi syarat), plus sinyal tunggal yang kuat (poin sumber minimal PANTAU_SINYAL dari bobotnya).
-PANTAU_MAKS, PANTAU_SINYAL = 15, 0.6
+PANTAU_MAKS, PANTAU_SINYAL = 10, 0.6      # PANTAU_MAKS per jenis (cadangan / belum masuk) per kelompok
 BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
 
 
@@ -471,9 +471,11 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
     for grup in (non, dgn):
         for i, r in enumerate(grup):
             r["peringkat"] = i + 1
-    # Cadangan dulu, lalu skor tertinggi; masing-masing kelompok paling banyak PANTAU_MAKS.
+    # Cadangan dulu, lalu yang belum masuk; masing-masing jenis per kelompok paling banyak PANTAU_MAKS (skor tertinggi),
+    # supaya hari dengan banyak cadangan tidak menyingkirkan saham berskor tinggi yang belum punya rencana.
     pantau.sort(key=lambda r: (r["jenis"] != "cadangan", -r["skor"], r["t"]))
-    pantau = [r for r in pantau if not r["hsc"]][:PANTAU_MAKS] + [r for r in pantau if r["hsc"]][:PANTAU_MAKS]
+    pantau = [r for k in (False, True) for j in ("cadangan", "belum")
+              for r in [x for x in pantau if x["hsc"] == k and x["jenis"] == j][:PANTAU_MAKS]]
     return {"versi": VERSI, "syarat": {"target1": TARGET1, "target2": TARGET2, "rrMin": RR_MIN, "stopMaks": STOP_MAKS, "skorMin": SKOR_MIN}, "batasHarga": batas_harga, "dinilai": len(acc), "lolos": sum(not r["hsc"] for r in rows), "lolosHsc": sum(r["hsc"] for r in rows),
             "rows": non, "hsc": dgn, "bobot": {NAMA_SUMBER[k]: v for k, v in BOBOT.items()},
             "dibuang": sorted(dibuang, key=lambda x: -x["skor"])[:20], "pantauan": pantau,

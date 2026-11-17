@@ -1626,6 +1626,13 @@ class RekomendasiTest(unittest.TestCase):
         self.assertEqual([x["t"] for x in cad], ["GGGG"])
         self.assertEqual(cad[0]["plan"]["tp1"], 450)
         self.assertEqual(r["pantauan"][0]["jenis"], "cadangan")       # cadangan di urutan pertama
+        # Kuota per jenis: banyak cadangan tidak menyingkirkan saham "belum masuk".
+        import unittest.mock as um
+        with um.patch.object(RK, "PANTAU_MAKS", 1):
+            r = RK.nilai(src, 2000, 0)
+        jenis = [(x["hsc"], x["jenis"]) for x in r["pantauan"]]
+        self.assertEqual(jenis.count((False, "cadangan")), 1)
+        self.assertIn((False, "belum"), jenis)
 
     def test_rencana_support_resistance(self):
         """Saham berskor tinggi tanpa pola/recovery tetap dapat rencana dari chart: stop di terendah 5 hari, atau terendah
