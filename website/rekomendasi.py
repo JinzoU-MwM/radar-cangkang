@@ -9,7 +9,7 @@ masuk daftar bila harganya di bawah batas harga, didukung minimal dua sumber, da
 tidak sedang ada pola harmonik bearish di PRZ atau yang sudah berbalik turun. Bukan saran investasi personal."""
 
 # Naikkan bila aturan berubah: rekomendasi hari ini yang tersimpan dengan versi lama dihitung ulang.
-VERSI = 3
+VERSI = 4
 BOBOT = {"harmonik": 25, "recovery": 20, "backdoor": 20, "seasonality": 15, "broker": 15, "lk": 15, "saham50": 10, "kakdr": 10}
 NAMA_SUMBER = {"harmonik": "Harmonic Pattern", "recovery": "Recovery", "backdoor": "Backdoor", "seasonality": "Seasonality",
                "broker": "Pola Broker", "lk": "Laporan keuangan", "saham50": "Saham 50", "kakdr": "KakdrWay"}

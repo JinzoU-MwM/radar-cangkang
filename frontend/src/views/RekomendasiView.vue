@@ -1,5 +1,5 @@
 <script setup>
-// Rekomendasi harian: 10 saham Non HSC dan 10 saham HSC terbaik dengan harga di bawah Rp2.000, gabungan semua screening Radar (Harmonic,
+// Rekomendasi harian: 5 saham Non HSC dan 5 saham HSC terbaik dengan harga di bawah Rp2.000, gabungan semua screening Radar (Harmonic,
 // Recovery, Seasonality, Pola Broker, laporan keuangan, Saham 50, KakdrWay) dan sinyal backdoor. Dihitung server sekali
 // sehari (/api/rekomendasi, website/rekomendasi.py); halaman ini hanya menampilkan peringkat, alasan, risiko, dan rencana.
 import { computed, onMounted, ref } from 'vue'
@@ -22,7 +22,7 @@ const pct = (a, b) => a && b ? `${a >= b ? '+' : ''}${n1((a / b - 1) * 100)}%` :
   <div class="rk">
     <header>
       <h1>Rekomendasi</h1>
-      <p class="small ket">Sampai 10 saham terbaik hari ini dengan harga di bawah {{ rp(data?.batasHarga || 2000) }}, dipisah antara saham Non HSC dan HSC, dipilih dari gabungan semua screening Radar dan sinyal backdoor. Hanya saham dengan target 1 naik 10–20% dan target 2 naik 25–100% dari entry, R:R minimal 1, dan stop paling jauh 15%. Diperbarui setiap hari pukul 00.01 WIB.</p>
+      <p class="small ket">Paling banyak 5 saham terbaik per kelompok hari ini dengan harga di bawah {{ rp(data?.batasHarga || 2000) }}, dipisah antara saham Non HSC dan HSC, dipilih dari gabungan semua screening Radar dan sinyal backdoor. Hanya saham dengan target 1 naik 10–20% dan target 2 naik 25–100% dari entry, R:R minimal 1, dan stop paling jauh 15%. Diperbarui setiap hari pukul 00.01 WIB.</p>
       <p v-if="data" class="small muted">Dihitung {{ data.updated }} · {{ data.dinilai }} saham dinilai; lolos syarat {{ data.lolos }} Non HSC dan {{ data.lolosHsc ?? 0 }} HSC (harga di bawah batas dan didukung minimal dua sumber).</p>
     </header>
     <div v-if="data" class="kel" role="tablist" aria-label="Kelompok saham">
