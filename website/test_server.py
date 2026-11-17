@@ -1605,6 +1605,46 @@ class RekomendasiTest(unittest.TestCase):
         self.assertNotIn("FFFF", kode)                # pola bearish aktif di PRZ: tidak direkomendasikan
         self.assertNotIn("DDDD", kode)                # tanpa rencana yang memenuhi syarat target
 
+    def test_pantauan(self):
+        """Saham berpotensi yang tidak masuk daftar utama tetap tampil di Pantauan beserta sebabnya; yang lolos semua
+        syarat tetapi di luar jumlah daftar utama menjadi cadangan."""
+        import rekomendasi as RK
+        src = self.src()
+        r = RK.nilai(src, 2000, 10)
+        p = {x["t"]: x for x in r["pantauan"]}
+        self.assertIn("bearish", p["FFFF"]["sebab"])                  # skor tinggi tetapi pola bearish aktif
+        self.assertIn("di bawah syarat 20", p["DDDD"]["sebab"])       # sinyal laporan keuangan kuat, skor kurang
+        self.assertNotIn("CCCC", p)                                   # di atas batas harga
+        self.assertNotIn("AAAA", p)                                   # sudah di daftar utama
+        # Satu saham per kelompok: AAAA tetap utama, sisanya cadangan dengan rencana lengkap.
+        src["harga"]["GGGG"] = {"h": 400}
+        src["recovery"].append({"t": "GGGG", "skor": 90, "status": "Mulai pulih", "plan": {"entry": [390, 400], "sl": 370, "tp1": 450, "tp2": 520}})
+        src["broker"]["akumulasi"].append({"s": "GGGG", "bandar": 1e9})
+        r = RK.nilai(src, 2000, 1)
+        cad = [x for x in r["pantauan"] if x["jenis"] == "cadangan"]
+        self.assertEqual([x["t"] for x in r["rows"]], ["AAAA"])
+        self.assertEqual([x["t"] for x in cad], ["GGGG"])
+        self.assertEqual(cad[0]["plan"]["tp1"], 450)
+        self.assertEqual(r["pantauan"][0]["jenis"], "cadangan")       # cadangan di urutan pertama
+
+    def test_rencana_support_resistance(self):
+        """Saham berskor tinggi tanpa pola/recovery tetap dapat rencana dari chart: stop di terendah 5 hari, atau terendah
+        20 hari bila harga sedang di terendah 5 hari; target dari puncak sebelumnya."""
+        import rekomendasi as RK
+        src = {"harga": {"HHHH": {"h": 100}}, "lk": [{"t": "HHHH", "kategori": "berbalik", "periode": "9M26"}],
+               "broker": {"bulan": 11, "akumulasi": [{"s": "HHHH", "bandar": 1e9}]},
+               "momentum": {"HHHH": {"vol": 1.0, "volTgl": None, "breakout": None, "atas60": False, "breakdown": None,
+                                     "res": [[115, "2026-09-01"], [130, "2026-06-01"]], "l5": 100, "l20": 93, "c": 100}}}
+        r = RK.nilai(src, 2000, 5)
+        plan = r["rows"][0]["plan"]
+        self.assertEqual((plan["entry"], plan["stop"], plan["tp1"], plan["tp2"]), (100, 93, 115, 130))
+        self.assertEqual(plan["sumber"], "Support-resistance chart (stop di terendah 20 hari)")
+        # Tanpa level target 10-20%: masuk Pantauan dengan sebabnya.
+        src["momentum"]["HHHH"]["res"] = [[130, "2026-06-01"]]
+        r = RK.nilai(src, 2000, 5)
+        self.assertEqual(r["rows"], [])
+        self.assertIn("tidak ada level target 1 naik 10–20%", r["pantauan"][0]["sebab"])
+
     def test_rencana_harus_masuk_akal(self):
         """Kasus DSSA: pola bullish sudah berbalik dan harga di atas kedua target. Rencana dari pola itu tidak dipakai
         (target di bawah entry), poin harmonik kecil, dan rencana diambil dari sumber lain bila ada."""

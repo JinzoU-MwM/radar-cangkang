@@ -12,6 +12,8 @@ const KELOMPOK = [{ k: 'non', nama: 'Non HSC' }, { k: 'hsc', nama: 'HSC' }]
 const kel = ref('non')
 const daftarKel = k => (k === 'hsc' ? data.value?.hsc : data.value?.rows) || []
 const rows = computed(() => daftarKel(kel.value))
+// Pantauan: saham berpotensi di luar daftar utama (cadangan yang lolos syarat, atau sinyal kuat yang belum punya rencana).
+const pantau = computed(() => (data.value?.pantauan || []).filter(r => !!r.hsc === (kel.value === 'hsc')))
 const maks = computed(() => Math.max(1, ...rows.value.map(r => r.skor)))
 const rp = v => v == null ? '–' : 'Rp' + Number(v).toLocaleString('id-ID', { maximumFractionDigits: v < 200 ? 1 : 0 })
 const n1 = v => Number(v).toLocaleString('id-ID', { maximumFractionDigits: 1 })
@@ -80,9 +82,32 @@ const pct = (a, b) => a && b ? `${a >= b ? '+' : ''}${n1((a / b - 1) * 100)}%` :
         </div>
       </li>
     </ol>
+    <section v-if="data && pantau.length" class="pantau" aria-labelledby="pantauJudul">
+      <h2 id="pantauJudul">Pantauan {{ kel === 'hsc' ? 'HSC' : 'Non HSC' }} <b>{{ pantau.length }}</b></h2>
+      <p class="small muted">Saham berpotensi yang belum masuk daftar di atas, supaya tidak terlewat: cadangan yang sudah lolos semua syarat, lalu saham dengan skor tinggi atau satu sinyal kuat yang belum punya rencana sesuai syarat. Sebabnya ditulis per saham; pantau sampai syaratnya terpenuhi.</p>
+      <div class="tabel">
+        <table>
+          <thead><tr><th>Saham</th><th class="n">Harga</th><th class="n">Skor</th><th>Sumber</th><th>Alasan utama</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr v-for="r in pantau" :key="r.t">
+              <td><RouterLink class="ticker" :to="'/emiten/' + r.t">{{ r.t }}</RouterLink><span class="small muted nm">{{ r.nama }}</span></td>
+              <td class="n">{{ rp(r.harga) }}</td>
+              <td class="n">{{ n1(r.skor) }}</td>
+              <td class="small">{{ Object.keys(r.komponen).join(', ') }}</td>
+              <td class="small">{{ r.alasan[0] }}</td>
+              <td class="small">
+                <span class="tag" :class="r.jenis === 'cadangan' ? 't-calm' : 't-warn'">{{ r.jenis === 'cadangan' ? 'Cadangan' : 'Belum masuk' }}</span>
+                <span class="muted"> {{ r.sebab }}</span>
+                <span v-if="r.plan" class="rnc">Entry {{ rp(r.plan.entry) }} · stop {{ rp(r.plan.stop) }} · target {{ rp(r.plan.tp1) }} ({{ pct(r.plan.tp1, r.plan.entry) }}) dan {{ rp(r.plan.tp2) }} ({{ pct(r.plan.tp2, r.plan.entry) }})</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
     <details v-if="data" class="cara">
       <summary>Cara menghitung</summary>
-      <p class="small">Setiap sumber memberi poin sampai batas bobotnya. Skor adalah jumlah poin dikurangi poin risiko (distribusi bandar bulanan, broksum harian distribusi bersih 5 hari terakhir, harga menembus terendah 20 hari, laba turun atau rugi, pandangan analis "hindari"). Momentum memberi poin untuk volume minimal 2 kali rata-rata 20 hari dan harga menembus tertinggi 20 hari dalam 5 hari bursa terakhir; Broksum harian memberi poin untuk akumulasi bersih 5 hari terakhir. Saham hanya masuk bila harganya di bawah batas, didukung minimal dua sumber, skornya minimal 20, tidak sedang ada pola harmonik bearish yang aktif, dan punya rencana dengan target 1 naik 10–20% serta target 2 naik 25–100% dari entry (R:R minimal 1, stop paling jauh 15%). Entry dan stop diambil dari satu sumber (urutan Harmonic, Recovery, Momentum, Seasonality); target diambil dari sumber itu dulu, lalu dari level sumber lain termasuk puncak-puncak sebelumnya di chart (resistance), dengan keterangan asalnya.</p>
+      <p class="small">Setiap sumber memberi poin sampai batas bobotnya. Skor adalah jumlah poin dikurangi poin risiko (distribusi bandar bulanan, broksum harian distribusi bersih 5 hari terakhir, harga menembus terendah 20 hari, laba turun atau rugi, pandangan analis "hindari"). Momentum memberi poin untuk volume minimal 2 kali rata-rata 20 hari dan harga menembus tertinggi 20 hari dalam 5 hari bursa terakhir; Broksum harian memberi poin untuk akumulasi bersih 5 hari terakhir. Saham hanya masuk bila harganya di bawah batas, didukung minimal dua sumber, skornya minimal 20, tidak sedang ada pola harmonik bearish yang aktif, dan punya rencana dengan target 1 naik 10–20% serta target 2 naik 25–100% dari entry (R:R minimal 1, stop paling jauh 15%). Entry dan stop diambil dari satu sumber (urutan Harmonic, Recovery, Momentum, Seasonality, lalu support-resistance chart: entry di harga terakhir, stop di terendah 5 hari atau 20 hari); target diambil dari sumber itu dulu, lalu dari level sumber lain termasuk puncak-puncak sebelumnya di chart (resistance), dengan keterangan asalnya.</p>
       <table class="bobot">
         <tr><th>Sumber</th><th>Bobot maks.</th></tr>
         <tr v-for="(v, k) in data.bobot" :key="k"><td>{{ k }}</td><td>{{ v }}</td></tr>
@@ -136,6 +161,19 @@ header h1{margin:0}
 .plan p{margin:6px 0 0}
 .plan tr.ketT td{font:11px var(--f-body);color:var(--ink-2);text-align:left;padding-top:0;border-bottom:1px solid var(--rule-2)}
 .up{color:var(--good)}.dn{color:var(--strong)}
+.pantau{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:12px 16px}
+.pantau h2{margin:0 0 4px;font-size:17px}
+.pantau h2 b{font-family:var(--f-data);color:var(--ink-2);margin-left:4px}
+.pantau p{margin:0 0 8px}
+.tabel{overflow-x:auto}
+.tabel table{border-collapse:collapse;width:100%;min-width:760px;font-size:13px}
+.tabel th{text-align:left;font-size:12px;color:var(--ink-2);padding:4px 8px;border-bottom:1px solid var(--rule)}
+.tabel td{padding:6px 8px;border-bottom:1px solid var(--rule-2);vertical-align:top}
+.tabel .n{text-align:right;font-family:var(--f-data);white-space:nowrap}
+.tabel .nm{display:block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tabel td:nth-child(5){max-width:260px}
+.tabel td:nth-child(6){min-width:280px}
+.rnc{display:block;margin-top:2px;font-family:var(--f-data)}
 .cara{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:10px 14px}
 .cara summary{cursor:pointer;font-weight:700}
 .bobot{border-collapse:collapse;font-size:13px;margin:6px 0}

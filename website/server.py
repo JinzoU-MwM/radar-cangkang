@@ -5120,7 +5120,8 @@ def harmonik_build(delay: float = 0.25) -> None:
             try:
                 m = RK.momentum(bb)
                 if m:
-                    mom[t] = {**m, "res": RK.resistensi(bb[-HM.BAR_SIMPAN:]), "l5": min(x["l"] for x in bb[-5:]), "c": bb[-1]["c"]}
+                    mom[t] = {**m, "res": RK.resistensi(bb[-HM.BAR_SIMPAN:]), "l5": min(x["l"] for x in bb[-5:]),
+                              "l20": min(x["l"] for x in bb[-20:]), "c": bb[-1]["c"]}
             except (KeyError, TypeError, ValueError):
                 pass
         time.sleep(delay)
