@@ -37,6 +37,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import brokerpola as BP
+import rekomendasi as RK
 import povdalam as PD
 import povarah as PA
 import povpindai as PP
@@ -5107,10 +5108,98 @@ def harmonik_api() -> dict:
             "minNilai": HM.MIN_NILAI}
 
 
+# ---------------------------------------------------------------- Rekomendasi ----
+REKO_PATH = ROOT / ".rekomendasi.json"
+REKO_BATAS = 2000   # harga maksimal saham yang direkomendasikan
+_reko_lock = threading.Lock()
+
+
+def rekomendasi_kumpul() -> tuple[dict, dict]:
+    """Bahan rekomendasi dari berkas lokal saja (tanpa panggilan Stockbit): hasil screening, Monitor, memo Kandidat,
+    skor backdoor POV-Dalam, dan kurasi. Sumber yang gagal dilewati; (src, jumlah baris per sumber)."""
+    m = datetime.now(WIB).month
+    src: dict = {"bulan": m}
+    n: dict = {}
+
+    def ambil(kunci, fn):
+        try:
+            src[kunci] = fn()
+        except Exception as e:
+            print(f"[rekomendasi] {kunci} dilewati: {e}", file=sys.stderr)
+            src[kunci] = None
+        v = src[kunci]
+        n[kunci] = len(v) if isinstance(v, (list, dict)) else 0
+
+    ambil("harga", harga_semua)
+    ambil("nama", nama_semua)
+    ambil("harmonik", lambda: harmonik_load().get("rows") or [])
+    ambil("recovery", lambda: recovery_api(m).get("saham") or [])
+    ambil("seasonality", lambda: season_api(m, 10).get("saham") or [])
+
+    def broker():
+        bd = broker_data()
+        if not bd:
+            return {}
+        bulan = max(BP.view(bd, None, None, "").get("bulanAda") or [0]) or None
+        if not bulan:
+            return {}
+        v = (BP.view(bd, bulan, None, "").get("saham") or {})
+        return {"bulan": bulan, "akumulasi": v.get("akumulasi") or [], "distribusi": v.get("distribusi") or []}
+    ambil("broker", broker)
+    ambil("lk", lambda: lk_api_cache().get("rows") or [])
+    ambil("saham50", lambda: saham50_api().get("rows") or [])
+    ambil("kakdr", lambda: kakdr_screen().get("rows") or [])
+    ambil("items", items_all)
+    ambil("kandidat", lambda: (_kd_memo[1].get("items") or []) if _kd_memo else [])
+
+    def pd_semua():
+        out = {}
+        for f in PD_DIR.glob("*.json"):
+            sk = ((((pd_baca(f.stem) or {}).get("hasil") or {}).get("backdoor")) or {}).get("skor")
+            if sk is not None:
+                out[f.stem] = sk
+        return out
+    ambil("backdoor_pd", pd_semua)
+    ambil("pengendali", lambda: _json_berkas("pengendali-verified.json"))
+    ambil("sikap", lambda: {t: v.get("sikap") for t, v in _json_berkas("pandangan-analis.json").items() if isinstance(v, dict)})
+    return src, n
+
+
+def rekomendasi_build() -> dict:
+    """Hitung rekomendasi hari ini (10 saham terbaik di bawah REKO_BATAS) dan simpan ke .rekomendasi.json."""
+    src, n = rekomendasi_kumpul()
+    res = RK.nilai(src, REKO_BATAS)
+    now = datetime.now(WIB)
+    res.update({"tanggal": now.strftime("%Y-%m-%d"), "updated": now.strftime("%Y-%m-%d %H:%M"), "sumber": n})
+    tmp = REKO_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(res, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(REKO_PATH)
+    return res
+
+
+def rekomendasi_api() -> dict:
+    """Rekomendasi hari ini; dihitung ulang sekali bila berkas belum ada atau masih tanggal kemarin."""
+    hari = datetime.now(WIB).strftime("%Y-%m-%d")
+    try:
+        d = json.loads(REKO_PATH.read_text(encoding="utf-8"))
+        if d.get("tanggal") == hari:
+            return d
+    except (OSError, ValueError):
+        pass
+    with _reko_lock:
+        try:
+            d = json.loads(REKO_PATH.read_text(encoding="utf-8"))
+            if d.get("tanggal") == hari:
+                return d
+        except (OSError, ValueError):
+            pass
+        return rekomendasi_build()
+
+
 def daily_builds() -> None:
-    """Pembaruan terjadwal: Seasonality, Pola Broker, Recovery, lalu Harmonic Pattern; masing-masing dicoba ulang
+    """Pembaruan terjadwal: Seasonality, Pola Broker, Recovery, Harmonic Pattern, lalu Rekomendasi; masing-masing dicoba ulang
     tiap 30 menit (maks. 3 jam)."""
-    for fn in (season_build, broker_build, recovery_build, harmonik_build):
+    for fn in (season_build, broker_build, recovery_build, harmonik_build, rekomendasi_build):
         for _ in range(6):
             try:
                 fn()
@@ -6510,6 +6599,8 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json(kakdr_screen())
         elif path == "api/pov-ah":
             self.reply_json(ah_screen())
+        elif path == "api/rekomendasi":
+            self.reply_json(rekomendasi_api())
         elif path == "api/harmonik":
             t = self.qs("ticker").upper()
             if not t:

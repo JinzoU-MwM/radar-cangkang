@@ -1421,5 +1421,71 @@ class TsaTokenTest(unittest.TestCase):
                 tr.get_token()
 
 
+class RekomendasiTest(unittest.TestCase):
+    """Rekomendasi harian: gabungan screening + backdoor, batas harga, minimal dua sumber, dan simpanan per hari."""
+
+    def src(self):
+        import rekomendasi as RK  # noqa: F401
+        return {
+            "bulan": 11,
+            "harga": {"AAAA": {"h": 500}, "BBBB": {"h": 1200}, "CCCC": {"h": 2500}, "DDDD": {"h": 300}, "EEEE": {"h": 800}},
+            "nama": {"AAAA": "Alfa Tbk.", "BBBB": "Beta Tbk."},
+            "harmonik": [
+                {"t": "AAAA", "pola": "gartley", "nama": "Gartley", "arah": "bullish", "status": "prz", "harga": 500, "prz": [480, 505],
+                 "target": [560, 600], "stop": 470},
+                {"t": "BBBB", "pola": "bat", "nama": "Bat", "arah": "bearish", "status": "prz", "harga": 1200, "prz": [1190, 1230]},
+                {"t": "CCCC", "pola": "crab", "nama": "Crab", "arah": "bullish", "status": "berbalik", "harga": 2500, "prz": [2400, 2450],
+                 "target": [2700, 2900], "stop": 2300},
+            ],
+            "recovery": [{"t": "AAAA", "skor": 80, "status": "Mulai pulih", "tek": {"turun": -60}, "dukung": ["Seasonality"], "alasan": ["Turun 60% dari puncak 52 minggu", "Teknikal: RSI naik dari jenuh jual"]},
+                         {"t": "CCCC", "skor": 90, "status": "Siap rebound", "tek": {"turun": -50}},
+                         {"t": "EEEE", "skor": 70, "status": "Pantau"}],
+            "broker": {"bulan": 11, "akumulasi": [{"s": "AAAA", "bandar": 5e9}, {"s": "BBBB", "bandar": 1e9}], "distribusi": [{"s": "DDDD", "bandar": -2e9}]},
+            "lk": [{"t": "BBBB", "kategori": "bagus", "periode": "9M26", "laba": {"pct": 40}}, {"t": "DDDD", "kategori": "berbalik", "periode": "9M26"},
+                   {"t": "EEEE", "kategori": "naik", "periode": "9M26"}],
+            "items": [{"ticker": "BBBB", "stage": "spa"}, {"ticker": "DDDD", "stage": "radar", "flags": {"rights": True}}],
+            "backdoor_pd": {"EEEE": 30},
+            "sikap": {"DDDD": "Hindari"},
+        }
+
+    def test_skor_alasan_dan_filter(self):
+        import rekomendasi as RK
+        r = RK.nilai(self.src(), 2000, 10)
+        kode = [x["t"] for x in r["rows"]]
+        self.assertNotIn("CCCC", kode)               # harga 2.500 di atas batas
+        self.assertNotIn("EEEE", kode)               # hanya satu sumber (Recovery "Pantau" tidak dihitung)
+        self.assertEqual(kode[0], "AAAA")            # Harmonic di PRZ + Recovery + akumulasi broker
+        a = r["rows"][0]
+        self.assertEqual(a["peringkat"], 1)
+        self.assertEqual(set(a["komponen"]), {"Harmonic Pattern", "Recovery", "Pola Broker"})
+        self.assertTrue(any("Gartley bullish" in x for x in a["alasan"]))
+        self.assertTrue(any("RSI naik" in x for x in a["alasan"]))
+        self.assertEqual(a["plan"]["sumber"], "Harmonic Gartley")
+        self.assertAlmostEqual(a["plan"]["rr"], 2.0)
+        b = next(x for x in r["rows"] if x["t"] == "BBBB")
+        self.assertTrue(any("bearish" in x for x in b["risiko"]))   # pola bearish di PRZ mengurangi skor
+        self.assertTrue(any("SPA" in x for x in b["alasan"]))
+        self.assertEqual(b["skor"], round(sum(b["komponen"].values()) - 10, 1))
+        d = next((x for x in r["rows"] if x["t"] == "DDDD"), None)
+        if d:
+            self.assertTrue(any("hindari" in x.lower() for x in d["risiko"]))
+
+    def test_jumlah_dibatasi(self):
+        import rekomendasi as RK
+        self.assertLessEqual(len(RK.nilai(self.src(), 2000, 1)["rows"]), 1)
+
+    def test_api_hitung_ulang_sekali_per_hari(self):
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / ".rekomendasi.json"
+            f.write_text(json.dumps({"tanggal": "2000-01-01", "rows": []}))
+            with unittest.mock.patch.object(server, "REKO_PATH", f),                     unittest.mock.patch.object(server, "rekomendasi_kumpul", return_value=(self.src(), {"harga": 5})) as kumpul:
+                r1 = server.rekomendasi_api()
+                r2 = server.rekomendasi_api()
+            self.assertEqual(kumpul.call_count, 1)      # tanggal lama: dihitung ulang sekali, lalu dibaca dari berkas
+            self.assertEqual(r1["tanggal"], r2["tanggal"])
+            self.assertEqual(r1["rows"][0]["t"], "AAAA")
+            self.assertEqual(r1["sumber"], {"harga": 5})
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

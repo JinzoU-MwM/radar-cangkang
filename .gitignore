@@ -90,3 +90,5 @@ website/tsa-*.json
 **/.laptop-sinkron.log
 **/.server.log
 **/.server-err.log
+**/.rekomendasi.json
+**/.rekomendasi.tmp
