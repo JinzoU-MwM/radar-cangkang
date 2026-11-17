@@ -1428,20 +1428,23 @@ class RekomendasiTest(unittest.TestCase):
         import rekomendasi as RK  # noqa: F401
         return {
             "bulan": 11,
-            "harga": {"AAAA": {"h": 500}, "BBBB": {"h": 1200}, "CCCC": {"h": 2500}, "DDDD": {"h": 300}, "EEEE": {"h": 800}},
+            "harga": {"AAAA": {"h": 500}, "BBBB": {"h": 1200}, "CCCC": {"h": 2500}, "DDDD": {"h": 300}, "EEEE": {"h": 800}, "FFFF": {"h": 900}},
             "nama": {"AAAA": "Alfa Tbk.", "BBBB": "Beta Tbk."},
             "harmonik": [
                 {"t": "AAAA", "pola": "gartley", "nama": "Gartley", "arah": "bullish", "status": "prz", "harga": 500, "prz": [480, 505],
-                 "target": [560, 600], "stop": 470},
-                {"t": "BBBB", "pola": "bat", "nama": "Bat", "arah": "bearish", "status": "prz", "harga": 1200, "prz": [1190, 1230]},
+                 "target": [560, 600], "targetCA": [650, 700], "stop": 470},
+                {"t": "FFFF", "pola": "bat", "nama": "Bat", "arah": "bearish", "status": "prz", "harga": 900, "prz": [890, 930]},
                 {"t": "CCCC", "pola": "crab", "nama": "Crab", "arah": "bullish", "status": "berbalik", "harga": 2500, "prz": [2400, 2450],
                  "target": [2700, 2900], "stop": 2300},
             ],
             "recovery": [{"t": "AAAA", "skor": 80, "status": "Mulai pulih", "tek": {"turun": -60}, "dukung": ["Seasonality"], "alasan": ["Turun 60% dari puncak 52 minggu", "Teknikal: RSI naik dari jenuh jual"]},
                          {"t": "CCCC", "skor": 90, "status": "Siap rebound", "tek": {"turun": -50}},
+                         {"t": "FFFF", "skor": 90, "status": "Siap rebound", "plan": {"entry": [880, 900], "sl": 820, "tp1": 1000, "tp2": 1200}},
+                         {"t": "BBBB", "skor": 60, "status": "Mulai pulih", "alasan": ["Turun 40% dari puncak"],
+                          "plan": {"entry": [1150, 1200], "sl": 1080, "tp1": 1350, "tp2": 1600}},
                          {"t": "EEEE", "skor": 70, "status": "Pantau"}],
             "broker": {"bulan": 11, "akumulasi": [{"s": "AAAA", "bandar": 5e9}, {"s": "BBBB", "bandar": 1e9}], "distribusi": [{"s": "DDDD", "bandar": -2e9}]},
-            "lk": [{"t": "BBBB", "kategori": "bagus", "periode": "9M26", "laba": {"pct": 40}}, {"t": "DDDD", "kategori": "berbalik", "periode": "9M26"},
+            "lk": [{"t": "BBBB", "kategori": "bagus", "periode": "9M26", "laba": {"pct": 40}}, {"t": "FFFF", "kategori": "berbalik", "periode": "9M26"}, {"t": "DDDD", "kategori": "berbalik", "periode": "9M26"},
                    {"t": "EEEE", "kategori": "naik", "periode": "9M26"}],
             "items": [{"ticker": "BBBB", "stage": "spa"}, {"ticker": "DDDD", "stage": "radar", "flags": {"rights": True}}],
             "backdoor_pd": {"EEEE": 30},
@@ -1462,6 +1465,9 @@ class RekomendasiTest(unittest.TestCase):
         self.assertTrue(any("Gartley bullish" in x for x in a["alasan"]))
         self.assertTrue(any("RSI naik" in x for x in a["alasan"]))
         self.assertEqual(a["plan"]["sumber"], "Harmonic Gartley")
+        self.assertEqual((a["plan"]["tp1"], a["plan"]["tp2"]), (560, 650))     # target 1 +12%, target 2 +30% (target lanjutan)
+        self.assertEqual((a["plan"]["naik1"], a["plan"]["naik2"]), (12.0, 30.0))
+        self.assertIn("lanjutan", a["plan"]["tp2Ket"])
         self.assertAlmostEqual(a["plan"]["rr"], 2.0)
         self.assertNotIn("BBBB", kode)                # saham HSC dipisah dari daftar Non HSC
         self.assertEqual([x["t"] for x in r["hsc"]], ["BBBB"])
@@ -1470,12 +1476,10 @@ class RekomendasiTest(unittest.TestCase):
         self.assertFalse(a["hsc"])
         self.assertEqual(r["lolosHsc"], 1)
         b = r["hsc"][0]
-        self.assertTrue(any("bearish" in x for x in b["risiko"]))   # pola bearish di PRZ mengurangi skor
         self.assertTrue(any("SPA" in x for x in b["alasan"]))
-        self.assertEqual(b["skor"], round(sum(b["komponen"].values()) - 10, 1))
-        d = next((x for x in r["rows"] if x["t"] == "DDDD"), None)
-        if d:
-            self.assertTrue(any("hindari" in x.lower() for x in d["risiko"]))
+        self.assertEqual(b["skor"], round(sum(b["komponen"].values()), 1))
+        self.assertNotIn("FFFF", kode)                # pola bearish aktif di PRZ: tidak direkomendasikan
+        self.assertNotIn("DDDD", kode)                # tanpa rencana yang memenuhi syarat target
 
     def test_rencana_harus_masuk_akal(self):
         """Kasus DSSA: pola bullish sudah berbalik dan harga di atas kedua target. Rencana dari pola itu tidak dipakai
@@ -1493,9 +1497,27 @@ class RekomendasiTest(unittest.TestCase):
         self.assertEqual(r["plan"]["sumber"], "Recovery")
         self.assertLess(r["plan"]["stop"], r["plan"]["entry"])
         self.assertLess(r["plan"]["entry"], r["plan"]["tp1"])
+        self.assertEqual((r["plan"]["tp1"], r["plan"]["tp2"]), (820, 900))
         src.pop("recovery")
         src["seasonality"] = [{"t": "DSSA", "prob": 70, "skor": 60, "up": 7, "n": 10}]
-        self.assertIsNone(RK.nilai(src, 2000, 10)["rows"][0]["plan"])   # tidak ada rencana yang masuk akal
+        self.assertEqual(RK.nilai(src, 2000, 10)["rows"], [])   # tanpa rencana yang masuk akal: tidak direkomendasikan
+
+    def test_syarat_target_dan_stop(self):
+        """Kasus MINA: target 1 hanya +1,3% dan stop -26%: ditolak. Target dari sumber lain dipakai bila sumber utama
+        tidak punya level yang memenuhi, dengan keterangan asalnya."""
+        import rekomendasi as RK
+        base = {"harga": {"MINA": {"h": 157}}, "lk": [{"t": "MINA", "kategori": "berbalik", "periode": "9M26"}],
+                "harmonik": [{"t": "MINA", "pola": "tigadorongan", "nama": "Three Drives", "arah": "bullish", "status": "berbalik",
+                              "harga": 157, "prz": [116, 117], "target": [159, 185], "stop": 116}]}
+        self.assertEqual(RK.nilai(base, 2000, 10)["rows"], [])
+        base["seasonality"] = [{"t": "MINA", "prob": 71, "skor": 48, "up": 5, "n": 7,
+                                "plan": {"entry": [150, 157], "sl": 138, "tp1": 220, "tp2": 238}}]
+        r = RK.nilai(base, 2000, 10)["rows"][0]["plan"]
+        self.assertEqual(r["sumber"], "Seasonality")
+        self.assertEqual(r["tp1"], 159 + 26)                     # 185 (+17,8%) dari level pola harmonik
+        self.assertIn("Three Drives", r["tp1Ket"])
+        self.assertEqual(r["tp2"], 220)                          # +40% dari target Seasonality
+        self.assertLessEqual(-r["turunStop"], RK.STOP_MAKS)
 
     def test_jumlah_dibatasi(self):
         import rekomendasi as RK

@@ -4,20 +4,31 @@ terverifikasi) menjadi satu daftar saham terbaik beserta alasannya. Logika murni
 mengumpulkan datanya dari berkas lokal lalu memanggil nilai().
 
 Skor = jumlah poin dari setiap sumber yang mendukung (maks. per sumber pada BOBOT) dikurangi poin risiko. Saham hanya
-masuk daftar bila harganya di bawah batas harga dan didukung minimal dua sumber. Bukan saran investasi personal."""
+masuk daftar bila harganya di bawah batas harga, didukung minimal dua sumber, dan punya rencana dengan target 1 naik
+10-20% serta target 2 naik 25-100% dari entry (R:R minimal 1, stop paling jauh 15%), skornya minimal SKOR_MIN, dan
+tidak sedang ada pola harmonik bearish di PRZ atau yang sudah berbalik turun. Bukan saran investasi personal."""
 
 # Naikkan bila aturan berubah: rekomendasi hari ini yang tersimpan dengan versi lama dihitung ulang.
-VERSI = 2
+VERSI = 3
 BOBOT = {"harmonik": 25, "recovery": 20, "backdoor": 20, "seasonality": 15, "broker": 15, "lk": 15, "saham50": 10, "kakdr": 10}
 NAMA_SUMBER = {"harmonik": "Harmonic Pattern", "recovery": "Recovery", "backdoor": "Backdoor", "seasonality": "Seasonality",
                "broker": "Pola Broker", "lk": "Laporan keuangan", "saham50": "Saham 50", "kakdr": "KakdrWay"}
 TAHAP = {"spa": "perjanjian jual beli (SPA)", "tender": "tender offer", "rupslb": "RUPSLB", "injeksi": "injeksi aset"}
 SINYAL = {"akuisisi": "akuisisi", "kbli": "perubahan KBLI", "rights": "rights issue", "direksi": "pergantian pengurus", "uma": "UMA"}
+# Syarat rencana: naik target 1 dan target 2 dari entry (persen), R:R minimal ke target 1, stop terjauh di bawah entry,
+# dan entry paling jauh di bawah harga terakhir (rencana "tunggu turun ke area entry").
+TARGET1, TARGET2 = (10, 20), (25, 100)
+RR_MIN, STOP_MAKS, ENTRY_BAWAH = 1.0, 15, 5
+SKOR_MIN = 20      # skor gabungan minimal supaya sinyal lemah tidak ikut direkomendasikan
 BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
 
 
 def _rp(v) -> str:
     return "–" if v is None else f"{round(v):,}".replace(",", ".")
+
+
+def _rentang(lo, hi) -> str:
+    return _rp(lo) if lo is not None and hi is not None and round(lo) == round(hi) else f"{_rp(lo)}–{_rp(hi)}"
 
 
 def _pct(v) -> str:
@@ -50,39 +61,46 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
         a = acc.setdefault(t, {"komponen": {}, "alasan": [], "risiko": [], "plan": None})
         a["risiko"].append((poin, teks))
 
-    def rencana(t, plan, prioritas):
-        """Rencana beli hanya dipakai bila urutannya masuk akal: stop < entry < target 1 (entry kosong = harga terakhir).
-        Rencana yang targetnya sudah terlewati dilewati, sehingga rencana dari sumber lain yang dipakai."""
-        a = acc.setdefault(t, {"komponen": {}, "alasan": [], "risiko": [], "plan": None})
-        e = plan.get("entry") or harga.get(t)
-        if not (e and plan.get("stop") and plan.get("tp1") and plan["stop"] < e < plan["tp1"]):
-            return
-        if a["plan"] is None or prioritas > a["plan"]["_p"]:
-            a["plan"] = {**plan, "entry": e, "_p": prioritas}
+    calon: dict[str, list] = {}      # calon rencana per saham: (prioritas, entry, stop, [(target, keterangan)], sumber)
+    level: dict[str, list] = {}      # semua level target per saham dari semua sumber
 
-    # Harmonic Pattern: pola bullish yang sudah di PRZ atau berbalik (terbaik per saham); bearish di PRZ = risiko.
+    def rencana(t, prioritas, entry, stop, target, sumber):
+        tg = [(x, k) for x, k in target if x]
+        level.setdefault(t, []).extend(tg)
+        if stop and tg:
+            calon.setdefault(t, []).append((prioritas, entry, stop, tg, sumber))
+
+    # Harmonic Pattern: satu pola bullish terbaik per saham dipakai untuk alasan sekaligus rencana; bearish di PRZ = risiko.
     STATUS = {"berbalik": (25, "sudah berbalik dari D"), "prz": (20, "harga sedang di PRZ"), "menuju": (8, "harga menuju PRZ")}
+    terbaik: dict[str, tuple] = {}
+    bearish: set[str] = set()
     for r in src.get("harmonik") or []:
         t, st = r.get("t"), r.get("status")
         if not t or st not in STATUS:
             continue
         pola = r.get("polaNama") or r.get("nama") or r.get("pola") or "pola harmonik"
-        if r.get("arah") == "bullish":
-            if st == "menuju" and (r.get("jarak") or 99) > 5:
-                continue
-            poin, teks = STATUS[st]
-            prz, tg = r.get("prz") or [None, None], r.get("target") or [None, None]
-            h = r.get("harga") or harga.get(t)
-            if tg[0] and h and h >= tg[0]:
-                # Harga sudah melewati target pertama: kesempatan dari pola ini sudah berjalan, poin kecil dan tanpa rencana.
-                tambah(t, "harmonik", 5, f"Pola {pola} bullish sudah berbalik dari PRZ {_rp(prz[0])}–{_rp(prz[1])} dan harga sudah melewati target pertama {_rp(tg[0])}; kesempatan dari pola ini sudah berjalan.")
-                continue
-            tambah(t, "harmonik", poin, f"Pola {pola} bullish, {teks}. PRZ {_rp(prz[0])}–{_rp(prz[1])}, target {_rp(tg[0])} dan {_rp(tg[1])}, batal di bawah {_rp(r.get('stop'))}.")
-            if r.get("stop") and tg[0]:
-                masuk = r.get("harga") if st != "menuju" else (prz[1] if prz[1] else None)
-                rencana(t, {"entry": masuk, "stop": r["stop"], "tp1": tg[0], "tp2": tg[1], "sumber": f"Harmonic {pola}"}, 3)
-        elif st in ("prz", "berbalik"):
-            risiko(t, 10, f"Ada pola {pola} bearish yang {STATUS[st][1]}, arah jangka pendek bisa turun.")
+        if r.get("arah") != "bullish":
+            if st in ("prz", "berbalik"):
+                bearish.add(t)   # pola bearish aktif: bertentangan dengan rencana beli, saham tidak direkomendasikan
+            continue
+        if st == "menuju" and (r.get("jarak") or 99) > 5:
+            continue
+        tg = r.get("target") or [None, None]
+        h = r.get("harga") or harga.get(t)
+        lewat = bool(tg[0] and h and h >= tg[0])
+        poin = 5 if lewat else STATUS[st][0]
+        if t not in terbaik or poin > terbaik[t][0]:
+            terbaik[t] = (poin, lewat, pola, r)
+    for t, (poin, lewat, pola, r) in terbaik.items():
+        st, prz, tg = r["status"], r.get("prz") or [None, None], r.get("target") or [None, None]
+        if lewat:
+            # Harga sudah melewati target pertama: kesempatan dari pola ini sudah berjalan, poin kecil dan tanpa rencana.
+            tambah(t, "harmonik", poin, f"Pola {pola} bullish sudah berbalik dari PRZ {_rentang(*prz)} dan harga sudah melewati target pertama {_rp(tg[0])}; kesempatan dari pola ini sudah berjalan.")
+            continue
+        tambah(t, "harmonik", poin, f"Pola {pola} bullish, {STATUS[st][1]}. PRZ {_rentang(*prz)}, target {_rp(tg[0])} dan {_rp(tg[1])}, batal di bawah {_rp(r.get('stop'))}.")
+        masuk = r.get("harga") if st != "menuju" else prz[1]
+        ca = [(x, f"target lanjutan pola {pola}") for x in (r.get("targetCA") or [])]
+        rencana(t, 3, masuk, r.get("stop"), [(tg[0], f"0,382 kaki AD pola {pola}"), (tg[1], f"0,618 kaki AD pola {pola}")] + ca, f"Harmonic {pola}")
 
     # Recovery: saham yang turun dalam dan mulai pulih.
     for r in src.get("recovery") or []:
@@ -94,9 +112,8 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
         teknik = next((x for x in al if x.lower().startswith("teknikal")), "")
         tambah(t, "recovery", sk * 0.2, f"Recovery {st.lower()} (skor {round(sk)}). {turun}." + (f" {teknik}." if teknik else ""))
         p = r.get("plan") or {}
-        if p.get("sl") and p.get("tp1"):
-            e = p.get("entry") or [None, None]
-            rencana(t, {"entry": e[1] if isinstance(e, list) else e, "stop": p["sl"], "tp1": p["tp1"], "tp2": p.get("tp2"), "sumber": "Recovery"}, 2)
+        e = p.get("entry") or [None, None]
+        rencana(t, 2, e[1] if isinstance(e, list) else e, p.get("sl"), [(p.get("tp1"), "target 1 Recovery"), (p.get("tp2"), "target 2 Recovery")], "Recovery")
 
     # Seasonality bulan berjalan.
     bln = src.get("bulan")
@@ -107,9 +124,8 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
         nb = BULAN[bln - 1] if bln else "bulan ini"
         tambah(t, "seasonality", (r.get("skor") or 0) * 0.15, f"Seasonality {nb}: naik {r.get('up')} kali dari {r.get('n')} tahun ({round(prob)}%), median {_pct(r.get('median'))}.")
         p = r.get("plan") or {}
-        if p.get("sl") and p.get("tp1"):
-            e = p.get("entry") or [None, None]
-            rencana(t, {"entry": e[1] if isinstance(e, list) else e, "stop": p["sl"], "tp1": p["tp1"], "tp2": p.get("tp2"), "sumber": "Seasonality"}, 1)
+        e = p.get("entry") or [None, None]
+        rencana(t, 1, e[1] if isinstance(e, list) else e, p.get("sl"), [(p.get("tp1"), "target 1 Seasonality"), (p.get("tp2"), "target 2 Seasonality")], "Seasonality")
 
     # Pola Broker bulan terakhir: peringkat akumulasi bandar; distribusi = risiko.
     bro = src.get("broker") or {}
@@ -122,14 +138,16 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
         risiko(r["s"], 8, f"Bandar distribusi di {nb}.")
 
     # Laporan keuangan terbaru.
-    LK = {"berbalik": (15, "berbalik untung"), "bagus": (12, "laba naik kuat"), "naik": (8, "laba naik")}
+    LK = {"berbalik": (15, "berbalik untung"), "bagus": (12, "laba naik kuat"), "naik": (8, "laba naik")}   # bagus = naik >= 20%
     for r in src.get("lk") or []:
         t, k = r.get("t"), r.get("kategori")
         if not t:
             continue
         laba = r.get("laba") or {}
         if k in LK:
-            tambah(t, "lk", LK[k][0], f"Laporan {r.get('periode') or 'terbaru'}: {LK[k][1]}{' ' + _pct(laba.get('pct')) if laba.get('pct') is not None else ''}.")
+            # Laba naik di bawah 20%: poin sebanding kenaikannya (naik 1% hampir tidak berarti).
+            poin = LK[k][0] if k != "naik" else 2 + 6 * min(max(laba.get("pct") or 0, 0), 20) / 20
+            tambah(t, "lk", poin, f"Laporan {r.get('periode') or 'terbaru'}: {LK[k][1]}{' ' + _pct(laba.get('pct')) if laba.get('pct') is not None else ''}.")
         elif k == "rugi":
             risiko(t, 6, f"Laporan {r.get('periode') or 'terbaru'} masih rugi.")
         elif k == "turun":
@@ -138,6 +156,8 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
     # Saham 50 (harga Rp50 ke bawah).
     for r in src.get("saham50") or []:
         t, sk = r.get("t"), r.get("skor") or 0
+        if t and (r.get("target") or {}).get("harga"):
+            level.setdefault(t, []).append((r["target"]["harga"], f"Saham 50: {r['target'].get('dasar') or 'resistance'}"))
         if t and sk >= 50:
             tambah(t, "saham50", sk * 0.1, f"Saham 50 skor {round(sk)}: {(r.get('potensi') or ['potensi kenaikan dari harga dasar'])[0]}")
 
@@ -177,23 +197,46 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
         if s and "hindari" in str(s).lower():
             risiko(t, 15, "Pandangan analis: hindari.")
 
+    def pilih_rencana(t, h):
+        """Rencana dengan prioritas sumber tertinggi yang memenuhi syarat: stop paling jauh STOP_MAKS% di bawah entry,
+        entry paling jauh ENTRY_BAWAH% di bawah harga terakhir, target 1 naik TARGET1% dan target 2 naik TARGET2% dari
+        entry, R:R ke target 1 minimal RR_MIN. Target diambil dari sumber rencana itu dulu, lalu dari level sumber lain."""
+        for p, e, sl, tg, sumber in sorted(calon.get(t) or [], key=lambda c: -c[0]):
+            e = e or h
+            if not (sl and e and sl < e and e <= h * 1.02 and e >= h * (1 - ENTRY_BAWAH / 100) and (1 - sl / e) * 100 <= STOP_MAKS):
+                continue
+            naik = lambda x: (x / e - 1) * 100
+            def cari(lo, hi, min_harga):
+                for daftar in (tg, level.get(t) or []):
+                    ok = sorted((x for x in daftar if lo <= naik(x[0]) <= hi and x[0] > min_harga), key=lambda x: x[0])
+                    if ok:
+                        return ok[0]
+                return None
+            t1 = cari(*TARGET1, e)
+            t2 = cari(*TARGET2, t1[0]) if t1 else None
+            if not t1 or not t2:
+                continue
+            rr = (t1[0] - e) / (e - sl)
+            if rr < RR_MIN:
+                continue
+            return {"entry": e, "stop": sl, "tp1": t1[0], "tp1Ket": t1[1], "tp2": t2[0], "tp2Ket": t2[1], "sumber": sumber,
+                    "rr": round(rr, 2), "naik1": round(naik(t1[0]), 1), "naik2": round(naik(t2[0]), 1), "turunStop": round((sl / e - 1) * 100, 1)}
+        return None
+
     rows = []
     for t, a in acc.items():
         h = harga.get(t)
-        if not h or h >= batas_harga or len(a["komponen"]) < 2:
+        if not h or h >= batas_harga or len(a["komponen"]) < 2 or t in bearish:
             continue
         kurang = sum(p for p, _ in a["risiko"])
         skor = round(sum(a["komponen"].values()) - kurang, 1)
-        if skor <= 0:
+        if skor < SKOR_MIN:
             continue
-        plan = dict(a["plan"]) if a["plan"] else None
-        if plan:
-            plan.pop("_p", None)
-            e, sl, tp = plan.get("entry") or h, plan.get("stop"), plan.get("tp1")
-            plan["entry"] = e
-            plan["rr"] = round((tp - e) / (e - sl), 2) if sl and tp and e > sl and tp > e else None
-            if plan["rr"] is not None and plan["rr"] < 1.5:
-                a["risiko"].append((0, f"Dari harga sekarang, untung ke target pertama baru {_r(plan['rr'])} kali risikonya; lebih baik menunggu harga mendekati area entry."))
+        plan = pilih_rencana(t, h)
+        if plan is None:
+            continue      # tidak ada rencana dengan target 1 naik 10-20% dan target 2 naik 25-100%
+        if plan["entry"] < h * 0.99:
+            a["risiko"].append((0, f"Entry {_rp(plan['entry'])} di bawah harga terakhir {_rp(h)}: tunggu harga turun ke area entry, jangan dikejar."))
         urut = sorted(a["alasan"], key=lambda x: -a["komponen"].get(x[0], 0))
         rows.append({"t": t, "nama": nama.get(t, ""), "harga": h, "skor": skor,
                      "komponen": {NAMA_SUMBER[k]: v for k, v in sorted(a["komponen"].items(), key=lambda x: -x[1])},
@@ -207,5 +250,5 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
     for grup in (non, dgn):
         for i, r in enumerate(grup):
             r["peringkat"] = i + 1
-    return {"versi": VERSI, "batasHarga": batas_harga, "dinilai": len(acc), "lolos": sum(not r["hsc"] for r in rows), "lolosHsc": sum(r["hsc"] for r in rows),
+    return {"versi": VERSI, "syarat": {"target1": TARGET1, "target2": TARGET2, "rrMin": RR_MIN, "stopMaks": STOP_MAKS, "skorMin": SKOR_MIN}, "batasHarga": batas_harga, "dinilai": len(acc), "lolos": sum(not r["hsc"] for r in rows), "lolosHsc": sum(r["hsc"] for r in rows),
             "rows": non, "hsc": dgn, "bobot": {NAMA_SUMBER[k]: v for k, v in BOBOT.items()}}

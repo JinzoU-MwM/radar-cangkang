@@ -22,7 +22,7 @@ const pct = (a, b) => a && b ? `${a >= b ? '+' : ''}${n1((a / b - 1) * 100)}%` :
   <div class="rk">
     <header>
       <h1>Rekomendasi</h1>
-      <p class="small ket">10 saham terbaik hari ini dengan harga di bawah {{ rp(data?.batasHarga || 2000) }}, dipisah antara saham Non HSC dan HSC, dipilih dari gabungan semua screening Radar dan sinyal backdoor. Diperbarui setiap hari pukul 00.01 WIB.</p>
+      <p class="small ket">Sampai 10 saham terbaik hari ini dengan harga di bawah {{ rp(data?.batasHarga || 2000) }}, dipisah antara saham Non HSC dan HSC, dipilih dari gabungan semua screening Radar dan sinyal backdoor. Hanya saham dengan target 1 naik 10–20% dan target 2 naik 25–100% dari entry, R:R minimal 1, dan stop paling jauh 15%. Diperbarui setiap hari pukul 00.01 WIB.</p>
       <p v-if="data" class="small muted">Dihitung {{ data.updated }} · {{ data.dinilai }} saham dinilai; lolos syarat {{ data.lolos }} Non HSC dan {{ data.lolosHsc ?? 0 }} HSC (harga di bawah batas dan didukung minimal dua sumber).</p>
     </header>
     <div v-if="data" class="kel" role="tablist" aria-label="Kelompok saham">
@@ -68,10 +68,12 @@ const pct = (a, b) => a && b ? `${a >= b ? '+' : ''}${n1((a / b - 1) * 100)}%` :
                 <tr><td>Entry</td><td>{{ rp(r.plan.entry) }}</td><td></td></tr>
                 <tr><td>Stop</td><td>{{ rp(r.plan.stop) }}</td><td class="dn">{{ pct(r.plan.stop, r.plan.entry) }}</td></tr>
                 <tr><td>Target 1</td><td>{{ rp(r.plan.tp1) }}</td><td class="up">{{ pct(r.plan.tp1, r.plan.entry) }}</td></tr>
+                <tr v-if="r.plan.tp1Ket" class="ketT"><td colspan="3">{{ r.plan.tp1Ket }}</td></tr>
                 <tr v-if="r.plan.tp2"><td>Target 2</td><td>{{ rp(r.plan.tp2) }}</td><td class="up">{{ pct(r.plan.tp2, r.plan.entry) }}</td></tr>
+                <tr v-if="r.plan.tp2Ket" class="ketT"><td colspan="3">{{ r.plan.tp2Ket }}</td></tr>
                 <tr v-if="r.plan.rr != null"><td>R:R target 1</td><td>{{ n1(r.plan.rr) }}</td><td></td></tr>
               </table>
-              <p class="small muted">Dari {{ r.plan.sumber }}.</p>
+              <p class="small muted">Entry dan stop dari {{ r.plan.sumber }}.</p>
             </template>
             <p v-else class="small muted">Belum ada rencana entry dari Harmonic, Recovery, atau Seasonality. Pantau dulu di halaman emiten.</p>
           </div>
@@ -80,7 +82,7 @@ const pct = (a, b) => a && b ? `${a >= b ? '+' : ''}${n1((a / b - 1) * 100)}%` :
     </ol>
     <details v-if="data" class="cara">
       <summary>Cara menghitung</summary>
-      <p class="small">Setiap sumber memberi poin sampai batas bobotnya. Skor adalah jumlah poin dikurangi poin risiko (pola bearish di PRZ, distribusi bandar, laba turun atau rugi, pandangan analis "hindari"). Saham hanya masuk bila harganya di bawah batas dan didukung minimal dua sumber.</p>
+      <p class="small">Setiap sumber memberi poin sampai batas bobotnya. Skor adalah jumlah poin dikurangi poin risiko (pola bearish di PRZ, distribusi bandar, laba turun atau rugi, pandangan analis "hindari"). Saham hanya masuk bila harganya di bawah batas, didukung minimal dua sumber, skornya minimal 20, tidak sedang ada pola harmonik bearish yang aktif, dan punya rencana dengan target 1 naik 10–20% serta target 2 naik 25–100% dari entry (R:R minimal 1, stop paling jauh 15%). Entry dan stop diambil dari satu sumber (urutan Harmonic, Recovery, Seasonality); target diambil dari sumber itu dulu, lalu dari level sumber lain, dengan keterangan asalnya.</p>
       <table class="bobot">
         <tr><th>Sumber</th><th>Bobot maks.</th></tr>
         <tr v-for="(v, k) in data.bobot" :key="k"><td>{{ k }}</td><td>{{ v }}</td></tr>
@@ -125,6 +127,7 @@ header h1{margin:0}
 .plan td:nth-child(2){font-family:var(--f-data);text-align:right}
 .plan td:nth-child(3){font-family:var(--f-data);text-align:right;font-size:12px}
 .plan p{margin:6px 0 0}
+.plan tr.ketT td{font:11px var(--f-body);color:var(--ink-2);text-align:left;padding-top:0;border-bottom:1px solid var(--rule-2)}
 .up{color:var(--good)}.dn{color:var(--strong)}
 .cara{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:10px 14px}
 .cara summary{cursor:pointer;font-weight:700}
