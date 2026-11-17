@@ -5038,7 +5038,9 @@ HARMONIK_PATH = ROOT / ".harmonik.json"
 def harmonik_build(delay: float = 0.25) -> None:
     """Screening Harmonic Pattern (POV) atas universe Recovery memakai bar harian 1 tahun yang sama (cache), sehingga
     dijalankan tepat setelah recovery_build hampir tanpa panggilan Stockbit tambahan."""
-    rows, dinilai, simpan = [], 0, {}
+    rows, dinilai, simpan, mom = [], 0, {}, {}
+    now = datetime.now(WIB)
+    hari_ini, buka = now.strftime("%Y-%m-%d"), now.hour < 16
     for t in recovery_universe():
         try:
             bars = get_ohlc(t, "1y")
@@ -5053,10 +5055,19 @@ def harmonik_build(delay: float = 0.25) -> None:
             if hasil:
                 # Salinan bar untuk chart analisa (dipakai bila cache harga kosong, mis. pengunjung publik).
                 simpan[t] = [{k: b[k] for k in ("d", "o", "h", "l", "c", "v")} for b in bars[-HM.BAR_SIMPAN:]]
+            # Ringkasan momentum semua saham untuk Rekomendasi (tanpa candle hari ini yang belum selesai).
+            bb = [b for b in bars if not (buka and str(b.get("d"))[:10] == hari_ini)]
+            try:
+                m = RK.momentum(bb)
+                if m:
+                    mom[t] = {**m, "res": RK.resistensi(bb[-HM.BAR_SIMPAN:]), "l5": min(x["l"] for x in bb[-5:]), "c": bb[-1]["c"]}
+            except (KeyError, TypeError, ValueError):
+                pass
         time.sleep(delay)
     if not dinilai:
         raise RuntimeError("data harga kosong")
-    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "versi": HM.VERSI_ATURAN, "dinilai": dinilai, "rows": rows, "bars": simpan}
+    data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "versi": HM.VERSI_ATURAN, "versiMomentum": RK.VERSI, "dinilai": dinilai,
+            "rows": rows, "bars": simpan, "momentum": mom}
     tmp = HARMONIK_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     tmp.replace(HARMONIK_PATH)
@@ -5092,8 +5103,12 @@ def harmonik_saham(t: str) -> dict:
 
 
 def harmonik_usang() -> bool:
-    """Hasil screening tersimpan dibuat dengan aturan pemindai lain (versi berbeda atau hasil lama tanpa versi)."""
-    return HARMONIK_PATH.exists() and harmonik_load().get("versi") != HM.VERSI_ATURAN
+    """Hasil screening tersimpan dibuat dengan aturan pemindai lain (versi berbeda atau hasil lama tanpa versi), atau
+    belum berisi ringkasan momentum versi Rekomendasi yang berlaku."""
+    if not HARMONIK_PATH.exists():
+        return False
+    d = harmonik_load()
+    return d.get("versi") != HM.VERSI_ATURAN or d.get("versiMomentum") != RK.VERSI
 
 
 def harmonik_api() -> dict:
@@ -5113,6 +5128,23 @@ REKO_PATH = ROOT / ".rekomendasi.json"
 REKO_BATAS = 2000   # harga maksimal saham yang direkomendasikan
 REKO_JUMLAH = 5     # jumlah saham per kelompok (Non HSC dan HSC)
 _reko_lock = threading.Lock()
+
+
+def broksum_hari(hari: int = 5) -> dict:
+    """Broksum harian `hari` hari bursa terakhir: net bandar per saham (jumlah dari daftar akumulasi/distribusi harian),
+    jumlah hari akumulasi, dan net hari terakhir."""
+    hd = broker_harian_data()
+    ada = sorted((d for d, x in (hd.get("hari") or {}).items() if x.get("broker")), reverse=True)[:hari]
+    br, out = broker_daftar(), {}
+    for tg in ada:
+        v = BP.view_harian(hd, tg, br, "").get("saham") or {}
+        for x in (v.get("akumulasi") or []) + (v.get("distribusi") or []):
+            o = out.setdefault(x["s"], {"net": 0, "hariAkum": 0, "kemarin": None})
+            o["net"] += x["bandar"]
+            o["hariAkum"] += x["bandar"] > 0
+            if tg == ada[0]:
+                o["kemarin"] = x["bandar"]
+    return {"tanggal": ada, "saham": out}
 
 
 def rekomendasi_kumpul() -> tuple[dict, dict]:
@@ -5150,6 +5182,10 @@ def rekomendasi_kumpul() -> tuple[dict, dict]:
     ambil("lk", lambda: lk_api_cache().get("rows") or [])
     ambil("saham50", lambda: saham50_api().get("rows") or [])
     ambil("kakdr", lambda: kakdr_screen().get("rows") or [])
+    ambil("momentum", lambda: harmonik_load().get("momentum") or {})
+    if not src["momentum"]:   # berkas Harmonic lama tanpa ringkasan momentum: pakai bar yang tersimpan saja
+        ambil("bars", lambda: harmonik_load().get("bars") or {})
+    ambil("broksum", broksum_hari)
     ambil("items", items_all)
     ambil("kandidat", lambda: (_kd_memo[1].get("items") or []) if _kd_memo else [])
 
@@ -5173,7 +5209,8 @@ def rekomendasi_build() -> dict:
     src, n = rekomendasi_kumpul()
     res = RK.nilai(src, REKO_BATAS, REKO_JUMLAH)
     now = datetime.now(WIB)
-    res.update({"tanggal": now.strftime("%Y-%m-%d"), "updated": now.strftime("%Y-%m-%d %H:%M"), "sumber": n})
+    res.update({"tanggal": now.strftime("%Y-%m-%d"), "updated": now.strftime("%Y-%m-%d %H:%M"), "sumber": n,
+                "harmonikUpdated": harmonik_load().get("updated")})
     tmp = REKO_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(res, ensure_ascii=False), encoding="utf-8")
     tmp.replace(REKO_PATH)
@@ -5181,18 +5218,19 @@ def rekomendasi_build() -> dict:
 
 
 def rekomendasi_api() -> dict:
-    """Rekomendasi hari ini; dihitung ulang sekali bila berkas belum ada, masih tanggal kemarin, atau versi aturannya lama."""
+    """Rekomendasi hari ini; dihitung ulang bila berkas belum ada, masih tanggal kemarin, versi aturannya lama, atau hasil
+    pemindaian Harmonic (sumber pola dan momentum) sudah diperbarui sejak terakhir dihitung."""
     hari = datetime.now(WIB).strftime("%Y-%m-%d")
     try:
         d = json.loads(REKO_PATH.read_text(encoding="utf-8"))
-        if d.get("tanggal") == hari and d.get("versi") == RK.VERSI:
+        if d.get("tanggal") == hari and d.get("versi") == RK.VERSI and d.get("harmonikUpdated") == harmonik_load().get("updated"):
             return d
     except (OSError, ValueError):
         pass
     with _reko_lock:
         try:
             d = json.loads(REKO_PATH.read_text(encoding="utf-8"))
-            if d.get("tanggal") == hari and d.get("versi") == RK.VERSI:
+            if d.get("tanggal") == hari and d.get("versi") == RK.VERSI and d.get("harmonikUpdated") == harmonik_load().get("updated"):
                 return d
         except (OSError, ValueError):
             pass

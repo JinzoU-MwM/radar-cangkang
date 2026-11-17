@@ -75,14 +75,14 @@ const pct = (a, b) => a && b ? `${a >= b ? '+' : ''}${n1((a / b - 1) * 100)}%` :
               </table>
               <p class="small muted">Entry dan stop dari {{ r.plan.sumber }}.</p>
             </template>
-            <p v-else class="small muted">Belum ada rencana entry dari Harmonic, Recovery, atau Seasonality. Pantau dulu di halaman emiten.</p>
+            <p v-else class="small muted">Belum ada rencana entry yang memenuhi syarat. Pantau dulu di halaman emiten.</p>
           </div>
         </div>
       </li>
     </ol>
     <details v-if="data" class="cara">
       <summary>Cara menghitung</summary>
-      <p class="small">Setiap sumber memberi poin sampai batas bobotnya. Skor adalah jumlah poin dikurangi poin risiko (pola bearish di PRZ, distribusi bandar, laba turun atau rugi, pandangan analis "hindari"). Saham hanya masuk bila harganya di bawah batas, didukung minimal dua sumber, skornya minimal 20, tidak sedang ada pola harmonik bearish yang aktif, dan punya rencana dengan target 1 naik 10–20% serta target 2 naik 25–100% dari entry (R:R minimal 1, stop paling jauh 15%). Entry dan stop diambil dari satu sumber (urutan Harmonic, Recovery, Seasonality); target diambil dari sumber itu dulu, lalu dari level sumber lain, dengan keterangan asalnya.</p>
+      <p class="small">Setiap sumber memberi poin sampai batas bobotnya. Skor adalah jumlah poin dikurangi poin risiko (distribusi bandar bulanan, broksum harian distribusi bersih 5 hari terakhir, harga menembus terendah 20 hari, laba turun atau rugi, pandangan analis "hindari"). Momentum memberi poin untuk volume minimal 2 kali rata-rata 20 hari dan harga menembus tertinggi 20 hari dalam 5 hari bursa terakhir; Broksum harian memberi poin untuk akumulasi bersih 5 hari terakhir. Saham hanya masuk bila harganya di bawah batas, didukung minimal dua sumber, skornya minimal 20, tidak sedang ada pola harmonik bearish yang aktif, dan punya rencana dengan target 1 naik 10–20% serta target 2 naik 25–100% dari entry (R:R minimal 1, stop paling jauh 15%). Entry dan stop diambil dari satu sumber (urutan Harmonic, Recovery, Momentum, Seasonality); target diambil dari sumber itu dulu, lalu dari level sumber lain termasuk puncak-puncak sebelumnya di chart (resistance), dengan keterangan asalnya.</p>
       <table class="bobot">
         <tr><th>Sumber</th><th>Bobot maks.</th></tr>
         <tr v-for="(v, k) in data.bobot" :key="k"><td>{{ k }}</td><td>{{ v }}</td></tr>
