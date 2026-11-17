@@ -13,21 +13,22 @@ from __future__ import annotations
 
 
 # Notasi rasio (sama dengan frontend/src/lib/harmonikAlat.js): b = AB/XA, c = BC/AB, d = AD/XA (D diukur dari A ke arah X),
-# bc = CD/BC (proyeksi BC), cx = XC/XA (C melewati A), dxc = CD/XC, dbc = DC/BC (D retracement kaki BC).
+# bc = CD/BC (proyeksi BC), cx = XC/XA (C melewati A), dxc = CD/XC, dbc = DC/BC (D retracement kaki BC),
+# cd = CD/AB (AB=CD di dalam pola; Carney: AB=CD setara syarat minimum setiap pola, Crab memakai 1,27-1,618).
 # Rasio mengikuti materi: Carney, Harmonic Trading Vol. 1 (Gartley, Bat, Butterfly, Crab, Deep Crab), Astronacci
 # (Cypher), dan lembar pola yang dilampirkan pengguna (Alternate Bat, Shark, 5-0).
 POLA = {
-    "gartley": {"nama": "Gartley", "b": (0.618, 0.618), "c": (0.382, 0.886), "d": (0.786, 0.786), "bc": (1.13, 1.618),
+    "gartley": {"nama": "Gartley", "b": (0.618, 0.618), "c": (0.382, 0.886), "d": (0.786, 0.786), "bc": (1.13, 1.618), "abcd": (1.0, 1.27),
                 "ket": "Pola retracement klasik: B tepat 0,618 XA, D di 0,786 XA. D tidak boleh melewati X."},
-    "bat": {"nama": "Bat", "b": (0.382, 0.50), "c": (0.382, 0.886), "d": (0.886, 0.886), "bc": (1.618, 2.618),
+    "bat": {"nama": "Bat", "b": (0.382, 0.50), "c": (0.382, 0.886), "d": (0.886, 0.886), "bc": (1.618, 2.618), "abcd": (1.0, 1.27),
             "ket": "Retracement dalam: B di bawah 0,618 XA (ideal 0,382-0,5), D di 0,886 XA. D tidak boleh melewati X."},
-    "altbat": {"nama": "Alternate Bat", "b": (0.382, 0.382), "c": (0.382, 0.886), "d": (1.13, 1.13), "bc": (2.0, 3.618),
+    "altbat": {"nama": "Alternate Bat", "b": (0.382, 0.382), "c": (0.382, 0.886), "d": (1.13, 1.13), "bc": (2.0, 3.618), "abcd": (1.0, 1.618),
                "ket": "Varian Bat: B dangkal 0,382 XA, D melewati X sampai 1,13 XA."},
-    "butterfly": {"nama": "Butterfly", "b": (0.786, 0.786), "c": (0.382, 0.886), "d": (1.27, 1.414), "bc": (1.618, 2.24),
+    "butterfly": {"nama": "Butterfly", "b": (0.786, 0.786), "c": (0.382, 0.886), "d": (1.27, 1.414), "bc": (1.618, 2.24), "abcd": (1.0, 1.27),
                   "ket": "Pola ekstensi: B tepat 0,786 XA, D melewati X di 1,27 XA. Muncul di area ekstrem."},
-    "crab": {"nama": "Crab", "b": (0.382, 0.618), "c": (0.382, 0.886), "d": (1.618, 1.618), "bc": (2.618, 3.618),
+    "crab": {"nama": "Crab", "b": (0.382, 0.618), "c": (0.382, 0.886), "d": (1.618, 1.618), "bc": (2.618, 3.618), "abcd": (1.27, 1.618),
              "ket": "Proyeksi paling ekstrem: D di 1,618 XA. Pembalikan sering tajam, disiplin stop penting."},
-    "deepcrab": {"nama": "Deep Crab", "b": (0.886, 0.886), "c": (0.382, 0.886), "d": (1.618, 1.618), "bc": (2.24, 3.618),
+    "deepcrab": {"nama": "Deep Crab", "b": (0.886, 0.886), "c": (0.382, 0.886), "d": (1.618, 1.618), "bc": (2.24, 3.618), "abcd": (1.27, 1.618),
                  "ket": "Seperti Crab dengan B dalam di 0,886 XA; D tetap 1,618 XA."},
     "cypher": {"nama": "Cypher", "b": (0.382, 0.618), "cx": (1.272, 1.414), "dxc": (0.786, 0.786),
                "ket": "C melewati A (1,272-1,414 XA); D di 0,786 kaki XC. Muncul di pasar dengan swing kompleks."},
@@ -49,8 +50,9 @@ ABCD_C, ABCD_E = (0.382, 0.886), (1.13, 2.618)
 STOP_PRZ = {"altbat", "butterfly", "crab", "deepcrab", "shark"}   # D melewati/menyentuh X: stop di sisi luar PRZ
 # Versi aturan pemindai: naikkan setiap kali pola/rasio/aturan berubah. Server memindai ulang saat start bila hasil
 # tersimpan (.harmonik.json) dibuat dengan versi lain, tanpa menunggu jadwal malam.
-VERSI_ATURAN = 3   # 3: AB=CD hanya di PRZ/berbalik; PRZ Three Drives di level 1,27 atau 1,618
+VERSI_ATURAN = 4   # 4: cek AB=CD (CD/AB) di pola XABCD; 3: AB=CD hanya di PRZ/berbalik; PRZ Three Drives 1,27/1,618
 TOL = 0.05            # toleransi relatif batas rasio (±5%)
+ABCD_TOL = 0.15       # AB=CD di dalam pola: CD minimal 0,85 AB (kaki CD berakhir di ekstrem swing yang beragam)
 PRZ_LEBAR = 0.03      # lebar PRZ = ±3% panjang kaki acuan di sekitar level D
 SKALA = (0.06, 0.10, 0.15)   # ambang zigzag (pembalikan minimal) dari swing kecil ke besar
 MENUJU_MAKS = 12.0    # % jarak harga ke PRZ yang masih ditampilkan sebagai "menuju PRZ"
@@ -190,7 +192,8 @@ def rasio(X: float, A: float, B: float, C: float, D: float | None = None) -> dic
     xa, ab, bc, xc = abs(A - X), abs(A - B), abs(C - B), abs(C - X)
     return {"b": _r3(ab / xa), "c": _r3(bc / ab), "cx": _r3(xc / xa),
             "d": None if D is None else _r3(abs(A - D) / xa), "bc": None if D is None else _r3(abs(D - C) / bc),
-            "dxc": None if D is None else _r3(abs(D - C) / xc), "dbc": None if D is None else _r3(abs(D - C) / bc)}
+            "dxc": None if D is None else _r3(abs(D - C) / xc), "dbc": None if D is None else _r3(abs(D - C) / bc),
+            "cd": None if D is None else _r3(abs(D - C) / ab)}
 
 
 def prz_pola(k: str, X: float, A: float, B: float, C: float, tol: float = TOL) -> list[float] | None:
@@ -356,8 +359,18 @@ def _cari_xabcd(bars, rs, th, pv, hasil):
             label = {"b": "B AB/XA", "c": "C BC/AB", "cx": "C XC/XA", "d": "D AD/XA", "dxc": "D CD/XC", "dbc": "D DC/BC", "bc": "CD/BC"}
             alasan = [f"{label[x]} {_teks(r[x])} (kriteria {_rg(p[x])})" for x in ("b", "c", "cx", "d", "dxc", "dbc", "bc")
                       if x in p and r.get(x) is not None]
+            # AB=CD di dalam pola (Carney: syarat minimum). Pola tidak dibuang, tapi ditandai dan turun peringkat.
+            abcd = None
+            if "abcd" in p and status != "menuju":
+                cd = _r3(abs(D["p"] - C["p"]) / abs(A["p"] - B["p"]))
+                ok = _jarak(cd, p["abcd"]) <= ABCD_TOL
+                abcd = {"rasio": cd, "kriteria": list(p["abcd"]), "ok": ok}
+                alasan.append(f"AB=CD CD/AB {_teks(cd)} (kriteria {_rg(p['abcd'])}" + (")" if ok else ", belum terpenuhi)"))
+                skor = round(skor + _jarak(cd, p["abcd"]), 3)
             ca = [_bulat(C["p"]), _bulat(A["p"])] if k not in ("cypher", "fiveo") else None
             row = _baris(bars, rs, k, p["nama"], bull, status, th, w, "XABCD", prz, stop, target, r, alasan, skor, ca)
+            if abcd:
+                row["abcd"] = abcd
             kunci = (k, row["arah"], B["i"], C["i"], "p" if status == "menuju" else D["i"])
             if kunci not in hasil or row["skor"] < hasil[kunci]["skor"]:
                 hasil[kunci] = row

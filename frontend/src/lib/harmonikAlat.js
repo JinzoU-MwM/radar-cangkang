@@ -8,17 +8,17 @@
 import { ceilTick, ema, floorTick, tick } from './ta.js'
 
 export const POLA = {
-  gartley: { nama: 'Gartley', b: [0.618, 0.618], c: [0.382, 0.886], d: [0.786, 0.786], e: [1.13, 1.618],
+  gartley: { nama: 'Gartley', b: [0.618, 0.618], c: [0.382, 0.886], d: [0.786, 0.786], e: [1.13, 1.618], abcd: [1, 1.27],
     ket: 'Pola retracement klasik: B tepat 0,618 XA, D di 0,786 XA. D tidak boleh melewati X.' },
-  bat: { nama: 'Bat', b: [0.382, 0.5], c: [0.382, 0.886], d: [0.886, 0.886], e: [1.618, 2.618],
+  bat: { nama: 'Bat', b: [0.382, 0.5], c: [0.382, 0.886], d: [0.886, 0.886], e: [1.618, 2.618], abcd: [1, 1.27],
     ket: 'Retracement dalam: B di bawah 0,618 XA (ideal 0,382–0,5), D di 0,886 XA. D tidak boleh melewati X.' },
-  altbat: { nama: 'Alternate Bat', b: [0.382, 0.382], c: [0.382, 0.886], d: [1.13, 1.13], e: [2.0, 3.618],
+  altbat: { nama: 'Alternate Bat', b: [0.382, 0.382], c: [0.382, 0.886], d: [1.13, 1.13], e: [2.0, 3.618], abcd: [1, 1.618],
     ket: 'Varian Bat: B dangkal 0,382 XA, D melewati X sampai 1,13 XA.' },
-  butterfly: { nama: 'Butterfly', b: [0.786, 0.786], c: [0.382, 0.886], d: [1.27, 1.414], e: [1.618, 2.24],
+  butterfly: { nama: 'Butterfly', b: [0.786, 0.786], c: [0.382, 0.886], d: [1.27, 1.414], e: [1.618, 2.24], abcd: [1, 1.27],
     ket: 'Pola ekstensi: B tepat 0,786 XA, D melewati X di 1,27 XA. Muncul di area ekstrem.' },
-  crab: { nama: 'Crab', b: [0.382, 0.618], c: [0.382, 0.886], d: [1.618, 1.618], e: [2.618, 3.618],
+  crab: { nama: 'Crab', b: [0.382, 0.618], c: [0.382, 0.886], d: [1.618, 1.618], e: [2.618, 3.618], abcd: [1.27, 1.618],
     ket: 'Proyeksi paling ekstrem: D di 1,618 XA. Pembalikan sering tajam, disiplin stop penting.' },
-  deepcrab: { nama: 'Deep Crab', b: [0.886, 0.886], c: [0.382, 0.886], d: [1.618, 1.618], e: [2.24, 3.618],
+  deepcrab: { nama: 'Deep Crab', b: [0.886, 0.886], c: [0.382, 0.886], d: [1.618, 1.618], e: [2.24, 3.618], abcd: [1.27, 1.618],
     ket: 'Seperti Crab dengan B dalam di 0,886 XA; D tetap 1,618 XA.' },
   cypher: { nama: 'Cypher', b: [0.382, 0.618], cx: [1.272, 1.414], dc: [0.786, 0.786],
     ket: 'C melewati A (1,272–1,414 XA); D di 0,786 kaki XC. Muncul di pasar dengan swing kompleks.' },
@@ -31,6 +31,7 @@ export const POLA = {
 // Pola yang D-nya melewati atau menyentuh X: stop memakai sisi luar PRZ, bukan X.
 const STOP_PRZ = new Set(['altbat', 'butterfly', 'crab', 'deepcrab', 'shark'])
 export const TOL = 0.05          // toleransi relatif batas rasio (±5%)
+export const ABCD_TOL = 0.15    // AB=CD di dalam pola: CD minimal 0,85 AB (sama dengan website/harmonik.py)
 export const PRZ_LEBAR = 0.03    // PRZ minimal = ±3% kaki acuan di sekitar level D
 export const MENUJU_MAKS = 0.25  // jarak harga terakhir ke tepi PRZ yang masih digambar sebagai pola "menuju"
 // Ambang zigzag (pembalikan minimal) per timeframe, dari swing kecil ke besar.
@@ -105,6 +106,7 @@ export function rasioXabcd(X, A, B, C, D = null) {
     e: D == null ? null : r3(Math.abs(D - C) / bc),
     dc: D == null ? null : r3(Math.abs(D - C) / xc),
     dbc: D == null ? null : r3(Math.abs(D - C) / bc),
+    cd: D == null ? null : r3(Math.abs(D - C) / ab),   // AB=CD di dalam pola (CD/AB)
   }
 }
 
@@ -233,8 +235,11 @@ export function cariXabcd(bars = [], skala = SKALA.D, umurD = 30) {
         // Kunci tanpa X/A: skala zigzag berbeda bisa memilih bar berbeda untuk harga ekstrem yang sama (harga kembar),
         // padahal B, C, D-nya sama; pola itu cukup tampil sekali.
         const kunci = `${k}|${bull ? 'b' : 's'}|${B.i}|${C.i}|${titikD.proyeksi ? 'p' : D.i}`
+        // AB=CD (Carney: syarat minimum) tidak membuang pola, tapi menurunkan peringkat bila belum terpenuhi.
+        const abcd = POLA[k].abcd && !titikD.proyeksi ? { rasio: r.cd, kriteria: POLA[k].abcd, ok: jarak(r.cd, POLA[k].abcd) <= ABCD_TOL } : null
+        if (abcd) skor = Math.round((skor + jarak(r.cd, POLA[k].abcd)) * 1000) / 1000
         const row = {
-          kunci, pola: k, nama: POLA[k].nama, ket: POLA[k].ket, arah: bull ? 'bullish' : 'bearish', status, skala: th, skor,
+          kunci, pola: k, nama: POLA[k].nama, ket: POLA[k].ket, arah: bull ? 'bullish' : 'bearish', status, skala: th, skor, abcd,
           titik: [{ n: 'X', i: X.i, p: X.p }, { n: 'A', i: A.i, p: A.p }, { n: 'B', i: B.i, p: B.p }, { n: 'C', i: C.i, p: C.p }, titikD],
           rasio: status === 'menuju' ? rasioXabcd(X.p, A.p, B.p, C.p) : r, prz, target, stop, harga: akhir,
           kaki: KAKI[k] || 'AD',   // kaki acuan target
@@ -643,6 +648,8 @@ export function alasanPola(row, tol = TOL) {
     if (p.dc) tambah('Titik D: CD/XC', r.dc, p.dc)
     if (p.dbc) tambah('Titik D: retracement DC/BC', r.dbc, p.dbc)
     if (p.e) tambah('Proyeksi CD/BC', r.e, p.e, 2)
+    // AB=CD di dalam pola: syarat minimum menurut Carney (Crab 1,27-1,618); toleransi selonggar proyeksi BC.
+    if (p.abcd) tambah('AB=CD: CD/AB', r.cd, p.abcd, ABCD_TOL / tol)
   }
   return out
 }

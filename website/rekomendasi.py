@@ -11,7 +11,7 @@ import re
 from datetime import date
 
 # Naikkan bila aturan berubah: rekomendasi hari ini yang tersimpan dengan versi lama dihitung ulang.
-VERSI = 12
+VERSI = 13
 BOBOT = {"harmonik": 25, "recovery": 20, "backdoor": 20, "seasonality": 15, "broker": 15, "lk": 15, "saham50": 10, "kakdr": 10,
          "momentum": 15, "broksum": 15}
 NAMA_SUMBER = {"harmonik": "Harmonic Pattern", "recovery": "Recovery", "backdoor": "Backdoor", "seasonality": "Seasonality",
@@ -200,6 +200,8 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
         h = r.get("harga") or harga.get(t)
         lewat = bool(tg[0] and h and h >= tg[0])
         poin = 5 if lewat else STATUS[st][0]
+        if (r.get("abcd") or {}).get("ok") is False:
+            poin -= 6   # AB=CD di dalam pola belum terpenuhi (Carney: syarat minimum): pola lebih lemah
         if t not in terbaik or poin > terbaik[t][0]:
             terbaik[t] = (poin, lewat, pola, r)
     for t, (poin, lewat, pola, r) in terbaik.items():
@@ -208,7 +210,9 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
             # Harga sudah melewati target pertama: kesempatan dari pola ini sudah berjalan, poin kecil dan tanpa rencana.
             tambah(t, "harmonik", poin, f"Pola {pola} bullish sudah berbalik dari PRZ {_rentang(*prz)} dan harga sudah melewati target pertama {_rp(tg[0])}; kesempatan dari pola ini sudah berjalan.")
             continue
-        tambah(t, "harmonik", poin, f"Pola {pola} bullish, {STATUS[st][1]}. PRZ {_rentang(*prz)}, target {_rp(tg[0])} dan {_rp(tg[1])}, batal di bawah {_rp(r.get('stop'))}.")
+        ab = r.get("abcd") or {}
+        lemah = f" AB=CD belum terpenuhi (CD {str(ab.get('rasio')).replace('.', ',')} kali AB), pola lebih lemah." if ab.get("ok") is False else ""
+        tambah(t, "harmonik", poin, f"Pola {pola} bullish, {STATUS[st][1]}. PRZ {_rentang(*prz)}, target {_rp(tg[0])} dan {_rp(tg[1])}, batal di bawah {_rp(r.get('stop'))}.{lemah}")
         masuk = r.get("harga") if st != "menuju" else prz[1]
         ca = [(x, f"target lanjutan pola {pola}") for x in (r.get("targetCA") or [])]
         rencana(t, 3, masuk, r.get("stop"), [(tg[0], f"0,382 kaki AD pola {pola}"), (tg[1], f"0,618 kaki AD pola {pola}")] + ca, f"Harmonic {pola}")
