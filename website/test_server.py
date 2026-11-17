@@ -1446,6 +1446,7 @@ class RekomendasiTest(unittest.TestCase):
             "items": [{"ticker": "BBBB", "stage": "spa"}, {"ticker": "DDDD", "stage": "radar", "flags": {"rights": True}}],
             "backdoor_pd": {"EEEE": 30},
             "sikap": {"DDDD": "Hindari"},
+            "hsc": ["BBBB"],
         }
 
     def test_skor_alasan_dan_filter(self):
@@ -1462,7 +1463,13 @@ class RekomendasiTest(unittest.TestCase):
         self.assertTrue(any("RSI naik" in x for x in a["alasan"]))
         self.assertEqual(a["plan"]["sumber"], "Harmonic Gartley")
         self.assertAlmostEqual(a["plan"]["rr"], 2.0)
-        b = next(x for x in r["rows"] if x["t"] == "BBBB")
+        self.assertNotIn("BBBB", kode)                # saham HSC dipisah dari daftar Non HSC
+        self.assertEqual([x["t"] for x in r["hsc"]], ["BBBB"])
+        self.assertEqual(r["hsc"][0]["peringkat"], 1)
+        self.assertTrue(r["hsc"][0]["hsc"])
+        self.assertFalse(a["hsc"])
+        self.assertEqual(r["lolosHsc"], 1)
+        b = r["hsc"][0]
         self.assertTrue(any("bearish" in x for x in b["risiko"]))   # pola bearish di PRZ mengurangi skor
         self.assertTrue(any("SPA" in x for x in b["alasan"]))
         self.assertEqual(b["skor"], round(sum(b["komponen"].values()) - 10, 1))
@@ -1477,7 +1484,7 @@ class RekomendasiTest(unittest.TestCase):
     def test_api_hitung_ulang_sekali_per_hari(self):
         with tempfile.TemporaryDirectory() as d:
             f = Path(d) / ".rekomendasi.json"
-            f.write_text(json.dumps({"tanggal": "2000-01-01", "rows": []}))
+            f.write_text(json.dumps({"tanggal": datetime.now(server.WIB).strftime("%Y-%m-%d"), "rows": []}))  # versi lama tanpa HSC
             with unittest.mock.patch.object(server, "REKO_PATH", f),                     unittest.mock.patch.object(server, "rekomendasi_kumpul", return_value=(self.src(), {"harga": 5})) as kumpul:
                 r1 = server.rekomendasi_api()
                 r2 = server.rekomendasi_api()

@@ -32,7 +32,8 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
     harmonik [baris .harmonik.json], recovery [saham recovery_api], seasonality [saham season_api],
     broker {"bulan": m, "akumulasi": [{s, bandar}], "distribusi": [{s, bandar}]}, lk [baris lk_api],
     saham50 [baris], kakdr [baris], items [Monitor], kandidat [item kandidat], backdoor_pd {t: skor 0-100},
-    pengendali {t: {...}} (pengendali-verified.json), sikap {t: sikap pandangan analis}."""
+    pengendali {t: {...}} (pengendali-verified.json), sikap {t: sikap pandangan analis}, hsc [kode saham HSC].
+    Hasil: rows = Non HSC terbaik, hsc = HSC terbaik (masing-masing paling banyak `jumlah`, peringkat sendiri)."""
     harga = {t: (v or {}).get("h") for t, v in (src.get("harga") or {}).items()}
     nama = dict(src.get("nama") or {})
     acc: dict[str, dict] = {}
@@ -186,6 +187,13 @@ def nilai(src: dict, batas_harga: float = 2000, jumlah: int = 10) -> dict:
                      "komponen": {NAMA_SUMBER[k]: v for k, v in sorted(a["komponen"].items(), key=lambda x: -x[1])},
                      "jumlahSumber": len(a["komponen"]), "alasan": [s for _, s in urut], "risiko": [s for _, s in a["risiko"]], "plan": plan})
     rows.sort(key=lambda r: (-r["skor"], -r["jumlahSumber"], r["t"]))
-    for i, r in enumerate(rows[:jumlah]):
-        r["peringkat"] = i + 1
-    return {"batasHarga": batas_harga, "dinilai": len(acc), "lolos": len(rows), "rows": rows[:jumlah], "bobot": {NAMA_SUMBER[k]: v for k, v in BOBOT.items()}}
+    # Saham HSC (konsentrasi kepemilikan tinggi, dikeluarkan dari IHSG) diperingkat terpisah dari saham Non HSC.
+    hsc = set(src.get("hsc") or [])
+    for r in rows:
+        r["hsc"] = r["t"] in hsc
+    non, dgn = [r for r in rows if not r["hsc"]][:jumlah], [r for r in rows if r["hsc"]][:jumlah]
+    for grup in (non, dgn):
+        for i, r in enumerate(grup):
+            r["peringkat"] = i + 1
+    return {"batasHarga": batas_harga, "dinilai": len(acc), "lolos": sum(not r["hsc"] for r in rows), "lolosHsc": sum(r["hsc"] for r in rows),
+            "rows": non, "hsc": dgn, "bobot": {NAMA_SUMBER[k]: v for k, v in BOBOT.items()}}
