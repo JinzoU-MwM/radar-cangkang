@@ -1617,6 +1617,13 @@ class RekomendasiTest(unittest.TestCase):
         r = RK.nilai(src, 2000, 5)["rows"]
         self.assertTrue(all("Backdoor" not in x["komponen"] for x in r))
 
+    def test_label_tanggal_dengan_tahun(self):
+        import rekomendasi as RK
+        from datetime import date
+        ini = date.today().year
+        self.assertEqual(RK._tgl(f"{ini}-11-11"), "11 Nov")
+        self.assertEqual(RK._tgl(f"{ini - 1}-12-16"), f"16 Des {ini - 1}")
+
     def test_jumlah_dibatasi(self):
         import rekomendasi as RK
         self.assertLessEqual(len(RK.nilai(self.src(), 2000, 1)["rows"]), 1)

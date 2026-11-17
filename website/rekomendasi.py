@@ -8,9 +8,10 @@ masuk daftar bila harganya di bawah batas harga, didukung minimal dua sumber, da
 10-20% serta target 2 naik 25-100% dari entry (R:R minimal 1, stop paling jauh 15%), skornya minimal SKOR_MIN, dan
 tidak sedang ada pola harmonik bearish di PRZ atau yang sudah berbalik turun. Bukan saran investasi personal."""
 import re
+from datetime import date
 
 # Naikkan bila aturan berubah: rekomendasi hari ini yang tersimpan dengan versi lama dihitung ulang.
-VERSI = 7
+VERSI = 8
 BOBOT = {"harmonik": 25, "recovery": 20, "backdoor": 20, "seasonality": 15, "broker": 15, "lk": 15, "saham50": 10, "kakdr": 10,
          "momentum": 15, "broksum": 15}
 NAMA_SUMBER = {"harmonik": "Harmonic Pattern", "recovery": "Recovery", "backdoor": "Backdoor", "seasonality": "Seasonality",
@@ -35,9 +36,10 @@ def _rp(v) -> str:
 
 
 def _tgl(d) -> str:
-    """'2026-11-11' -> '11 Nov'."""
+    """'2026-11-11' -> '11 Nov'; tanggal di luar tahun berjalan diberi tahun ('2025-12-16' -> '16 Des 2025')."""
     try:
-        return f"{int(str(d)[8:10])} {BULAN[int(str(d)[5:7]) - 1][:3]}"
+        teks = f"{int(str(d)[8:10])} {BULAN[int(str(d)[5:7]) - 1][:3]}"
+        return teks if str(d)[:4] == str(date.today().year) else f"{teks} {str(d)[:4]}"
     except (ValueError, IndexError):
         return str(d)
 
