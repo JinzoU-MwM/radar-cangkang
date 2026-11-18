@@ -8,9 +8,15 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { api } from '../api.js'
 import { fmt, fmtDate } from '../lib/domain.js'
 import { pdPerluTarikUlang, pdPerluPantau, pdCakupan } from '../lib/povDalamStatus.js'
+import { analisaInsider } from '../lib/insiderAnalisa.js'
 
 const props = defineProps({ ticker: { type: String, required: true } })
-const st = ref(null), err = ref(''), busyPdf = ref(false)
+const st = ref(null), err = ref(''), busyPdf = ref(false), busyIns = ref(false)
+// Keterbukaan pemegang saham terbaru (IDX & KSEI): pemegang baru >=5% ditampilkan dan ikut di PDF, walau analisa
+// tersimpan dibuat sebelum data itu masuk.
+const insRows = ref([])
+api.get('/api/insider-rows', { ticker: props.ticker }).then(j => { insRows.value = j.rows || [] }, () => {})
+const ins = computed(() => insRows.value.length ? analisaInsider(insRows.value, hasil.value) : null)
 let timer = null, diminta = false
 const hasil = computed(() => st.value?.status === 'selesai' ? st.value.hasil : null)
 // Hanya klaim yang didukung data yang ditampilkan.
@@ -55,8 +61,16 @@ async function unduh() {
   busyPdf.value = true
   try {
     const [{ jsPDF }, P] = await Promise.all([import('jspdf'), import('../lib/povDalamPdf.js')])
-    ;(await P.povDalamPdf(hasil.value, jsPDF)).save(P.povDalamPdfName(hasil.value))
+    ;(await P.povDalamPdf(hasil.value, jsPDF, ins.value)).save(P.povDalamPdfName(hasil.value))
   } catch (e) { err.value = 'PDF gagal: ' + (e.message || e) } finally { busyPdf.value = false }
+}
+async function unduhInsider() {
+  busyIns.value = true
+  try {
+    const [{ jsPDF }, P] = await Promise.all([import('jspdf'), import('../lib/insiderPdf.js')])
+    const a = ins.value || analisaInsider([], hasil.value)
+    ;(await P.insiderPdf({ t: props.ticker, nama: hasil.value?.nama, a }, jsPDF)).save(P.insiderPdfName(props.ticker, a))
+  } catch (e) { err.value = 'PDF gagal: ' + (e.message || e) } finally { busyIns.value = false }
 }
 </script>
 
@@ -81,6 +95,7 @@ async function unduh() {
         <span class="small muted">Dianalisa {{ hasil.dibuat }} · {{ hasil.durasi ? Math.round(hasil.durasi / 60 * 10) / 10 + ' menit' : '' }} ·
           {{ hasil.sumber.pemegang }} pemegang, {{ hasil.sumber.jaringan }} emiten jaringan, {{ hasil.sumber.keterbukaan }} keterbukaan, {{ hasil.sumber.posting }} posting</span>
         <button type="button" class="btn" :disabled="busyPdf" @click="unduh">{{ busyPdf ? 'Menyiapkan PDF…' : '⬇ Unduh analisa mendalam (PDF)' }}</button>
+        <button type="button" class="btn" :disabled="busyIns" @click="unduhInsider">{{ busyIns ? 'Menyiapkan PDF…' : '⬇ Khusus insider (PDF)' }}</button>
       </div>
       <div v-if="st.segarkan" class="prog" role="status">
         <b>Menarik ulang {{ ticker }}…</b> <span class="small">{{ st.basi || 'Ada data baru.' }} Analisa di bawah masih versi sebelumnya.</span>
@@ -89,6 +104,13 @@ async function unduh() {
       </div>
       <p v-else-if="st.basi" class="small muted">{{ st.basi }} {{ st.galatSegar || '' }}</p>
       <ul class="small rk"><li v-for="r in hasil.ringkas" :key="r">{{ r }}</li></ul>
+      <div v-if="ins?.baru.length" class="baruIns" role="note">
+        <b>Pemegang baru ≥5% (90 hari)</b>
+        <p v-for="k in ins.kalimat" :key="k" class="small">{{ k }}</p>
+        <p v-for="b in ins.baru" :key="b.nama + b.date" class="small muted">{{ b.tafsir }}</p>
+        <ul v-if="ins.cek.length" class="small"><li v-for="c in ins.cek" :key="c">{{ c }}</li></ul>
+        <p v-if="ins.analisa?.lama" class="small muted">Analisa di bawah dibuat {{ hasil.dibuat }}, sebelum data ini; server menariknya ulang bila ada data baru.</p>
+      </div>
 
       <template v-if="hasil.arah">
         <h3>Membaca arah pengendali</h3>
@@ -332,6 +354,8 @@ async function unduh() {
 </template>
 
 <style scoped>
+.baruIns{margin:8px 0;padding:8px 10px;border-left:3px solid var(--warn);background:var(--warn-bg);border-radius:4px}
+.baruIns p{margin:2px 0}.baruIns ul{margin:4px 0;padding-left:18px}
 .pd h3{margin:14px 0 4px;font-size:15px}.pd h4{margin:8px 0 2px;font-size:13px}
 .pd ul,.pd ol{margin:4px 0;padding-left:18px}
 .hd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0}

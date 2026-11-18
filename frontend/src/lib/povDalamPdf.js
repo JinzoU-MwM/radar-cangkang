@@ -11,7 +11,8 @@ const potong = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0,
 const p2 = v => v == null ? '-' : Number(v).toFixed(2).replace('.', ',') + '%'
 const BAWAH = 272
 
-export async function povDalamPdf(a, jsPDF) {
+// ins (opsional) = analisaInsider(...) dari baris insider terbaru: pemegang baru >=5% dan petunjuknya ikut dimuat.
+export async function povDalamPdf(a, jsPDF, ins = null) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
   const seri = `Analisa mendalam ${a.t}`
   let hal = 1, y = 0
@@ -162,6 +163,12 @@ export async function povDalamPdf(a, jsPDF) {
   // ---- Riwayat pengendalian, orang dalam, aksi korporasi, kinerja.
   judulKini = 'Riwayat dan aksi korporasi'; halaman(judulKini)
   if (a.kronologi?.length) { sub('Kronologi (terbaru dulu)'); butir(a.kronologi.slice(0, 16).map(k => `${tgl(k.date)} [${k.jenis}] ${potong(k.teks, 220)}`), { size: 8.3 }) }
+  if (ins?.baru?.length) {
+    sub('Pemegang baru ≥5% (90 hari) dan petunjuknya', GOLD)
+    butir(ins.kalimat, { size: 8.8 })
+    butir(ins.baru.map(b => `${b.nama}: ${b.tafsir}`), { size: 8.4, tanda: '›', x: 22, w: 174 })
+    if (ins.cek.length) butir(ins.cek, { size: 8.4, tanda: '?', x: 22, w: 174 })
+  }
   sub('Peristiwa kepemilikan penting (3 tahun)')
   if (!a.riwayat.length) teks('Tidak ada perubahan kepemilikan besar (melewati 20%/50% atau >= 5 poin) dalam 3 tahun.', 9, MUTED)
   butir(a.riwayat.map(r => `${tgl(r.date)}: ${r.teks}`))
