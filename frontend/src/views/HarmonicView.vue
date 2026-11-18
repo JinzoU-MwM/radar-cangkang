@@ -104,10 +104,15 @@ const nama = computed(() => (kodeBei.value || []).find(k => k.t === kode.value)?
 // --------------------------------------------------------------- analisa ----
 // Semua pola aktif: XABCD (termasuk 5-0), Three Drives, dan AB=CD.
 const polaList = computed(() => bars.value.length ? cariPola(bars.value, skala.value, tf.value === 'D' ? 30 : 12) : [])
+// Skenario lain (lib/harmonikCekSilang.js): pola yang tidak ikut daftar aktif, misalnya PRZ lebih dari 25% dari harga.
+const skenario = computed(() => tutorial.value || !bars.value.length ? [] : skenarioLain(bars.value, polaList.value, skala.value, tf.value === 'D' ? 30 : 12))
 const pilihPola = ref(0)
 watch(polaList, () => { pilihPola.value = 0 })
+// Daftar yang bisa dibuka dengan tombol ‹ ›: pola aktif dulu, lalu skenario lain (pola yang PRZ-nya masih jauh atau
+// arah sebaliknya), supaya beberapa kemungkinan bisa dilihat di chart. Skenario ditandai dan tidak dipakai untuk Long/Short.
+const daftarPola = computed(() => [...polaList.value, ...skenario.value.map(r => ({ ...r, skenario: true }))])
 const xabcd = computed(() => tutorial.value ? objManual.value.xabcd || null
-  : polaList.value[pilihPola.value] || (bars.value.length ? swingXabcd(bars.value, skala.value) : null))
+  : daftarPola.value[pilihPola.value] || (bars.value.length ? swingXabcd(bars.value, skala.value) : null))
 const polaAcuan = computed(() => xabcd.value?.pola ? xabcd.value : null)
 // Konfirmasi pembalikan di D (candle, divergence RSI, struktur minor, volume); null bila D belum terbentuk.
 const konf = computed(() => polaAcuan.value ? konfirmasiD(bars.value, polaAcuan.value) : null)
@@ -117,7 +122,7 @@ const trenPola = computed(() => nilaiTren(tren.value, polaAcuan.value?.arah))
 const SATUAN = { D: 'hari bursa', W: 'minggu', M: 'bulan' }
 const ketElliott = computed(() => jarakElliott(hasil.value.elliott, bars.value, SATUAN[tf.value]))
 // Pola terpilih didahulukan untuk Long/Short bila arahnya cocok.
-const urutPosisi = computed(() => polaAcuan.value ? [polaAcuan.value, ...polaList.value.filter(r => r !== polaAcuan.value)] : polaList.value)
+const urutPosisi = computed(() => polaAcuan.value && !polaAcuan.value.skenario ? [polaAcuan.value, ...polaList.value.filter(r => r !== polaAcuan.value)] : polaList.value)
 const hasil = computed(() => {
   const b = bars.value
   if (!b.length) return {}
@@ -199,7 +204,6 @@ function proyeksikan() {
 // Pola otomatis tidak langsung dipercaya: label kekuatan (rasio ideal atau hanya lolos toleransi, AB=CD, fraksi harga),
 // skenario lain yang tidak ikut tampil, dan tombol untuk menilai ulang titiknya di tab Tutorial.
 const kekuatan = computed(() => tutorial.value ? null : kekuatanPola(hasil.value.xabcd))
-const skenario = computed(() => tutorial.value || !bars.value.length ? [] : skenarioLain(bars.value, polaList.value, skala.value, tf.value === 'D' ? 30 : 12))
 const TANDA = a => a.ok ? '✓' : a.berat ? '✗' : '~'
 function cekDiTutorial(row) {
   const t = titikTutorial(row)
@@ -255,7 +259,8 @@ const ringkasan = computed(() => {
   const x = hasil.value.xabcd, p = hasil.value[arahPosisi.value], e = hasil.value.elliott
   if (!p) return []
   const out = []
-  out.push(x?.pola ? `Pola ${x.nama} ${x.arah}, ${STATUS[x.status]}.` : 'Belum ada pola harmonik yang cocok; rencana posisi memakai swing terakhir, jadi bobotnya lebih lemah.')
+  out.push(x?.skenario ? `Skenario ${x.nama} ${x.arah}: ${x.teks.split(': ').slice(1).join(': ')} Belum ada sinyal; rencana posisi tetap memakai pola aktif.`
+    : x?.pola ? `Pola ${x.nama} ${x.arah}, ${STATUS[x.status]}.` : 'Belum ada pola harmonik yang cocok; rencana posisi memakai swing terakhir, jadi bobotnya lebih lemah.')
   if (trenPola.value) out.push('Tren besar: ' + trenPola.value.teks)
   if (x?.pola) out.push(konf.value ? `Konfirmasi di D ${konf.value.jumlah} dari ${konf.value.total} (${konf.value.label})${konf.value.jumlah < 2 ? ': belum cukup, tunggu candle pembalikan atau volume sebelum masuk' : ''}.`
     : 'D belum terbentuk: tunggu harga masuk PRZ dan muncul konfirmasi.')
@@ -473,7 +478,7 @@ const gambar = computed(() => {
         rasio: (x.garis || []).map(g => ({ a: p[g.a], b: p[g.b], m: tengah(p[g.a], p[g.b]), teks: r2(g.v), k: g.k })),
         titik: p.map((t, j) => ({ ...t, awal: j === 0, atas: j === 0 ? t.p >= p[1].p : t.p >= (p[j - 1]?.p ?? 0) })),
         prz: x.prz && ok(Y(x.prz[0]), Y(x.prz[1])) ? { x1: C.x, x2: Math.min(W, D.x + Math.max(40, (D.x - C.x) * 0.6)), y1: Y(x.prz[1]), y2: Y(x.prz[0]) } : null,
-        label: x.pola ? `${x.nama} ${x.arah}` : 'Swing terakhir (bukan pola)',
+        label: x.pola ? `${x.nama} ${x.arah}${x.skenario ? ' (skenario)' : ''}` : 'Swing terakhir (bukan pola)',
         // Panah skenario dari D: garis + kepala panah (segitiga) di ujung.
         panah: skenarioD(x).map(z => {
           const x1 = X(z.dari.i), y1 = Y(z.dari.p), x2 = X(z.ke.i), y2 = Y(z.ke.p)
@@ -689,7 +694,7 @@ const lot = k => {
   const s = hasil.value[k]
   return s && !s.kosong ? ukuranPosisi({ modal: modal.value, risikoPct: risiko.value, entry: s.entry, stop: s.stop, target: s.target[1] }) : null
 }
-const jumlahPola = computed(() => polaList.value.length)
+const jumlahPola = computed(() => daftarPola.value.length)
 
 // ------------------------------------------------------------- unduh PDF ----
 // Foto chart = kanvas lightweight-charts + overlay SVG (gaya dihitung lalu ditanam supaya warna token ikut).
@@ -990,7 +995,8 @@ async function unduh() {
           <!-- XABCD -->
           <template v-if="k === 'xabcd' && hasil.xabcd">
             <h3>XABCD pattern</h3>
-            <p class="besar" :class="hasil.xabcd.arah === 'bullish' ? 'up' : 'dn'">{{ hasil.xabcd.pola ? `${hasil.xabcd.nama} ${hasil.xabcd.arah}` : 'Belum ada pola harmonik' }}</p>
+            <p class="besar" :class="hasil.xabcd.arah === 'bullish' ? 'up' : 'dn'">{{ hasil.xabcd.pola ? `${hasil.xabcd.nama} ${hasil.xabcd.arah}` : 'Belum ada pola harmonik' }}<span v-if="hasil.xabcd.skenario" class="tagSk">skenario</span></p>
+            <p v-if="hasil.xabcd.skenario" class="small sk">Skenario, bukan pola aktif: {{ hasil.xabcd.teks.split(': ').slice(1).join(': ') }} Pola ini baru berlaku kalau harga benar-benar bergerak ke sana.</p>
             <p class="small">{{ STATUS[hasil.xabcd.status] }}<template v-if="hasil.xabcd.pola">. {{ hasil.xabcd.ket }}</template></p>
             <div v-if="kekuatan" class="kuat" :class="kekuatan.tingkat">
               <p class="small"><b>Kekuatan: {{ kekuatan.nama }}</b> · {{ kekuatan.ket }}.</p>
@@ -1001,7 +1007,7 @@ async function unduh() {
             <p v-if="!hasil.xabcd.pola" class="small">{{ hasil.xabcd.manual ? 'Gambar menunjukkan titik yang Anda tarik beserta rasionya. Tekan Cek di atas untuk melihat yang masih kurang.' : 'Gambar menunjukkan lima swing terakhir apa adanya beserta rasionya, supaya terlihat seberapa jauh dari pola baku.' }}</p>
             <div v-if="!tutorial && jumlahPola > 1" class="ganti">
               <button type="button" class="mini" @click="pilihPola = (pilihPola + jumlahPola - 1) % jumlahPola">‹</button>
-              <span class="small">Pola {{ pilihPola + 1 }} dari {{ jumlahPola }}</span>
+              <span class="small">Pola {{ pilihPola + 1 }} dari {{ jumlahPola }}<template v-if="skenario.length"> ({{ polaList.length }} aktif, {{ skenario.length }} skenario)</template></span>
               <button type="button" class="mini" @click="pilihPola = (pilihPola + 1) % jumlahPola">›</button>
             </div>
             <table class="tb">
@@ -1018,10 +1024,11 @@ async function unduh() {
             </div>
             <p v-if="hasil.xabcd.pola" class="small">Panah dari D: jalur ke target 1, target 2, dan titik C bila pola berhasil. Pola bullish: panah naik (target untuk beli). Pola bearish: panah turun (target harga turun, dipakai untuk jual, ambil untung, atau Short). Garis titik-titik adalah batas batal (stop {{ fmtH(hasil.xabcd.stop) }}); panah putus-putus menunjukkan arah harga bila penutupan menembus batas itu. Selama belum ada close di balik batas, pola masih berlaku. Jarak waktu panah hanya ilustrasi.</p>
             <div v-if="skenario.length" class="lain">
-              <p class="small"><b>Skenario lain</b> (tidak digambar; tergantung arah harga berikutnya):</p>
+              <p class="small"><b>Pola lain yang mungkin terjadi</b> (tergantung arah harga berikutnya):</p>
               <ul class="cek">
-                <li v-for="r in skenario" :key="r.kunci">{{ r.teks }} Kekuatan: {{ r.kekuatan?.nama || '–' }}.
-                  <button type="button" class="mini" @click="cekDiTutorial(r)">Lihat di Tutorial</button></li>
+                <li v-for="(r, j) in skenario" :key="r.kunci" :class="{ pilih: pilihPola === polaList.length + j }">{{ r.teks }} Kekuatan: {{ r.kekuatan?.nama || '–' }}.
+                  <button type="button" class="mini" @click="pilihPola = polaList.length + j">Lihat di chart</button>
+                  <button type="button" class="mini" @click="cekDiTutorial(r)">Cek di Tutorial</button></li>
               </ul>
             </div>
             <details v-if="!tutorial" class="kx" open>
@@ -1286,6 +1293,9 @@ async function unduh() {
 .lain{margin:6px 0;padding:6px 8px;border-radius:6px;border:1px dashed var(--rule)}
 .lain p{margin:0 0 2px}
 .lain .mini{margin-left:4px;padding:1px 6px}
+.lain li.pilih{font-weight:700}
+.tagSk{margin-left:6px;padding:0 6px;border-radius:8px;font:600 11px var(--f-body);background:var(--warn-bg);color:var(--warn);vertical-align:middle}
+.sk{color:var(--warn) !important}
 .ketew{margin-top:6px !important;color:var(--ink) !important}
 .kx{margin:6px 0;font-size:12px}.kx summary{cursor:pointer;font-weight:700;color:var(--ink)}.kx p.small{margin:4px 0 0 !important;color:var(--ink) !important}
 .panah line{stroke-width:1.8}.panah text{font-weight:700;font-size:10.5px !important}
