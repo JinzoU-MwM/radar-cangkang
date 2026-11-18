@@ -128,3 +128,27 @@ describe('proyeksi XABCD', () => {
     expect(pr.catatan[0]).toMatch(/belum (masuk pola|ada pola)/)
   })
 })
+
+describe('batas mundur titik X (simetri waktu)', () => {
+  it('lembah lama di dasar harga yang panjang tidak menggeser X', () => {
+    // Lembah 800 jauh di belakang (indeks 10); dasar harga berikutnya tetap di bawah setengah jalan menuju A.
+    const bars = bangun([1100, 800, 1150, 1050, 1150, 1000, 2000, 1382, 1868])
+    const t = (n, i, sisi) => ({ n, i, p: sisi === 'H' ? bars[i].h : bars[i].l, sisi })
+    const titik = [t('X', 50, 'L'), t('A', 60, 'H'), t('B', 70, 'L'), t('C', 80, 'H')]
+    expect(cekSwing(bars, titik)).toEqual([])
+    const pr = proyeksiXabcd(bars, titik)
+    expect(pr.titik[0]).toMatchObject({ i: 50, p: 1000 })
+    expect(pr.nama).toBe('Gartley')
+  })
+})
+
+describe('candle bersumbu panjang', () => {
+  it('lembah di candle titik B tidak membuat A dianggap salah', () => {
+    // Gartley bearish; candle B (puncak) juga punya sumbu bawah lebih rendah dari A.
+    const bars = bangun([1800, 2000, 1000, 1618, 1132, 1786])
+    bars[30] = { ...bars[30], l: 990 }
+    const t = (n, i, sisi) => ({ n, i, p: sisi === 'H' ? bars[i].h : bars[i].l, sisi })
+    const titik = [t('X', 10, 'H'), t('A', 20, 'L'), t('B', 30, 'H'), t('C', 40, 'L'), t('D', 50, 'H')]
+    expect(cekSwing(bars, titik)).toEqual([])
+  })
+})

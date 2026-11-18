@@ -52,6 +52,18 @@ function ekstremDi(bars, i0, i1, sisi) {
   return j
 }
 
+// Batas mundur titik pertama (X): sampai harga sebelumnya sudah setengah jalan menuju titik kedua (ayunan
+// sebelumnya), tetapi paling jauh sepanjang jarak X ke titik ketiga (B). Simetri waktu Carney: X yang terlalu jauh di
+// belakang (dasar harga berbulan-bulan) membuat X→B jauh lebih panjang daripada B→D, jadi bukan X pola ini.
+function awalX(bars, titik) {
+  const t = titik[0]
+  let i0 = t.i
+  if (!titik[1]) return i0
+  const tengah = (t.p + titik[1].p) / 2, batas = Math.max(0, t.i - ((titik[2] || titik[1]).i - t.i))
+  while (i0 > batas && (t.sisi === 'L' ? bars[i0 - 1].h < tengah : bars[i0 - 1].l > tengah)) i0--
+  return i0
+}
+
 // Urutan kiri ke kanan, puncak/lembah bergantian, dan setiap titik benar-benar ujung ayunan di antara tetangganya.
 export function cekSwing(bars, titik, k = 'xabcd') {
   const salah = [], n = bars.length
@@ -64,12 +76,10 @@ export function cekSwing(bars, titik, k = 'xabcd') {
   for (let j = 0; j < titik.length; j++) {
     // Titik pertama juga dicek ke belakang (sepanjang kaki pertama): X yang diambil di tengah dorongan ketahuan.
     // Batas ke belakang: sampai harga sebelumnya sudah setengah jalan menuju titik kedua (ayunan sebelumnya).
-    const t = titik[j], i1 = j < titik.length - 1 ? titik[j + 1].i : n - 1
-    let i0 = j ? titik[j - 1].i : t.i
-    if (!j && titik[1]) {
-      const tengah = (t.p + titik[1].p) / 2
-      while (i0 > 0 && (t.sisi === 'L' ? bars[i0 - 1].h < tengah : bars[i0 - 1].l > tengah)) i0--
-    }
+    // Candle milik titik tetangga tidak ikut: candle bersumbu panjang bisa memuat puncak dan lembah sekaligus,
+    // dan urutannya di dalam candle tidak diketahui.
+    const t = titik[j], i1 = j < titik.length - 1 ? Math.max(t.i, titik[j + 1].i - 1) : n - 1
+    const i0 = j ? Math.min(t.i, titik[j - 1].i + 1) : awalX(bars, titik)
     const e = ekstremDi(bars, i0, i1, t.sisi), pe = t.sisi === 'H' ? bars[e].h : bars[e].l
     if (pe === t.p) continue
     const jenis = t.sisi === 'H' ? 'puncak' : 'lembah', arah = t.sisi === 'H' ? 'lebih tinggi' : 'lebih rendah'
@@ -331,12 +341,10 @@ export function cekManual(bars, k, titik, { xabcd = null, skala = null } = {}) {
 function rapikan(bars, titik) {
   const n = bars.length, out = titik.map(t => ({ ...t }))
   for (let j = 0; j < out.length; j++) {
-    const t = out[j], i1 = j < out.length - 1 ? out[j + 1].i : n - 1
-    let i0 = j ? out[j - 1].i : t.i
-    if (!j && out[1]) {
-      const tengah = (t.p + out[1].p) / 2
-      while (i0 > 0 && (t.sisi === 'L' ? bars[i0 - 1].h < tengah : bars[i0 - 1].l > tengah)) i0--
-    }
+    // Candle milik titik tetangga tidak ikut: candle bersumbu panjang bisa memuat puncak dan lembah sekaligus,
+    // dan urutannya di dalam candle tidak diketahui.
+    const t = out[j], i1 = j < out.length - 1 ? Math.max(t.i, out[j + 1].i - 1) : n - 1
+    const i0 = j ? Math.min(t.i, out[j - 1].i + 1) : awalX(bars, out)
     if (i1 < i0) return null
     const e = ekstremDi(bars, i0, i1, t.sisi), pe = t.sisi === 'H' ? bars[e].h : bars[e].l
     if (pe !== t.p) out[j] = { ...t, i: e, p: pe, dari: { i: t.i, p: t.p } }

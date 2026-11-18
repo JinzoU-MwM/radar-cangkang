@@ -5,18 +5,23 @@
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../api.js'
 import { HM_STATUS, hitungHarmonik, rentang } from '../lib/harmonik.js'
+import { kekuatanPola } from '../lib/harmonikCekSilang.js'
 
 const emit = defineEmits(['buka'])
 const data = ref(null), err = ref('')
 onMounted(() => api.get('/api/harmonik').then(v => { data.value = v }, e => { err.value = e.message || String(e) }))
 
-const fStatus = ref('semua'), fArah = ref('semua'), fRadar = ref(false), q = ref(''), fPola = ref('')
+const fStatus = ref('semua'), fArah = ref('semua'), fRadar = ref(false), q = ref(''), fPola = ref(''), fKuat = ref('semua')
 const rows = computed(() => data.value?.rows || [])
 const n = computed(() => hitungHarmonik(rows.value))
+// Cek silang: label kekuatan per pola XABCD (rasio ideal atau hanya lolos toleransi, AB=CD, fraksi harga).
+const kuat = computed(() => new Map(rows.value.map(r => [r, kekuatanPola(r)])))
+const nKuat = computed(() => [...kuat.value.values()].reduce((a, k) => { if (k) a[k.tingkat] = (a[k.tingkat] || 0) + 1; return a }, {}))
+const tipKuat = k => k ? [`${k.nama}: ${k.ket}.`, ...k.alasan.map(a => `${a.ok ? '✓' : a.berat ? '✗' : '~'} ${a.teks}`)].join('\n') : ''
 const tampil = computed(() => {
   const x = q.value.trim().toLowerCase()
   return rows.value.filter(r => (fStatus.value === 'semua' || r.status === fStatus.value) && (fArah.value === 'semua' || r.arah === fArah.value)
-    && (!fPola.value || r.pola === fPola.value)
+    && (!fPola.value || r.pola === fPola.value) && (fKuat.value === 'semua' || kuat.value.get(r)?.tingkat === fKuat.value)
     && (!fRadar.value || r.radar) && (!x || r.t.toLowerCase().startsWith(x) || (r.nama || '').toLowerCase().includes(x)))
 })
 const kriteria = computed(() => Object.fromEntries((data.value?.pola || []).map(p => [p.k, p])))
@@ -58,6 +63,9 @@ const posisi = r => r.status === 'menuju' ? `${fh(r.jarak)}% dari PRZ` : r.statu
         <div class="seg" role="group" aria-label="Arah pola">
           <button v-for="a in ['semua', 'bullish', 'bearish']" :key="a" type="button" :class="{ on: fArah === a }" @click="fArah = a">{{ a === 'semua' ? 'Semua arah' : a }} <b v-if="a !== 'semua'">{{ n[a] || 0 }}</b></button>
         </div>
+        <div class="seg" role="group" aria-label="Kekuatan pola">
+          <button v-for="k in ['semua', 'kuat', 'sedang', 'lemah']" :key="k" type="button" :class="{ on: fKuat === k }" @click="fKuat = k">{{ k === 'semua' ? 'Semua kekuatan' : k }} <b v-if="k !== 'semua'">{{ nKuat[k] || 0 }}</b></button>
+        </div>
         <select v-model="fPola" class="sel" aria-label="Jenis pola">
           <option value="">Semua pola</option>
           <option v-for="p in jenisPola" :key="p.k" :value="p.k">{{ p.nama }} ({{ p.n }})</option>
@@ -71,7 +79,8 @@ const posisi = r => r.status === 'menuju' ? `${fh(r.jarak)}% dari PRZ` : r.statu
           <tbody>
             <tr v-for="r in tampil" :key="[r.t, r.pola, r.arah, r.status, ...r.titik.map(x => x.d)].join('|')" tabindex="0" @click="emit('buka', r)" @keydown.enter="emit('buka', r)">
               <td><b class="kode">{{ r.t }}</b><span v-if="r.radar" class="tag">radar</span><br><span class="small mute">{{ r.nama }}</span></td>
-              <td :class="r.arah === 'bullish' ? 'up' : 'dn'"><b>{{ kriteria[r.pola]?.nama || r.pola }}</b><br>{{ r.arah }}</td>
+              <td :class="r.arah === 'bullish' ? 'up' : 'dn'"><b>{{ kriteria[r.pola]?.nama || r.pola }}</b><br>{{ r.arah }}
+                <span v-if="kuat.get(r)" class="kk" :class="kuat.get(r).tingkat" :title="tipKuat(kuat.get(r))">{{ kuat.get(r).nama }}</span></td>
               <td><span class="st" :class="r.status">{{ HM_STATUS[r.status][0] }}</span></td>
               <td class="r">{{ fh(r.harga) }}</td>
               <td class="r">{{ fh(r.prz[0]) }}–{{ fh(r.prz[1]) }}</td>
@@ -84,7 +93,7 @@ const posisi = r => r.status === 'menuju' ? `${fh(r.jarak)}% dari PRZ` : r.statu
           </tbody>
         </table>
       </div>
-      <p class="small mute">Screening malam memakai aturan yang sama dengan tab Saham: Gartley, Bat, Alternate Bat, Butterfly, Crab, Deep Crab, Cypher, Shark, 5-0, Three Drives, AB=CD, dan Alternate AB=CD pada candle harian (maksimal empat pola per saham; pola "menuju" hanya bila harga dalam 12% dari PRZ; AB=CD hanya bila D sudah di PRZ). Status: Di PRZ = D sedang terbentuk di zona; Berbalik = D terkonfirmasi dan harga mulai berbalik; Menuju = X-A-B-C terbentuk, D belum.</p>
+      <p class="small mute">Screening malam memakai aturan yang sama dengan tab Saham: Gartley, Bat, Alternate Bat, Butterfly, Crab, Deep Crab, Cypher, Shark, 5-0, Three Drives, AB=CD, dan Alternate AB=CD pada candle harian (maksimal empat pola per saham; pola "menuju" hanya bila harga dalam 12% dari PRZ; AB=CD hanya bila D sudah di PRZ). Status: Di PRZ = D sedang terbentuk di zona; Berbalik = D terkonfirmasi dan harga mulai berbalik; Menuju = X-A-B-C terbentuk, D belum. Kekuatan (pola XABCD): Kuat = rasio di dalam rentang ideal dan AB=CD terpenuhi; Sedang = ada rasio yang hanya lolos toleransi atau satu syarat penting belum terpenuhi; Lemah = beberapa syarat belum terpenuhi, termasuk rasio kasar pada saham berharga rendah. Arahkan kursor ke label untuk melihat alasannya; buka chart lalu tekan Cek di Tutorial untuk menilai ulang.</p>
     </template>
   </section>
 </template>
@@ -98,6 +107,9 @@ const posisi = r => r.status === 'menuju' ? `${fh(r.jarak)}% dari PRZ` : r.statu
 .seg button{border:1px solid var(--rule);background:var(--sheet);color:var(--ink-2);border-radius:14px;padding:4px 10px;cursor:pointer;font:600 12px var(--f-body);text-transform:capitalize}
 .seg button.on{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
 .seg b{font-family:var(--f-data);margin-left:2px}
+.kk{display:inline-block;margin-top:2px;padding:0 6px;border-radius:8px;font:600 11px var(--f-body);background:var(--good-bg);color:var(--good)}
+.kk.sedang{background:var(--warn-bg);color:var(--warn)}
+.kk.lemah{background:var(--strong-bg);color:var(--strong)}
 .sel{font:13px var(--f-body);padding:5px 8px;border:1px solid var(--rule);border-radius:6px;background:var(--sheet);color:var(--ink)}
 .q{font:13px var(--f-body);padding:5px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--sheet);color:var(--ink);margin-left:auto}
 .wrap{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--sheet)}

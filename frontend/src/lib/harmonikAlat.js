@@ -193,7 +193,8 @@ export function garisXabcd(k, r) {
 //  - "di PRZ": D sedang terbentuk (ekstrem berjalan) dan berada di PRZ;
 //  - "berbalik": D terkonfirmasi di PRZ, harga sudah berbalik;
 //  - "menuju": X-A-B-C terbentuk, harga bergerak ke PRZ (D diproyeksikan).
-export function cariXabcd(bars = [], skala = SKALA.D, umurD = 30) {
+// menujuMaks: jarak maksimal harga ke tepi PRZ untuk pola "menuju" (default MENUJU_MAKS; cek silang memakai batas lebih longgar).
+export function cariXabcd(bars = [], skala = SKALA.D, umurD = 30, menujuMaks = MENUJU_MAKS) {
   const n = bars.length
   if (n < 30) return []
   const akhir = bars[n - 1].c, hasil = new Map()
@@ -224,7 +225,7 @@ export function cariXabcd(bars = [], skala = SKALA.D, umurD = 30) {
           skor = skorPola(k, { ...r, d: null, e: null, dc: null })
           if (skor == null) continue
           const tepi = bull ? prz[1] : prz[0]
-          if ((bull ? akhir < tepi : akhir > tepi) || Math.abs(akhir / tepi - 1) > MENUJU_MAKS) continue
+          if ((bull ? akhir < tepi : akhir > tepi) || Math.abs(akhir / tepi - 1) > menujuMaks) continue
           status = 'menuju'
           titikD = { n: 'D', i: Math.max(n - 1, C.i) + Math.max(3, Math.round((C.i - B.i) * 0.8)), p: (prz[0] + prz[1]) / 2, proyeksi: true }
         } else continue
