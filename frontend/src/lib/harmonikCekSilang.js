@@ -107,10 +107,11 @@ export function skenarioLain(bars = [], utama = [], skala = SKALA.D, umurD = 30)
     .slice(0, 3)
 }
 
-// Titik pola otomatis untuk tab Tutorial (format tarikan manual: {n, i, p, sisi}). D proyeksi tidak ikut.
+// Titik pola otomatis untuk tab Tutorial (format tarikan manual: {n, i, p, sisi}). D proyeksi diganti D yang sedang
+// berjalan bila ada (pola "menuju"), supaya C dinilai sampai sebelum D seperti di pemindai; tanpa itu D tidak ikut.
 export function titikTutorial(row) {
   if (!row?.titik || !POLA[row.pola]) return []
   const bull = row.arah === 'bullish'
-  return row.titik.filter(t => !t.proyeksi && t.i != null).slice(0, 5)
+  return row.titik.map(t => t.proyeksi ? (t.jalan ? { n: t.n, ...t.jalan } : null) : t).filter(t => t && t.i != null).slice(0, 5)
     .map((t, j) => ({ n: t.n, i: t.i, p: t.p, sisi: (j % 2 === 0) === bull ? 'L' : 'H' }))
 }

@@ -64,8 +64,22 @@ function awalX(bars, titik) {
   return i0
 }
 
+// Titik pertama sebagai "titik perantara" (Carney Bab 7, hal. 256; materi Menentukan Titik X): boleh tidak paling
+// ekstrem, asalkan ujung ayunan yang jelas, yaitu dipisahkan dari ekstrem e sebelumnya oleh pantulan minimal minBalik
+// ke dua arah. Mengembalikan keterangan, atau null bila titik itu masih di tengah dorongan.
+export function perantara(bars, t, e, minBalik = 0.04) {
+  if (e == null || e >= t.i - 1) return null
+  let m = e + 1
+  for (let i = e + 1; i < t.i; i++) if (t.sisi === 'H' ? bars[i].l < bars[m].l : bars[i].h > bars[m].h) m = i
+  const pe = t.sisi === 'H' ? bars[e].h : bars[e].l, pm = t.sisi === 'H' ? bars[m].l : bars[m].h
+  const balik1 = t.sisi === 'H' ? 1 - pm / pe : pm / pe - 1, balik2 = t.sisi === 'H' ? t.p / pm - 1 : 1 - t.p / pm
+  if (balik1 < minBalik || balik2 < minBalik) return null
+  return { e, pe, m, pm, balik: Math.round(Math.min(balik1, balik2) * 1000) / 10 }
+}
+
 // Urutan kiri ke kanan, puncak/lembah bergantian, dan setiap titik benar-benar ujung ayunan di antara tetangganya.
-export function cekSwing(bars, titik, k = 'xabcd') {
+// Titik pertama boleh titik perantara (lihat perantara()).
+export function cekSwing(bars, titik, k = 'xabcd', minBalik = 0.04) {
   const salah = [], n = bars.length
   for (let j = 1; j < titik.length; j++) {
     if (titik[j].i <= titik[j - 1].i) salah.push(`Titik ${titik[j].n} harus berada di kanan titik ${titik[j - 1].n} (urutan dari kiri ke kanan).`)
@@ -82,6 +96,7 @@ export function cekSwing(bars, titik, k = 'xabcd') {
     const i0 = j ? Math.min(t.i, titik[j - 1].i + 1) : awalX(bars, titik)
     const e = ekstremDi(bars, i0, i1, t.sisi), pe = t.sisi === 'H' ? bars[e].h : bars[e].l
     if (pe === t.p) continue
+    if (j === 0 && e < t.i && perantara(bars, t, e, minBalik)) continue
     const jenis = t.sisi === 'H' ? 'puncak' : 'lembah', arah = t.sisi === 'H' ? 'lebih tinggi' : 'lebih rendah'
     if (j === 0)
       salah.push(`Titik ${t.n} belum ${jenis} ${t.sisi === 'H' ? 'tertinggi' : 'terendah'} di awal dorongan: ada ${jenis} ${fh(pe)} pada ${tgl(bars, e)}. Pindahkan ${t.n} ke sana, karena ${t.n} harus ujung paling ekstrem sebelum dorongan dimulai.`)
@@ -152,9 +167,15 @@ function nilaiHarian(bars) {
 
 function cekXabcd(bars, titik, skala) {
   const row = bangunXabcd(bars, titik), n = bars.length
-  const benar = [], kurang = cekSwing(bars, titik, 'xabcd')
+  const minBalik = (skala || SKALA.D)[0]
+  const benar = [], kurang = cekSwing(bars, titik, 'xabcd', minBalik)
   const [X, A, B, C, D] = titik.map(t => t.p), bull = A > X, xa = Math.abs(A - X)
   if (!kurang.length) benar.push('Kelima titik adalah ujung ayunan (puncak dan lembah) yang benar, berurutan dari kiri ke kanan.')
+  const ia = awalX(bars, titik), eX = ekstremDi(bars, ia, Math.max(titik[0].i, titik[1].i - 1), titik[0].sisi)
+  const pr = (bull ? bars[eX].l : bars[eX].h) !== X && eX < titik[0].i ? perantara(bars, titik[0], eX, minBalik) : null
+  if (pr) benar.push(`X ${fh(X)} adalah titik perantara: ada ${bull ? 'lembah lebih rendah' : 'puncak lebih tinggi'} ${fh(pr.pe)} pada ${tgl(bars, pr.e)}, dipisahkan pantulan ${fr(pr.balik)}%. Menurut Carney ini boleh selama rasio cocok. Dengan X di ${fh(pr.pe)}, B menjadi ${fr(Math.round(Math.abs(A - B) / Math.abs(A - pr.pe) * 1000) / 1000)} XA; pilih X yang membuat rasio paling selaras.`)
+  const lainCocok = (row.kandidat || []).filter(x => x.skor != null && x.k !== row.pola).map(x => POLA[x.k].nama)
+  if (row.pola && lainCocok.length) benar.push(`Titik yang sama juga memenuhi rasio ${lainCocok.join(', ')}. ${row.nama} dipilih karena rasionya paling dekat.`)
   if (xa / Math.min(X, A) < 0.05) kurang.push(`Kaki XA hanya ${fr(Math.round(xa / Math.min(X, A) * 1000) / 10)}%: terlalu kecil. Pilih dorongan yang lebih besar, minimal sekitar 5–10% di chart harian.`)
   else benar.push(`Kaki XA ${fr(Math.round(xa / Math.min(X, A) * 1000) / 10)}% cukup besar sebagai penggaris pola.`)
   const r = row.rasio, rek = []
@@ -338,7 +359,7 @@ export function cekManual(bars, k, titik, { xabcd = null, skala = null } = {}) {
 //  3. D proyeksi: candle pertama setelah C yang menyentuh PRZ; bila belum ada, waktu D diperkirakan
 //     C + lama kaki AB (simetri waktu AB=CD) dan harga diharapkan di level D pola.
 // Bila tarikan tidak masuk pola mana pun, dipakai pola temuan pemindai sistem. Hasil null bila tidak ada keduanya.
-function rapikan(bars, titik) {
+function rapikan(bars, titik, minBalik = 0.04) {
   const n = bars.length, out = titik.map(t => ({ ...t }))
   for (let j = 0; j < out.length; j++) {
     // Candle milik titik tetangga tidak ikut: candle bersumbu panjang bisa memuat puncak dan lembah sekaligus,
@@ -347,6 +368,7 @@ function rapikan(bars, titik) {
     const i0 = j ? Math.min(t.i, out[j - 1].i + 1) : awalX(bars, out)
     if (i1 < i0) return null
     const e = ekstremDi(bars, i0, i1, t.sisi), pe = t.sisi === 'H' ? bars[e].h : bars[e].l
+    if (j === 0 && e < t.i && perantara(bars, t, e, minBalik)) continue   // X perantara: sah, tidak dipindah
     if (pe !== t.p) out[j] = { ...t, i: e, p: pe, dari: { i: t.i, p: t.p } }
   }
   return out
@@ -360,15 +382,16 @@ export function proyeksiXabcd(bars, titik, { skala = null } = {}) {
   // Urutan kiri ke kanan dengan puncak-lembah bergantian; harga dicek lagi setelah dirapikan.
   const naikTurun = ts => ts.every((t, j) => !j || (t.i > ts[j - 1].i && t.sisi !== ts[j - 1].sisi && (t.sisi === 'H' ? t.p > ts[j - 1].p : t.p < ts[j - 1].p)))
   const urut = titik.slice(0, 4).every((t, j) => !j || (t.i > titik[j - 1].i && t.sisi !== titik[j - 1].sisi))
-  let rapi = urut ? rapikan(bars, titik.slice(0, 5)) : null
+  let rapi = urut ? rapikan(bars, titik.slice(0, 5), (skala || SKALA.D)[0]) : null
   if (rapi && !naikTurun(rapi.slice(0, 4))) rapi = null
-  let pilih = null
+  let pilih = null, semua = []
   if (rapi) {
     const [X, A, B, C] = rapi.slice(0, 4).map(t => t.p), r = rasioXabcd(X, A, B, C)
-    pilih = Object.keys(POLA).filter(k => bentukOk(k, X, A, B, C)).map(k => {
+    semua = Object.keys(POLA).filter(k => bentukOk(k, X, A, B, C)).map(k => {
       const p = POLA[k], jb = jarak(r.b, p.b), jc = p.cx ? jarak(r.cx, p.cx) : jarak(r.c, p.c)
       return { k, j: jb + jc, ok: jb <= TOL && jc <= TOL, prz: przPola(k, X, A, B, C) }
-    }).filter(x => x.ok && x.prz).sort((a, b) => a.j - b.j)[0] || null
+    }).filter(x => x.ok && x.prz).sort((a, b) => a.j - b.j)
+    pilih = semua[0] || null
     if (pilih) {
       for (const t of rapi.slice(0, 4)) if (t.dari)
         catatan.push(`${t.n} dipindah dari ${fh(t.dari.p)} (${tgl(bars, t.dari.i)}) ke ${fh(t.p)} (${tgl(bars, t.i)}): ${t.sisi === 'H' ? 'puncak' : 'lembah'} sebenarnya ada di sana.`)
@@ -376,6 +399,7 @@ export function proyeksiXabcd(bars, titik, { skala = null } = {}) {
       const tol = (v, x) => jarak(v, x) > 0 ? ', masih dalam toleransi 5%' : ''
       catatan.push(`B ${fr(r.b)} XA cocok untuk ${p.nama} (${rg(p.b)}${tol(r.b, p.b)}).`)
       catatan.push(p.cx ? `C ${fr(r.cx)} XA sesuai (${rg(p.cx)}${tol(r.cx, p.cx)}).` : `C ${fr(r.c)} AB sesuai (${rg(p.c)}${tol(r.c, p.c)}).`)
+      if (semua.length > 1) catatan.push(`Titik X, A, B, C yang sama juga memenuhi ${semua.slice(1).map(x => POLA[x.k].nama).join(', ')}; ${p.nama} dipakai karena rasionya paling dekat.`)
     }
   }
   let k, ts, prz, sumber = 'tarikan'
@@ -413,5 +437,5 @@ export function proyeksiXabcd(bars, titik, { skala = null } = {}) {
     catatan.push(di ? `D Anda ${fh(dUser.p)} sudah berada di PRZ.`
       : `D Anda ${fh(dUser.p)} ${bull === (dUser.p > prz[1]) ? 'belum sampai' : 'sudah melewati'} PRZ, selisih ${fr(Math.abs(pct(dUser.p, dUser.p > prz[1] ? prz[1] : prz[0])))}%.`)
   }
-  return { sumber, pola: k, nama: p.nama, arah: bull ? 'bullish' : 'bearish', titik: [...ts, D], prz, dHarga, sampai, gagal: tembus != null, catatan }
+  return { sumber, pola: k, nama: p.nama, arah: bull ? 'bullish' : 'bearish', titik: [...ts, D], prz, dHarga, sampai, gagal: tembus != null, catatan, cocok: sumber === 'tarikan' ? semua.map(x => x.k) : [k] }
 }

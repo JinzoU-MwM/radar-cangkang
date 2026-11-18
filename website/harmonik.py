@@ -50,13 +50,13 @@ ABCD_C, ABCD_E = (0.382, 0.886), (1.13, 2.618)
 STOP_PRZ = {"altbat", "butterfly", "crab", "deepcrab", "shark"}   # D melewati/menyentuh X: stop di sisi luar PRZ
 # Versi aturan pemindai: naikkan setiap kali pola/rasio/aturan berubah. Server memindai ulang saat start bila hasil
 # tersimpan (.harmonik.json) dibuat dengan versi lain, tanpa menunggu jadwal malam.
-VERSI_ATURAN = 4   # 4: cek AB=CD (CD/AB) di pola XABCD; 3: AB=CD hanya di PRZ/berbalik; PRZ Three Drives 1,27/1,618
+VERSI_ATURAN = 5   # 5: zigzag pindah pivot yang tertembus, D basi dibuang, skala 4%, umur 30 bar; 4: cek AB=CD (CD/AB) di pola XABCD; 3: AB=CD hanya di PRZ/berbalik; PRZ Three Drives 1,27/1,618
 TOL = 0.05            # toleransi relatif batas rasio (±5%)
 ABCD_TOL = 0.15       # AB=CD di dalam pola: CD minimal 0,85 AB (kaki CD berakhir di ekstrem swing yang beragam)
 PRZ_LEBAR = 0.03      # lebar PRZ = ±3% panjang kaki acuan di sekitar level D
-SKALA = (0.06, 0.10, 0.15)   # ambang zigzag (pembalikan minimal) dari swing kecil ke besar
+SKALA = (0.04, 0.06, 0.10, 0.15)   # ambang zigzag (pembalikan minimal) dari swing kecil ke besar; sama dengan SKALA.D di harmonikAlat.js
 MENUJU_MAKS = 12.0    # % jarak harga ke PRZ yang masih ditampilkan sebagai "menuju PRZ"
-BERBALIK_BAR = 20     # D terkonfirmasi paling lama sekian bar lalu
+BERBALIK_BAR = 30     # D terkonfirmasi paling lama sekian bar lalu (sama dengan umurD tab Saham harian)
 BAR_SIMPAN = 250      # bar terakhir yang disimpan/dikirim untuk chart analisa
 MIN_NILAI = 1e9       # rata-rata nilai transaksi 20 hari (Rp); saham tidak likuid membentuk XABCD yang kurang representatif
 
@@ -132,6 +132,15 @@ def konfirmasi(bars: list[dict], rs: list, B: dict, D: dict, bull: bool) -> list
     return out
 
 
+def _geser(bars: list[dict], out: list[dict], i: int, k: str) -> None:
+    """Pivot terakhir bergeser ke candle i; pivot sebelumnya dicek ulang sampai candle i-1 supaya tetap paling ekstrem."""
+    if len(out) >= 2:
+        for j in range(out[-1]["i"], i):
+            if (bars[j]["l"] < out[-2]["p"]) if k == "H" else (bars[j]["h"] > out[-2]["p"]):
+                out[-2] = {"i": j, "p": bars[j]["l"] if k == "H" else bars[j]["h"], "k": out[-2]["k"]}
+    out[-1] = {"i": i, "p": bars[i]["h"] if k == "H" else bars[i]["l"], "k": k}
+
+
 def zigzag(bars: list[dict], th: float) -> list[dict]:
     """Pivot bergantian H/L: berganti bila harga berbalik >= th dari ekstrem terakhir. Pivot terakhir = ekstrem
     berjalan (tentatif=True), belum terkonfirmasi pembalikan."""
@@ -155,19 +164,48 @@ def zigzag(bars: list[dict], th: float) -> list[dict]:
                     out.append({"i": hi, "p": bars[hi]["h"], "k": "H"})
                     mode, ext = -1, lo
         elif mode == 1:
-            if h >= bars[ext]["h"]:
+            # Mode naik: ext = puncak sementara sejak lembah terakhir L0 (ext < 0: belum ada). Harga menembus L0 sebelum
+            # puncak terkonfirmasi: puncak sementara langsung terkonfirmasi. Outside bar: puncak sementara terkonfirmasi dan
+            # low candle ini menjadi lembah berikutnya (dua pivot tidak boleh di candle sama). Sama dengan harmonikAlat.js.
+            L0 = out[-1]["p"]
+            if ext < 0:
+                if lw < L0:
+                    _geser(bars, out, i, "L")
+                else:
+                    ext = i
+                continue
+            naik, tembus = h >= bars[ext]["h"], lw < L0
+            if naik and tembus:
+                out.append({"i": ext, "p": bars[ext]["h"], "k": "H"})
+                out.append({"i": i, "p": lw, "k": "L"})
+                ext = -1
+            elif naik:
                 ext = i
-            elif lw <= bars[ext]["h"] * (1 - th):
+            elif tembus or lw <= bars[ext]["h"] * (1 - th):
                 out.append({"i": ext, "p": bars[ext]["h"], "k": "H"})
                 mode, ext = -1, i
         else:
-            if lw <= bars[ext]["l"]:
+            H0 = out[-1]["p"]
+            if ext < 0:
+                if h > H0:
+                    _geser(bars, out, i, "H")
+                else:
+                    ext = i
+                continue
+            turun, tembus = lw <= bars[ext]["l"], h > H0
+            if turun and tembus:
+                out.append({"i": ext, "p": bars[ext]["l"], "k": "L"})
+                out.append({"i": i, "p": h, "k": "H"})
+                ext = -1
+            elif turun:
                 ext = i
-            elif h >= bars[ext]["l"] * (1 + th):
+            elif tembus or h >= bars[ext]["l"] * (1 + th):
                 out.append({"i": ext, "p": bars[ext]["l"], "k": "L"})
                 mode, ext = 1, i
-    if mode:
+    if mode and ext >= 0:   # ext < 0: pivot terakhir ada di candle terakhir dan menjadi ekstrem berjalan
         out.append({"i": ext, "p": bars[ext]["h" if mode == 1 else "l"], "k": "H" if mode == 1 else "L", "tentatif": True})
+    elif mode:
+        out[-1]["tentatif"] = True
     return out
 
 
@@ -190,10 +228,12 @@ def _r3(v):
 
 def rasio(X: float, A: float, B: float, C: float, D: float | None = None) -> dict:
     xa, ab, bc, xc = abs(A - X), abs(A - B), abs(C - B), abs(C - X)
-    return {"b": _r3(ab / xa), "c": _r3(bc / ab), "cx": _r3(xc / xa),
-            "d": None if D is None else _r3(abs(A - D) / xa), "bc": None if D is None else _r3(abs(D - C) / bc),
-            "dxc": None if D is None else _r3(abs(D - C) / xc), "dbc": None if D is None else _r3(abs(D - C) / bc),
-            "cd": None if D is None else _r3(abs(D - C) / ab)}
+    # Kaki nol (misalnya C tepat di harga X): rasio tidak terdefinisi (None), pola itu otomatis tidak cocok.
+    bagi = lambda a, b: _r3(a / b) if b else None
+    return {"b": bagi(ab, xa), "c": bagi(bc, ab), "cx": bagi(xc, xa),
+            "d": None if D is None else bagi(abs(A - D), xa), "bc": None if D is None else bagi(abs(D - C), bc),
+            "dxc": None if D is None else bagi(abs(D - C), xc), "dbc": None if D is None else bagi(abs(D - C), bc),
+            "cd": None if D is None else bagi(abs(D - C), ab)}
 
 
 def prz_pola(k: str, X: float, A: float, B: float, C: float, tol: float = TOL) -> list[float] | None:
@@ -280,9 +320,14 @@ def _jendela(pv: list[dict], N: int, n: int):
     for m in (1, 2):
         if len(pv) >= N + m:
             w = pv[-N - m:-m]
-            if w[-1]["i"] >= n - BERBALIK_BAR:
+            if w[-1]["i"] >= n - BERBALIK_BAR and not _basi(pv, w[-1], m):
                 out.append((w, "tetap"))
     return out
+
+
+def _basi(pv: list[dict], akhir: dict, m: int) -> bool:
+    """Titik akhir terkonfirmasi sudah basi bila pivot searah sesudahnya lebih ekstrem (harga sudah melewati D)."""
+    return any(q["k"] == akhir["k"] and (q["p"] < akhir["p"] if q["k"] == "L" else q["p"] > akhir["p"]) for q in pv[-m:])
 
 
 def _status(bars: list[dict], mode: str, akhir_pt: dict, prz: list[float], bull: bool, lengkap_ok: bool):
@@ -382,6 +427,8 @@ def _cari_abcd(bars, rs, th, pv, hasil):
         A, B, C, D = w
         bull = A["p"] > B["p"]   # A puncak, D lembah: bullish
         ab = B["p"] - A["p"]
+        if not ab or C["p"] == B["p"]:   # kaki nol (harga datar): rasio tidak terdefinisi
+            continue
         c = _r3(abs(C["p"] - B["p"]) / abs(ab))
         if not _dalam(c, ABCD_C):
             continue
@@ -420,6 +467,8 @@ def _cari_tiga_dorongan(bars, rs, th, pv, hasil):
         s = 1 if P1["p"] > P0["p"] else -1
         bull = s < 0   # dorongan naik: pembalikan turun (bearish)
         if not (s * (P3["p"] - P1["p"]) > 0 and s * (P2["p"] - P0["p"]) > 0 and s * (P4["p"] - P2["p"]) > 0):
+            continue
+        if P1["p"] == P2["p"] or P3["p"] == P4["p"]:   # kaki koreksi nol (harga datar): rasio tidak terdefinisi
             continue
         r1 = _r3(abs(P3["p"] - P2["p"]) / abs(P1["p"] - P2["p"]))
         if not _dalam(r1, p["dorong"]):

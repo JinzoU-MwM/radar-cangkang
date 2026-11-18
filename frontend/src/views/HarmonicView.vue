@@ -207,9 +207,9 @@ function cekDiTutorial(row) {
   manual.value = { ...manual.value, xabcd: t }
   alatManual.value = 'xabcd'
   tab.value = 'tutorial'
-  // Setelah watcher tab/manual jalan: lima titik langsung dinilai Cek; empat titik (D belum terbentuk) diproyeksikan.
+  // Setelah watcher tab/manual jalan: pola dengan D di PRZ dinilai Cek; pola "menuju" (D belum sampai PRZ) diproyeksikan.
   nextTick(() => {
-    if (t.length >= 5) cek()
+    if (t.length >= 5 && row.status !== 'menuju') cek()
     else { proyeksi.value = null; proyeksikan() }
   })
 }
