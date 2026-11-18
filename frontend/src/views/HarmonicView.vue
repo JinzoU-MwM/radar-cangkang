@@ -17,18 +17,24 @@ import { bacaPosisi, geserPanel, jepitPanel } from '../lib/geserPanel.js'
 import PolaDiagram from '../components/PolaDiagram.vue'
 import HarmonicMateri from '../components/HarmonicMateri.vue'
 import HarmonicScreening from '../components/HarmonicScreening.vue'
-import HarmonicTitik from '../components/HarmonicTitik.vue'
+import { JUMLAH, PETUNJUK, bangunManual, cekManual, tempel } from '../lib/harmonikTutorial.js'
 
 const route = useRoute(), router = useRouter()
 
-// Tab halaman: Materi (presentasi), Saham (chart), Screening (daftar pola), Titik (materi menentukan titik XABCD);
-// ?tab= di URL, tanpa ?tab = Saham.
+// Tab halaman: Materi (presentasi), Saham (chart), Screening (daftar pola), Tutorial (chart yang sama, semua alat
+// ditarik manual lalu dicek); ?tab= di URL, tanpa ?tab = Saham.
 const TAB = [{ k: 'materi', nama: 'Materi' }, { k: 'saham', nama: 'Saham' }, { k: 'screening', nama: 'Screening' },
-  { k: 'titik', nama: 'Menentukan Titik XABCD' }]
+  { k: 'tutorial', nama: 'Tutorial' }]
 const tab = ref(TAB.some(x => x.k === route.query.tab) ? route.query.tab : 'saham')
-watch(tab, v => {
-  if (v === 'saham') nextTick(() => { if (!chart) bangunBilaTampil(); segar() })
+const tutorial = computed(() => tab.value === 'tutorial')
+const pakaiChart = computed(() => tab.value === 'saham' || tutorial.value)
+watch(tab, (v, lama) => {
+  if (v === 'saham' || v === 'tutorial') nextTick(() => { if (!chart) bangunBilaTampil(); segar() })
+  // Gambar otomatis tab Saham disimpan selama Tutorial (yang tampil hanya tarikan manual), lalu dipulihkan.
+  if (v === 'tutorial' && lama !== 'tutorial') { aktifSaham = aktif.value; aktif.value = urutManual() }
+  if (lama === 'tutorial' && v !== 'tutorial') aktif.value = aktifSaham
 })
+let aktifSaham = []
 
 // ------------------------------------------------------------------ data ----
 let terakhir = ''
@@ -61,7 +67,8 @@ async function muat(t, f) {
     }
   } finally { memuat.value = false }
 }
-watch(kode, () => { aktif.value = [] })
+watch(kode, () => { aktif.value = []; manual.value = {} })
+watch(tf, () => { manual.value = {} })
 watch([kode, tf], ([t, f]) => muat(t, f), { immediate: true })
 // URL dibangun dari state (bukan dari route.query lama) supaya tab, kode, dan timeframe selalu sinkron.
 watch([tab, kode, tf], ([v, t, f]) => router.replace({ query: { t, tf: f === 'D' ? undefined : f, tab: v === 'saham' ? undefined : v } }), { immediate: true })
@@ -97,7 +104,8 @@ const nama = computed(() => (kodeBei.value || []).find(k => k.t === kode.value)?
 const polaList = computed(() => bars.value.length ? cariPola(bars.value, skala.value, tf.value === 'D' ? 30 : 12) : [])
 const pilihPola = ref(0)
 watch(polaList, () => { pilihPola.value = 0 })
-const xabcd = computed(() => polaList.value[pilihPola.value] || (bars.value.length ? swingXabcd(bars.value, skala.value) : null))
+const xabcd = computed(() => tutorial.value ? objManual.value.xabcd || null
+  : polaList.value[pilihPola.value] || (bars.value.length ? swingXabcd(bars.value, skala.value) : null))
 const polaAcuan = computed(() => xabcd.value?.pola ? xabcd.value : null)
 // Konfirmasi pembalikan di D (candle, divergence RSI, struktur minor, volume); null bila D belum terbentuk.
 const konf = computed(() => polaAcuan.value ? konfirmasiD(bars.value, polaAcuan.value) : null)
@@ -111,6 +119,7 @@ const urutPosisi = computed(() => polaAcuan.value ? [polaAcuan.value, ...polaLis
 const hasil = computed(() => {
   const b = bars.value
   if (!b.length) return {}
+  if (tutorial.value) return objManual.value
   return {
     xabcd: xabcd.value,
     fib: fibRetracement(b, polaAcuan.value, skala.value[2]),
@@ -136,7 +145,47 @@ function togel(k) {
   if (i >= 0) aktif.value = aktif.value.filter(x => x !== k)
   else { aktif.value = [...aktif.value, k]; nextTick(() => tampilkan(k)) }
 }
-const hapus = () => { aktif.value = [] }
+const hapus = () => { if (tutorial.value) { manual.value = {}; return } aktif.value = [] }
+
+// --------------------------------------------------------------- tutorial ----
+// Semua alat ditarik manual: klik di chart menambah titik ke alat yang dipilih (menempel ke high/low candle untuk
+// alat swing, fraksi harga BEI untuk Long/Short). Alat yang titiknya lengkap digambar dengan format yang sama dengan
+// alat otomatis; tombol Cek menilai tarikan, menyebut pola yang cocok, dan memberi saran.
+const manual = ref({}), alatManual = ref('xabcd'), hasilCek = ref(null)
+const titikAlat = computed(() => manual.value[alatManual.value] || [])
+const lengkap = k => (manual.value[k] || []).length >= JUMLAH[k]
+const urutManual = () => ALAT.map(a => a.k).filter(lengkap)
+const objManual = computed(() => {
+  const b = bars.value, m = manual.value, out = {}
+  if (!b.length) return out
+  out.xabcd = bangunManual(b, 'xabcd', m.xabcd)
+  for (const k of ['fib', 'ext', 'elliott', 'long', 'short']) out[k] = bangunManual(b, k, m[k], out.xabcd)
+  return out
+})
+watch(manual, () => { if (tutorial.value) aktif.value = urutManual(); hasilCek.value = null }, { deep: true })
+const titikBerikut = computed(() => titikAlat.value.length < JUMLAH[alatManual.value] ? ['xabcd', 'elliott', 'ext'].includes(alatManual.value)
+  ? ({ xabcd: 'XABCD', elliott: '012345', ext: '123' })[alatManual.value][titikAlat.value.length]
+  : ({ fib: ['awal', 'akhir'], long: ['Entry', 'Stop', 'TP1', 'TP2'], short: ['Entry', 'Stop', 'TP1', 'TP2'] })[alatManual.value][titikAlat.value.length] : '')
+function klikAlat(k) {
+  if (!tutorial.value) { togel(k); return }
+  alatManual.value = k
+  hasilCek.value = null
+}
+function klikChart(param) {
+  if (!tutorial.value || !param?.point || param.logical == null || !candle) return
+  const k = alatManual.value, t = manual.value[k] || []
+  if (t.length >= JUMLAH[k]) { toast(`${ALAT.find(a => a.k === k).nama} sudah lengkap. Tekan Ulangi untuk menggambar lagi.`); return }
+  if (param.logical < 0 || param.logical > bars.value.length - 1) return
+  const harga = candle.coordinateToPrice(param.point.y)
+  const baru = harga == null ? null : tempel(bars.value, k, t, param.logical, harga)
+  if (baru) manual.value = { ...manual.value, [k]: [...t, baru] }
+}
+const batalTitik = () => { manual.value = { ...manual.value, [alatManual.value]: titikAlat.value.slice(0, -1) } }
+const ulangAlat = () => { manual.value = { ...manual.value, [alatManual.value]: [] } }
+function cek() {
+  hasilCek.value = cekManual(bars.value, alatManual.value, titikAlat.value, { xabcd: objManual.value.xabcd, skala: skala.value })
+}
+const NILAI_CEK = { benar: 'Benar', hampir: 'Hampir benar: rasio cocok, ada yang perlu dirapikan', perlu: 'Belum benar: perlu diperbaiki', belum: 'Titik belum lengkap' }
 
 // Panduan langkah: urutan klik dari pola sampai rencana posisi; langkah berikutnya ditandai di toolbar.
 const arahPosisi = computed(() => polaAcuan.value?.arah === 'bearish' ? 'short' : 'long')
@@ -154,7 +203,7 @@ const panduanTutup = ref(false)
 try { panduanTutup.value = localStorage.getItem('radar-cangkang.hp-panduan') === '0' } catch {}
 watch(panduanTutup, v => { try { localStorage.setItem('radar-cangkang.hp-panduan', v ? '0' : '1') } catch {} })
 const popup = computed(() => {
-  if (panduanTutup.value || !bars.value.length) return null
+  if (panduanTutup.value || !bars.value.length || tutorial.value) return null
   const k = langkahBerikut.value
   if (!k) return selesai.value ? { selesai: true, top: (toolEl[arahPosisi.value]?.offsetTop ?? 200) } : null
   const n = LANGKAH.value.findIndex(l => l.k === k)
@@ -259,6 +308,7 @@ function bangun() {
   ema50S = garisEma(w.calm, LineStyle.Solid)
   ema200S = garisEma(w.warn, LineStyle.Dashed)
   chart.timeScale().subscribeVisibleLogicalRangeChange(segar)
+  chart.subscribeClick(klikChart)
   chart.subscribeCrosshairMove(p => {
     const i = p?.logical
     legenda.value = i != null && i >= 0 && i < bars.value.length ? i : null
@@ -351,7 +401,7 @@ function tampilkan(k) {
 
 // Chart hanya dibangun saat tab Saham tampil (lebar > 0): dibangun saat tersembunyi membuat rentang dan skala kacau.
 function bangunBilaTampil() {
-  if (tab.value === 'saham' && elChart.value?.clientWidth) { bangun(); return }
+  if (pakaiChart.value && elChart.value?.clientWidth) { bangun(); return }
   chart?.remove(); chart = null; candle = volume = ema50S = ema200S = null
 }
 onMounted(() => {
@@ -456,6 +506,16 @@ const gambar = computed(() => {
     out[k] = { x1, x2: Math.min(W - 2, Math.max(x2r, x1 + 120)), ye, ys, yt, s }
   }
   return out
+})
+
+// Titik alat manual yang belum lengkap (tutorial): digambar sebagai sketsa sampai jumlah titiknya cukup.
+const sketsa = computed(() => {
+  ver.value // eslint-disable-line no-unused-expressions
+  const k = alatManual.value, t = titikAlat.value
+  if (!tutorial.value || !t.length || t.length >= JUMLAH[k] || !panel.value.w) return null
+  const p = titikXY(t).filter(z => ok(z.x, z.y))
+  const swing = !['long', 'short'].includes(k)
+  return { swing, jalur: p.map(z => `${z.x},${z.y}`).join(' '), titik: p.map(z => ({ ...z, x2: Math.min(panel.value.w, z.x + 90) })) }
 })
 
 const info = computed(() => {
@@ -647,8 +707,7 @@ async function unduh() {
     </nav>
     <HarmonicMateri v-if="tab === 'materi'" @coba="cobaAlat" />
     <HarmonicScreening v-else-if="tab === 'screening'" @buka="bukaScreening" />
-    <HarmonicTitik v-else-if="tab === 'titik'" @coba="cobaAlat" />
-    <div v-show="tab === 'saham'" class="sahamTab">
+    <div v-show="pakaiChart" class="sahamTab">
     <header class="top">
       <div class="cari" @focusin="bukaCari" @focusout="tutupCari">
         <input v-model="q" :placeholder="kode" aria-label="Cari kode atau nama saham" @keydown.enter="pilih(saran[0]?.t || q)" />
@@ -664,15 +723,17 @@ async function unduh() {
         <button v-for="g in GAYA" :key="g.k" type="button" :class="{ on: gaya === g.k, na: !g.tf }" :aria-pressed="String(gaya === g.k)" :title="`${g.nama}: ${g.saran}`" @click="pilihGaya(g)">{{ g.nama }}</button>
       </div>
       <button type="button" class="btn unduh" :disabled="busyPdf || !bars.length" title="Unduh analisa teknikal harmonic yang sedang tampil" @click="unduh">{{ busyPdf ? 'Menyiapkan PDF…' : 'Unduh analisa (PDF)' }}</button>
-      <span class="judul">Harmonic Pattern</span>
+      <span class="judul">{{ tutorial ? 'Tutorial Harmonic: tarik manual' : 'Harmonic Pattern' }}</span>
       <p v-if="gayaAktif" class="gket small"><b>{{ gayaAktif.nama }}: {{ gayaAktif.saran }}.</b> {{ gayaAktif.ket }}</p>
       <span v-if="memuat" class="small mute">Memuat harga…</span>
     </header>
 
     <div class="body">
-      <nav class="tools" aria-label="Alat gambar otomatis">
-        <button v-for="a in ALAT" :key="a.k" :ref="el => { if (el) toolEl[a.k] = el }" type="button" class="tool" :class="{ on: aktif.includes(a.k), next: langkahBerikut === a.k }" :aria-pressed="String(aktif.includes(a.k))"
-          :title="a.nama + ': gambar otomatis dari chart terakhir'" :disabled="!bars.length" @click="togel(a.k)">
+      <nav class="tools" :aria-label="tutorial ? 'Alat gambar manual' : 'Alat gambar otomatis'">
+        <button v-for="a in ALAT" :key="a.k" :ref="el => { if (el) toolEl[a.k] = el }" type="button" class="tool"
+          :class="tutorial ? { on: alatManual === a.k, isi: lengkap(a.k) } : { on: aktif.includes(a.k), next: langkahBerikut === a.k }"
+          :aria-pressed="String(tutorial ? alatManual === a.k : aktif.includes(a.k))"
+          :title="a.nama + (tutorial ? ': pilih, lalu klik titik-titiknya di chart' : ': gambar otomatis dari chart terakhir')" :disabled="!bars.length" @click="klikAlat(a.k)">
           <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <template v-if="a.k === 'xabcd'"><path d="M2 17 6 5l4 8 4-6 5 10" /><circle cx="2" cy="17" r="1.4" /><circle cx="6" cy="5" r="1.4" /><circle cx="10" cy="13" r="1.4" /><circle cx="14" cy="7" r="1.4" /><circle cx="19" cy="17" r="1.4" /></template>
             <template v-else-if="a.k === 'fib'"><path d="M3 4h16M3 8.5h16M3 13h16M3 18h16" /><path d="M5 18 17 4" stroke-dasharray="2 2" /></template>
@@ -684,7 +745,7 @@ async function unduh() {
           <span>{{ a.pendek }}</span>
         </button>
         <span class="sep"></span>
-        <button type="button" class="tool" title="Hapus semua gambar" :disabled="!aktif.length" @click="hapus">
+        <button type="button" class="tool" title="Hapus semua gambar" :disabled="tutorial ? !Object.values(manual).some(t => t.length) : !aktif.length" @click="hapus">
           <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6h14M9 6V4h4v2M6 6l1 13h8l1-13" /></svg>
           <span>Hapus</span>
         </button>
@@ -705,7 +766,7 @@ async function unduh() {
         </template>
       </div>
       <div class="chartbox">
-        <div ref="elChart" class="chart" @wheel.passive="segar" @pointermove="segar" @pointerup="segar" @dblclick="segar"></div>
+        <div ref="elChart" class="chart" :class="{ tarik: tutorial && titikAlat.length < JUMLAH[alatManual] }" @wheel.passive="segar" @pointermove="segar" @pointerup="segar" @dblclick="segar"></div>
         <div v-if="info" class="legend">
           <b>{{ kode }}</b><span v-if="nama" class="nm">{{ nama }}</span><span class="mute">· {{ tfNama.pendek }} · IDX</span>
           <span class="ohlc">O <i>{{ fmtH(info.o) }}</i> H <i>{{ fmtH(info.h) }}</i> L <i>{{ fmtH(info.l) }}</i> C <i>{{ fmtH(info.c) }}</i>
@@ -802,11 +863,58 @@ async function unduh() {
               <text :x="gambar[k].x1 + 5" :y="gambar[k].ys + (k === 'long' ? -4 : 12)" class="pt2 s">SL {{ fmtH(gambar[k].s.stop) }} ({{ fmtP(gambar[k].s.stopPct) }})</text>
             </g>
           </g>
+          <!-- Sketsa titik manual yang belum lengkap (tutorial) -->
+          <g v-if="sketsa" class="sketsa">
+            <polyline v-if="sketsa.swing && sketsa.titik.length > 1" :points="sketsa.jalur" class="skj" />
+            <g v-for="t in sketsa.titik" :key="t.n">
+              <line v-if="!sketsa.swing" :x1="t.x" :x2="t.x2" :y1="t.y" :y2="t.y" class="skl" />
+              <circle :cx="t.x" :cy="t.y" r="4.5" class="skt" />
+              <text :x="t.x + (sketsa.swing ? 0 : 6)" :y="sketsa.swing ? (t.sisi === 'H' ? t.y - 9 : t.y + 18) : t.y - 6" class="skn">{{ t.n }} {{ fmtH(t.p) }}</text>
+            </g>
+          </g>
         </svg>
       </div>
 
       <aside class="info" aria-label="Keterangan alat aktif">
-        <article class="kartu langkah">
+        <article v-if="tutorial" class="kartu tutor">
+          <h3>Tutorial: tarik sendiri, lalu cek</h3>
+          <p class="small">{{ PETUNJUK[alatManual] }}</p>
+          <p class="small">Alat: <b>{{ ALAT.find(a => a.k === alatManual).nama }}</b> · titik {{ titikAlat.length }} dari {{ JUMLAH[alatManual] }}<template v-if="titikBerikut"> · klik di chart untuk titik <b>{{ titikBerikut }}</b></template></p>
+          <ol v-if="titikAlat.length" class="small tlist">
+            <li v-for="t in titikAlat" :key="t.n">{{ t.n }}: {{ fmtH(t.p) }} <span class="mute">({{ String(bars[t.i]?.d || '').slice(0, 10) }})</span></li>
+          </ol>
+          <div class="ganti">
+            <button type="button" class="mini" :disabled="!titikAlat.length" @click="batalTitik">Hapus titik terakhir</button>
+            <button type="button" class="mini" :disabled="!titikAlat.length" @click="ulangAlat">Ulangi</button>
+            <button type="button" class="mini utama" :disabled="!titikAlat.length" @click="cek">Cek</button>
+          </div>
+          <template v-if="hasilCek">
+            <p class="besar" :class="hasilCek.nilai === 'benar' ? 'up' : 'dn'">{{ NILAI_CEK[hasilCek.nilai] }}</p>
+            <p v-if="alatManual === 'xabcd'" class="small">Masuk pola: <b>{{ hasilCek.pola || 'belum masuk pola mana pun' }}</b></p>
+            <template v-if="hasilCek.kurang.length">
+              <p class="small"><b>Yang masih kurang dan saran:</b></p>
+              <ul class="cek"><li v-for="(t, j) in hasilCek.kurang" :key="j" class="dn">✗ {{ t }}</li></ul>
+            </template>
+            <template v-if="hasilCek.benar.length">
+              <p class="small"><b>Yang sudah benar:</b></p>
+              <ul class="cek"><li v-for="(t, j) in hasilCek.benar" :key="j" class="up">✓ {{ t }}</li></ul>
+            </template>
+            <template v-if="hasilCek.rekomendasi.length">
+              <p class="small"><b>Rekomendasi:</b></p>
+              <ul class="cek"><li v-for="(r, j) in hasilCek.rekomendasi" :key="j" :class="r.ok ? 'up' : 'dn'">{{ r.ok ? '✓' : '✗' }} {{ r.teks }}</li></ul>
+            </template>
+            <p v-if="hasilCek.kesimpulan" class="small"><b>Kesimpulan:</b> {{ hasilCek.kesimpulan }}</p>
+            <dl v-if="hasilCek.rencana" class="dl">
+              <dt>PRZ</dt><dd>{{ fmtH(hasilCek.rencana.prz[0]) }}–{{ fmtH(hasilCek.rencana.prz[1]) }}</dd>
+              <dt>Stop ({{ hasilCek.rencana.stopKet }})</dt><dd class="dn">{{ fmtH(hasilCek.rencana.stop) }}</dd>
+              <dt>Target 1</dt><dd class="up">{{ fmtH(hasilCek.rencana.target[0]) }}</dd>
+              <dt>Target 2</dt><dd class="up">{{ fmtH(hasilCek.rencana.target[1]) }}</dd>
+            </dl>
+            <p v-if="hasilCek.sistem" class="small mute">{{ hasilCek.sistem }}</p>
+          </template>
+          <p v-else class="small mute">Alat yang titiknya sudah lengkap digambar dengan format yang sama seperti tab Saham. Tekan Cek untuk menilai tarikan alat yang sedang dipilih.</p>
+        </article>
+        <article v-if="!tutorial" class="kartu langkah">
           <h3>Langkah pakai <button v-if="panduanTutup" type="button" class="mini" @click="panduanTutup = false">Tampilkan pop up</button></h3>
           <ol>
             <li :class="{ done: true }">Pilih saham dan gaya trading (timeframe menyesuaikan). Sekarang: {{ kode }}, {{ tfNama.nama.toLowerCase() }}.</li>
@@ -827,8 +935,8 @@ async function unduh() {
             <p class="besar" :class="hasil.xabcd.arah === 'bullish' ? 'up' : 'dn'">{{ hasil.xabcd.pola ? `${hasil.xabcd.nama} ${hasil.xabcd.arah}` : 'Belum ada pola harmonik' }}</p>
             <p class="small">{{ STATUS[hasil.xabcd.status] }}<template v-if="hasil.xabcd.pola">. {{ hasil.xabcd.ket }}</template></p>
             <p v-if="sepi" class="small dn">Likuiditas rendah ({{ fmtRp(nilaiHarian) }} per hari): pola di saham sepi kurang bisa diandalkan.</p>
-            <p v-if="!hasil.xabcd.pola" class="small">Gambar menunjukkan lima swing terakhir apa adanya beserta rasionya, supaya terlihat seberapa jauh dari pola baku.</p>
-            <div v-if="jumlahPola > 1" class="ganti">
+            <p v-if="!hasil.xabcd.pola" class="small">{{ hasil.xabcd.manual ? 'Gambar menunjukkan titik yang Anda tarik beserta rasionya. Tekan Cek di atas untuk melihat yang masih kurang.' : 'Gambar menunjukkan lima swing terakhir apa adanya beserta rasionya, supaya terlihat seberapa jauh dari pola baku.' }}</p>
+            <div v-if="!tutorial && jumlahPola > 1" class="ganti">
               <button type="button" class="mini" @click="pilihPola = (pilihPola + jumlahPola - 1) % jumlahPola">‹</button>
               <span class="small">Pola {{ pilihPola + 1 }} dari {{ jumlahPola }}</span>
               <button type="button" class="mini" @click="pilihPola = (pilihPola + 1) % jumlahPola">›</button>
@@ -846,7 +954,7 @@ async function unduh() {
               <p v-else class="small">Konfirmasi baru bisa dinilai setelah harga masuk PRZ dan membentuk titik D.</p>
             </div>
             <p v-if="hasil.xabcd.pola" class="small">Panah dari D: jalur ke target 1, target 2, dan titik C bila pola berhasil. Pola bullish: panah naik (target untuk beli). Pola bearish: panah turun (target harga turun, dipakai untuk jual, ambil untung, atau Short). Garis titik-titik adalah batas batal (stop {{ fmtH(hasil.xabcd.stop) }}); panah putus-putus menunjukkan arah harga bila penutupan menembus batas itu. Selama belum ada close di balik batas, pola masih berlaku. Jarak waktu panah hanya ilustrasi.</p>
-            <details class="kx" open>
+            <details v-if="!tutorial" class="kx" open>
               <summary>Kenapa titik X di sini?</summary>
               <p v-for="(t, j) in teksX" :key="j" class="small">{{ t }}</p>
             </details>
@@ -1008,6 +1116,14 @@ async function unduh() {
 .tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 16px;font:700 14px var(--f-body);color:var(--ink-2);cursor:pointer;margin-bottom:-1px}
 .tabs button:hover{color:var(--ink)}
 .tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+.chart.tarik{cursor:crosshair}
+.tool.isi:not(.on){color:var(--good)}
+.sketsa .skj{fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:6 4}
+.sketsa .skl{stroke:var(--accent);stroke-width:2;stroke-dasharray:6 4}
+.sketsa .skt{fill:var(--sheet);stroke:var(--accent);stroke-width:2}
+.sketsa .skn{font:700 12px var(--f-data);fill:var(--ink);text-anchor:middle;paint-order:stroke;stroke:var(--sheet);stroke-width:3px}
+.tutor .tlist{margin:4px 0;padding-left:20px}
+.tutor .ganti{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
 .sahamTab{display:grid;min-width:0}
 .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;background:var(--sheet);border:1px solid var(--rule);border-bottom:0}
 .cari{position:relative}

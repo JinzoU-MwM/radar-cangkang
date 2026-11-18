@@ -29,7 +29,7 @@ export const POLA = {
     ket: 'Pola koreksi setelah gerak berlebihan: B melewati X, C melewati A, lalu D di retracement 0,50 kaki BC.' },
 }
 // Pola yang D-nya melewati atau menyentuh X: stop memakai sisi luar PRZ, bukan X.
-const STOP_PRZ = new Set(['altbat', 'butterfly', 'crab', 'deepcrab', 'shark'])
+export const STOP_PRZ = new Set(['altbat', 'butterfly', 'crab', 'deepcrab', 'shark'])
 export const TOL = 0.05          // toleransi relatif batas rasio (±5%)
 export const ABCD_TOL = 0.15    // AB=CD di dalam pola: CD minimal 0,85 AB (sama dengan website/harmonik.py)
 export const PRZ_LEBAR = 0.03    // PRZ minimal = ±3% kaki acuan di sekitar level D
@@ -96,7 +96,7 @@ export function zigzag(bars = [], th = 0.06) {
 // ------------------------------------------------------------------- XABCD ----
 const r3 = v => v == null || !isFinite(v) ? null : Math.round(v * 1000) / 1000
 // Jarak relatif nilai ke rentang (0 bila di dalam).
-const jarak = (v, [lo, hi]) => v < lo ? (lo - v) / lo : v > hi ? (v - hi) / hi : 0
+export const jarak = (v, [lo, hi]) => v < lo ? (lo - v) / lo : v > hi ? (v - hi) / hi : 0
 
 export function rasioXabcd(X, A, B, C, D = null) {
   const xa = Math.abs(A - X), ab = Math.abs(B - A), bc = Math.abs(C - B), xc = Math.abs(C - X)
@@ -169,7 +169,7 @@ export function bentukOk(k, X, A, B, C) {
 }
 
 const bulatArah = (t, bull) => bull ? floorTick(t) : ceilTick(t)
-function targetStop(k, X, A, B, C, D, prz, bull) {
+export function targetStop(k, X, A, B, C, D, prz, bull) {
   // 5-0: harga diharapkan kembali ke C; target 0,618 kaki DC lalu titik C, stop di retracement 0,618 kaki BC.
   if (k === 'fiveo') return { target: [D + (C - D) * 0.618, C].map(t => bulatArah(t, bull)), stop: C + (B - C) * 0.618 }
   const acuan = k === 'cypher' ? C : A
