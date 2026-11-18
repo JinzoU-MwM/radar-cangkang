@@ -320,3 +320,90 @@ export function cekManual(bars, k, titik, { xabcd = null, skala = null } = {}) {
   if (k === 'elliott') return cekElliott(bars, titik)
   return cekPosisi(bars, k, titik, xabcd)
 }
+
+// ------------------------------------------------------------- proyeksi ----
+// Tombol Proyeksi (alat XABCD): menunjukkan pola yang benar dari tarikan pengguna.
+//  1. X, A, B, C dirapikan ke ujung ayunan sebenarnya (puncak/lembah paling ekstrem di jendelanya, aturan cekSwing).
+//  2. Pola dipilih dari rasio B dan C saja (D belum dipakai), lalu PRZ dihitung dari X, A, B, C.
+//  3. D proyeksi: candle pertama setelah C yang menyentuh PRZ; bila belum ada, waktu D diperkirakan
+//     C + lama kaki AB (simetri waktu AB=CD) dan harga diharapkan di level D pola.
+// Bila tarikan tidak masuk pola mana pun, dipakai pola temuan pemindai sistem. Hasil null bila tidak ada keduanya.
+function rapikan(bars, titik) {
+  const n = bars.length, out = titik.map(t => ({ ...t }))
+  for (let j = 0; j < out.length; j++) {
+    const t = out[j], i1 = j < out.length - 1 ? out[j + 1].i : n - 1
+    let i0 = j ? out[j - 1].i : t.i
+    if (!j && out[1]) {
+      const tengah = (t.p + out[1].p) / 2
+      while (i0 > 0 && (t.sisi === 'L' ? bars[i0 - 1].h < tengah : bars[i0 - 1].l > tengah)) i0--
+    }
+    if (i1 < i0) return null
+    const e = ekstremDi(bars, i0, i1, t.sisi), pe = t.sisi === 'H' ? bars[e].h : bars[e].l
+    if (pe !== t.p) out[j] = { ...t, i: e, p: pe, dari: { i: t.i, p: t.p } }
+  }
+  return out
+}
+
+export function proyeksiXabcd(bars, titik, { skala = null } = {}) {
+  const n = bars.length
+  if (!n || !titik || titik.length < 4) return null
+  const catatan = []
+  // Urutan harus benar dulu (kiri ke kanan, puncak-lembah bergantian); titik yang salah urut tidak bisa dirapikan.
+  // Urutan kiri ke kanan dengan puncak-lembah bergantian; harga dicek lagi setelah dirapikan.
+  const naikTurun = ts => ts.every((t, j) => !j || (t.i > ts[j - 1].i && t.sisi !== ts[j - 1].sisi && (t.sisi === 'H' ? t.p > ts[j - 1].p : t.p < ts[j - 1].p)))
+  const urut = titik.slice(0, 4).every((t, j) => !j || (t.i > titik[j - 1].i && t.sisi !== titik[j - 1].sisi))
+  let rapi = urut ? rapikan(bars, titik.slice(0, 5)) : null
+  if (rapi && !naikTurun(rapi.slice(0, 4))) rapi = null
+  let pilih = null
+  if (rapi) {
+    const [X, A, B, C] = rapi.slice(0, 4).map(t => t.p), r = rasioXabcd(X, A, B, C)
+    pilih = Object.keys(POLA).filter(k => bentukOk(k, X, A, B, C)).map(k => {
+      const p = POLA[k], jb = jarak(r.b, p.b), jc = p.cx ? jarak(r.cx, p.cx) : jarak(r.c, p.c)
+      return { k, j: jb + jc, ok: jb <= TOL && jc <= TOL, prz: przPola(k, X, A, B, C) }
+    }).filter(x => x.ok && x.prz).sort((a, b) => a.j - b.j)[0] || null
+    if (pilih) {
+      for (const t of rapi.slice(0, 4)) if (t.dari)
+        catatan.push(`${t.n} dipindah dari ${fh(t.dari.p)} (${tgl(bars, t.dari.i)}) ke ${fh(t.p)} (${tgl(bars, t.i)}): ${t.sisi === 'H' ? 'puncak' : 'lembah'} sebenarnya ada di sana.`)
+      const p = POLA[pilih.k]
+      const tol = (v, x) => jarak(v, x) > 0 ? ', masih dalam toleransi 5%' : ''
+      catatan.push(`B ${fr(r.b)} XA cocok untuk ${p.nama} (${rg(p.b)}${tol(r.b, p.b)}).`)
+      catatan.push(p.cx ? `C ${fr(r.cx)} XA sesuai (${rg(p.cx)}${tol(r.cx, p.cx)}).` : `C ${fr(r.c)} AB sesuai (${rg(p.c)}${tol(r.c, p.c)}).`)
+    }
+  }
+  let k, ts, prz, sumber = 'tarikan'
+  if (pilih) {
+    k = pilih.k; ts = rapi.slice(0, 4).map(({ n: nm, i, p, sisi, dari }) => ({ n: nm, i, p, sisi, dipindah: !!dari })); prz = pilih.prz
+  } else {
+    const auto = cariXabcd(bars, skala || SKALA.D)[0]
+    if (!auto) return { sumber: 'kosong', catatan: [
+      urut ? 'Dari titik X, A, B, C ini belum ada pola yang cocok, walaupun titiknya sudah dirapikan ke puncak dan lembah sebenarnya.' : 'Urutan titik belum benar (kiri ke kanan, puncak dan lembah bergantian), jadi belum bisa diproyeksikan.',
+      'Pemindai sistem juga tidak menemukan pola aktif di saham dan timeframe ini. Coba saham atau timeframe lain.'] }
+    sumber = 'sistem'; k = auto.pola; prz = auto.prz
+    ts = auto.titik.slice(0, 4).map((t, j) => ({ n: t.n, i: t.i, p: t.p, sisi: (j % 2 === 0) === (auto.arah === 'bullish') ? 'L' : 'H' }))
+    catatan.push(urut ? 'Titik X, A, B, C Anda belum masuk pola mana pun, walaupun sudah dirapikan ke puncak dan lembah sebenarnya.' : 'Urutan titik Anda belum benar (kiri ke kanan, puncak dan lembah bergantian).')
+    catatan.push(`Yang ditampilkan adalah pola temuan pemindai sistem: ${auto.nama} ${auto.arah}, X pada ${tgl(bars, ts[0].i)}.`)
+  }
+  const p = POLA[k], [X, A, B, C] = ts.map(t => t.p), bull = A > X, s = bull ? 1 : -1, xa = Math.abs(A - X)
+  // Harga D yang diharapkan: level XA pola (dijepit ke PRZ), atau tengah PRZ untuk pola yang D-nya dari XC/BC.
+  const level = p.d ? A - s * xa * p.d[0] : (prz[0] + prz[1]) / 2
+  const dHarga = Math.min(prz[1], Math.max(prz[0], level))
+  let sampai = null, tembus = null
+  for (let i = ts[3].i + 1; i < n; i++) {
+    if (!sampai && (bull ? bars[i].l <= prz[1] : bars[i].h >= prz[0])) sampai = i
+    if (bull ? bars[i].l < prz[0] * (1 - TOL) : bars[i].h > prz[1] * (1 + TOL)) { tembus = i; break }
+  }
+  const lamaAB = Math.max(1, ts[2].i - ts[1].i)
+  const D = sampai != null ? { n: 'D', i: sampai, p: bull ? Math.max(bars[sampai].l, prz[0]) : Math.min(bars[sampai].h, prz[1]), sisi: bull ? 'L' : 'H' }
+    : { n: 'D', i: ts[3].i + lamaAB, p: dHarga, sisi: bull ? 'L' : 'H', perkiraan: true }
+  const ketD = p.d ? `${rg(p.d)} XA` : p.dc ? `${rg(p.dc)} XC` : `${rg(p.dbc)} kaki BC`
+  catatan.push(`D seharusnya di PRZ ${fh(prz[0])}–${fh(prz[1])} (D ${ketD}${p.e ? `, proyeksi BC ${rg(p.e)}` : ''}).`)
+  if (sampai != null) catatan.push(`Harga sudah masuk PRZ pada ${tgl(bars, sampai)}${tembus != null ? `, tetapi lalu menembus PRZ pada ${tgl(bars, tembus)}: pola gagal` : ''}.`)
+  else if (tembus == null) catatan.push(`Harga belum sampai PRZ. Kalau waktunya seimbang dengan kaki AB, D diperkirakan sekitar ${lamaAB} candle setelah C.`)
+  const dUser = sumber === 'tarikan' && titik[4] ? titik[4] : null
+  if (dUser) {
+    const di = dUser.p >= prz[0] && dUser.p <= prz[1]
+    catatan.push(di ? `D Anda ${fh(dUser.p)} sudah berada di PRZ.`
+      : `D Anda ${fh(dUser.p)} ${bull === (dUser.p > prz[1]) ? 'belum sampai' : 'sudah melewati'} PRZ, selisih ${fr(Math.abs(pct(dUser.p, dUser.p > prz[1] ? prz[1] : prz[0])))}%.`)
+  }
+  return { sumber, pola: k, nama: p.nama, arah: bull ? 'bullish' : 'bearish', titik: [...ts, D], prz, dHarga, sampai, gagal: tembus != null, catatan }
+}
