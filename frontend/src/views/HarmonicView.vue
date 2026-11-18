@@ -18,7 +18,7 @@ import PolaDiagram from '../components/PolaDiagram.vue'
 import HarmonicMateri from '../components/HarmonicMateri.vue'
 import HarmonicScreening from '../components/HarmonicScreening.vue'
 import HarmonicQuiz from '../components/HarmonicQuiz.vue'
-import { JUMLAH, PETUNJUK, bangunManual, cekManual, proyeksiXabcd, tempel } from '../lib/harmonikTutorial.js'
+import { JUMLAH, MASA_DEPAN, PETUNJUK, bangunManual, cekManual, dBebas, proyeksiXabcd, tempel } from '../lib/harmonikTutorial.js'
 import { kekuatanPola, skenarioLain, titikTutorial } from '../lib/harmonikCekSilang.js'
 
 const route = useRoute(), router = useRouter()
@@ -184,7 +184,9 @@ function klikChart(param) {
   if (!tutorial.value || !param?.point || param.logical == null || !candle) return
   const k = alatManual.value, t = manual.value[k] || []
   if (t.length >= JUMLAH[k]) { toast(`${ALAT.find(a => a.k === k).nama} sudah lengkap. Tekan Ulangi untuk menggambar lagi.`); return }
-  if (param.logical < 0 || param.logical > bars.value.length - 1) return
+  // D XABCD bebas: boleh di area kanan setelah candle terakhir (titik rencana); titik lain hanya di candle yang ada.
+  const maks = bars.value.length - 1 + (dBebas(k, t.length) ? MASA_DEPAN : 0)
+  if (param.logical < 0 || param.logical > maks) return
   const harga = candle.coordinateToPrice(param.point.y)
   const baru = harga == null ? null : tempel(bars.value, k, t, param.logical, harga)
   if (baru) manual.value = { ...manual.value, [k]: [...t, baru] }
@@ -935,9 +937,9 @@ async function unduh() {
         <article v-if="tutorial" class="kartu tutor">
           <h3>Tutorial: tarik sendiri, lalu cek</h3>
           <p class="small">{{ PETUNJUK[alatManual] }}</p>
-          <p class="small">Alat: <b>{{ ALAT.find(a => a.k === alatManual).nama }}</b> · titik {{ titikAlat.length }} dari {{ JUMLAH[alatManual] }}<template v-if="titikBerikut"> · klik di chart untuk titik <b>{{ titikBerikut }}</b></template></p>
+          <p class="small">Alat: <b>{{ ALAT.find(a => a.k === alatManual).nama }}</b> · titik {{ titikAlat.length }} dari {{ JUMLAH[alatManual] }}<template v-if="titikBerikut"> · klik di chart untuk titik <b>{{ titikBerikut }}</b><template v-if="alatManual === 'xabcd' && titikBerikut === 'D'"> (bebas: harga mana saja, boleh di kanan candle terakhir)</template></template></p>
           <ol v-if="titikAlat.length" class="small tlist">
-            <li v-for="t in titikAlat" :key="t.n">{{ t.n }}: {{ fmtH(t.p) }} <span class="mute">({{ String(bars[t.i]?.d || '').slice(0, 10) }})</span></li>
+            <li v-for="t in titikAlat" :key="t.n">{{ t.n }}: {{ fmtH(t.p) }} <span class="mute">({{ t.i > bars.length - 1 ? `rencana, ${t.i - bars.length + 1} candle setelah candle terakhir` : String(bars[t.i]?.d || '').slice(0, 10) + (t.bebas ? ', rencana' : '') }})</span></li>
           </ol>
           <div class="ganti">
             <button type="button" class="mini" :disabled="!titikAlat.length" @click="batalTitik">Hapus titik terakhir</button>

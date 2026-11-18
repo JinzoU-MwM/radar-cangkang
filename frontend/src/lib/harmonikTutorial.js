@@ -18,7 +18,7 @@ export const NAMA_TITIK = {
 }
 const SWING = new Set(['xabcd', 'fib', 'ext', 'elliott'])
 export const PETUNJUK = {
-  xabcd: 'Klik lima titik berurutan dari kiri ke kanan: X (awal dorongan besar), A, B, C, lalu D.',
+  xabcd: 'Klik lima titik berurutan dari kiri ke kanan: X (awal dorongan besar), A, B, C, lalu D. X sampai C menempel ke puncak/lembah candle; D bebas di harga mana saja, juga di area kanan setelah candle terakhir, untuk mencoba apakah D masuk PRZ.',
   fib: 'Klik dua titik: awal dan akhir kaki yang diukur. Untuk harmonic, tarik dari X ke A.',
   ext: 'Klik tiga titik: awal kaki (1), akhir kaki (2), dan titik koreksi (3). Untuk AB=CD: A, B, lalu C.',
   elliott: 'Klik enam titik: 0 (awal impuls), 1, 2, 3, 4, dan 5.',
@@ -35,11 +35,21 @@ const pct = (a, b) => Math.round((b / a - 1) * 1000) / 10
 
 // Titik baru dari klik di bar i pada harga tertentu. Alat swing menempel ke high atau low: titik pertama ke sisi yang
 // lebih dekat dengan klik, titik berikutnya bergantian (puncak, lembah, puncak, ...).
+// D pada XABCD bebas (tidak menempel candle): titik rencana untuk dicek terhadap PRZ, boleh di area kanan chart
+// (paling jauh MASA_DEPAN candle setelah candle terakhir), harga dibulatkan ke fraksi BEI.
+export const MASA_DEPAN = 60
+export const dBebas = (k, j) => k === 'xabcd' && j === 4
 export function tempel(bars, k, titik, i, harga) {
   const n = bars.length
   if (!n || titik.length >= JUMLAH[k]) return null
+  const j = titik.length, nama = NAMA_TITIK[k][j]
+  if (dBebas(k, j)) {
+    const awal = titik[j - 1].i + 1
+    i = Math.max(awal, Math.min(n - 1 + MASA_DEPAN, Math.round(i)))
+    return { n: nama, i, p: bulatTick(Math.max(harga, 1)), sisi: titik[j - 1].sisi === 'H' ? 'L' : 'H', bebas: true }
+  }
   i = Math.max(0, Math.min(n - 1, Math.round(i)))
-  const b = bars[i], j = titik.length, nama = NAMA_TITIK[k][j]
+  const b = bars[i]
   if (!SWING.has(k)) return { n: nama, i, p: bulatTick(Math.max(harga, 1)) }
   const sisi = j === 0 ? (Math.abs(harga - b.h) <= Math.abs(harga - b.l) ? 'H' : 'L') : titik[j - 1].sisi === 'H' ? 'L' : 'H'
   return { n: nama, i, p: sisi === 'H' ? b.h : b.l, sisi }
@@ -92,7 +102,8 @@ export function cekSwing(bars, titik, k = 'xabcd', minBalik = 0.04) {
     // Batas ke belakang: sampai harga sebelumnya sudah setengah jalan menuju titik kedua (ayunan sebelumnya).
     // Candle milik titik tetangga tidak ikut: candle bersumbu panjang bisa memuat puncak dan lembah sekaligus,
     // dan urutannya di dalam candle tidak diketahui.
-    const t = titik[j], i1 = j < titik.length - 1 ? Math.max(t.i, titik[j + 1].i - 1) : n - 1
+    const t = titik[j], i1 = Math.min(n - 1, j < titik.length - 1 ? Math.max(t.i, titik[j + 1].i - 1) : n - 1)
+    if (t.bebas || t.i > n - 1) continue   // D bebas: titik rencana, bukan ujung ayunan candle
     const i0 = j ? Math.min(t.i, titik[j - 1].i + 1) : awalX(bars, titik)
     const e = ekstremDi(bars, i0, i1, t.sisi), pe = t.sisi === 'H' ? bars[e].h : bars[e].l
     if (pe === t.p) continue
@@ -146,7 +157,7 @@ export function bangunXabcd(bars, titik) {
     const tolakX = (k === 'gartley' || k === 'bat') && (bull ? D < X : D > X)
     return { k, skor: tolakX ? null : skorPola(k, r), jauh: skorPola(k, r, 99) ?? 99 }
   }).sort((a, b) => (a.skor == null) - (b.skor == null) || (a.skor ?? a.jauh) - (b.skor ?? b.jauh))
-  const dasar = { titik: titik.map(({ n: nm, i, p }) => ({ n: nm, i, p })), rasio: r, arah: bull ? 'bullish' : 'bearish', bentuk: 'xabcd',
+  const dasar = { titik: titik.map(({ n: nm, i, p, bebas }) => ({ n: nm, i, p, ...(bebas ? { bebas } : {}) })), rasio: r, arah: bull ? 'bullish' : 'bearish', bentuk: 'xabcd',
     segi: [[0, 1, 2], [2, 3, 4]], harga: bars[n - 1]?.c, manual: true, kandidat: kand }
   const cocok = kand.find(x => x.skor != null)
   if (!cocok) return { ...dasar, pola: null, nama: 'Tarikan manual', status: 'tidak cocok', prz: null, garis: garisXabcd(null, r), terdekat: kand[0]?.k || null }
@@ -155,7 +166,7 @@ export function bangunXabcd(bars, titik) {
   const { target, stop } = targetStop(k, X, A, B, C, D, prz, bull)
   const diPrz = D >= prz[0] && D <= prz[1]
   const abcd = p.abcd ? { rasio: r.cd, kriteria: p.abcd, ok: jarak(r.cd, p.abcd) <= ABCD_TOL } : null
-  return { ...dasar, pola: k, nama: p.nama, ket: p.ket, status: diPrz ? (titik[4].i < n - 1 ? 'berbalik' : 'prz') : 'tidak cocok', skor: cocok.skor,
+  return { ...dasar, pola: k, nama: p.nama, ket: p.ket, status: diPrz ? (titik[4].i < n - 1 && !titik[4].bebas ? 'berbalik' : 'prz') : 'tidak cocok', skor: cocok.skor,
     prz, target, stop, abcd, kaki: k === 'cypher' ? 'CD' : 'AD', ketTarget: k === 'fiveo' ? ['0,618 DC', 'titik C'] : ['0,382 AD', '0,618 AD'],
     targetCA: ['cypher', 'fiveo'].includes(k) ? null : [C, A], garis: garisXabcd(k, r), diPrz }
 }
@@ -170,7 +181,10 @@ function cekXabcd(bars, titik, skala) {
   const minBalik = (skala || SKALA.D)[0]
   const benar = [], kurang = cekSwing(bars, titik, 'xabcd', minBalik)
   const [X, A, B, C, D] = titik.map(t => t.p), bull = A > X, xa = Math.abs(A - X)
-  if (!kurang.length) benar.push('Kelima titik adalah ujung ayunan (puncak dan lembah) yang benar, berurutan dari kiri ke kanan.')
+  const bebasD = !!titik[4]?.bebas
+  if (!kurang.length) benar.push(bebasD ? 'X, A, B, C adalah ujung ayunan (puncak dan lembah) yang benar, berurutan dari kiri ke kanan. D adalah titik rencana yang Anda letakkan sendiri.'
+    : 'Kelima titik adalah ujung ayunan (puncak dan lembah) yang benar, berurutan dari kiri ke kanan.')
+  if (bebasD && titik[4].i > n - 1) benar.push(`D diletakkan ${titik[4].i - (n - 1)} candle setelah candle terakhir: Cek menilai apakah harga D itu masuk PRZ, belum ada candle sungguhan di sana.`)
   const ia = awalX(bars, titik), eX = ekstremDi(bars, ia, Math.max(titik[0].i, titik[1].i - 1), titik[0].sisi)
   const pr = (bull ? bars[eX].l : bars[eX].h) !== X && eX < titik[0].i ? perantara(bars, titik[0], eX, minBalik) : null
   if (pr) benar.push(`X ${fh(X)} adalah titik perantara: ada ${bull ? 'lembah lebih rendah' : 'puncak lebih tinggi'} ${fh(pr.pe)} pada ${tgl(bars, pr.e)}, dipisahkan pantulan ${fr(pr.balik)}%. Menurut Carney ini boleh selama rasio cocok. Dengan X di ${fh(pr.pe)}, B menjadi ${fr(Math.round(Math.abs(A - B) / Math.abs(A - pr.pe) * 1000) / 1000)} XA; pilih X yang membuat rasio paling selaras.`)
@@ -202,7 +216,7 @@ function cekXabcd(bars, titik, skala) {
     const rr = bull ? (t1 - akhir) / (akhir - stop) : (akhir - t1) / (stop - akhir)
     const lari = Math.abs(akhir / D - 1) * 100
     const nilai = nilaiHarian(bars)
-    const konf = konfirmasiD(bars, { ...row, titik: row.titik })
+    const konf = titik[4].bebas ? null : konfirmasiD(bars, { ...row, titik: row.titik })
     const cek = [
       { ok: true, teks: `Angka B dan D cocok dengan ${row.nama}` },
       { ok: !row.abcd || row.abcd.ok, teks: row.abcd ? `AB=CD: CD ${fr(r.cd)} kali AB (kriteria ${rg(row.abcd.kriteria)})` : 'AB=CD tidak dipakai pola ini' },
@@ -364,7 +378,8 @@ function rapikan(bars, titik, minBalik = 0.04) {
   for (let j = 0; j < out.length; j++) {
     // Candle milik titik tetangga tidak ikut: candle bersumbu panjang bisa memuat puncak dan lembah sekaligus,
     // dan urutannya di dalam candle tidak diketahui.
-    const t = out[j], i1 = j < out.length - 1 ? Math.max(t.i, out[j + 1].i - 1) : n - 1
+    const t = out[j], i1 = Math.min(n - 1, j < out.length - 1 ? Math.max(t.i, out[j + 1].i - 1) : n - 1)
+    if (t.bebas || t.i > n - 1) continue   // D bebas: titik rencana, bukan ujung ayunan candle
     const i0 = j ? Math.min(t.i, out[j - 1].i + 1) : awalX(bars, out)
     if (i1 < i0) return null
     const e = ekstremDi(bars, i0, i1, t.sisi), pe = t.sisi === 'H' ? bars[e].h : bars[e].l
