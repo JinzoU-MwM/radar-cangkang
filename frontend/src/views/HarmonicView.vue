@@ -19,6 +19,7 @@ import HarmonicMateri from '../components/HarmonicMateri.vue'
 import HarmonicScreening from '../components/HarmonicScreening.vue'
 import HarmonicQuiz from '../components/HarmonicQuiz.vue'
 import { JUMLAH, PETUNJUK, bangunManual, cekManual, proyeksiXabcd, tempel } from '../lib/harmonikTutorial.js'
+import { kekuatanPola, skenarioLain, titikTutorial } from '../lib/harmonikCekSilang.js'
 
 const route = useRoute(), router = useRouter()
 
@@ -193,6 +194,24 @@ function proyeksikan() {
   if (proyeksi.value) { proyeksi.value = null; return }
   proyeksi.value = proyeksiXabcd(bars.value, manual.value.xabcd || [], { skala: skala.value })
   if (!proyeksi.value) toast('Tarik minimal empat titik (X, A, B, C) dulu.')
+}
+// ------------------------------------------------------------ cek silang ----
+// Pola otomatis tidak langsung dipercaya: label kekuatan (rasio ideal atau hanya lolos toleransi, AB=CD, fraksi harga),
+// skenario lain yang tidak ikut tampil, dan tombol untuk menilai ulang titiknya di tab Tutorial.
+const kekuatan = computed(() => tutorial.value ? null : kekuatanPola(hasil.value.xabcd))
+const skenario = computed(() => tutorial.value || !bars.value.length ? [] : skenarioLain(bars.value, polaList.value, skala.value, tf.value === 'D' ? 30 : 12))
+const TANDA = a => a.ok ? '✓' : a.berat ? '✗' : '~'
+function cekDiTutorial(row) {
+  const t = titikTutorial(row)
+  if (t.length < 4) return
+  manual.value = { ...manual.value, xabcd: t }
+  alatManual.value = 'xabcd'
+  tab.value = 'tutorial'
+  // Setelah watcher tab/manual jalan: lima titik langsung dinilai Cek; empat titik (D belum terbentuk) diproyeksikan.
+  nextTick(() => {
+    if (t.length >= 5) cek()
+    else { proyeksi.value = null; proyeksikan() }
+  })
 }
 const NILAI_CEK = { benar: 'Benar', hampir: 'Hampir benar: rasio cocok, ada yang perlu dirapikan', perlu: 'Belum benar: perlu diperbaiki', belum: 'Titik belum lengkap' }
 
@@ -973,6 +992,11 @@ async function unduh() {
             <h3>XABCD pattern</h3>
             <p class="besar" :class="hasil.xabcd.arah === 'bullish' ? 'up' : 'dn'">{{ hasil.xabcd.pola ? `${hasil.xabcd.nama} ${hasil.xabcd.arah}` : 'Belum ada pola harmonik' }}</p>
             <p class="small">{{ STATUS[hasil.xabcd.status] }}<template v-if="hasil.xabcd.pola">. {{ hasil.xabcd.ket }}</template></p>
+            <div v-if="kekuatan" class="kuat" :class="kekuatan.tingkat">
+              <p class="small"><b>Kekuatan: {{ kekuatan.nama }}</b> · {{ kekuatan.ket }}.</p>
+              <ul class="cek"><li v-for="(a, j) in kekuatan.alasan" :key="j" :class="a.ok ? 'up' : a.berat ? 'dn' : 'mute'">{{ TANDA(a) }} {{ a.teks }}</li></ul>
+              <button type="button" class="mini" title="Salin titik pola ini ke tab Tutorial lalu nilai dengan Cek (atau Proyeksi bila D belum terbentuk)" @click="cekDiTutorial(hasil.xabcd)">Cek di Tutorial</button>
+            </div>
             <p v-if="sepi" class="small dn">Likuiditas rendah ({{ fmtRp(nilaiHarian) }} per hari): pola di saham sepi kurang bisa diandalkan.</p>
             <p v-if="!hasil.xabcd.pola" class="small">{{ hasil.xabcd.manual ? 'Gambar menunjukkan titik yang Anda tarik beserta rasionya. Tekan Cek di atas untuk melihat yang masih kurang.' : 'Gambar menunjukkan lima swing terakhir apa adanya beserta rasionya, supaya terlihat seberapa jauh dari pola baku.' }}</p>
             <div v-if="!tutorial && jumlahPola > 1" class="ganti">
@@ -993,6 +1017,13 @@ async function unduh() {
               <p v-else class="small">Konfirmasi baru bisa dinilai setelah harga masuk PRZ dan membentuk titik D.</p>
             </div>
             <p v-if="hasil.xabcd.pola" class="small">Panah dari D: jalur ke target 1, target 2, dan titik C bila pola berhasil. Pola bullish: panah naik (target untuk beli). Pola bearish: panah turun (target harga turun, dipakai untuk jual, ambil untung, atau Short). Garis titik-titik adalah batas batal (stop {{ fmtH(hasil.xabcd.stop) }}); panah putus-putus menunjukkan arah harga bila penutupan menembus batas itu. Selama belum ada close di balik batas, pola masih berlaku. Jarak waktu panah hanya ilustrasi.</p>
+            <div v-if="skenario.length" class="lain">
+              <p class="small"><b>Skenario lain</b> (tidak digambar; tergantung arah harga berikutnya):</p>
+              <ul class="cek">
+                <li v-for="r in skenario" :key="r.kunci">{{ r.teks }} Kekuatan: {{ r.kekuatan?.nama || '–' }}.
+                  <button type="button" class="mini" @click="cekDiTutorial(r)">Lihat di Tutorial</button></li>
+              </ul>
+            </div>
             <details v-if="!tutorial" class="kx" open>
               <summary>Kenapa titik X di sini?</summary>
               <p v-for="(t, j) in teksX" :key="j" class="small">{{ t }}</p>
@@ -1247,6 +1278,14 @@ async function unduh() {
 .nt{fill:var(--pc);text-anchor:middle;font-weight:800;font-size:13px !important}
 .xket{fill:var(--ink-2);text-anchor:middle;font-size:10px !important}
 .konf{margin:6px 0;font-size:12px}
+.kuat{margin:6px 0;padding:6px 8px;border-radius:6px;border-left:3px solid var(--good);background:var(--good-bg)}
+.kuat.sedang{border-left-color:var(--warn);background:var(--warn-bg)}
+.kuat.lemah{border-left-color:var(--strong);background:var(--strong-bg)}
+.kuat p{margin:0 0 2px}
+.kuat .mini{margin-top:4px}
+.lain{margin:6px 0;padding:6px 8px;border-radius:6px;border:1px dashed var(--rule)}
+.lain p{margin:0 0 2px}
+.lain .mini{margin-left:4px;padding:1px 6px}
 .ketew{margin-top:6px !important;color:var(--ink) !important}
 .kx{margin:6px 0;font-size:12px}.kx summary{cursor:pointer;font-weight:700;color:var(--ink)}.kx p.small{margin:4px 0 0 !important;color:var(--ink) !important}
 .panah line{stroke-width:1.8}.panah text{font-weight:700;font-size:10.5px !important}
