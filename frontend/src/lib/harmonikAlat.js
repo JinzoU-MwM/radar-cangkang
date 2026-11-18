@@ -67,6 +67,15 @@ export function kelompokBar(bars = [], tf = 'D') {
 // ------------------------------------------------------------------- zigzag ----
 // Pivot bergantian H/L: berganti bila harga berbalik >= th dari ekstrem terakhir. Pivot terakhir = ekstrem
 // berjalan (tentatif), belum terkonfirmasi pembalikan. Sama dengan website/harmonik.py.
+// Pivot terakhir bergeser ke candle i (harga melewatinya lagi sesudah outside bar). Pivot sebelumnya dicek ulang sampai
+// candle i-1, supaya tetap titik paling ekstrem di antara tetangganya (misalnya low outside bar yang lebih rendah).
+function geser(bars, out, i, k) {
+  const akhir = out.length - 1, prev = out[akhir - 1]
+  if (prev) for (let j = out[akhir].i; j < i; j++)
+    if (k === 'H' ? bars[j].l < out[akhir - 1].p : bars[j].h > out[akhir - 1].p) out[akhir - 1] = { i: j, p: k === 'H' ? bars[j].l : bars[j].h, k: prev.k }
+  out[akhir] = { i, p: k === 'H' ? bars[i].h : bars[i].l, k }
+}
+
 export function zigzag(bars = [], th = 0.06) {
   const n = bars.length
   if (n < 3) return []
@@ -82,14 +91,31 @@ export function zigzag(bars = [], th = 0.06) {
         else { out.push({ i: hi, p: bars[hi].h, k: 'H' }); mode = -1; ext = lo }
       }
     } else if (mode === 1) {
-      if (h >= bars[ext].h) ext = i
-      else if (l <= bars[ext].h * (1 - th)) { out.push({ i: ext, p: bars[ext].h, k: 'H' }); mode = -1; ext = i }
+      // Mode naik: ext = puncak sementara sejak lembah terakhir L0 (ext < 0: belum ada, dicari mulai candle ini).
+      // Harga menembus L0 sebelum puncak terkonfirmasi: puncak sementara langsung terkonfirmasi, supaya setiap pivot
+      // tetap titik paling ekstrem di antara tetangganya. Outside bar (puncak baru sekaligus menembus L0): puncak sementara
+      // terkonfirmasi dan low candle ini menjadi lembah berikutnya; high candle itu sendiri tidak dipakai, karena dua pivot
+      // tidak boleh di candle yang sama.
+      const L0 = out[out.length - 1].p
+      if (ext < 0) { if (l < L0) geser(bars, out, i, 'L'); else ext = i; continue }
+      const naik = h >= bars[ext].h, tembus = l < L0
+      if (naik && tembus) {
+        out.push({ i: ext, p: bars[ext].h, k: 'H' }, { i, p: l, k: 'L' }); ext = -1
+      } else if (naik) ext = i
+      else if (tembus || l <= bars[ext].h * (1 - th)) { out.push({ i: ext, p: bars[ext].h, k: 'H' }); mode = -1; ext = i }
     } else {
-      if (l <= bars[ext].l) ext = i
-      else if (h >= bars[ext].l * (1 + th)) { out.push({ i: ext, p: bars[ext].l, k: 'L' }); mode = 1; ext = i }
+      const H0 = out[out.length - 1].p
+      if (ext < 0) { if (h > H0) geser(bars, out, i, 'H'); else ext = i; continue }
+      const turun = l <= bars[ext].l, tembus = h > H0
+      if (turun && tembus) {
+        out.push({ i: ext, p: bars[ext].l, k: 'L' }, { i, p: h, k: 'H' }); ext = -1
+      } else if (turun) ext = i
+      else if (tembus || h >= bars[ext].l * (1 + th)) { out.push({ i: ext, p: bars[ext].l, k: 'L' }); mode = 1; ext = i }
     }
   }
-  if (mode) out.push({ i: ext, p: mode === 1 ? bars[ext].h : bars[ext].l, k: mode === 1 ? 'H' : 'L', tentatif: true })
+  // ext < 0: pivot terakhir ada di candle terakhir dan menjadi ekstrem berjalan (ditandai tentatif).
+  if (mode && ext >= 0) out.push({ i: ext, p: mode === 1 ? bars[ext].h : bars[ext].l, k: mode === 1 ? 'H' : 'L', tentatif: true })
+  else if (mode) out[out.length - 1].tentatif = true
   return out
 }
 
@@ -205,7 +231,7 @@ export function cariXabcd(bars = [], skala = SKALA.D, umurD = 30, menujuMaks = M
     // D terkonfirmasi: satu sampai dua swing sebelum ekstrem berjalan, selama D masih dalam umurD bar terakhir.
     for (let m = 1; m <= 2 && pv.length >= 5 + m; m++) {
       const w = pv.slice(-5 - m, -m)
-      if (w[4].i >= n - umurD) jendela.push({ w, mode: 'tetap' })
+      if (w[4].i >= n - umurD && !basi(pv, w[4], m)) jendela.push({ w, mode: 'tetap' })
     }
     for (const { w, mode } of jendela) {
       const [X, A, B, C, D] = w, bull = A.p > X.p
@@ -227,7 +253,8 @@ export function cariXabcd(bars = [], skala = SKALA.D, umurD = 30, menujuMaks = M
           const tepi = bull ? prz[1] : prz[0]
           if ((bull ? akhir < tepi : akhir > tepi) || Math.abs(akhir / tepi - 1) > menujuMaks) continue
           status = 'menuju'
-          titikD = { n: 'D', i: Math.max(n - 1, C.i) + Math.max(3, Math.round((C.i - B.i) * 0.8)), p: (prz[0] + prz[1]) / 2, proyeksi: true }
+          titikD = { n: 'D', i: Math.max(n - 1, C.i) + Math.max(3, Math.round((C.i - B.i) * 0.8)), p: (prz[0] + prz[1]) / 2, proyeksi: true,
+            jalan: { i: D.i, p: D.p } }   // D yang sedang berjalan (belum sampai PRZ), untuk dicek ulang di Tutorial
         } else continue
         if ((k === 'gartley' || k === 'bat') && (bull ? titikD.p < X.p : titikD.p > X.p)) continue
         const { target, stop } = targetStop(k, X.p, A.p, B.p, C.p, titikD.p, prz, bull)
@@ -279,9 +306,14 @@ function jendela(pv, N, n, umurD) {
   if (pv.length >= N) out.push({ w: pv.slice(-N), mode: 'jalan' })
   for (let m = 1; m <= 2 && pv.length >= N + m; m++) {
     const w = pv.slice(-N - m, -m)
-    if (w[N - 1].i >= n - umurD) out.push({ w, mode: 'tetap' })
+    if (w[N - 1].i >= n - umurD && !basi(pv, w[N - 1], m)) out.push({ w, mode: 'tetap' })
   }
   return out
+}
+// Titik akhir terkonfirmasi sudah basi bila pivot searah sesudahnya lebih ekstrem (harga sudah melewati D):
+// D yang berlaku adalah ekstrem baru itu, dinilai di jendela lain.
+export function basi(pv, akhir, m) {
+  return pv.slice(-m).some(q => q.k === akhir.k && (q.k === 'L' ? q.p < akhir.p : q.p > akhir.p))
 }
 const irisan = (a, b) => { const lo = Math.max(a[0], b[0]), hi = Math.min(a[1], b[1]); return lo > hi ? null : [lo, hi] }
 const urutkan = (a, b) => [Math.min(a, b), Math.max(a, b)]
@@ -307,7 +339,9 @@ export function cariAbcd(bars = [], skala = SKALA.D, umurD = 30) {
   for (const th of skala) {
     for (const { w, mode } of jendela(zigzag(bars, th), 4, n, umurD)) {
       const [A, B, C, D] = w, bull = A.p > B.p   // A puncak, D lembah: bullish
-      const ab = B.p - A.p, c = r3(Math.abs(C.p - B.p) / Math.abs(ab))
+      const ab = B.p - A.p
+      if (!ab || C.p === B.p) continue   // kaki nol (harga datar): rasio tidak terdefinisi, sama dengan harmonik.py
+      const c = r3(Math.abs(C.p - B.p) / Math.abs(ab))
       if (jarak(c, ABCD_C) > TOL) continue
       const proyBC = urutkan(C.p + (B.p - C.p) * ABCD_E[0] * (1 - 2 * TOL), C.p + (B.p - C.p) * ABCD_E[1] * (1 + 2 * TOL))
       for (const k of ['abcd', 'altabcd']) {
@@ -351,6 +385,7 @@ export function cariTigaDorongan(bars = [], skala = SKALA.D, umurD = 30) {
       const [P0, P1, P2, P3, P4, P5] = w, s = Math.sign(P1.p - P0.p), bull = s < 0   // dorongan naik: bearish
       // Dorongan makin tinggi (atau makin rendah) dan koreksi tidak menembus titik awal dorongan sebelumnya.
       if (!(s * (P3.p - P1.p) > 0 && s * (P2.p - P0.p) > 0 && s * (P4.p - P2.p) > 0)) continue
+      if (P1.p === P2.p || P3.p === P4.p) continue   // kaki koreksi nol (harga datar)
       const r1 = r3(Math.abs(P3.p - P2.p) / Math.abs(P1.p - P2.p))
       if (jarak(r1, p.dorong) > TOL) continue
       // PRZ sempit (±PRZ_LEBAR kaki koreksi B) di level 1,27 lalu 1,618; dipakai level pertama yang cocok/belum terlewati.

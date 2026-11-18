@@ -521,6 +521,34 @@ class HarmonikTest(unittest.TestCase):
         return [{"d": f"2026-{1 + i // 28:02d}-{1 + i % 28:02d}", "o": c, "h": c * 1.004, "l": c * 0.996, "c": c, "v": vol}
                 for i, c in enumerate(cl)]
 
+    def test_zigzag_outside_bar(self):
+        """Pivot tertembus langsung mengonfirmasi pivot sementara; outside bar tidak menyelipkan lembah di antara pivot
+        (contoh AKRA 4-9 Nov 2026). Hasilnya sama dengan zigzag di harmonikAlat.js."""
+        import harmonik
+        b = lambda o, h, l, c: {"d": "x", "o": o, "h": h, "l": l, "c": c, "v": 1000}
+        akra = [b(1450, 1475, 1440, 1460), b(1460, 1460, 1380, 1390), b(1390, 1395, 1300, 1310), b(1310, 1350, 1280, 1300),
+                b(1300, 1365, 1305, 1340), b(1340, 1370, 1275, 1360), b(1360, 1370, 1320, 1330), b(1330, 1335, 1240, 1250)]
+        for th in (0.04, 0.06):
+            pv = harmonik.zigzag(akra, th)
+            for a, t, c in zip(pv, pv[1:], pv[2:]):
+                antara = akra[a["i"] + 1:c["i"]]
+                self.assertEqual(t["p"], min(x["l"] for x in antara) if t["k"] == "L" else max(x["h"] for x in antara))
+        self.assertTrue(any(p["k"] == "L" and p["p"] == 1275 for p in harmonik.zigzag(akra, 0.04)))
+
+    def test_rasio_kaki_nol(self):
+        """C tepat di harga X (saham SICO): rasio CD/XC tidak terdefinisi, bukan error pembagian nol."""
+        import harmonik
+        r = harmonik.rasio(100, 120, 110, 100, 105)
+        self.assertIsNone(r["dxc"])
+        self.assertEqual(r["b"], 0.5)
+
+    def test_d_basi_dibuang(self):
+        """Titik akhir terkonfirmasi yang sudah dilewati ekstrem searah sesudahnya tidak lagi dipakai."""
+        import harmonik
+        pv = [{"i": 0, "p": 100, "k": "L"}, {"i": 5, "p": 120, "k": "H"}, {"i": 9, "p": 95, "k": "L"}]
+        self.assertTrue(harmonik._basi(pv, {"i": 1, "p": 100, "k": "L"}, 2))
+        self.assertFalse(harmonik._basi(pv, {"i": 1, "p": 90, "k": "L"}, 2))
+
     def test_gartley_di_prz(self):
         import harmonik
         r = harmonik.cari(self.bars([150, 100, 200, 138.2, 175.3, 121.4]))

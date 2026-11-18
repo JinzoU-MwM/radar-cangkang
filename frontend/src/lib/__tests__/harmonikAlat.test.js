@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cariPola, diagramIdeal as diagramIdeal2, konfirmasiD as konfirmasiD2, skenarioD as skenarioD2, labPola, rasioContoh, jarakElliott, nilaiTren, trenBesar, alasanPola, alasanX, candleBalik, skenarioD, konfirmasiD, rsi, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag } from '../harmonikAlat.js'
+import { cariPola, diagramIdeal as diagramIdeal2, konfirmasiD as konfirmasiD2, skenarioD as skenarioD2, labPola, rasioContoh, jarakElliott, nilaiTren, trenBesar, alasanPola, alasanX, candleBalik, skenarioD, konfirmasiD, rsi, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag, basi } from '../harmonikAlat.js'
 
 // Bar sintetis: harga bergerak lurus antar titik, 10 bar per kaki, tanggal hari kerja berurutan.
 function bangun(titik, per = 10) {
@@ -39,6 +39,34 @@ describe('zigzag', () => {
     expect(pv.map(x => x.k).join('')).toBe('HLHLHL')
     expect(pv.map(x => Math.round(x.p * 10) / 10)).toEqual([150, X, A, B, C, D].map(v => Math.round(v * 10) / 10))
     expect(pv.at(-1).tentatif).toBe(true)
+  })
+})
+
+describe('zigzag: pivot tertembus dan outside bar', () => {
+  const bar = (d, o, h, l, c) => ({ d, o, h, l, c, v: 1000 })
+  // Contoh AKRA 4-9 Nov 2026: lembah 1.280, pantulan 1.365, lalu outside bar 6 Nov (1.370 / 1.275).
+  const akra = [bar('a1', 1450, 1475, 1440, 1460), bar('a2', 1460, 1460, 1380, 1390), bar('a3', 1390, 1395, 1300, 1310),
+    bar('a4', 1310, 1350, 1280, 1300), bar('a5', 1300, 1365, 1305, 1340), bar('a6', 1340, 1370, 1275, 1360),
+    bar('a7', 1360, 1370, 1320, 1330), bar('a8', 1330, 1335, 1240, 1250)]
+  it('setiap pivot adalah titik paling ekstrem di antara tetangganya', () => {
+    for (const th of [0.04, 0.06]) {
+      const pv = zigzag(akra, th)
+      for (let j = 1; j < pv.length - 1; j++) {
+        const [a, t, b] = [pv[j - 1], pv[j], pv[j + 1]]
+        const antara = akra.slice(a.i + 1, b.i)
+        if (t.k === 'L') expect(Math.min(...antara.map(x => x.l))).toBe(t.p)
+        else expect(Math.max(...antara.map(x => x.h))).toBe(t.p)
+        expect(a.i).toBeLessThan(t.i)
+      }
+    }
+  })
+  it('D basi: pivot searah sesudahnya lebih ekstrem', () => {
+    const pv = [{ i: 0, p: 100, k: 'L' }, { i: 5, p: 120, k: 'H' }, { i: 9, p: 95, k: 'L' }]
+    expect(basi(pv, { i: 1, p: 100, k: 'L' }, 2)).toBe(true)
+    expect(basi(pv, { i: 1, p: 90, k: 'L' }, 2)).toBe(false)
+  })
+  it('lembah 1.275 di outside bar menjadi pivot, bukan tertelan', () => {
+    expect(zigzag(akra, 0.04).some(p => p.k === 'L' && p.p === 1275)).toBe(true)
   })
 })
 

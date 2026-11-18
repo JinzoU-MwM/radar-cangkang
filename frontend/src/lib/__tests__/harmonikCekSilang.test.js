@@ -71,5 +71,8 @@ describe('titikTutorial', () => {
     expect(titikTutorial(r).map(t => t.n + t.sisi)).toEqual(['XH', 'AL', 'BH', 'CL'])
     expect(titikTutorial({ ...r, arah: 'bullish' })[0].sisi).toBe('L')
     expect(titikTutorial({ pola: 'abcd', titik: [] })).toEqual([])
+    // Pola menuju: D yang sedang berjalan ikut sebagai titik kelima.
+    const jalan = { ...r, titik: [...r.titik.slice(0, 4), { ...r.titik[4], jalan: { i: 15, p: 31 } }] }
+    expect(titikTutorial(jalan).at(-1)).toMatchObject({ n: 'D', i: 15, p: 31, sisi: 'H' })
   })
 })

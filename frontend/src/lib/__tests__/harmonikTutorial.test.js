@@ -152,3 +152,21 @@ describe('candle bersumbu panjang', () => {
     expect(cekSwing(bars, titik)).toEqual([])
   })
 })
+
+describe('titik X perantara (Carney Bab 7)', () => {
+  it('X yang dipisahkan pantulan jelas dari lembah lebih rendah tetap sah, dan diberi keterangan', () => {
+    // Lembah 950 (indeks 10), pantulan ke 1.100, lalu X 1.000 (indeks 30), Gartley ke D 1.214.
+    const bars = bangun([1100, 950, 1100, 1000, 2000, 1382, 1868, 1214])
+    const t = (n, i, sisi) => ({ n, i, p: sisi === 'H' ? bars[i].h : bars[i].l, sisi })
+    const titik = [t('X', 30, 'L'), t('A', 40, 'H'), t('B', 50, 'L'), t('C', 60, 'H'), t('D', 70, 'L')]
+    expect(cekSwing(bars, titik)).toEqual([])
+    const c = cekManual(bars, 'xabcd', titik)
+    expect(c.benar.some(b => /titik perantara/.test(b))).toBe(true)
+    expect(proyeksiXabcd(bars, titik.slice(0, 4)).titik[0]).toMatchObject({ i: 30, p: 1000 })
+  })
+  it('X di tengah dorongan tetap salah', () => {
+    const bars = bangun([1100, 1000, 2000, 1382, 1868, 1214])
+    const t = (n, i, sisi) => ({ n, i, p: sisi === 'H' ? bars[i].h : bars[i].l, sisi })
+    expect(cekSwing(bars, [t('X', 13, 'L'), t('A', 20, 'H'), t('B', 30, 'L'), t('C', 40, 'H')]).length).toBeGreaterThan(0)
+  })
+})
