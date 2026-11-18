@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bangunManual, cekManual, cekSwing, proyeksiXabcd, tempel } from '../harmonikTutorial.js'
+import { MASA_DEPAN, bangunManual, cekManual, cekSwing, proyeksiXabcd, tempel } from '../harmonikTutorial.js'
 
 // Bar sintetis: harga bergerak lurus antar titik, 10 bar per kaki (indeks titik 0, 10, 20, ...).
 function bangun(titik, per = 10, v = 1e5) {
@@ -25,7 +25,9 @@ describe('tempel', () => {
   it('menempel ke high/low bergantian; Long memakai fraksi harga BEI', () => {
     const bars = bangun([1200, ...G])
     const t = klik(bars, 'xabcd', [10, 20, 30, 40, 50])
-    expect(t.map(x => [x.n, x.sisi, x.p])).toEqual([['X', 'L', 1000], ['A', 'H', 2000], ['B', 'L', 1382], ['C', 'H', 1868], ['D', 'L', 1214]])
+    // X sampai C menempel ke high/low; D bebas: harga klik dibulatkan ke fraksi BEI (1.214 -> 1.215).
+    expect(t.map(x => [x.n, x.sisi, x.p])).toEqual([['X', 'L', 1000], ['A', 'H', 2000], ['B', 'L', 1382], ['C', 'H', 1868], ['D', 'L', 1215]])
+    expect(t[4].bebas).toBe(true)
     expect(tempel(bars, 'xabcd', t, 55, 1300)).toBe(null)            // sudah lengkap
     expect(tempel(bars, 'long', [], 50, 1213).p).toBe(1215)           // fraksi Rp5
   })
@@ -168,5 +170,31 @@ describe('titik X perantara (Carney Bab 7)', () => {
     const bars = bangun([1100, 1000, 2000, 1382, 1868, 1214])
     const t = (n, i, sisi) => ({ n, i, p: sisi === 'H' ? bars[i].h : bars[i].l, sisi })
     expect(cekSwing(bars, [t('X', 13, 'L'), t('A', 20, 'H'), t('B', 30, 'L'), t('C', 40, 'H')]).length).toBeGreaterThan(0)
+  })
+})
+
+describe('D bebas (tidak menempel candle)', () => {
+  // X 1000, A 2000, B 1382, C 1868, lalu harga baru turun ke 1600: D belum terbentuk.
+  const bars = bangun([1200, 1000, 2000, 1382, 1868, 1600])
+  const xabc = klik(bars, 'xabcd', [10, 20, 30, 40])
+  it('D memakai harga klik (fraksi BEI) dan boleh di area kanan setelah candle terakhir', () => {
+    const d = tempel(bars, 'xabcd', xabc, bars.length + 5, 1213)
+    expect(d).toMatchObject({ n: 'D', i: bars.length + 5, p: 1215, sisi: 'L', bebas: true })
+    expect(tempel(bars, 'xabcd', xabc, bars.length + 500, 1213).i).toBe(bars.length - 1 + MASA_DEPAN)
+    expect(tempel(bars, 'xabcd', xabc, 35, 1213).i).toBe(41)   // tidak boleh di kiri C
+  })
+  it('D rencana di PRZ: Cek menyebut Gartley dan tidak mengeluh soal ujung ayunan', () => {
+    const titik = [...xabc, tempel(bars, 'xabcd', xabc, bars.length + 5, 1214)]
+    const c = cekManual(bars, 'xabcd', titik)
+    expect(c.pola).toBe('Gartley bullish')
+    expect(c.kurang.some(k => /Setelah titik D|ujung ayunan|belum lembah/.test(k))).toBe(false)
+    expect(c.benar.some(b => /D 1.215 berada di PRZ/.test(b))).toBe(true)
+    expect(c.benar.some(b => /titik rencana/.test(b))).toBe(true)
+  })
+  it('D rencana di luar PRZ ditandai', () => {
+    const titik = [...xabc, tempel(bars, 'xabcd', xabc, bars.length + 5, 1450)]
+    const c = cekManual(bars, 'xabcd', titik)
+    expect(c.nilai).not.toBe('benar')
+    expect(c.kurang.some(k => /D 0,55/.test(k) || /PRZ/.test(k))).toBe(true)
   })
 })
