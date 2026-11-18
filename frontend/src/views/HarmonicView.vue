@@ -17,6 +17,7 @@ import { bacaPosisi, geserPanel, jepitPanel } from '../lib/geserPanel.js'
 import PolaDiagram from '../components/PolaDiagram.vue'
 import HarmonicMateri from '../components/HarmonicMateri.vue'
 import HarmonicScreening from '../components/HarmonicScreening.vue'
+import HarmonicQuiz from '../components/HarmonicQuiz.vue'
 import { JUMLAH, PETUNJUK, bangunManual, cekManual, tempel } from '../lib/harmonikTutorial.js'
 
 const route = useRoute(), router = useRouter()
@@ -24,7 +25,7 @@ const route = useRoute(), router = useRouter()
 // Tab halaman: Materi (presentasi), Saham (chart), Screening (daftar pola), Tutorial (chart yang sama, semua alat
 // ditarik manual lalu dicek); ?tab= di URL, tanpa ?tab = Saham.
 const TAB = [{ k: 'materi', nama: 'Materi' }, { k: 'saham', nama: 'Saham' }, { k: 'screening', nama: 'Screening' },
-  { k: 'tutorial', nama: 'Tutorial' }]
+  { k: 'tutorial', nama: 'Tutorial' }, { k: 'quiz', nama: 'Quiz' }]
 const tab = ref(TAB.some(x => x.k === route.query.tab) ? route.query.tab : 'saham')
 const tutorial = computed(() => tab.value === 'tutorial')
 const pakaiChart = computed(() => tab.value === 'saham' || tutorial.value)
@@ -707,6 +708,7 @@ async function unduh() {
     </nav>
     <HarmonicMateri v-if="tab === 'materi'" @coba="cobaAlat" />
     <HarmonicScreening v-else-if="tab === 'screening'" @buka="bukaScreening" />
+    <HarmonicQuiz v-else-if="tab === 'quiz'" />
     <div v-show="pakaiChart" class="sahamTab">
     <header class="top">
       <div class="cari" @focusin="bukaCari" @focusout="tutupCari">
