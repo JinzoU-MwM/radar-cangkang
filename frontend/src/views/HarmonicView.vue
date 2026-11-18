@@ -18,7 +18,7 @@ import PolaDiagram from '../components/PolaDiagram.vue'
 import HarmonicMateri from '../components/HarmonicMateri.vue'
 import HarmonicScreening from '../components/HarmonicScreening.vue'
 import HarmonicQuiz from '../components/HarmonicQuiz.vue'
-import { JUMLAH, PETUNJUK, bangunManual, cekManual, tempel } from '../lib/harmonikTutorial.js'
+import { JUMLAH, PETUNJUK, bangunManual, cekManual, proyeksiXabcd, tempel } from '../lib/harmonikTutorial.js'
 
 const route = useRoute(), router = useRouter()
 
@@ -152,7 +152,7 @@ const hapus = () => { if (tutorial.value) { manual.value = {}; return } aktif.va
 // Semua alat ditarik manual: klik di chart menambah titik ke alat yang dipilih (menempel ke high/low candle untuk
 // alat swing, fraksi harga BEI untuk Long/Short). Alat yang titiknya lengkap digambar dengan format yang sama dengan
 // alat otomatis; tombol Cek menilai tarikan, menyebut pola yang cocok, dan memberi saran.
-const manual = ref({}), alatManual = ref('xabcd'), hasilCek = ref(null)
+const manual = ref({}), alatManual = ref('xabcd'), hasilCek = ref(null), proyeksi = ref(null)
 const titikAlat = computed(() => manual.value[alatManual.value] || [])
 const lengkap = k => (manual.value[k] || []).length >= JUMLAH[k]
 const urutManual = () => ALAT.map(a => a.k).filter(lengkap)
@@ -163,7 +163,8 @@ const objManual = computed(() => {
   for (const k of ['fib', 'ext', 'elliott', 'long', 'short']) out[k] = bangunManual(b, k, m[k], out.xabcd)
   return out
 })
-watch(manual, () => { if (tutorial.value) aktif.value = urutManual(); hasilCek.value = null }, { deep: true })
+watch(manual, () => { if (tutorial.value) aktif.value = urutManual(); hasilCek.value = null; proyeksi.value = null }, { deep: true })
+watch(tutorial, v => { if (!v) proyeksi.value = null })
 const titikBerikut = computed(() => titikAlat.value.length < JUMLAH[alatManual.value] ? ['xabcd', 'elliott', 'ext'].includes(alatManual.value)
   ? ({ xabcd: 'XABCD', elliott: '012345', ext: '123' })[alatManual.value][titikAlat.value.length]
   : ({ fib: ['awal', 'akhir'], long: ['Entry', 'Stop', 'TP1', 'TP2'], short: ['Entry', 'Stop', 'TP1', 'TP2'] })[alatManual.value][titikAlat.value.length] : '')
@@ -171,6 +172,7 @@ function klikAlat(k) {
   if (!tutorial.value) { togel(k); return }
   alatManual.value = k
   hasilCek.value = null
+  proyeksi.value = null
 }
 function klikChart(param) {
   if (!tutorial.value || !param?.point || param.logical == null || !candle) return
@@ -185,6 +187,12 @@ const batalTitik = () => { manual.value = { ...manual.value, [alatManual.value]:
 const ulangAlat = () => { manual.value = { ...manual.value, [alatManual.value]: [] } }
 function cek() {
   hasilCek.value = cekManual(bars.value, alatManual.value, titikAlat.value, { xabcd: objManual.value.xabcd, skala: skala.value })
+}
+// Proyeksi: pola yang benar dari tarikan XABCD (titik dirapikan, D di PRZ). Tekan lagi untuk menyembunyikan.
+function proyeksikan() {
+  if (proyeksi.value) { proyeksi.value = null; return }
+  proyeksi.value = proyeksiXabcd(bars.value, manual.value.xabcd || [], { skala: skala.value })
+  if (!proyeksi.value) toast('Tarik minimal empat titik (X, A, B, C) dulu.')
 }
 const NILAI_CEK = { benar: 'Benar', hampir: 'Hampir benar: rasio cocok, ada yang perlu dirapikan', perlu: 'Belum benar: perlu diperbaiki', belum: 'Titik belum lengkap' }
 
@@ -371,9 +379,10 @@ function hargaPenting() {
     if (k === 'elliott') out.push(...x.titik.map(t => t.p), ...(x.proyeksi || []).map(p => p.p))
     if ((k === 'long' || k === 'short') && !x.kosong) out.push(x.entry, x.stop, ...x.target)
   }
+  if (tutorial.value && proyeksi.value?.titik) out.push(...proyeksi.value.titik.map(t => t.p), ...proyeksi.value.prz)
   return out.filter(v => v != null && isFinite(v))
 }
-watch([aktif, hasil], () => {
+watch([aktif, hasil, proyeksi], () => {
   ekstra = hargaPenting()
   candle?.applyOptions({ autoscaleInfoProvider: skalaOtomatis() })
   segar()
@@ -507,6 +516,18 @@ const gambar = computed(() => {
     out[k] = { x1, x2: Math.min(W - 2, Math.max(x2r, x1 + 120)), ye, ys, yt, s }
   }
   return out
+})
+
+// Proyeksi pola yang benar (tutorial): garis putus-putus X-A-B-C-D dan kotak PRZ di sekitar D.
+const gambarProyeksi = computed(() => {
+  ver.value // eslint-disable-line no-unused-expressions
+  const pr = proyeksi.value
+  if (!tutorial.value || !pr?.titik || !panel.value.w) return null
+  const p = titikXY(pr.titik)
+  if (!p.every(z => ok(z.x, z.y)) || !ok(Y(pr.prz[0]), Y(pr.prz[1]))) return null
+  const C = p[3], D = p[4]
+  return { titik: p, jalur: p.map(z => `${z.x},${z.y}`).join(' '),
+    prz: { x1: C.x, x2: Math.min(panel.value.w, D.x + Math.max(30, (D.x - C.x) * 0.4)), y1: Math.min(Y(pr.prz[0]), Y(pr.prz[1])), y2: Math.max(Y(pr.prz[0]), Y(pr.prz[1])) } }
 })
 
 // Titik alat manual yang belum lengkap (tutorial): digambar sebagai sketsa sampai jumlah titiknya cukup.
@@ -865,6 +886,15 @@ async function unduh() {
               <text :x="gambar[k].x1 + 5" :y="gambar[k].ys + (k === 'long' ? -4 : 12)" class="pt2 s">SL {{ fmtH(gambar[k].s.stop) }} ({{ fmtP(gambar[k].s.stopPct) }})</text>
             </g>
           </g>
+          <!-- Proyeksi pola yang benar (tutorial) -->
+          <g v-if="gambarProyeksi" class="proy">
+            <rect :x="gambarProyeksi.prz.x1" :width="Math.max(4, gambarProyeksi.prz.x2 - gambarProyeksi.prz.x1)" :y="gambarProyeksi.prz.y1" :height="Math.max(3, gambarProyeksi.prz.y2 - gambarProyeksi.prz.y1)" class="pz" />
+            <polyline :points="gambarProyeksi.jalur" class="pj" />
+            <g v-for="t in gambarProyeksi.titik" :key="t.n">
+              <circle :cx="t.x" :cy="t.y" r="4.5" class="pt" :class="{ pindah: t.dipindah }" />
+              <text v-if="t.dipindah || t.n === 'D' || proyeksi.sumber === 'sistem'" :x="t.x" :y="t.sisi === 'H' ? t.y - 9 : t.y + 18" class="pn">{{ t.n }}{{ t.perkiraan ? '?' : '' }} {{ fmtH(t.p) }}</text>
+            </g>
+          </g>
           <!-- Sketsa titik manual yang belum lengkap (tutorial) -->
           <g v-if="sketsa" class="sketsa">
             <polyline v-if="sketsa.swing && sketsa.titik.length > 1" :points="sketsa.jalur" class="skj" />
@@ -889,6 +919,13 @@ async function unduh() {
             <button type="button" class="mini" :disabled="!titikAlat.length" @click="batalTitik">Hapus titik terakhir</button>
             <button type="button" class="mini" :disabled="!titikAlat.length" @click="ulangAlat">Ulangi</button>
             <button type="button" class="mini utama" :disabled="!titikAlat.length" @click="cek">Cek</button>
+            <button v-if="alatManual === 'xabcd'" type="button" class="mini" :class="{ on: proyeksi }" :disabled="titikAlat.length < 4" :aria-pressed="String(!!proyeksi)"
+              title="Tunjukkan pola yang benar dari titik Anda: titik dirapikan dan D di PRZ" @click="proyeksikan">{{ proyeksi ? 'Sembunyikan proyeksi' : 'Proyeksi' }}</button>
+          </div>
+          <div v-if="proyeksi && alatManual === 'xabcd'" class="proyBox">
+            <p class="small"><b>Proyeksi pola yang benar</b><template v-if="proyeksi.nama">: {{ proyeksi.nama }} {{ proyeksi.arah }}{{ proyeksi.sumber === 'sistem' ? ' (temuan pemindai sistem)' : '' }}</template></p>
+            <ul class="cek"><li v-for="(c, j) in proyeksi.catatan" :key="j">{{ c }}</li></ul>
+            <p v-if="proyeksi.titik" class="small mute">Garis putus-putus di chart adalah proyeksinya; kotak = PRZ, titik bertanda ? masih perkiraan. Coba tarik ulang mengikuti garis itu, lalu tekan Cek.</p>
           </div>
           <template v-if="hasilCek">
             <p class="besar" :class="hasilCek.nilai === 'benar' ? 'up' : 'dn'">{{ NILAI_CEK[hasilCek.nilai] }}</p>
@@ -1126,6 +1163,14 @@ async function unduh() {
 .sketsa .skn{font:700 12px var(--f-data);fill:var(--ink);text-anchor:middle;paint-order:stroke;stroke:var(--sheet);stroke-width:3px}
 .tutor .tlist{margin:4px 0;padding-left:20px}
 .tutor .ganti{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.tutor .mini.on{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
+.tutor .proyBox{border-left:3px solid var(--warn);background:var(--warn-bg);padding:6px 8px;border-radius:4px;margin:6px 0}
+.tutor .proyBox p{margin:0 0 2px}
+.proy .pz{fill:var(--warn);opacity:.16;stroke:var(--warn);stroke-width:1}
+.proy .pj{fill:none;stroke:var(--warn);stroke-width:2;stroke-dasharray:7 5}
+.proy .pt{fill:var(--sheet);stroke:var(--warn);stroke-width:2}
+.proy .pt.pindah{fill:var(--warn)}
+.proy .pn{font:700 12px var(--f-data);fill:var(--warn);text-anchor:middle;paint-order:stroke;stroke:var(--sheet);stroke-width:3px}
 .sahamTab{display:grid;min-width:0}
 .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;background:var(--sheet);border:1px solid var(--rule);border-bottom:0}
 .cari{position:relative}

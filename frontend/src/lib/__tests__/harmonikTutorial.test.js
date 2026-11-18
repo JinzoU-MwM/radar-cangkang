@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bangunManual, cekManual, cekSwing, tempel } from '../harmonikTutorial.js'
+import { bangunManual, cekManual, cekSwing, proyeksiXabcd, tempel } from '../harmonikTutorial.js'
 
 // Bar sintetis: harga bergerak lurus antar titik, 10 bar per kaki (indeks titik 0, 10, 20, ...).
 function bangun(titik, per = 10, v = 1e5) {
@@ -80,5 +80,51 @@ describe('cek alat lain', () => {
   it('titik belum lengkap', () => {
     const bars = bangun([1200, ...G])
     expect(cekManual(bars, 'elliott', klik(bars, 'elliott', [10, 20])).kurang[0]).toMatch(/2 dari 6/)
+  })
+})
+
+describe('proyeksi XABCD', () => {
+  const bars = bangun([1200, ...G])
+  const t = (n, i, sisi) => ({ n, i, p: sisi === 'H' ? bars[i].h : bars[i].l, sisi })
+
+  it('merapikan X yang salah tempat dan menunjukkan D di PRZ Gartley', () => {
+    const titik = [t('X', 12, 'L'), t('A', 20, 'H'), t('B', 30, 'L'), t('C', 40, 'H'), t('D', 45, 'L')]
+    const pr = proyeksiXabcd(bars, titik)
+    expect(pr.sumber).toBe('tarikan')
+    expect(pr.nama).toBe('Gartley')
+    expect(pr.arah).toBe('bullish')
+    expect(pr.titik[0]).toMatchObject({ i: 10, p: 1000, dipindah: true })
+    expect(pr.prz[0]).toBeLessThanOrEqual(1214)
+    expect(pr.prz[1]).toBeGreaterThanOrEqual(1214)
+    expect(pr.titik[4]).toMatchObject({ i: 50, p: 1214 })
+    expect(pr.catatan.some(c => /X dipindah/.test(c))).toBe(true)
+    expect(pr.catatan.some(c => /D Anda .* belum sampai PRZ/.test(c))).toBe(true)
+  })
+
+  it('cukup empat titik: D diperkirakan dari PRZ', () => {
+    const pr = proyeksiXabcd(bars.slice(0, 44), [t('X', 10, 'L'), t('A', 20, 'H'), t('B', 30, 'L'), t('C', 40, 'H')])
+    expect(pr.nama).toBe('Gartley')
+    expect(pr.titik[4].perkiraan).toBe(true)
+    expect(pr.titik[4].i).toBe(50)              // C + lama kaki AB (10 candle)
+    expect(pr.titik[4].p).toBeCloseTo(1214, 0)
+    expect(pr.catatan.some(c => /belum sampai PRZ/.test(c))).toBe(true)
+  })
+
+  it('kurang dari empat titik: tidak ada proyeksi', () => {
+    expect(proyeksiXabcd(bars, [t('X', 10, 'L'), t('A', 20, 'H'), t('B', 30, 'L')])).toBe(null)
+  })
+
+  it('A diklik di tengah kaki: dipindah ke puncak sebenarnya', () => {
+    const pr = proyeksiXabcd(bars, [t('X', 10, 'L'), t('A', 13, 'H'), t('B', 30, 'L'), t('C', 40, 'H')])
+    expect(pr.titik[1]).toMatchObject({ i: 20, p: 2000, dipindah: true })
+    expect(pr.nama).toBe('Gartley')
+  })
+
+  it('B 0,7 di luar semua pola: pakai pemindai sistem atau beri penjelasan', () => {
+    const b2 = bangun([1200, 1000, 2000, 1300, 1800, 1100])
+    const t2 = (n, i, sisi) => ({ n, i, p: sisi === 'H' ? b2[i].h : b2[i].l, sisi })
+    const pr = proyeksiXabcd(b2, [t2('X', 10, 'L'), t2('A', 20, 'H'), t2('B', 30, 'L'), t2('C', 40, 'H')])
+    expect(['sistem', 'kosong']).toContain(pr.sumber)
+    expect(pr.catatan[0]).toMatch(/belum (masuk pola|ada pola)/)
   })
 })
