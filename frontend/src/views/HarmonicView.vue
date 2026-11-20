@@ -10,7 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { createChart, CrosshairMode, LineStyle } from 'lightweight-charts'
 import { api } from '../api.js'
 import { store, toast } from '../store.js'
-import { SKALA, TF, POLA, PEMBEDA, FIB_KUNCI, alasanPola, alasanX, diagramIdeal, konfirmasiD, skenarioD, trenBesar, nilaiTren, jarakElliott, cariElliott, cariPola, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
+import { SKALA, TF, POLA, PEMBEDA, FIB_KUNCI, alasanPola, komponenPrz, alasanX, diagramIdeal, konfirmasiD, skenarioD, trenBesar, nilaiTren, jarakElliott, cariElliott, cariPola, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
 import { ukuranPosisi } from '../lib/harmonikBelajar.js'
 import { ema } from '../lib/ta.js'
 import { bacaPosisi, geserPanel, jepitPanel } from '../lib/geserPanel.js'
@@ -479,7 +479,14 @@ const gambar = computed(() => {
         cd: { a: C, b: D, proyeksi: !!D.proyeksi },
         rasio: (x.garis || []).map(g => ({ a: p[g.a], b: p[g.b], m: tengah(p[g.a], p[g.b]), teks: r2(g.v), k: g.k })),
         titik: p.map((t, j) => ({ ...t, awal: j === 0, atas: j === 0 ? t.p >= p[1].p : t.p >= (p[j - 1]?.p ?? 0) })),
-        prz: x.prz && ok(Y(x.prz[0]), Y(x.prz[1])) ? { x1: C.x, x2: Math.min(W, D.x + Math.max(40, (D.x - C.x) * 0.6)), y1: Y(x.prz[1]), y2: Y(x.prz[0]) } : null,
+        // PRZ: kotak dari C sampai lewat D, harga batas atas/bawah di sisi kanan, dan level rasio pembentuknya
+        // (garis tipis di dalam/sekitar kotak) supaya terlihat dari mana zona itu dihitung.
+        prz: x.prz && ok(Y(x.prz[0]), Y(x.prz[1])) ? (() => {
+          const x1 = C.x, x2 = Math.min(W - 70, Math.max(D.x + 40, D.x + (D.x - C.x) * 0.6)), atas = Math.max(...x.prz), bawah = Math.min(...x.prz)
+          const ya = Y(atas), yb = Y(bawah)
+          const unsur = komponenPrz(x).filter(u => u.lo === u.hi && ok(Y(u.lo))).map(u => ({ ...u, y: Y(u.lo) }))
+          return { x1, x2: Math.max(x2, x1 + 30), ya, yb, atas, bawah, unsur, rapat: Math.abs(yb - ya) < 22 }
+        })() : null,
         label: x.pola ? `${x.nama} ${x.arah}${x.skenario ? ' (skenario)' : ''}` : 'Swing terakhir (bukan pola)',
         // Panah skenario dari D: garis + kepala panah (segitiga) di ujung.
         panah: skenarioD(x).map(z => {
@@ -610,6 +617,20 @@ const inset = computed(() => {
   if (!aktif.value.includes('xabcd') || !x?.pola) return null
   return { nama: `${x.nama} ${x.arah}`, bull: x.arah === 'bullish', diagram: diagramIdeal(x.pola, x.arah), alasan: alasanPola(x),
     pembeda: PEMBEDA[x.pola], status: STATUS[x.status], prz: x.prz }
+})
+// Cara PRZ pola aktif ditentukan: level rasio pembentuknya, posisi harga terakhir terhadap zona, dan langkah memakainya.
+const penjelasanPrz = computed(() => {
+  const x = hasil.value.xabcd
+  if (!x?.pola || !x.prz) return null
+  const lo = Math.min(...x.prz), hi = Math.max(...x.prz), bull = x.arah === 'bullish', h = x.harga
+  const unsur = komponenPrz(x).map(u => ({ teks: u.teks, harga: u.lo === u.hi ? fmtH(u.lo) : `${fmtH(u.lo)}–${fmtH(u.hi)}` }))
+  let posisi = ''
+  if (h != null) {
+    if (h >= lo && h <= hi) posisi = `Harga terakhir ${fmtH(h)} sudah di dalam PRZ.`
+    else if (h > hi) posisi = `Harga terakhir ${fmtH(h)} berada ${(h / hi * 100 - 100).toLocaleString('id-ID', { maximumFractionDigits: 1 })}% di atas PRZ.`
+    else posisi = `Harga terakhir ${fmtH(h)} berada ${(100 - h / lo * 100).toLocaleString('id-ID', { maximumFractionDigits: 1 })}% di bawah PRZ.`
+  }
+  return { lo: fmtH(lo), hi: fmtH(hi), unsur, gabung: unsur.length > 1, posisi, bull, stop: x.stop != null ? fmtH(x.stop) : '–' }
 })
 // Layar sempit (ponsel): kotak gambar lebih lebar dari chart, jadi awalnya tertutup dan dibuka lewat tombol.
 const sempit = computed(() => panel.value.w > 0 && panel.value.w < 520)
@@ -856,8 +877,25 @@ async function unduh() {
           </g>
           <!-- XABCD -->
           <g v-if="gambar.xabcd" class="xabcd" :class="gambar.xabcd.bull ? 'bull' : 'bear'">
-            <rect v-if="gambar.xabcd.prz" :x="gambar.xabcd.prz.x1" :width="gambar.xabcd.prz.x2 - gambar.xabcd.prz.x1" :y="Math.min(gambar.xabcd.prz.y1, gambar.xabcd.prz.y2)" :height="Math.max(3, Math.abs(gambar.xabcd.prz.y2 - gambar.xabcd.prz.y1))" class="prz" />
-            <text v-if="gambar.xabcd.prz" :x="gambar.xabcd.prz.x2 - 4" :y="Math.min(gambar.xabcd.prz.y1, gambar.xabcd.prz.y2) - 4" class="przt">PRZ</text>
+            <g v-if="gambar.xabcd.prz" class="przg">
+              <rect :x="gambar.xabcd.prz.x1" :width="gambar.xabcd.prz.x2 - gambar.xabcd.prz.x1" :y="gambar.xabcd.prz.ya" :height="Math.max(4, gambar.xabcd.prz.yb - gambar.xabcd.prz.ya)" class="prz" />
+              <line :x1="gambar.xabcd.prz.x1" :x2="gambar.xabcd.prz.x2" :y1="gambar.xabcd.prz.ya" :y2="gambar.xabcd.prz.ya" class="przb" />
+              <line :x1="gambar.xabcd.prz.x1" :x2="gambar.xabcd.prz.x2" :y1="gambar.xabcd.prz.yb" :y2="gambar.xabcd.prz.yb" class="przb" />
+              <!-- Level rasio pembentuk PRZ (mis. 0,786 XA, 0,50 BC): garis titik-titik dengan label di sisi kiri kotak. -->
+              <g v-for="u in gambar.xabcd.prz.unsur" :key="u.k">
+                <line :x1="gambar.xabcd.prz.x1" :x2="gambar.xabcd.prz.x2" :y1="u.y" :y2="u.y" class="przu" />
+                <text :x="gambar.xabcd.prz.x1 - 4" :y="u.y + 3.5" class="przut">{{ u.teks }}</text>
+              </g>
+              <!-- Label PRZ dan harga batas atas/bawah di sisi kanan kotak. Zona sempit: satu label "PRZ atas–bawah". -->
+              <template v-if="gambar.xabcd.prz.rapat">
+                <text :x="gambar.xabcd.prz.x2 + 5" :y="(gambar.xabcd.prz.ya + gambar.xabcd.prz.yb) / 2 + 4" class="przt">PRZ {{ fmtH(gambar.xabcd.prz.bawah) }}–{{ fmtH(gambar.xabcd.prz.atas) }}</text>
+              </template>
+              <template v-else>
+                <text :x="gambar.xabcd.prz.x2 + 5" :y="gambar.xabcd.prz.ya + 4" class="przh">{{ fmtH(gambar.xabcd.prz.atas) }}</text>
+                <text :x="gambar.xabcd.prz.x2 + 5" :y="(gambar.xabcd.prz.ya + gambar.xabcd.prz.yb) / 2 + 4" class="przt">PRZ</text>
+                <text :x="gambar.xabcd.prz.x2 + 5" :y="gambar.xabcd.prz.yb + 4" class="przh">{{ fmtH(gambar.xabcd.prz.bawah) }}</text>
+              </template>
+            </g>
             <polygon v-for="(s, j) in gambar.xabcd.segi" :key="j" :points="s" class="segi" />
             <polyline :points="gambar.xabcd.jalur" class="kaki" />
             <line :x1="gambar.xabcd.cd.a.x" :y1="gambar.xabcd.cd.a.y" :x2="gambar.xabcd.cd.b.x" :y2="gambar.xabcd.cd.b.y" class="kaki" :class="{ proy: gambar.xabcd.cd.proyeksi }" />
@@ -1043,6 +1081,20 @@ async function unduh() {
               <dt>Target 1 · {{ hasil.xabcd.ketTarget?.[0] }}</dt><dd :class="hasil.xabcd.arah === 'bullish' ? 'up' : 'dn'">{{ fmtH(hasil.xabcd.target[0]) }}</dd>
               <dt>Target 2 · {{ hasil.xabcd.ketTarget?.[1] }}</dt><dd :class="hasil.xabcd.arah === 'bullish' ? 'up' : 'dn'">{{ fmtH(hasil.xabcd.target[1]) }}</dd>
             </dl>
+            <details v-if="penjelasanPrz" class="kx przk" open>
+              <summary>Cara menentukan PRZ {{ penjelasanPrz.lo }}–{{ penjelasanPrz.hi }}</summary>
+              <p class="small">{{ penjelasanPrz.gabung ? 'PRZ adalah bagian yang tumpang tindih dari level-level berikut:' : 'PRZ dihitung dari level berikut:' }}</p>
+              <ul class="cek">
+                <li v-for="u in penjelasanPrz.unsur" :key="u.teks"><b>{{ u.teks }}</b> = {{ u.harga }}</li>
+              </ul>
+              <p class="small">Zona yang terlalu sempit dilebarkan sedikit (±3% kaki acuan), karena PRZ adalah area, bukan satu titik harga. Di chart: kotak PRZ, garis tebal = batas atas dan bawah, garis titik-titik = level rasio.</p>
+              <p v-if="penjelasanPrz.posisi" class="small"><b>{{ penjelasanPrz.posisi }}</b></p>
+              <ol class="small przl">
+                <li>Tunggu harga masuk ke dalam kotak PRZ.</li>
+                <li>Cari konfirmasi di dalam zona: candle pembalikan (pin bar, engulfing), volume naik, atau divergence RSI.</li>
+                <li>{{ penjelasanPrz.bull ? 'Entry beli' : 'Entry jual' }} di dalam zona setelah konfirmasi, dengan stop di {{ penjelasanPrz.stop }}. Pola batal bila harga close menembus level itu.</li>
+              </ol>
+            </details>
           </template>
           <!-- Fib -->
           <template v-else-if="(k === 'fib' || k === 'ext') && hasil[k]">
@@ -1308,8 +1360,14 @@ async function unduh() {
 .tanda path{fill:var(--good);stroke:none}.tanda text{fill:var(--good);text-anchor:middle;font-weight:700;font-size:10px !important}
 .bear .tanda path{fill:var(--strong)}.bear .tanda text{fill:var(--strong)}
 .nama{fill:var(--pc);font-weight:700;font-size:12px !important}
-.prz{fill:var(--warn-bg);stroke:var(--warn);stroke-dasharray:4 3;opacity:.85}
-.przt{fill:var(--warn);text-anchor:end;font-weight:700}
+.prz{fill:var(--warn);fill-opacity:.16;stroke:none}
+.przb{stroke:var(--warn);stroke-width:1.6}
+.przu{stroke:var(--warn);stroke-width:1;stroke-dasharray:2 3}
+.przut{fill:var(--warn);text-anchor:end;font-size:10px !important;font-weight:600}
+.przt{fill:var(--warn);font-weight:800;font-size:11.5px !important}
+.przh{fill:var(--warn);font-weight:600;font-size:10.5px !important}
+.przk{border-left:3px solid var(--warn);padding-left:8px}
+.przl{margin:4px 0 0;padding-left:18px;color:var(--ink)}
 /* Elliott */
 .ewj{fill:none;stroke:var(--viz-b);stroke-width:2;stroke-linejoin:round}
 .ewc{fill:var(--sheet);stroke:var(--viz-b);stroke-width:1.5}
