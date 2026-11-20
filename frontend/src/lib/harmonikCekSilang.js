@@ -3,7 +3,7 @@
 // sebaliknya atau X berbeda yang PRZ-nya masih jauh), dan titik untuk dicek ulang di tab Tutorial.
 // Fungsi murni. Baris pola bisa dari cariXabcd (klien) atau /api/harmonik (server): keduanya punya pola, status,
 // rasio, prz, dan titik [{n, p}].
-import { ABCD_TOL, MENUJU_MAKS, POLA, SKALA, TOL, cariXabcd, jarak, rasioXabcd } from './harmonikAlat.js'
+import { ABCD_TOL, MENUJU_MAKS, POLA, SKALA, TOL, cariXabcd, jarak, jarakKaki, rasioXabcd } from './harmonikAlat.js'
 import { tick } from './ta.js'
 
 export const PAS = 0.02           // rasio ideal berupa angka tunggal (Gartley B 0,618): selisih sampai 2% masih dianggap pas
@@ -71,6 +71,11 @@ export function kekuatanPola(row) {
       ? { ok: false, berat: true, teks: `Rasio kasar: satu fraksi harga (Rp${fraksi}) sama dengan ${fr(Math.round(g * 1000) / 10)}% kaki XA, jadi rasio bisa bergeser sekitar ${fr(Math.round(g * 100) / 100)} per fraksi.` }
       : { ok: true, teks: `Fraksi harga Rp${fraksi} kecil dibanding kaki XA (${fr(Math.round(g * 1000) / 10)}%): rasio cukup presisi.` })
   }
+  // Jarak candle antartitik (Carney hal. 129: tiap kaki sebaiknya simetris): timpang = syarat berat, kurang = ringan.
+  const jk = jarakKaki(row)
+  if (jk) alasan.push({ ok: jk.tingkat === 'seimbang', berat: jk.tingkat === 'timpang', ringan: jk.tingkat === 'kurang', teks: jk.teks })
+  // Titik yang bukan swing jelas (2 candle kiri-kanan) atau ayunan di bawah 5%: satu syarat berat untuk semuanya.
+  if (row.swingLemah?.length) alasan.push({ ok: false, berat: true, teks: row.swingLemah.join(' ') })
   const berat = alasan.filter(a => a.berat).length, ringan = alasan.filter(a => a.ringan).length
   const poin = berat + ringan * 0.5
   const tingkat = poin === 0 ? 'kuat' : poin <= 1 ? 'sedang' : 'lemah'

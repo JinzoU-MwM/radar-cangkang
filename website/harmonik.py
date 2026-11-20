@@ -50,7 +50,7 @@ ABCD_C, ABCD_E = (0.382, 0.886), (1.13, 2.618)
 STOP_PRZ = {"altbat", "butterfly", "crab", "deepcrab", "shark"}   # D melewati/menyentuh X: stop di sisi luar PRZ
 # Versi aturan pemindai: naikkan setiap kali pola/rasio/aturan berubah. Server memindai ulang saat start bila hasil
 # tersimpan (.harmonik.json) dibuat dengan versi lain, tanpa menunggu jadwal malam.
-VERSI_ATURAN = 5   # 5: zigzag pindah pivot yang tertembus, D basi dibuang, skala 4%, umur 30 bar; 4: cek AB=CD (CD/AB) di pola XABCD; 3: AB=CD hanya di PRZ/berbalik; PRZ Three Drives 1,27/1,618
+VERSI_ATURAN = 6   # 6: catatan swing (kaki, swingLemah) dan pola "cek swing" turun peringkat; 5: zigzag pindah pivot yang tertembus, D basi dibuang, skala 4%, umur 30 bar; 4: cek AB=CD (CD/AB) di pola XABCD; 3: AB=CD hanya di PRZ/berbalik; PRZ Three Drives 1,27/1,618
 TOL = 0.05            # toleransi relatif batas rasio (±5%)
 ABCD_TOL = 0.15       # AB=CD di dalam pola: CD minimal 0,85 AB (kaki CD berakhir di ekstrem swing yang beragam)
 PRZ_LEBAR = 0.03      # lebar PRZ = ±3% panjang kaki acuan di sekitar level D
@@ -59,6 +59,10 @@ MENUJU_MAKS = 12.0    # % jarak harga ke PRZ yang masih ditampilkan sebagai "men
 BERBALIK_BAR = 30     # D terkonfirmasi paling lama sekian bar lalu (sama dengan umurD tab Saham harian)
 BAR_SIMPAN = 250      # bar terakhir yang disimpan/dikirim untuk chart analisa
 MIN_NILAI = 1e9       # rata-rata nilai transaksi 20 hari (Rp); saham tidak likuid membentuk XABCD yang kurang representatif
+# Cara mengenali swing dan jarak candle antarkaki (sama dengan harmonikAlat.js). Carney hal. 129: durasi kaki tidak
+# harus sama persis, tetapi setiap bagian pola harus jelas simetris. Pola tetap tampil, diberi catatan, turun peringkat.
+KAKI_MIN, KAKI_TIMPANG = 3, 0.2   # kaki < 3 candle atau kaki terpendek < 20% kaki terpanjang: "timpang"
+SWING_SISI, AYUN_MIN = 2, 0.05    # swing = puncak/dasar tidak dilewati 2 candle kiri-kanan; ayunan < 5% diabaikan
 
 
 def nilai_rata(bars: list[dict], n: int = 20) -> float:
@@ -345,6 +349,38 @@ def _status(bars: list[dict], mode: str, akhir_pt: dict, prz: list[float], bull:
     return "menuju"
 
 
+def jarak_kaki(kaki: list[int]) -> str | None:
+    """Tingkat keseimbangan kaki: "timpang" (kaki < KAKI_MIN candle atau terpendek < KAKI_TIMPANG terpanjang),
+    "kurang" (< 0,33), "seimbang", atau None bila kurang dari dua kaki. Sama dengan jarakKaki di harmonikAlat.js."""
+    if len(kaki) < 2 or any(n <= 0 for n in kaki):
+        return None
+    r = round(min(kaki) / max(kaki), 2)
+    return "timpang" if min(kaki) < KAKI_MIN or r < KAKI_TIMPANG else "kurang" if r < 0.33 else "seimbang"
+
+
+def swing_lemah(bars: list[dict], titik: list[dict]) -> list[str]:
+    """Catatan titik pola yang bukan swing jelas (puncak/dasar dilewati candle dalam SWING_SISI candle di kiri, atau di
+    kanan bila sudah ada SWING_SISI candle) dan ayunan antartitik di bawah AYUN_MIN. Sama dengan swingLemah di
+    harmonikAlat.js. titik: [{"n", "i", "p"}]."""
+    out = []
+    for j, z in enumerate(titik):
+        tetangga = titik[j - 1] if j > 0 else (titik[j + 1] if len(titik) > 1 else None)
+        if tetangga is None:
+            continue
+        atas, i = z["p"] > tetangga["p"], z["i"]
+        kanan = bars[i + 1:i + 1 + SWING_SISI]
+        sisi = bars[max(0, i - SWING_SISI):i] + (kanan if len(kanan) >= SWING_SISI else [])
+        if any(b["h"] > bars[i]["h"] for b in sisi) if atas else any(b["l"] < bars[i]["l"] for b in sisi):
+            out.append(f"Titik {z['n']} bukan swing {'high' if atas else 'low'} yang jelas: ada candle dalam 2 candle di "
+                       f"kiri/kanannya yang {'puncaknya lebih tinggi' if atas else 'dasarnya lebih rendah'}.")
+    for a, z in zip(titik, titik[1:]):
+        ayun = abs(z["p"] / a["p"] - 1)
+        if ayun < AYUN_MIN:
+            out.append(f"Ayunan {a['n']}→{z['n']} hanya {str(round(ayun * 100, 1)).replace('.', ',')}%, di bawah 5% "
+                       f"(ayunan kecil sebaiknya diabaikan).")
+    return out
+
+
 def _baris(bars, rs, k, nama, bull, status, th, w, label, prz, stop, target, rasio_d, alasan, skor, target_ca=None):
     """Baris screening seragam untuk semua pola; titik akhir yang masih proyeksi tidak ikut dicantumkan."""
     akhir = bars[-1]["c"]
@@ -353,12 +389,15 @@ def _baris(bars, rs, k, nama, bull, status, th, w, label, prz, stop, target, ras
     if status == "menuju":
         titik = titik[:-1]
     D = w[-1]
+    # Titik nyata pola (tanpa titik akhir bila masih "menuju") untuk catatan jarak candle dan swing.
+    nyata = [{"n": nm, "i": x["i"], "p": x["p"]} for nm, x in zip(label, w)][:len(titik)]
+    kaki = [b["i"] - a["i"] for a, b in zip(nyata, nyata[1:])]
     return {"pola": k, "nama": nama, "arah": "bullish" if bull else "bearish", "status": status, "harga": akhir,
             "prz": [_bulat(prz[0]), _bulat(prz[1])], "jarak": round(abs((akhir / tepi - 1) * 100), 1) if status == "menuju" else 0.0,
             "reaksi": round((akhir / D["p"] - 1) * 100, 1) if status == "berbalik" else None,
             "rasio": {x: v for x, v in rasio_d.items() if v is not None}, "skala": th, "skor": skor, "titik": titik,
             "target": [_bulat(t) for t in target], "targetCA": target_ca, "stop": _bulat(stop),
-            "alasan": alasan,
+            "alasan": alasan, "kaki": kaki, "swingLemah": swing_lemah(bars, nyata),
             "konfirmasi": konfirmasi(bars, rs, w[-3], D, bull) if status != "menuju" else []}
 
 
@@ -515,7 +554,8 @@ def cari(bars: list[dict], skala: tuple[float, ...] = SKALA, min_nilai: float = 
         _cari_tiga_dorongan(bars, rs, th, pv, hasil)
         _cari_abcd(bars, rs, th, pv, hasil)
     urut, kelas = {"prz": 0, "berbalik": 1, "menuju": 2}, {"abcd": 2, "altabcd": 2, "tigadorongan": 1}
-    return sorted(hasil.values(), key=lambda r: (urut[r["status"]], kelas.get(r["pola"], 0), r["jarak"], r["skor"]))[:4]
+    cek = lambda r: 1 if jarak_kaki(r["kaki"]) == "timpang" or r["swingLemah"] else 0   # pola "cek swing" turun peringkat
+    return sorted(hasil.values(), key=lambda r: (urut[r["status"]], kelas.get(r["pola"], 0), cek(r), r["jarak"], r["skor"]))[:4]
 
 
 def ringkas_pola() -> list[dict]:

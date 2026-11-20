@@ -10,7 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { createChart, CrosshairMode, LineStyle } from 'lightweight-charts'
 import { api } from '../api.js'
 import { store, toast } from '../store.js'
-import { SKALA, TF, POLA, PEMBEDA, FIB_KUNCI, alasanPola, komponenPrz, alasanX, diagramIdeal, konfirmasiD, skenarioD, trenBesar, nilaiTren, jarakElliott, cariElliott, cariPola, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
+import { SKALA, TF, POLA, PEMBEDA, FIB_KUNCI, alasanPola, komponenPrz, jarakKaki, alasanX, diagramIdeal, konfirmasiD, skenarioD, trenBesar, nilaiTren, jarakElliott, cariElliott, cariPola, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
 import { ukuranPosisi } from '../lib/harmonikBelajar.js'
 import { ema } from '../lib/ta.js'
 import { bacaPosisi, geserPanel, jepitPanel } from '../lib/geserPanel.js'
@@ -487,7 +487,7 @@ const gambar = computed(() => {
           const unsur = komponenPrz(x).filter(u => u.lo === u.hi && ok(Y(u.lo))).map(u => ({ ...u, y: Y(u.lo) }))
           return { x1, x2: Math.max(x2, x1 + 30), ya, yb, atas, bawah, unsur, rapat: Math.abs(yb - ya) < 22 }
         })() : null,
-        label: x.pola ? `${x.nama} ${x.arah}${x.skenario ? ' (skenario)' : ''}` : 'Swing terakhir (bukan pola)',
+        label: x.pola ? `${x.nama} ${x.arah}${x.skenario ? ' (skenario)' : ''}${peringatanSwing.value ? ' · cek swing' : ''}` : 'Swing terakhir (bukan pola)',
         // Panah skenario dari D: garis + kepala panah (segitiga) di ujung.
         panah: skenarioD(x).map(z => {
           const x1 = X(z.dari.i), y1 = Y(z.dari.p), x2 = X(z.ke.i), y2 = Y(z.ke.p)
@@ -617,6 +617,15 @@ const inset = computed(() => {
   if (!aktif.value.includes('xabcd') || !x?.pola) return null
   return { nama: `${x.nama} ${x.arah}`, bull: x.arah === 'bullish', diagram: diagramIdeal(x.pola, x.arah), alasan: alasanPola(x),
     pembeda: PEMBEDA[x.pola], status: STATUS[x.status], prz: x.prz }
+})
+// Peringatan swing pola aktif: jarak candle antarkaki timpang/kurang seimbang, titik yang bukan swing jelas
+// (2 candle kiri-kanan), atau ayunan di bawah 5%. Pola tetap tampil; null bila tidak ada catatan.
+const peringatanSwing = computed(() => {
+  const x = hasil.value.xabcd
+  if (!x?.pola) return null
+  const jk = jarakKaki(x), lemah = x.swingLemah || []
+  const teks = [...(jk && jk.tingkat !== 'seimbang' ? [jk.teks] : []), ...lemah]
+  return teks.length ? { berat: jk?.tingkat === 'timpang' || lemah.length > 0, teks } : null
 })
 // Cara PRZ pola aktif ditentukan: level rasio pembentuknya, posisi harga terakhir terhadap zona, dan langkah memakainya.
 const penjelasanPrz = computed(() => {
@@ -1038,6 +1047,10 @@ async function unduh() {
             <p class="besar" :class="hasil.xabcd.arah === 'bullish' ? 'up' : 'dn'">{{ hasil.xabcd.pola ? `${hasil.xabcd.nama} ${hasil.xabcd.arah}` : 'Belum ada pola harmonik' }}<span v-if="hasil.xabcd.skenario" class="tagSk">skenario</span></p>
             <p v-if="hasil.xabcd.skenario" class="small sk">Skenario, bukan pola aktif: {{ hasil.xabcd.teks.split(': ').slice(1).join(': ') }} Pola ini baru berlaku kalau harga benar-benar bergerak ke sana.</p>
             <p class="small">{{ STATUS[hasil.xabcd.status] }}<template v-if="hasil.xabcd.pola">. {{ hasil.xabcd.ket }}</template></p>
+            <div v-if="peringatanSwing" class="swingw" :class="{ berat: peringatanSwing.berat }">
+              <p class="small"><b>Perhatian: cek swing pola ini.</b> Rasio dan PRZ tetap mengikuti Carney; catatan ini soal bentuk swing. Carney (hal. 129): tiap kaki pola sebaiknya jelas simetris. Cara mengenali swing (materi latihan): puncak/dasar melewati 2 candle di kiri dan kanan, ayunan minimal 5%.</p>
+              <ul class="cek"><li v-for="(t, j) in peringatanSwing.teks" :key="j">{{ t }}</li></ul>
+            </div>
             <div v-if="kekuatan" class="kuat" :class="kekuatan.tingkat">
               <p class="small"><b>Kekuatan: {{ kekuatan.nama }}</b> · {{ kekuatan.ket }}.</p>
               <ul class="cek"><li v-for="(a, j) in kekuatan.alasan" :key="j" :class="a.ok ? 'up' : a.berat ? 'dn' : 'mute'">{{ TANDA(a) }} {{ a.teks }}</li></ul>
@@ -1367,6 +1380,9 @@ async function unduh() {
 .przt{fill:var(--warn);font-weight:800;font-size:11.5px !important}
 .przh{fill:var(--warn);font-weight:600;font-size:10.5px !important}
 .przk{border-left:3px solid var(--warn);padding-left:8px}
+.swingw{margin:6px 0;padding:6px 8px;border-radius:6px;border-left:3px solid var(--warn);background:var(--warn-bg)}
+.swingw.berat{border-left-color:var(--strong);background:var(--strong-bg)}
+.swingw p{margin:0 0 2px}
 .przl{margin:4px 0 0;padding-left:18px;color:var(--ink)}
 /* Elliott */
 .ewj{fill:none;stroke:var(--viz-b);stroke-width:2;stroke-linejoin:round}
