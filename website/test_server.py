@@ -535,6 +535,36 @@ class HarmonikTest(unittest.TestCase):
                 self.assertEqual(t["p"], min(x["l"] for x in antara) if t["k"] == "L" else max(x["h"] for x in antara))
         self.assertTrue(any(p["k"] == "L" and p["p"] == 1275 for p in harmonik.zigzag(akra, 0.04)))
 
+    def test_jarak_kaki_dan_swing(self):
+        """Catatan swing sama dengan harmonikAlat.js: BBCA Shark 20 Nov 2026 (kaki 5/10/45/32) timpang, kaki < 3 candle
+        timpang; swing = puncak/dasar tidak dilewati 2 candle kiri-kanan, ayunan < 5% dicatat."""
+        import harmonik
+        self.assertEqual(harmonik.jarak_kaki([5, 10, 45, 32]), "timpang")
+        self.assertEqual(harmonik.jarak_kaki([2, 10, 10]), "timpang")
+        self.assertEqual(harmonik.jarak_kaki([4, 16, 16]), "kurang")
+        self.assertEqual(harmonik.jarak_kaki([8, 6, 8, 8]), "seimbang")
+        self.assertIsNone(harmonik.jarak_kaki([5]))
+        b = lambda h, l: {"d": "x", "o": l, "h": h, "l": l, "c": h, "v": 1}
+        bars = [b(105, 100), b(103, 97), b(100, 94), b(98, 90), b(99, 93), b(102, 95), b(106, 99), b(108, 102),
+                b(110, 104), b(109, 103), b(107, 100), b(104, 97)]
+        self.assertEqual(harmonik.swing_lemah(bars, [{"n": "A", "i": 3, "p": 90}, {"n": "B", "i": 8, "p": 110}]), [])
+        self.assertIn("Titik A bukan swing low",
+                      harmonik.swing_lemah(bars, [{"n": "A", "i": 4, "p": 93}, {"n": "B", "i": 8, "p": 110}])[0])
+        self.assertTrue(any("Ayunan A→B hanya 3,3%" in t for t in
+                            harmonik.swing_lemah(bars, [{"n": "A", "i": 3, "p": 90}, {"n": "B", "i": 5, "p": 93}])))
+        naik = bars[:10] + [b(112, 106)]
+        self.assertEqual([t for t in harmonik.swing_lemah(naik, [{"n": "A", "i": 3, "p": 90}, {"n": "B", "i": 10, "p": 112}])
+                          if "Titik B" in t], [])
+
+    def test_baris_membawa_catatan_swing(self):
+        """Baris screening membawa kaki (candle per kaki) dan swingLemah; pola "menuju" tanpa titik D."""
+        import harmonik
+        hasil = harmonik.cari(self.bars([100, 200, 138.2, 175.3, 121.4], ekor=(124, 126)), min_nilai=0)
+        self.assertTrue(hasil)
+        for r in hasil:
+            self.assertEqual(len(r["kaki"]), len(r["titik"]) - 1)
+            self.assertIsInstance(r["swingLemah"], list)
+
     def test_rasio_kaki_nol(self):
         """C tepat di harga X (saham SICO): rasio CD/XC tidak terdefinisi, bukan error pembagian nol."""
         import harmonik

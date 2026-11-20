@@ -162,6 +162,66 @@ export function przPola(k, X, A, B, C, tol = TOL) {
   return rg
 }
 
+// ------------------------------------------------------- jarak candle kaki ----
+// Carney (hal. 129): durasi tiap kaki tidak harus sama persis, tetapi setiap bagian pola harus jelas simetris.
+// Swing yang terlalu dekat (kaki < KAKI_MIN candle) atau kaki terpendek jauh lebih singkat dari kaki terpanjang
+// membuat pola tampak berimpitan. Pola tetap tampil, tetapi diberi peringatan dan turun peringkat.
+// Sama dengan jarak_kaki di website/harmonik.py.
+export const KAKI_MIN = 3, KAKI_TIMPANG = 0.2, KAKI_KURANG = 0.33
+// Jumlah candle per kaki dari titik pola (indeks bar i); titik akhir yang masih proyeksi tidak dihitung.
+export function kakiCandle(titik = []) {
+  const t = titik.filter(z => z && Number.isFinite(z.i) && !z.proyeksi)
+  return t.slice(1).map((z, j) => z.i - t[j].i)
+}
+// Penilaian keseimbangan kaki: { kaki, nama, rasio, tingkat: 'seimbang' | 'kurang' | 'timpang', teks } atau null.
+// row.kaki (dari screening server) dipakai bila ada; selain itu dihitung dari row.titik.
+export function jarakKaki(row) {
+  const t = (row?.titik || []).filter(z => z && !z.proyeksi)
+  const kaki = Array.isArray(row?.kaki) ? row.kaki : kakiCandle(t)
+  if (kaki.length < 2 || kaki.some(n => !(n > 0))) return null
+  const nama = kaki.map((_, j) => `${t[j]?.n ?? j}→${t[j + 1]?.n ?? j + 1}`)
+  const pendek = Math.min(...kaki), panjang = Math.max(...kaki), rasio = Math.round(pendek / panjang * 100) / 100
+  const jk = kaki.indexOf(pendek), jp = kaki.indexOf(panjang)
+  const daftar = kaki.map((n, j) => `${nama[j]} ${n}`).join(', ')
+  let tingkat = 'seimbang', teks = `Jarak candle seimbang: ${daftar} candle.`
+  if (pendek < KAKI_MIN) {
+    tingkat = 'timpang'
+    teks = `Swing terlalu dekat: kaki ${nama[jk]} hanya ${pendek} candle (${daftar}). Swing yang jelas biasanya dipisah beberapa candle.`
+  } else if (rasio < KAKI_TIMPANG) {
+    tingkat = 'timpang'
+    teks = `Jarak candle tidak seimbang: kaki ${nama[jk]} ${pendek} candle, kaki ${nama[jp]} ${panjang} candle (${Math.round(rasio * 100)}%). Urutan kaki: ${daftar}.`
+  } else if (rasio < KAKI_KURANG) {
+    tingkat = 'kurang'
+    teks = `Jarak candle kurang seimbang: kaki ${nama[jk]} ${pendek} candle, kaki ${nama[jp]} ${panjang} candle (${Math.round(rasio * 100)}%).`
+  }
+  return { kaki, nama, rasio, tingkat, teks }
+}
+// Cara mengenali swing (materi latihan pengguna, bukan dari buku Carney; Carney hanya meminta kaki simetris dan
+// rasio Fibonacci yang tepat): swing high = puncak (sumbu atas) tidak lebih rendah dari 2 candle di kiri
+// dan 2 candle di kanannya; swing low = dasar (sumbu bawah) tidak lebih tinggi dari 2 candle di kiri dan kanannya.
+// Ayunan di bawah 5% sebaiknya diabaikan. Titik yang belum punya 2 candle di kanannya (masih terbentuk) atau masih
+// proyeksi tidak dinilai sisi kanannya. Keluaran: daftar teks peringatan (kosong = semua titik swing yang jelas).
+export const SWING_SISI = 2, AYUN_MIN = 0.05
+export function swingLemah(bars = [], titik = []) {
+  const t = titik.filter(z => z && Number.isFinite(z.i) && !z.proyeksi && bars[z.i])
+  const out = []
+  t.forEach((z, j) => {
+    const tetangga = t[j - 1] || t[j + 1]
+    if (!tetangga) return
+    const atas = z.p > tetangga.p
+    const kiri = bars.slice(Math.max(0, z.i - SWING_SISI), z.i), kanan = bars.slice(z.i + 1, z.i + 1 + SWING_SISI)
+    const sisi = [kiri, kanan.length >= SWING_SISI ? kanan : []].flat()
+    const lewat = atas ? sisi.some(b => b.h > bars[z.i].h) : sisi.some(b => b.l < bars[z.i].l)
+    if (lewat) out.push(`Titik ${z.n} bukan swing ${atas ? 'high' : 'low'} yang jelas: ada candle dalam 2 candle di kiri/kanannya yang ${atas ? 'puncaknya lebih tinggi' : 'dasarnya lebih rendah'}.`)
+  })
+  t.slice(1).forEach((z, j) => {
+    const ayun = Math.abs(z.p / t[j].p - 1)
+    if (ayun < AYUN_MIN) out.push(`Ayunan ${t[j].n}→${z.n} hanya ${(Math.round(ayun * 1000) / 10).toLocaleString('id-ID')}%, di bawah 5% (ayunan kecil sebaiknya diabaikan).`)
+  })
+  return out
+}
+const timpang = row => (jarakKaki(row)?.tingkat === 'timpang' || row?.swingLemah?.length ? 1 : 0)
+
 // Unsur pembentuk PRZ untuk ditampilkan: level rasio utama D (garis tunggal atau rentang) dan proyeksi kaki yang
 // ikut mempersempit zona. Tiap unsur { k, teks, lo, hi } (lo = hi untuk satu level harga). Kosong bila tidak dikenal.
 const unsur = (k, teks, a, b) => ({ k, teks, lo: Math.min(a, b), hi: Math.max(a, b) })
@@ -308,7 +368,8 @@ export function cariXabcd(bars = [], skala = SKALA.D, umurD = 30, menujuMaks = M
     }
   }
   const urut = { prz: 0, berbalik: 1, menuju: 2 }
-  return [...hasil.values()].sort((a, b) => urut[a.status] - urut[b.status] || a.skor - b.skor || b.titik[0].i - a.titik[0].i)
+  return [...hasil.values()].map(r => ({ ...r, swingLemah: swingLemah(bars, r.titik) }))
+    .sort((a, b) => urut[a.status] - urut[b.status] || a.skor - b.skor || b.titik[0].i - a.titik[0].i)
 }
 
 // ------------------------------------------------- AB=CD dan Three Drives ----
@@ -400,7 +461,7 @@ export function cariAbcd(bars = [], skala = SKALA.D, umurD = 30) {
       }
     }
   }
-  return [...hasil.values()]
+  return [...hasil.values()].map(r => ({ ...r, swingLemah: swingLemah(bars, r.titik) }))
 }
 
 export function cariTigaDorongan(bars = [], skala = SKALA.D, umurD = 30) {
@@ -444,14 +505,14 @@ export function cariTigaDorongan(bars = [], skala = SKALA.D, umurD = 30) {
       if (!lama || row.skor < lama.skor) hasil.set(kunci, row)
     }
   }
-  return [...hasil.values()]
+  return [...hasil.values()].map(r => ({ ...r, swingLemah: swingLemah(bars, r.titik) }))
 }
 
 // Semua pola aktif (XABCD, Three Drives, AB=CD): status dulu, lalu pola lima/enam titik sebelum AB=CD, lalu skor.
 export function cariPola(bars = [], skala = SKALA.D, umurD = 30) {
   const urut = { prz: 0, berbalik: 1, menuju: 2 }, kelas = { xabcd: 0, tigadorongan: 1, abcd: 2 }
   return [...cariXabcd(bars, skala, umurD), ...cariTigaDorongan(bars, skala, umurD), ...cariAbcd(bars, skala, umurD)]
-    .sort((a, b) => urut[a.status] - urut[b.status] || kelas[a.bentuk] - kelas[b.bentuk] || a.skor - b.skor)
+    .sort((a, b) => urut[a.status] - urut[b.status] || kelas[a.bentuk] - kelas[b.bentuk] || timpang(a) - timpang(b) || a.skor - b.skor)
 }
 
 // Swing X-A-B-C-D terakhir apa adanya (dengan rasio sebenarnya) saat tidak ada pola yang cocok. Dengan daftar skala:
