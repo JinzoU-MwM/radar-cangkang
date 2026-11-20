@@ -162,6 +162,33 @@ export function przPola(k, X, A, B, C, tol = TOL) {
   return rg
 }
 
+// Unsur pembentuk PRZ untuk ditampilkan: level rasio utama D (garis tunggal atau rentang) dan proyeksi kaki yang
+// ikut mempersempit zona. Tiap unsur { k, teks, lo, hi } (lo = hi untuk satu level harga). Kosong bila tidak dikenal.
+const unsur = (k, teks, a, b) => ({ k, teks, lo: Math.min(a, b), hi: Math.max(a, b) })
+export function komponenPrz(row) {
+  const t = row?.titik || [], out = []
+  if (!row?.prz || !t.length) return out
+  const p = POLA[row.pola]
+  if (p && t.length === 5) {
+    const [X, A, B, C] = t.map(z => z.p), xa = Math.abs(A - X), s = Math.sign(A - X)
+    if (p.d) out.push(unsur('d', `${teksRg(p.d)} XA`, A - s * xa * p.d[0], A - s * xa * p.d[1]))
+    else if (p.dbc) out.push(unsur('dbc', `${teksRg(p.dbc)} BC`, C + (B - C) * p.dbc[0], C + (B - C) * p.dbc[1]))
+    else if (p.dc) out.push(unsur('dc', `${teksRg(p.dc)} XC`, C - (C - X) * p.dc[0], C - (C - X) * p.dc[1]))
+    if (p.e) out.push(unsur('e', `proyeksi BC ${teksRg(p.e)}`, C + (B - C) * p.e[0], C + (B - C) * p.e[1]))
+    return out
+  }
+  const q = POLA_LAIN[row.pola]
+  if (q?.bentuk === 'abcd' && t.length === 4) {
+    const [A, B, C] = t.map(z => z.p), ab = B - A
+    out.push(unsur('cd', `CD = ${teksRg(q.cd)} AB`, C + ab * q.cd[0], C + ab * q.cd[1]))
+    out.push(unsur('e', `proyeksi BC ${teksRg(ABCD_E)}`, C + (B - C) * ABCD_E[0], C + (B - C) * ABCD_E[1]))
+  } else if (q?.bentuk === 'tigadorongan' && t.length === 6 && row.level) {
+    const P3 = t[3].p, P4 = t[4].p, v = P4 + (P3 - P4) * row.level
+    out.push(unsur('lv', `${teksRg([row.level, row.level])} × koreksi B`, v, v))
+  }
+  return out
+}
+
 // Skor ketidakcocokan X-A-B-C (dan D bila ada) terhadap satu pola; null bila ada rasio di luar toleransi.
 export function skorPola(k, r, tol = TOL) {
   const p = POLA[k], cek = []
