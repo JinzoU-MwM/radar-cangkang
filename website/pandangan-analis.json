@@ -1,7 +1,7 @@
 {
   "_info": {
     "tanggal": "2026-10-22",
-    "metode": "Ditulis per emiten dari data Stockbit (profil, harga, volume, pergerakan pemegang >=5%, Stockbit Reports), story & pengendali terverifikasi; angka asumsi ditandai di field asumsi/dasar. Ditinjau ulang 22 Okt 2026 terhadap keterbukaan, berita, dan harga terbaru; perubahan per emiten dicatat di field pembaruan. Narasi penambahan modal diselaraskan dengan fakta dokumen di ri-dokumen.json."
+    "metode": "Ditulis per emiten dari data Stockbit (profil, harga, volume, pergerakan pemegang >=5%, Stockbit Reports), story & pengendali terverifikasi; angka asumsi ditandai di field asumsi/dasar. Ditinjau ulang 22 Okt 2026 terhadap keterbukaan, berita, dan harga terbaru; perubahan per emiten dicatat di field pembaruan. Narasi penambahan modal diselaraskan dengan fakta dokumen di ri-dokumen.json. Pembaruan 2026-11-20: 25 emiten dicek ke Stockbit Reports 6-20 Nov 2026 (field pembaruan; asOf = laporan terakhir; hargaAsOf = tanggal harga acuan)."
   },
   "NAYZ": {
     "sikap": "Spekulatif tinggi",
@@ -40,8 +40,9 @@
       "Porsi tunai kepada Saiko dikurangi atau ditiadakan, atau Saiko menyerap pasokan Asia Intrainvesta dan menambah porsi di pasar pada harga di atas PTW"
     ],
     "hargaAcuan": 77,
-    "asOf": "2026-11-10",
+    "asOf": "2026-11-13",
     "pembaruan": [
+      "Pembaruan 2026-11-13 dari Stockbit Reports: Laporan hasil tender wajib: Saiko Consultancy membeli 193,93 juta saham (7,61%) melalui PT Saiko Consultancy Grand, selesai 10 Nov 2026, sehingga kepemilikan menjadi 37,02%. Langkah berikutnya: RUPS Independen dan PMHMETD. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Pembaruan 2026-11-10 dari Stockbit Reports: Pendirian anak usaha PT Integrasi Sistem Digital (99,6%; perdagangan peralatan listrik dan jasa pembersihan; disahkan Menkum 31 Okt 2026). Jawaban BEI 10 Nov: target operasional dan kontribusi keuangan anak usaha belum ditetapkan; rencana inbreng Bangkok Tellink Co., Ltd. disebut tanpa kendala material; RUPSLB untuk PMHMETD direncanakan dalam 12 bulan. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Diselaraskan dengan dokumen keterbukaan (22 Okt 2026): kurs dikoreksi dari asumsi Rp16.500 menjadi Rp17.930/USD sesuai dokumen, sehingga inbreng menjadi Rp1,79 T dan porsi tunai Rp448,25 M; porsi tunai adalah 15% BTL (20% dari saham yang dialihkan), bukan 20% BTL. Harga Rp75 ditegaskan sebagai harga PTW, bukan harga pelaksanaan resmi. Saham baru pada asumsi Rp75 menjadi sekitar 29,9 miliar dan porsi masyarakat sekitar 2,6% (dari 32,88%); putusan kewajaran tidak wajar (PBV implisit sekitar 107×, penilai pihak penjual, KJPP belum ditunjuk) ditambahkan. Nilai wajar Rp58–75 dan sikap Spekulatif tinggi tidak berubah karena bertumpu pada harga PTW.",
       "Emiten menyatakan pembayaran tunai 20% saham BTL didanai dari PMHMETD (keterbukaan 20 Okt 2026: Penjelasan atas Permintaan Penjelasan Bursa), sehingga asumsi pendanaan di luar penerbitan saham diganti; saham baru menjadi sekitar 27,5 miliar, porsi publik setelah transaksi sekitar 2,8% (sebelumnya 3,4%), dan nilai per saham sekitar Rp71 (sebelumnya Rp70).",
@@ -82,8 +83,9 @@
       "Pinjaman PMJ dikonversi menjadi ekuitas di harga mendekati pasar sehingga ekuitas melonjak tanpa dilusi besar"
     ],
     "hargaAcuan": 5150,
-    "asOf": "2026-11-10",
+    "asOf": "2026-11-19",
     "pembaruan": [
+      "Pembaruan 2026-11-19 dari Stockbit Reports: Jawaban BEI 16 Nov: fasilitas pendanaan Rp1,1 T dan akuisisi entitas anak disebut untuk mendukung proyek strategis. 18-19 Nov (dengan koreksi): keterbukaan tanggapan laporan keuangan tahunan 2025 dan permohonan perpanjangan waktu tanggapan penelaahan laporan keuangan. 19 Nov: pemanggilan RUPSLB dan RUPS Independen 11 Des 2026 untuk perubahan pengurus dan penambahan kegiatan usaha. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 2026-11-10 dari Stockbit Reports: Jawaban BEI 9 Nov (koreksi 10 Nov) atas inkonsistensi laporan keuangan interim 30 Sep 2026: pinjaman Rp125 M dari PT Penajam Makmur Jaya (masuk 10 Sep) belum tersaji karena kendala verifikasi administrasi, liabilitas disesuaikan menjadi Rp126,01 M; dana terpakai Rp96,56 M, sisa kas Rp28,44 M per 30 Sep; akuisisi PT Mega Teknologi Investama dan PT Fahreza Bumi Megah kini disebut bernilai Rp0 karena memuat akumulasi liabilitas signifikan (keterbukaan sebelumnya Rp10,89 M masing-masing); Nadila Syafira akan dikeluarkan dari susunan pengurus pada RUPS berikutnya. 10 Nov: pemberitahuan akuisisi 45% PT Sumber Bara Abadi (8 Okt 2026) lewat PT Prambanan Nusantara Energi dengan target perseroan produksi 2 juta metrik ton dan pendapatan US$84 juta pada 2027, kapasitas 4 juta ton/tahun mulai 2029. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 2026-11-05 dari Stockbit Reports: Jawaban BIKE atas permintaan penjelasan BEI berubah antar-koreksi: 24–29 Okt menyebut fasilitas pinjaman Rp1 T dari PT Penajam Makmur Jaya (pengendali) belum terealisasi menunggu pendapat kewajaran, sedangkan 2–5 Nov menyebut pinjaman tahap awal Rp125 miliar sudah masuk 10 Sep 2026. Akuisisi 99% PT Mega Teknologi Investama dan PT Fahreza Bumi Megah masing-masing Rp10,89 M (materialitas 16,62%); FBM dibeli dari direktur Nadila Syafira (transaksi afiliasi); entitas belum dikonsolidasi karena pembayaran belum selesai; rencana pengambilalihan tidak langsung 99% PT Prambanan Nusantara Energi. MoU PT Ratu Karya dengan Perumda Pasar Jaya untuk Pasar Minggu (investasi ±Rp1,1 T, konstruksi diperkirakan Juni 2027). 4 Nov: rencana fasilitas pinjaman siaga maks. Rp1,1 T dari PMJ (bunga 8%, 7 tahun, 1.298,68% ekuitas) untuk diputus RUPSLB 11 Des 2026. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Tidak ada keterbukaan baru sejak 15 Okt 2026 (terakhir 12 Okt) dan tidak ada transaksi pemegang ≥5% baru; harga naik dari Rp4.550 ke Rp5.150 (+13,2%), lalu BEI menyuspensi saham ini (CNBC Indonesia, 20 Okt 2026).",
@@ -449,8 +451,9 @@
       "Tender direvisi naik mendekati harga pasar"
     ],
     "hargaAcuan": 6025,
-    "asOf": "2026-11-05",
+    "asOf": "2026-11-12",
     "pembaruan": [
+      "Pembaruan 2026-11-12 dari Stockbit Reports: Jawaban BEI 12 Nov: menjelaskan kinerja operasional dan fasilitas kredit perbankan; tidak ada hubungan afiliasi dengan pihak yang dipertanyakan dan belum ada rencana kerja sama usaha. Administratif, tidak mengubah tesis. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 2026-11-05 dari Stockbit Reports: Pernyataan tender sukarela (KOREKSI 5 Nov 2026): PT Pukul Rata Kanan menawar maks. 65,25 juta saham (15%) pada Rp740, berpotensi menjadi pengendali dengan 30%, periode 6 Nov–7 Des 2026. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Harga acuan naik dari Rp2.580 ke Rp6.025 (Rp4.020 pada 19 Oktober 2026), sehingga premi terhadap harga tender Rp740 melebar dari 3,5× menjadi 8,1×; nilai wajar Rp85–740 tidak berubah.",
       "Berita CNBC Indonesia 22 Oktober 2026 (Harga Bergerak Tak Wajar, BEI Gembok Saham STRK dan TRUK) melaporkan suspensi perdagangan TRUK; Penjelasan atas Permintaan Penjelasan Bursa (8 Oktober 2026) menegaskan tidak ada perubahan bidang usaha.",
@@ -497,8 +500,9 @@
       "Regulator membatalkan/mengoreksi konversi sehingga porsi publik dipulihkan"
     ],
     "hargaAcuan": 5,
-    "asOf": "2026-11-06",
+    "asOf": "2026-11-18",
     "pembaruan": [
+      "Pembaruan 2026-11-18 dari Stockbit Reports: Jawaban BEI 13 Nov: Handoyo Setiawan dikonfirmasi sebagai pemilik manfaat HBEH, disertai kronologi penyelesaian PMTHMETD dan akuisisi entitas anak. Nama PT Remitra Global International Tbk efektif di BEI 17 Nov 2026. Jawaban BEI 18 Nov: PMTHMETD efektif sejak 9 Okt 2026 sehingga ekuitas menjadi positif dan kelangsungan usaha dinyatakan terjaga. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 2026-11-06 dari Stockbit Reports: Jawaban volatilitas: tidak ada rencana aksi korporasi dalam 3 bulan ke depan dan pengendali tidak berencana mengubah kepemilikan. BEI dan KSEI menetapkan MKNT sebagai saham HSC (konsentrasi 99,64% per 5 Nov 2026). Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 2026-10-29 dari Stockbit Reports: Transaksi afiliasi selesai 27 Okt 2026: PT Radja Udang Malingping membeli saham PT Adinda Losari Energi dan PT Remitra Surya Abadi masing-masing Rp1 M (17,71% ekuitas konsolidasi Rp5,65 M per 30 Sep 2026) dari Handoyo Setiawan, Widjojo Rahardjo, dan PT Careforshop Indonesia Sukses. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Diselaraskan dengan dokumen keterbukaan (22 Okt 2026): porsi pemegang saham lama dikoreksi dari 0,41% menjadi sekitar 0,53% (masyarakat lama sekitar 0,35%); setoran tunai menjadi Rp201,56 M dan peserta tunai dipastikan lima investor perorangan (bukan lagi asumsi); ekuitas sebelum konversi −Rp13,66 M sehingga nilai buku per saham Rp0,98. Afiliasi substantif kreditur dengan penjual aset dan putusan kewajaran cenderung mahal (PER gabungan sekitar 210×) ditambahkan. Nilai wajar Rp1 dan sikap Hindari tidak berubah.",
@@ -584,11 +588,13 @@
       "Laba operasional berulang terbukti dan BV naik signifikan sehingga PBV turun di bawah 1,5×"
     ],
     "hargaAcuan": 320,
-    "asOf": "2026-10-22",
+    "asOf": "2026-11-16",
     "pembaruan": [
+      "Pembaruan 2026-11-16 dari Stockbit Reports: Jawaban BEI atas volatilitas 16 Nov: tidak mengetahui informasi material dan belum ada rencana tindakan korporasi. Administratif, tidak mengubah tesis. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Tidak ada keterbukaan baru maupun transaksi pemegang saham ≥5% sejak 15 Okt 2026; harga turun dari Rp340 ke Rp320 (−5,9%).",
       "Harga masih 3,6× PTW Rp88 dan 1,9× batas atas nilai wajar Rp171, sehingga tesis dan sikap Hindari tetap berlaku."
-    ]
+    ],
+    "hargaAsOf": "2026-10-22"
   },
   "EPAC": {
     "sikap": "Spekulatif tinggi",
@@ -706,8 +712,9 @@
       "Sherman terbukti membukukan laba material yang membenarkan PBV > 3×"
     ],
     "hargaAcuan": 298,
-    "asOf": "2026-11-10",
+    "asOf": "2026-11-13",
     "pembaruan": [
+      "Pembaruan 2026-11-13 dari Stockbit Reports: Jawaban BEI atas volatilitas 13 Nov: tidak ada informasi material selain pengakhiran rencana pengambilalihan oleh Ruby Mining HongKong Limited (5 Nov 2026). Administratif, tidak mengubah tesis. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 2026-11-10 dari Stockbit Reports: RUPSLB 9 Nov 2026: direksi dan komisaris diangkat kembali (99,97%), Pasal 3 Anggaran Dasar disesuaikan ke KBLI 2025, dan mata acara RUPSLB 22 Jun 2026 terkait sistem AHU dibatalkan. Tidak ada aksi korporasi baru. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 2026-11-05 dari Stockbit Reports: Ruby Mining Hongkong Limited mengakhiri Perjanjian Jual Beli Bersyarat 22 Apr 2026 atas 1,08 miliar saham (86%) dari PT Putrasakti Mandiri, PT Intan Perdana Sukses, dan PT Cahayasakti Investindo Sukses Tbk pada 5 Nov 2026; perseroan menyatakan tidak berdampak material. Rencana pengambilalihan yang menjadi dasar radar berakhir. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pemanggilan RUPSLB (15 Okt 2026) menjadwalkan rapat 6 November 2026 dengan mata acara pergantian direksi dan komisaris serta penyesuaian Pasal 3 AD ke KBLI 2025; bukti iklannya disampaikan 19 Okt 2026 (Penyampaian Bukti Iklan Panggilan RUPS). Tidak ada kabar baru tentang CSPA Ruby Mining maupun RUPS Independen.",
@@ -870,8 +877,9 @@
       "NDC berhenti menjual dan menebus penuh rights sambil menambah porsi"
     ],
     "hargaAcuan": 11225,
-    "asOf": "2026-10-29",
+    "asOf": "2026-11-20",
     "pembaruan": [
+      "Pembaruan 2026-11-20 dari Stockbit Reports: HMETD MGLV-R sebanyak 285.732.512 di Rp20, dilaksanakan 10-23 Nov 2026; saham baru hasil pelaksanaan tercatat bertahap 12-23 Nov (sekitar 184,7 juta saham, atau sekitar 65% HMETD) sehingga total saham sekitar 2,09 miliar. RUPSLB 12 Nov menyetujui penjaminan lebih dari 50% kekayaan bersih dan corporate guarantee. 18 Nov: klarifikasi atas spekulasi reekspor ilegal GPU dan isu penggeledahan; Perseroan menyatakan tidak memiliki atau mengekspor GPU dan pusat data beroperasi penuh. Penggantian BAE (administratif). Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Pembaruan 2026-10-29 dari Stockbit Reports: PMHMETD I efektif 27 Okt 2026: maks. 285,73 juta saham pada Rp8.880, rasio 100:15, dana maks. Rp2,54 T, saham beredar 1,9 menjadi 2,19 miliar (dilusi 13,04%); cum-date pasar reguler 4 Nov 2026 (bukan 30 Okt) dan perdagangan/pencatatan 10 Nov 2026. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Diselaraskan dengan dokumen keterbukaan (22 Okt 2026): NAC/NGC dibeli tunai Rp670,6 M dari NDC (bukan inbreng) dan dinyatakan wajar oleh KJPP FDI&R (laporan 28 Agu 2026); porsi publik 34,90% (bukan 37,29%) dan turun ke 31,80% bila hanya NDC menebus; nilai buku proforma Rp1.105 (bukan Rp1.213) sehingga PBV 10,2×; payback 8 tahun 9 bulan; fasilitas Rp4 T berasal dari NDC kepada perseroan lalu diteruskan ke NAC/NGC. Batas bawah nilai wajar disesuaikan ke Rp1.105; sikap tetap.",
       "Perseroan memanggil RUPSLB 12 November 2026 untuk menyetujui penjaminan lebih dari 50% kekayaan bersih (jaminan aset dan corporate guarantee) guna perolehan pinjaman (keterbukaan 21 Okt 2026: Pemanggilan Rapat Umum Pemegang Saham Luar Biasa).",
@@ -919,14 +927,16 @@
       "Akuisisi batal tetapi pinjaman Rp30 M kepada Panasia tidak kembali sehingga BV tidak terealisasi"
     ],
     "hargaAcuan": 80,
-    "asOf": "2026-10-26",
+    "asOf": "2026-11-19",
     "pembaruan": [
+      "Pembaruan 2026-11-19 dari Stockbit Reports: Jawaban BEI 19 Nov terkait data kepemilikan: Perseroan akan mengoreksi penulisan data pengendali pada laporan bulanan registrasi pemegang efek (LBRPE) dan mengonfirmasi jumlah kepemilikan saham. Administratif, tidak mengubah tesis. Harga acuan per 2026-10-26 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Tanggapan BEI 23 Okt 2026: persetujuan PMHMETD RUPSLB 24 Jun 2025 kedaluwarsa (lebih dari 12 bulan); persetujuan ulang selambatnya Semester I 2027, dan identitas penilai baru diungkap saat pengumuman RUPSLB.",
       "Dana SMKM Rp30 M dipinjamkan ke Panasia (100% milik LSO, modal SGD3, bunga 6%, tanpa jaminan yang diungkap), sebagian didanai utang pihak ketiga Rp15 M; bila akuisisi batal, Perseroan hanya menyatakan berkeyakinan dana kembali.",
       "Seluruh pendapatan semester I 2026 (Rp54,25 M) dari satu pelanggan akuakultur (SSLA); beban pokok Rp48,47 M dari 13 toko bangunan tanpa arus kas pembayaran, dan pengurus SMKM kini merangkap di PAA, LOH, dan ASA.",
       "Diselaraskan dengan dokumen keterbukaan (22 Okt 2026): nilai LSO Holdings adalah ±SGD13 juta dengan cara bayar belum diungkap (bukan Rp172,25 M), sehingga simulasi inbreng hanya memakai Panasia ±USD100 juta; kurs tidak diungkap dokumen (Rp16.500 tetap asumsi); KJPP belum ditunjuk dan RUPSLB belum dipanggil; perpanjangan long stop date ke 30 Juni 2027 tidak ditemukan di dokumen. NAV pasca-transaksi menjadi ±Rp85; sikap dan nilai wajar tetap.",
       "Tidak ada keterbukaan baru sejak 15 Okt 2026; transaksi pemegang ≥5% terakhir adalah pembelian Bondra Uji Pratama (13–16 Okt, 4,99% → 5,03%) yang sudah tercatat. Harga turun dari Rp91 ke Rp80 (−12,1%) dan kini di bawah batas bawah nilai wajar Rp95 serta setara 0,50× BVPS."
-    ]
+    ],
+    "hargaAsOf": "2026-10-26"
   },
   "LAPD": {
     "sikap": "Hindari",
@@ -967,8 +977,9 @@
       "Rights dibatalkan dan diganti setoran modal pengendali di atas harga pasar"
     ],
     "hargaAcuan": 59,
-    "asOf": "2026-11-10",
+    "asOf": "2026-11-12",
     "pembaruan": [
+      "Pembaruan 2026-11-12 dari Stockbit Reports: Perubahan nama menjadi PT JSI Sinergi Internasional Tbk dan pemindahan domisili ke Jakarta Selatan (efektif November 2026); alamat dan kontak baru efektif 7 Nov 2026. Administratif, tidak mengubah tesis. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 2026-11-10 dari Stockbit Reports: Keputusan RUPSLB 29 Okt 2026 disetujui Menkum efektif 7 Nov 2026: nama resmi menjadi PT JSI Sinergi Internasional Tbk, domisili pindah ke Gedung Recapital Jakarta Selatan, dan KBLI mencakup aktivitas perusahaan induk serta konsultasi manajemen. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 2026-11-05 dari Stockbit Reports: RUPSLB 29 Okt 2026 menyetujui PMHMETD II, peningkatan modal dasar Rp1,5 T menjadi Rp1,6 T, Saham Seri B nominal Rp25, penetapan PT JSI Sinergi Mas sebagai pengendali, dan perubahan nama menjadi PT JSI Sinergi Internasional Tbk. Keterbukaan 5 Nov: PMHMETD II maks. 1,98 miliar saham, rasio 2:1, harga pelaksanaan Rp30 (sebelumnya indikatif Rp50), dana maks. Rp59,5 M untuk mengambil alih 87,5% PT Bersaudara Sinergi Sejahtera milik JSI senilai Rp38,85 M dan Rp20,64 M modal kerja BSS; HMETD 13–20 Jan 2027. Perhitungan NAV ±Rp16 di ringkasan memakai harga Rp50 dan belum dihitung ulang dengan Rp30. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Diselaraskan dengan dokumen keterbukaan (22 Okt 2026): BSS diinbreng JSI senilai Rp44,397 M menurut KJPP (bukan dibeli tunai Rp59,43 M), dana tunai maksimum ±Rp55,6 M, harga Rp50 berstatus indikatif, nominal Seri B Rp25, RUPSLB 29 Okt 2026; harga pengambilalihan JSI rata-rata Rp45,17 (bukan Rp10); kewajaran BSS cenderung mahal (PBV ±2,6×). NAV ±Rp16, nilai wajar Rp16–Rp50, dan sikap Hindari tetap.",
@@ -1010,8 +1021,9 @@
       "Rights issue besar dipatok jauh di bawah harga pasar atau EEP terus mengurangi porsi"
     ],
     "hargaAcuan": 368,
-    "asOf": "2026-11-11",
+    "asOf": "2026-11-20",
     "pembaruan": [
+      "Pembaruan 2026-11-20 dari Stockbit Reports: Jawaban BEI 18 Nov: rencana penerbitan 100 miliar saham melalui HMETD tidak mengubah pengendali (PT Eco Energi Perkasa), termasuk skema penyaluran dana pinjaman ke anak usaha. Jawaban BEI 18 Nov atas pemberitaan media: Perseroan menyatakan tidak melakukan penjajakan atau kesepakatan akuisisi saham PT Weda Bay Nickel milik Eramet. Konversi OWK kecil 13-23 Nov (total saham sekitar 34,14 miliar) dan koreksi pencatatan konversi OWK 24 Feb 2026 (administratif). Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Netral tidak berubah.",
       "Pembaruan 2026-11-11 dari Stockbit Reports: 23 Okt: rencana perubahan kegiatan usaha, PMHMETD II maks. 100 miliar saham (Rp8,2 T), akuisisi 100% Denway Development Limited (Rp5,74 T) dan 100% PT Bukit Makmur Istindo Nikeltama (Rp1,4 T), diputus RUPSLB 30 Nov 2026. 10-11 Nov: sisa dana PMHMETD I Rp424,84 M dialihkan dari modal kerja perseroan menjadi pinjaman tanpa bunga 2 tahun ke anak usaha PT Awal Kemuliaan Indonesia (min. 99%), perjanjian 9 Nov 2026. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Netral tidak berubah.",
       "Diselaraskan dengan dokumen keterbukaan (22 Okt 2026): porsi target adalah 34,5% KKU dan 30,0% KS (bukan 14,625% masing-masing) dengan nilai Rp1,68 T dan Rp1,15 T dari dana rights; penyaluran ke APR/SCR berupa 30% setoran modal dan 70% pinjaman; tambahan dari pinjaman perpetual Mei 2026 tercatat Rp1,34 T; kewajaran aset dinilai wajar (PER implisit ±7–10×) meski tanpa KJPP. Sikap Netral dan nilai wajar Rp152–300 tetap.",
       "Harga acuan turun dari Rp404 ke Rp368 (sempat Rp324 pada 19 Oktober 2026), sehingga PBV menjadi 2,42× dan PER ±33×; nilai wajar Rp152–300 dan sikap Netral tetap.",
@@ -1051,8 +1063,9 @@
       "Kinerja kuartalan berbalik laba dengan margin yang membenarkan PBV di atas 2 kali"
     ],
     "hargaAcuan": 112,
-    "asOf": "2026-11-06",
+    "asOf": "2026-11-11",
     "pembaruan": [
+      "Pembaruan 2026-11-11 dari Stockbit Reports: Pemberitahuan rencana RUPSLB 18 Des 2026 di Jakarta Selatan; agenda belum dirinci di ringkasan. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 2026-11-06 dari Stockbit Reports: Pei Yaxing mengundurkan diri (surat diterima 2 Nov 2026; persetujuan RUPSLB paling lambat 90 hari). Jawaban volatilitas 6 Nov: tidak ada informasi material yang belum diungkap, belum ada rencana aksi korporasi dalam waktu dekat, pemegang saham utama belum punya rencana atas kepemilikannya. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Tidak ada keterbukaan informasi baru, pemberitaan media, maupun transaksi pemegang saham ≥5% sejak 15 Okt 2026; harga turun dari Rp127 ke Rp112 (−11,8%).",
       "Harga masih 24% di atas batas atas nilai wajar Rp90 dan 2,18× nilai buku untuk emiten yang merugi, sehingga sikap Hindari dipertahankan."
@@ -1096,8 +1109,9 @@
       "PMHMETD diumumkan berbarengan inbreng aset berlaba dengan nilai lebih dari Rp1 T yang dinilai KJPP pada harga saham mendekati pasar"
     ],
     "hargaAcuan": 214,
-    "asOf": "2026-11-10",
+    "asOf": "2026-11-17",
     "pembaruan": [
+      "Pembaruan 2026-11-17 dari Stockbit Reports: Bukti iklan 11 Nov: PT Nawasena Nugra Investama mengambil alih 707,32 juta saham (66,58%) senilai Rp38 M pada 9 Nov 2026. RUPSLB 12 Nov menyetujui perubahan pengurus, penetapan pengendali baru, dan penyesuaian anggaran dasar. Sekretaris perusahaan berganti 17 Nov (administratif). Tender wajib masih menunggu pengumuman harga dan jadwal. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Pembaruan 2026-11-10 dari Stockbit Reports: Fakta material perubahan pengendalian: PT Nawasena Nugra Investama mengambil alih 707,32 juta saham (66,58%) senilai Rp38 M atau Rp53,73 per saham dari Eko Desriyanto dan PT Idea Asia Investama; tender wajib dilaksanakan sesuai POJK 9/2018 (harga dan jadwal belum diumumkan). Harga masuk pengendali Rp53,73 jauh di bawah harga acuan Rp214. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Pembaruan 2026-11-04 dari Stockbit Reports: PJBS ditandatangani 2 Nov 2026 antara calon pengendali PT Nawasena Nugra Investama dan penjual Eko Desriyanto serta PT Idea Asia Investama; harga transaksi tidak disebut dalam ringkasan. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Diselaraskan dengan dokumen keterbukaan (22 Okt 2026): UBO NNI sudah diungkap (Yukki Nugrahawan Hanafi) dan rencana penambahan modal berupa PMHMETD serta inbreng perusahaan milik UBO tersebut (nama dan nilai belum diungkap); ekuitas Rp62,81 M dan saham beredar 1.062.437.500; RUPSLB 12 Nov 2026 belum memuat agenda penambahan modal. Batas bawah nilai wajar disesuaikan ke BVPS Rp59; sikap tetap.",
@@ -1182,8 +1196,9 @@
       "Pengendali kembali menyetor modal dalam jumlah besar di atas harga pasar, seperti PP Rp994, sehingga nilai buku per saham naik berarti"
     ],
     "hargaAcuan": 780,
-    "asOf": "2026-10-30",
+    "asOf": "2026-11-12",
     "pembaruan": [
+      "Pembaruan 2026-11-12 dari Stockbit Reports: Laporan fakta material: pembelian saham lama dan pengambilan bagian saham baru HMBC selesai 30 Okt 2026, sehingga VISI memegang 72,91% HMBC. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Pembaruan 2026-10-30 dari Stockbit Reports: Private placement terlaksana: 120,72 juta saham pada Rp994, dicatat 29 Okt 2026 (modal disetor 3,2 miliar saham). Fasilitas kredit Demand Loan Rp45 M dari PT Bank Ina Perdana Tbk (bunga deposito +1,5%, jatuh tempo 28 Jan 2027) ditandatangani 28 Okt 2026 untuk modal kerja. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Diselaraskan dengan dokumen keterbukaan (22 Okt 2026): Rp319,45 M dikoreksi sebagai Rp286 M yang dibayar VISI ditambah konversi utang Rp33,45 M (bukan harga bayar); dana PP menjadi Rp120,00 M (120.724.400 saham); pembeli 48,29 juta saham di luar HSI terkonfirmasi PT Atlas Raya Abadi dan PT Trinugraha Thohir Harmoni; porsi publik 19,99% → 19,24%; rugi HMBC menjadi Rp12,34 M (4 bulan 2026); ditambahkan penilaian dan pendapat kewajaran KJPP Ferdinand, Danar, Ichsan & Rekan (wajar). Sikap dan nilai wajar tidak berubah.",
       "Keterbukaan Informasi PMTHMETD tanggal 20 Oktober 2026 menetapkan 120,72 juta saham pada Rp994 (Rp119,99 M; HSI 72,43 juta saham), lebih kecil dari batas 307,5 juta saham yang diasumsikan sebelumnya; diberitakan Kontan 20 Oktober dan CNBC Indonesia 21 Oktober 2026.",
@@ -1277,8 +1292,9 @@
       "Penilaian pembanding kedua yang independen dari pemberi tugas menghasilkan nilai serupa USD1,2 miliar untuk 49% BP"
     ],
     "hargaAcuan": 100,
-    "asOf": "2026-11-03",
+    "asOf": "2026-11-18",
     "pembaruan": [
+      "Pembaruan 2026-11-18 dari Stockbit Reports: Pergantian anggota Komite Audit efektif 17 Nov 2026 (Tjandra Susanto Putra dan Iwan diganti Triyoga Deni Intarto dan Yeniatie; Toto Setyoadi Murdiono tetap Ketua). Administratif, tidak mengubah tesis. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 2026-11-03 dari Stockbit Reports: Jawaban volatilitas transaksi: perseroan menyiapkan transaksi afiliasi dan/atau material dalam waktu dekat (jenis, pihak, dan nilai belum disebut); pemegang saham utama tidak berencana mengubah kepemilikan. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Diselaraskan dengan dokumen keterbukaan (22 Okt 2026): USD1,225 miliar adalah nilai 49% Borneo Prima (KJPP Kusnanto & Rekan, kurs Rp16.993), bukan 100%, sehingga skenario bawah Rp63 yang memotong nilai menjadi separuh gugur; nilai buku pasca-transaksi dikoreksi dari Rp125,8 menjadi sekitar Rp8 karena metode penyatuan kepemilikan; kepemilikan awal IMR 76,81%, publik 23,19%, dilusi maksimum 99,79%; putusan kewajaran dokumen tidak wajar. Nilai wajar berubah dari Rp63–126 menjadi Rp8–126 dan sikap dari Netral menjadi Hindari, karena harga Rp100 tidak lagi berada di bawah nilai buku, melainkan sekitar 12 kali nilai buku dan sepenuhnya bergantung pada valuasi afiliasi yang tidak wajar.",
       "Tidak ada keterbukaan informasi baru, pemberitaan media, maupun transaksi pemegang saham ≥5% sejak 15 Okt 2026; harga turun dari Rp127 ke Rp100 (−21,3%), kini di bawah harga pelaksanaan inbreng Rp126.",
@@ -1323,13 +1339,15 @@
       "Rights batal atau ditunda dan tambang masuk lewat pembelian tunai yang tidak mendilusi"
     ],
     "hargaAcuan": 74,
-    "asOf": "2026-10-22",
+    "asOf": "2026-11-20",
     "pembaruan": [
+      "Pembaruan 2026-11-20 dari Stockbit Reports: Pemanggilan RUPSLB 27 Okt; koreksi keterbukaan PMHMETD I 12 Nov: maksimal 2,44 miliar saham baru dengan potensi dilusi maksimal 53,11%. RUPSLB 18 Nov 2026 menyetujui PMHMETD I, penerbitan surat utang, dan perubahan susunan pengurus. Harga pelaksanaan dan pembeli siaga belum diumumkan. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Diselaraskan dengan dokumen keterbukaan (22 Okt 2026): harga masuk Poh Holding dikoreksi menjadi Rp19 (resmi), jumlah saham baru menjadi 2.443.000.000, porsi publik 58,98% → 27,66%, tanggal opsi PGGR 29 Desember 2025, dan nilai tambang ditegaskan USD150 juta indikatif (USD100 juta adalah niat investasi kontraktor EPC+F); kurs tidak ada di dokumen sehingga dipakai kurs ilustratif Rp16.500. Ditambahkan fakta RUPSLB 7 Mei 2026, tender wajib Rp131, ketiadaan pembeli siaga, dan putusan kewajaran belum dapat dinilai. Sikap dan nilai wajar tidak berubah.",
       "Harga acuan turun dari Rp81 ke Rp74, sehingga asumsi harga rights, kas segar (Rp197,6 M menjadi Rp180,6 M), dan batas atas nilai wajar (Rp49 menjadi Rp45) disesuaikan.",
       "Penjelasan atas Permintaan Penjelasan Bursa (21 Oktober 2026) menambahkan rincian alokasi dana PMHMETD I, yaitu sekitar 25% pelunasan utang dan 75% modal kerja; jumlah saham maksimum tetap 2,44 miliar dan harga belum ditetapkan.",
       "Sikap tetap Spekulatif tinggi karena struktur dilusi dan rencana inbreng PGGR tidak berubah."
-    ]
+    ],
+    "hargaAsOf": "2026-10-22"
   },
   "ASLI": {
     "sikap": "Spekulatif tinggi",
@@ -1362,11 +1380,13 @@
       "WKM atau CMM menjual kembali blok besar ke pasar di atas Rp350"
     ],
     "hargaAcuan": 286,
-    "asOf": "2026-10-22",
+    "asOf": "2026-11-18",
     "pembaruan": [
+      "Pembaruan 2026-11-18 dari Stockbit Reports: Jawaban BEI 18 Nov atas pengumuman OJK 18 Nov 2026: seluruh sanksi denda administratif OJK kepada Perseroan dan Direksi telah dibayar lunas. Tidak ada aksi korporasi baru. Administratif, tidak mengubah tesis. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Tidak ada keterbukaan baru sejak 15 Okt 2026 (terakhir 9 Okt) dan tidak ada transaksi pemegang ≥5% setelah pembelian WKM 21 Sep 2026; harga turun dari Rp378 ke Rp286 (−24,3%), meskipun pada 22 Okt naik 10,85% dari Rp258.",
       "Harga kini berada di dalam rentang nilai wajar Rp204–325; sikap Spekulatif tinggi dipertahankan karena rentang tersebut berbasis harga transaksi, sedangkan PBV 4,91 kali dengan usaha merugi belum didukung kontrak baru."
-    ]
+    ],
+    "hargaAsOf": "2026-10-22"
   },
   "KRYA": {
     "sikap": "Hindari",
@@ -1439,8 +1459,9 @@
       "RUPSLB menolak pembelian INET atau harganya dinegosiasi ulang mendekati nilai buku (±Rp170), dan DOOH tetap emiten kas bersih tanpa dilusi"
     ],
     "hargaAcuan": 183,
-    "asOf": "2026-11-10",
+    "asOf": "2026-11-18",
     "pembaruan": [
+      "Pembaruan 2026-11-18 dari Stockbit Reports: Klarifikasi (dengan koreksi) atas pemberitaan media terkait siaran pers OJK 16 Nov 2026 soal dugaan manipulasi perdagangan Waran Seri I (DOOH-W) dan penahanan tersangka; peristiwanya disebut terjadi 29 Mei 2023. Risiko reputasi dan likuiditas waran; dampak ke rencana korporasi belum diungkap. Harga acuan per 2026-11-06 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 2026-11-10 dari Stockbit Reports: 6 Nov: informasi tambahan atas rencana akuisisi 6,69 miliar saham INET di Rp300 (Rp2,01 T) dari PT Abadi Kreasi Unggul Nusantara, didanai penarikan awal Rp2 T dari plafon pinjaman pemegang saham PT Sinergi Internasional Investama Rp5 T (bunga 7,5%/tahun) yang dikonversi lewat PMHMETD I maks. 154,78 miliar saham; usulan perubahan penggunaan dana PUPS (setoran modal Rp120 M ke PT Cakrawala Nexus Investama) dan penambahan kegiatan usaha (investasi awal Rp4,02 M). 10 Nov: RUPSLB 9 Nov menyetujui perubahan nama menjadi PT Nexora Energy Infrastructure Tbk, Hendrik Tee sebagai Komisaris Utama, PMHMETD I maks. 154,78 miliar saham disertai Waran Seri II, dan pencairan pinjaman pemegang saham maks. Rp5 T. Harga acuan per 2026-11-06 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 6 Nov 2026 dari Stockbit Reports 4–5 Nov dan berita 31 Okt–6 Nov: tender wajib Rp148 berakhir nihil (SII tetap 51%); keterbukaan tambahan 5 Nov menegaskan plafon pinjaman SII Rp5 T (7,5%, penarikan awal Rp2 T), PMHMETD I maks. 154,78 miliar saham rasio 20:1, sisa dana IPO Rp120 M ke CNI dan Rp10,5 M modal kerja; laba 9 bulan Rp71,42 M (+954,95%). Harga acuan turun dari Rp258 ke Rp183, sehingga harga teoretis ex-rights pada asumsi Rp13 menjadi Rp21 (skenario plafon penuh Rp39) dan batas bawah nilai wajar menjadi Rp21. Sikap Hindari tidak berubah.",
       "Diselaraskan dengan dokumen keterbukaan (22 Okt 2026): rights issue dikoreksi menjadi tunai (bukan inbreng) sehingga kalkulator memakai setoran aset 0 dan kas Rp2,01 T (asumsi Rp13); INET dibeli tunai Rp2.005,5 M (Rp120 M dana IPO dan Rp1.885,5 M pinjaman SII); pendapat kewajaran KJPP Toha, Okky, Heru & Rekan sudah terbit (wajar, berbasis harga pasar Rp296) dengan putusan dokumen cenderung mahal; penjual AKUN dinyatakan tidak terafiliasi; jumlah saham diperbaiki menjadi 7.738.891.036 dan 154.777.820.720. Sikap Hindari dan nilai wajar Rp25–148 tidak berubah.",
@@ -1642,8 +1663,9 @@
       "Pembeli adalah grup kredibel yang segera mengumumkan inbreng di atas Rp1 T"
     ],
     "hargaAcuan": 900,
-    "asOf": "2026-11-05",
+    "asOf": "2026-11-20",
     "pembaruan": [
+      "Pembaruan 2026-11-20 dari Stockbit Reports: Perubahan Komite Nominasi dan Remunerasi efektif 19 Nov 2026 (Nurdin Bustam menggantikan Teddi Budiman). Administratif, tidak mengubah tesis. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 2026-11-05 dari Stockbit Reports: Pembentukan Komite Audit efektif 4 Nov 2026 (Loeky Sandrie ketua periode ke-2). Administratif, tidak mengubah tesis. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Tidak ada keterbukaan baru sejak 15 Okt 2026 (terakhir 6 Okt) dan tidak ada transaksi pemegang ≥5%; harga turun dari Rp980 ke Rp900 (−8,2%).",
       "Harga masih sekitar 2,9× batas atas nilai wajar (Rp306), sehingga sikap Hindari dipertahankan."
@@ -1682,8 +1704,9 @@
       "Pemegang lama (FSMN/GLB) terus menjual dan menekan harga ke lantai tender"
     ],
     "hargaAcuan": 610,
-    "asOf": "2026-11-04",
+    "asOf": "2026-11-18",
     "pembaruan": [
+      "Pembaruan 2026-11-18 dari Stockbit Reports: RUPSLB 12 Nov 2026 menyetujui perubahan susunan pengurus dan penyesuaian anggaran dasar, sekaligus mengonfirmasi perubahan pengendali; Vidcy Octory menjadi Direktur Utama dan Marlo Budiman Komisaris Utama. 18 Nov: perubahan Komite Nominasi dan Remunerasi serta alamat email (administratif). Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Netral tidak berubah.",
       "Pembaruan 2026-11-04 dari Stockbit Reports: Informasi kupon obligasi Seri A 6,7%, Seri B 7%, Seri C 7,25% dibayar 9 Nov 2026. Administratif, tidak mengubah tesis. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Netral tidak berubah.",
       "Tidak ada keterbukaan informasi baru, pemberitaan media, maupun transaksi pemegang saham ≥5% sejak 15 Okt 2026; harga turun dari Rp750 ke Rp610 (−18,7%), mendekati harga tender Rp523.",
       "Harga masih di dalam rentang wajar Rp523–875 sehingga sikap Netral dipertahankan; RUPSLB 12 Nov 2026 tetap menjadi agenda terdekat."
@@ -1722,12 +1745,14 @@
       "Pengendali menyetor tunai melalui rights issue di atas harga pasar"
     ],
     "hargaAcuan": 200,
-    "asOf": "2026-10-22",
+    "asOf": "2026-11-06",
     "pembaruan": [
+      "Pembaruan 2026-11-06 dari Stockbit Reports: Pemanggilan RUPSLB 30 Nov 2026 dengan agenda penyesuaian kegiatan usaha (KBLI) dan pergantian Direktur Utama. Arah bisnis baru dan profil direksi pengganti belum dirinci di ringkasan; pantau hasil RUPSLB. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Nilai pembelian 4.900 saham GPI kini diketahui Rp1 M dan penjual masih memegang 5.000 saham (Pembelian 4.900 lembar Saham PT Global Pacific Indonesia (GPI) milik PT Gunung Daya Permata (GDP) (KOREKSI), 21 Okt 2026); sebelumnya nilainya tidak diungkap.",
       "Perseroan mengumumkan RUPSLB 30 November 2026 dengan pemanggilan dan mata acara pada 6 November 2026 (Pemberitahuan Rencana Rapat Umum Pemegang Saham Luar Biasa, 22 Okt 2026); mata acara ini dimasukkan sebagai variabel kunci.",
       "Harga acuan turun tipis dari Rp202 ke Rp200; sikap dan nilai wajar Rp38–134 tidak berubah."
-    ]
+    ],
+    "hargaAsOf": "2026-10-22"
   },
   "CASH": {
     "sikap": "Netral",
@@ -1844,8 +1869,9 @@
       "Proyek panas bumi/PLTS mendapat PPA dan pendanaan sehingga valuasi Rp1,0 T terjustifikasi"
     ],
     "hargaAcuan": 156,
-    "asOf": "2026-11-05",
+    "asOf": "2026-11-11",
     "pembaruan": [
+      "Pembaruan 2026-11-11 dari Stockbit Reports: Koreksi laporan penggunaan dana per 30 Jun 2026: sisa dana IPO Rp10,5 M dan dana waran Rp28,94 M. Administratif, tidak mengubah tesis. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 2026-11-05 dari Stockbit Reports: Keterbukaan 5 Nov 2026 menegaskan CSPA dengan PT Adhi Karya (Persero) Tbk atas 51% PT Dumai Tirta Persada (74.353 saham) senilai Rp141 M; sumber dana pembayaran tetap belum dirinci dalam ringkasan. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Diselaraskan dengan dokumen keterbukaan (22 Okt 2026): tidak ada rencana penambahan modal, sehingga asumsi rights issue dihapus (dilusi tidak berlaku, kalkulator dikosongkan); akuisisi 51% DTP Rp141 M dibayar tunai, KJPP dan RUPS dikecualikan karena lelang, sumber dana belum diungkap. Karena nilai buku pasca-akuisisi tidak lagi bertambah dari rights, batas atas nilai wajar turun dari Rp85 ke Rp51; sikap Hindari tetap.",
       "Tidak ada keterbukaan informasi baru, pemberitaan media, maupun transaksi pemegang saham ≥5% sejak 15 Okt 2026 (kepemilikan Vincent Ie Kok Hui tetap 5,67%); harga turun dari Rp210 ke Rp156 (−25,7%).",
@@ -1884,8 +1910,9 @@
       "HME membawa kontrak jasa tambang besar dari Grup Huayou yang melipatgandakan laba"
     ],
     "hargaAcuan": 2880,
-    "asOf": "2026-11-10",
+    "asOf": "2026-11-19",
     "pembaruan": [
+      "Pembaruan 2026-11-19 dari Stockbit Reports: Materi paparan publik tahunan; paparan publik elektronik 24 Nov 2026. Administratif, tidak mengubah tesis. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Pembaruan 2026-11-10 dari Stockbit Reports: Rencana public expose tahunan 24 Nov 2026 secara virtual (kinerja kuartal III dan rencana usaha). Administratif, tidak mengubah tesis. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Tidak ada keterbukaan baru sejak 15 Okt 2026 (terakhir 8 Okt) dan tidak ada transaksi pemegang ≥5%; harga turun dari Rp3.220 ke Rp2.880 (−10,6%).",
       "Harga masih sekitar 3,4× batas atas nilai wajar (Rp845), sehingga sikap Spekulatif tinggi dipertahankan."
@@ -1923,8 +1950,9 @@
       "Pengendali melakukan tender sukarela atau go-private di harga dekat pasar"
     ],
     "hargaAcuan": 1455,
-    "asOf": "2026-11-03",
+    "asOf": "2026-11-13",
     "pembaruan": [
+      "Pembaruan 2026-11-13 dari Stockbit Reports: Prospektus ringkas Sukuk Mudharabah Berkelanjutan I Tahap I 2026 kepada pemodal profesional dengan target dana Rp400 M (diunggah ke BEI 13 Nov 2026). Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Pembaruan 2026-11-03 dari Stockbit Reports: Anak perusahaan membeli saham PT Pradipta Cakra Buana pada 30 Okt 2026: 24.250 saham dari PT Arung Mitra Bersama (Rp2,43 M) dan 24.250 saham dari PT Bira Jaya Sehati (Rp2,42 M dan Rp1 juta). Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Hindari tidak berubah.",
       "Tidak ada keterbukaan baru sejak 15 Okt 2026 (terakhir 6 Agu) dan tidak ada transaksi pemegang ≥5%; harga turun dari Rp1.600 ke Rp1.455 (−9,1%) dengan volume rata-rata yang makin tipis.",
       "Harga masih sekitar 2,75× batas atas nilai wajar (harga MTO Rp529), sehingga sikap Hindari dipertahankan."
@@ -1957,12 +1985,14 @@
       "Muncul kontrak armada besar dengan mitra kredibel yang mengubah skala usaha"
     ],
     "hargaAcuan": 47,
-    "asOf": "2026-10-22",
+    "asOf": "2026-11-13",
     "pembaruan": [
+      "Pembaruan 2026-11-13 dari Stockbit Reports: Pemberitahuan (29 Okt) dan pemanggilan (13 Nov) RUPSLB 7 Des 2026 dengan agenda perubahan susunan Direksi dan Dewan Komisaris. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Diselaraskan dengan dokumen keterbukaan (22 Okt 2026): tidak ada rencana penambahan modal, sehingga asumsi rights issue dihapus (dilusi tidak berlaku, kalkulator dikosongkan); sumber dana capex Rp50 M menurut dokumen adalah investor baru dan pinjaman pemegang saham; harga pengambilalihan Rp13,56/saham. Sikap dan nilai wajar tetap.",
       "Tidak ada keterbukaan baru maupun transaksi pemegang saham ≥5% sejak 15 Okt 2026; harga turun tipis dari Rp50 ke Rp47 (−6%).",
       "Harga kini sedikit di bawah batas atas nilai wajar Rp50, sehingga tesis dan sikap tidak berubah; risiko utama tetap pendanaan capex melalui dilusi."
-    ]
+    ],
+    "hargaAsOf": "2026-10-22"
   },
   "MEJA": {
     "sikap": "Spekulatif tinggi",
@@ -2001,8 +2031,9 @@
       "RUPSLB persetujuan inbreng gagal kuorum lagi atau OJK menahan transaksi"
     ],
     "hargaAcuan": 106,
-    "asOf": "2026-11-05",
+    "asOf": "2026-11-20",
     "pembaruan": [
+      "Pembaruan 2026-11-20 dari Stockbit Reports: Materi paparan publik tahunan (paparan hybrid 24 Nov 2026) kembali memuat rencana akuisisi 45% saham PT Trimata Coal Perkasa senilai Rp1,11 T. Belum ada keterbukaan penyelesaian transaksi. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Pembaruan 2026-11-05 dari Stockbit Reports: Rencana public expose tahunan 24 Nov 2026 secara hybrid (kinerja semester I 2026 dan strategi 2027). Administratif, tidak mengubah tesis. Harga acuan per 2026-10-22 tidak dihitung ulang; sikap Spekulatif tinggi tidak berubah.",
       "Diselaraskan dengan dokumen keterbukaan (22 Okt 2026): USD100 juta adalah nilai penjualan 55% TCP kepada pihak lain, sedangkan nilai inbreng 45% TCP adalah Rp1,6 T (kajian internal, tanpa KJPP; ±17% lebih mahal per persen); harga Rp450–550 masih indikatif; saham baru pada Rp450 menjadi 3,56 miliar dan porsi publik ±25,5%; modal dasar dinaikkan pada RUPSLB 21 Agu 2026. Batas atas nilai wajar disesuaikan dari Rp277 ke Rp274; sikap tetap.",
       "Tidak ada keterbukaan informasi baru, pemberitaan media, maupun transaksi pemegang saham ≥5% sejak 15 Okt 2026 (perubahan komite audit dan komite nominasi diumumkan 13 Okt 2026); harga turun dari Rp128 ke Rp106 (−17,2%).",
