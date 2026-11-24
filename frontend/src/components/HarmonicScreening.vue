@@ -4,7 +4,7 @@
 // Klik baris membuka chart saham itu di tab Saham dengan XABCD aktif.
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../api.js'
-import { HM_STATUS, hitungHarmonik, rentang } from '../lib/harmonik.js'
+import { HM_STATUS, hitungSaring, lolosSaring, rentang } from '../lib/harmonik.js'
 import { kekuatanPola } from '../lib/harmonikCekSilang.js'
 import { jarakKaki } from '../lib/harmonikAlat.js'
 
@@ -14,25 +14,22 @@ onMounted(() => api.get('/api/harmonik').then(v => { data.value = v }, e => { er
 
 const fStatus = ref('semua'), fArah = ref('semua'), fRadar = ref(false), q = ref(''), fPola = ref(''), fKuat = ref('semua')
 const rows = computed(() => data.value?.rows || [])
-const n = computed(() => hitungHarmonik(rows.value))
 // Cek silang: label kekuatan per pola XABCD (rasio ideal atau hanya lolos toleransi, AB=CD, fraksi harga).
 const kuat = computed(() => new Map(rows.value.map(r => [r, kekuatanPola(r)])))
-const nKuat = computed(() => [...kuat.value.values()].reduce((a, k) => { if (k) a[k.tingkat] = (a[k.tingkat] || 0) + 1; return a }, {}))
+const kuatOf = r => kuat.value.get(r)?.tingkat || ''
+const saring = computed(() => ({ status: fStatus.value, arah: fArah.value, pola: fPola.value, kuat: fKuat.value, radar: fRadar.value, q: q.value }))
+// Angka di tombol mengikuti saringan lain yang aktif (mis. Bullish + Kuat: angka Kuat = pola kuat yang bullish).
+const hitung = computed(() => hitungSaring(rows.value, saring.value, kuatOf))
 // Catatan swing per baris (semua jenis pola): jarak candle antarkaki dan titik yang bukan swing jelas (dari server).
 const swing = computed(() => new Map(rows.value.map(r => {
   const jk = jarakKaki(r), teks = [...(jk && jk.tingkat !== 'seimbang' ? [jk.teks] : []), ...(r.swingLemah || [])]
   return [r, teks.length ? teks.join('\n') : '']
 })))
 const tipKuat = k => k ? [`${k.nama}: ${k.ket}.`, ...k.alasan.map(a => `${a.ok ? '✓' : a.berat ? '✗' : '~'} ${a.teks}`)].join('\n') : ''
-const tampil = computed(() => {
-  const x = q.value.trim().toLowerCase()
-  return rows.value.filter(r => (fStatus.value === 'semua' || r.status === fStatus.value) && (fArah.value === 'semua' || r.arah === fArah.value)
-    && (!fPola.value || r.pola === fPola.value) && (fKuat.value === 'semua' || kuat.value.get(r)?.tingkat === fKuat.value)
-    && (!fRadar.value || r.radar) && (!x || r.t.toLowerCase().startsWith(x) || (r.nama || '').toLowerCase().includes(x)))
-})
+const tampil = computed(() => rows.value.filter(r => lolosSaring(r, saring.value, kuatOf)))
 const kriteria = computed(() => Object.fromEntries((data.value?.pola || []).map(p => [p.k, p])))
 // Jenis pola yang muncul di hasil, untuk saringan.
-const jenisPola = computed(() => [...new Set(rows.value.map(r => r.pola))].map(k => ({ k, nama: kriteria.value[k]?.nama || k, n: rows.value.filter(r => r.pola === k).length })))
+const jenisPola = computed(() => [...new Set(rows.value.map(r => r.pola))].map(k => ({ k, nama: kriteria.value[k]?.nama || k, n: hitung.value.pola[k] || 0 })))
 const fh = v => v == null ? '–' : Number(v).toLocaleString('id-ID', { maximumFractionDigits: v < 200 ? 1 : 0 })
 const fr = v => v == null ? '–' : Number(v).toLocaleString('id-ID', { maximumFractionDigits: 3 })
 
@@ -64,13 +61,13 @@ const posisi = r => r.status === 'menuju' ? `${fh(r.jarak)}% dari PRZ` : r.statu
       <div class="saring">
         <div class="seg" role="group" aria-label="Status pola">
           <button v-for="s in ['semua', 'prz', 'berbalik', 'menuju']" :key="s" type="button" :class="{ on: fStatus === s }" @click="fStatus = s">
-            {{ s === 'semua' ? 'Semua' : HM_STATUS[s][0] }} <b>{{ n[s] || 0 }}</b></button>
+            {{ s === 'semua' ? 'Semua' : HM_STATUS[s][0] }} <b>{{ hitung.status[s] || 0 }}</b></button>
         </div>
         <div class="seg" role="group" aria-label="Arah pola">
-          <button v-for="a in ['semua', 'bullish', 'bearish']" :key="a" type="button" :class="{ on: fArah === a }" @click="fArah = a">{{ a === 'semua' ? 'Semua arah' : a }} <b v-if="a !== 'semua'">{{ n[a] || 0 }}</b></button>
+          <button v-for="a in ['semua', 'bullish', 'bearish']" :key="a" type="button" :class="{ on: fArah === a }" @click="fArah = a">{{ a === 'semua' ? 'Semua arah' : a }} <b v-if="a !== 'semua'">{{ hitung.arah[a] || 0 }}</b></button>
         </div>
         <div class="seg" role="group" aria-label="Kekuatan pola">
-          <button v-for="k in ['semua', 'kuat', 'sedang', 'lemah']" :key="k" type="button" :class="{ on: fKuat === k }" @click="fKuat = k">{{ k === 'semua' ? 'Semua kekuatan' : k }} <b v-if="k !== 'semua'">{{ nKuat[k] || 0 }}</b></button>
+          <button v-for="k in ['semua', 'kuat', 'sedang', 'lemah']" :key="k" type="button" :class="{ on: fKuat === k }" @click="fKuat = k">{{ k === 'semua' ? 'Semua kekuatan' : k }} <b v-if="k !== 'semua'">{{ hitung.kuat[k] || 0 }}</b></button>
         </div>
         <select v-model="fPola" class="sel" aria-label="Jenis pola">
           <option value="">Semua pola</option>
