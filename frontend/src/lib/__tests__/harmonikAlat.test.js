@@ -107,6 +107,19 @@ describe('cariXabcd', () => {
   })
 })
 
+describe('cariXabcd: skala besar untuk saham bergerak lebar', () => {
+  // Meniru KOTA 2026: Shark X 71, A 210, B 140, C 252, D 50, dengan pantulan 81 → 104 (naik 28%) di tengah kaki C→D.
+  const kota = bangun([120, 71, 210, 140, 252, 81, 104, 50, 75])
+  it('pantulan 28% memecah kaki C→D di skala 4–15%', () => {
+    expect(cariXabcd(kota, [0.04, 0.06, 0.1, 0.15]).find(r => r.pola === 'shark')).toBeUndefined()
+  })
+  it('skala harian 30% membaca Shark-nya', () => {
+    const s = cariXabcd(kota).find(r => r.pola === 'shark')
+    expect(s).toMatchObject({ arah: 'bullish', status: 'berbalik', skala: 0.3 })
+    expect(s.titik.map(t => Math.round(t.p))).toEqual([71, 210, 140, 252, 50])
+  })
+})
+
 describe('Fibonacci', () => {
   const bars = bangun([150, X, A, B, C, D])
   const g = cariXabcd(bars).find(r => r.pola === 'gartley')
