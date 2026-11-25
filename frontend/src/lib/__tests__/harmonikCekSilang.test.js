@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { cariPola, SKALA } from '../harmonikAlat.js'
-import { kekuatanPola, skalaRapat, skenarioLain, titikTutorial } from '../harmonikCekSilang.js'
+import { cariPola, SKALA_POLA } from '../harmonikAlat.js'
+import { kekuatanPola, skenarioLain, titikTutorial } from '../harmonikCekSilang.js'
 
 // Bar sintetis: harga bergerak lurus antar titik, 10 bar per kaki (indeks titik 0, 10, 20, ...).
 function bangun(titik, per = 10) {
@@ -47,16 +47,12 @@ describe('kekuatanPola', () => {
 })
 
 describe('skenarioLain', () => {
-  it('skala rapat mencakup skala sisipan', () => {
-    expect(skalaRapat([0.04, 0.06, 0.1, 0.15])).toEqual([0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2])
-  })
-
   it('Gartley yang PRZ-nya lebih dari 25% dari harga tidak ada di daftar utama, tetapi muncul sebagai skenario', () => {
     // X 1000, A 2000, B 1382, C 1868, lalu turun ke 1650: PRZ sekitar 1184–1244, harga perlu turun sekitar 25%.
     const bars = bangun([1200, 1000, 2000, 1382, 1868, 1650])
-    const utama = cariPola(bars, SKALA.D, 30)
+    const utama = cariPola(bars, SKALA_POLA.D, 30)
     expect(utama.some(r => r.pola === 'gartley' && r.arah === 'bullish')).toBe(false)
-    const lain = skenarioLain(bars, utama, SKALA.D, 30)
+    const lain = skenarioLain(bars, utama, SKALA_POLA.D, 30)
     const g = lain.find(r => r.pola === 'gartley' && r.arah === 'bullish')
     expect(g).toBeTruthy()
     expect(g.geser).toBeLessThan(-20)

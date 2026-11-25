@@ -4,7 +4,7 @@
 // Aturan sama dengan pemindai (Carney Vol. 1 + lembar pola): rasio, AB=CD, PRZ, stop, target 0,382/0,618 AD.
 // Fungsi murni: masukan bars [{d,o,h,l,c,v}] (v dalam lot) dan titik [{n,i,p,sisi}].
 import {
-  ABCD_TOL, FIB_EXT, FIB_RET, POLA, SKALA, STOP_PRZ, TOL, aturanElliott, bentukOk, cariXabcd, garisXabcd, jarak, konfirmasiD,
+  ABCD_TOL, FIB_EXT, FIB_RET, POLA, SKALA_POLA, STOP_PRZ, TOL, aturanElliott, bentukOk, cariXabcd, garisXabcd, jarak, konfirmasiD,
   przPola, rasioXabcd, skorPola, targetStop,
 } from './harmonikAlat.js'
 import { tick } from './ta.js'
@@ -178,7 +178,7 @@ function nilaiHarian(bars) {
 
 function cekXabcd(bars, titik, skala) {
   const row = bangunXabcd(bars, titik), n = bars.length
-  const minBalik = (skala || SKALA.D)[0]
+  const minBalik = (skala || SKALA_POLA.D)[0]
   const benar = [], kurang = cekSwing(bars, titik, 'xabcd', minBalik)
   const [X, A, B, C, D] = titik.map(t => t.p), bull = A > X, xa = Math.abs(A - X)
   const bebasD = !!titik[4]?.bebas
@@ -234,7 +234,7 @@ function cekXabcd(bars, titik, skala) {
       stopKet: STOP_PRZ.has(row.pola) ? 'sedikit di luar PRZ (D sudah melewati X)' : row.pola === 'fiveo' ? '0,618 kaki BC' : 'di balik X' }
   }
   // Pembanding: apakah pemindai otomatis menemukan pola yang sama (B, C, D di bar yang berdekatan)?
-  const auto = cariXabcd(bars, skala || SKALA.D)
+  const auto = cariXabcd(bars, skala || SKALA_POLA.D)
   const sama = auto.find(a => a.pola === row.pola && [2, 3, 4].every(j => Math.abs(a.titik[j].i - titik[j].i) <= 3))
   const sistem = sama ? `Pemindai sistem juga menemukan ${sama.nama} ${sama.arah} di titik yang sama.`
     : auto.length ? `Pemindai sistem saat ini menemukan: ${auto.slice(0, 3).map(a => `${a.nama} ${a.arah} (X ${tgl(bars, a.titik[0].i)})`).join('; ')}. Bandingkan titiknya dengan tarikan Anda.`
@@ -397,7 +397,7 @@ export function proyeksiXabcd(bars, titik, { skala = null } = {}) {
   // Urutan kiri ke kanan dengan puncak-lembah bergantian; harga dicek lagi setelah dirapikan.
   const naikTurun = ts => ts.every((t, j) => !j || (t.i > ts[j - 1].i && t.sisi !== ts[j - 1].sisi && (t.sisi === 'H' ? t.p > ts[j - 1].p : t.p < ts[j - 1].p)))
   const urut = titik.slice(0, 4).every((t, j) => !j || (t.i > titik[j - 1].i && t.sisi !== titik[j - 1].sisi))
-  let rapi = urut ? rapikan(bars, titik.slice(0, 5), (skala || SKALA.D)[0]) : null
+  let rapi = urut ? rapikan(bars, titik.slice(0, 5), (skala || SKALA_POLA.D)[0]) : null
   if (rapi && !naikTurun(rapi.slice(0, 4))) rapi = null
   let pilih = null, semua = []
   if (rapi) {
@@ -421,7 +421,7 @@ export function proyeksiXabcd(bars, titik, { skala = null } = {}) {
   if (pilih) {
     k = pilih.k; ts = rapi.slice(0, 4).map(({ n: nm, i, p, sisi, dari }) => ({ n: nm, i, p, sisi, dipindah: !!dari })); prz = pilih.prz
   } else {
-    const auto = cariXabcd(bars, skala || SKALA.D)[0]
+    const auto = cariXabcd(bars, skala || SKALA_POLA.D)[0]
     if (!auto) return { sumber: 'kosong', catatan: [
       urut ? 'Dari titik X, A, B, C ini belum ada pola yang cocok, walaupun titiknya sudah dirapikan ke puncak dan lembah sebenarnya.' : 'Urutan titik belum benar (kiri ke kanan, puncak dan lembah bergantian), jadi belum bisa diproyeksikan.',
       'Pemindai sistem juga tidak menemukan pola aktif di saham dan timeframe ini. Coba saham atau timeframe lain.'] }
