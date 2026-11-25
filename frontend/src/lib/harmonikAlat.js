@@ -34,10 +34,15 @@ export const TOL = 0.05          // toleransi relatif batas rasio (±5%)
 export const ABCD_TOL = 0.15    // AB=CD di dalam pola: CD minimal 0,85 AB (sama dengan website/harmonik.py)
 export const PRZ_LEBAR = 0.03    // PRZ minimal = ±3% kaki acuan di sekitar level D
 export const MENUJU_MAKS = 0.25  // jarak harga terakhir ke tepi PRZ yang masih digambar sebagai pola "menuju"
-// Ambang zigzag (pembalikan minimal) per timeframe, dari swing kecil ke besar. Skala harian 20% dan 30% untuk saham
-// bergerak lebar: pantulan besar di tengah kaki (contoh KOTA: 81 → 104, naik 28%, di kaki C→D 252 → 50) memecah
-// kaki di skala 4–15%, sehingga Shark 71-210-140-252-50 baru terbaca di skala 30%.
-export const SKALA = { D: [0.04, 0.06, 0.1, 0.15, 0.2, 0.3], W: [0.08, 0.12, 0.18, 0.25], M: [0.12, 0.18, 0.25, 0.35] }
+// Ambang zigzag (pembalikan minimal) per timeframe, dari swing kecil ke besar. SKALA dipakai alat yang butuh beberapa
+// skala tetap (Fibonacci, posisi, Elliott, swing terakhir).
+export const SKALA = { D: [0.04, 0.06, 0.1, 0.15], W: [0.08, 0.12, 0.18, 0.25], M: [0.12, 0.18, 0.25, 0.35] }
+// Pencarian pola memakai skala rapat. Satu pantulan bisa memecah kaki di satu ambang tetapi tidak di ambang sebelahnya,
+// jadi skala yang jarang melewatkan pola: KOTA Nov 2026 (Shark 71-210-140-252-50, pantulan 81 → 104 naik 28% di kaki
+// C→D) hanya terbaca di sekitar 30%, AKRA (Gartley 1165-1475-1275-1370-1240) di 7%. Audit 953 saham BEI: skala
+// 4/6/10/15/20/30% melewatkan sekitar 670 pola dibanding pemindaian setiap 0,5%. Sama dengan SKALA di website/harmonik.py.
+const rentang = (a, b, s) => Array.from({ length: Math.round((b - a) / s) + 1 }, (_, j) => Math.round((a + j * s) * 1000) / 1000)
+export const SKALA_POLA = { D: rentang(0.04, 0.5, 0.005), W: rentang(0.08, 0.6, 0.01), M: rentang(0.12, 0.7, 0.01) }
 export const TF = [{ k: 'D', nama: 'Harian', pendek: '1D' }, { k: 'W', nama: 'Mingguan', pendek: '1W' }, { k: 'M', nama: 'Bulanan', pendek: '1M' }]
 
 export const FIB_RET = [0, 0.236, 0.382, 0.5, 0.618, 0.707, 0.786, 0.886, 1, 1.13, 1.27, 1.414, 1.618]
@@ -309,7 +314,7 @@ export function garisXabcd(k, r) {
 //  - "berbalik": D terkonfirmasi di PRZ, harga sudah berbalik;
 //  - "menuju": X-A-B-C terbentuk, harga bergerak ke PRZ (D diproyeksikan).
 // menujuMaks: jarak maksimal harga ke tepi PRZ untuk pola "menuju" (default MENUJU_MAKS; cek silang memakai batas lebih longgar).
-export function cariXabcd(bars = [], skala = SKALA.D, umurD = 30, menujuMaks = MENUJU_MAKS) {
+export function cariXabcd(bars = [], skala = SKALA_POLA.D, umurD = 30, menujuMaks = MENUJU_MAKS) {
   const n = bars.length
   if (n < 30) return []
   const akhir = bars[n - 1].c, hasil = new Map()
@@ -422,7 +427,7 @@ function statusAkhir({ bars, mode, akhirPt, prz, bull, lengkapOk, iProyeksi, lab
 const batal = (bars, t, stop, bull) => !t.proyeksi && bars.slice(t.i + 1).some(b => bull ? b.c < stop : b.c > stop)
 const cekRasio = (teks, v, rg, longgar = 1) => v == null ? null : { teks, aktual: v, ideal: teksRg(rg), ok: jarak(v, rg) <= TOL * longgar }
 
-export function cariAbcd(bars = [], skala = SKALA.D, umurD = 30) {
+export function cariAbcd(bars = [], skala = SKALA_POLA.D, umurD = 30) {
   const n = bars.length
   if (n < 30) return []
   const hasil = new Map()
@@ -466,7 +471,7 @@ export function cariAbcd(bars = [], skala = SKALA.D, umurD = 30) {
   return [...hasil.values()].map(r => ({ ...r, swingLemah: swingLemah(bars, r.titik) }))
 }
 
-export function cariTigaDorongan(bars = [], skala = SKALA.D, umurD = 30) {
+export function cariTigaDorongan(bars = [], skala = SKALA_POLA.D, umurD = 30) {
   const n = bars.length
   if (n < 30) return []
   const p = POLA_LAIN.tigadorongan, hasil = new Map()
@@ -511,7 +516,7 @@ export function cariTigaDorongan(bars = [], skala = SKALA.D, umurD = 30) {
 }
 
 // Semua pola aktif (XABCD, Three Drives, AB=CD): status dulu, lalu pola lima/enam titik sebelum AB=CD, lalu skor.
-export function cariPola(bars = [], skala = SKALA.D, umurD = 30) {
+export function cariPola(bars = [], skala = SKALA_POLA.D, umurD = 30) {
   const urut = { prz: 0, berbalik: 1, menuju: 2 }, kelas = { xabcd: 0, tigadorongan: 1, abcd: 2 }
   return [...cariXabcd(bars, skala, umurD), ...cariTigaDorongan(bars, skala, umurD), ...cariAbcd(bars, skala, umurD)]
     .sort((a, b) => urut[a.status] - urut[b.status] || kelas[a.bentuk] - kelas[b.bentuk] || timpang(a) - timpang(b) || a.skor - b.skor)

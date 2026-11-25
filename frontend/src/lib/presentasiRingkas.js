@@ -166,7 +166,7 @@ export const RINGKAS = [
     id: 'r-metode', bagian: 'Metodologi', judul: 'Cara halaman ini mendeteksi pola', sub: 'Aturan yang sama untuk semua saham',
     poin: [
       'Data: candle Stockbit harian (1 tahun) dan mingguan (3 tahun); screening malam hanya saham dengan nilai transaksi minimal sekitar Rp1 miliar per hari.',
-      'Swing dicari dengan zigzag (ambang 4–30% harian, 8–25% mingguan) supaya titik X sampai D objektif.',
+      'Swing dicari dengan zigzag (ambang 4–50% harian yang dicoba setiap 0,5%) supaya titik X sampai D objektif.',
       'Rasio dicocokkan dengan toleransi ±5% (proyeksi BC ±10%); PRZ = irisan rentang D dan proyeksi BC.',
       'Pola dinyatakan batal bila setelah D ada penutupan yang menembus batas batal.',
     ],

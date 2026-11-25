@@ -10,7 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { createChart, CrosshairMode, LineStyle } from 'lightweight-charts'
 import { api } from '../api.js'
 import { store, toast } from '../store.js'
-import { SKALA, TF, POLA, PEMBEDA, FIB_KUNCI, alasanPola, komponenPrz, jarakKaki, alasanX, diagramIdeal, konfirmasiD, skenarioD, trenBesar, nilaiTren, jarakElliott, cariElliott, cariPola, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
+import { SKALA, SKALA_POLA, TF, POLA, PEMBEDA, FIB_KUNCI, alasanPola, komponenPrz, jarakKaki, alasanX, diagramIdeal, konfirmasiD, skenarioD, trenBesar, nilaiTren, jarakElliott, cariElliott, cariPola, fibExtension, fibRetracement, kelompokBar, rencanaPosisi, swingXabcd } from '../lib/harmonikAlat.js'
 import { ukuranPosisi } from '../lib/harmonikBelajar.js'
 import { ema } from '../lib/ta.js'
 import { bacaPosisi, geserPanel, jepitPanel } from '../lib/geserPanel.js'
@@ -76,6 +76,7 @@ watch([kode, tf], ([t, f]) => muat(t, f), { immediate: true })
 watch([tab, kode, tf], ([v, t, f]) => router.replace({ query: { t, tf: f === 'D' ? undefined : f, tab: v === 'saham' ? undefined : v } }), { immediate: true })
 const bars = computed(() => kelompokBar(mentah.value, tf.value === 'M' ? 'M' : 'D'))
 const skala = computed(() => SKALA[tf.value])
+const skalaPola = computed(() => SKALA_POLA[tf.value])
 
 // Cari kode/nama saham BEI.
 const q = ref(''), kodeBei = ref(null), cariBuka = ref(false)
@@ -103,9 +104,9 @@ const nama = computed(() => (kodeBei.value || []).find(k => k.t === kode.value)?
 
 // --------------------------------------------------------------- analisa ----
 // Semua pola aktif: XABCD (termasuk 5-0), Three Drives, dan AB=CD.
-const polaList = computed(() => bars.value.length ? cariPola(bars.value, skala.value, tf.value === 'D' ? 30 : 12) : [])
+const polaList = computed(() => bars.value.length ? cariPola(bars.value, skalaPola.value, tf.value === 'D' ? 30 : 12) : [])
 // Skenario lain (lib/harmonikCekSilang.js): pola yang tidak ikut daftar aktif, misalnya PRZ lebih dari 25% dari harga.
-const skenario = computed(() => tutorial.value || !bars.value.length ? [] : skenarioLain(bars.value, polaList.value, skala.value, tf.value === 'D' ? 30 : 12))
+const skenario = computed(() => tutorial.value || !bars.value.length ? [] : skenarioLain(bars.value, polaList.value, skalaPola.value, tf.value === 'D' ? 30 : 12))
 const pilihPola = ref(0)
 watch(polaList, () => { pilihPola.value = 0 })
 // Daftar yang bisa dibuka dengan tombol ‹ ›: pola aktif dulu, lalu skenario lain (pola yang PRZ-nya masih jauh atau
@@ -194,12 +195,12 @@ function klikChart(param) {
 const batalTitik = () => { manual.value = { ...manual.value, [alatManual.value]: titikAlat.value.slice(0, -1) } }
 const ulangAlat = () => { manual.value = { ...manual.value, [alatManual.value]: [] } }
 function cek() {
-  hasilCek.value = cekManual(bars.value, alatManual.value, titikAlat.value, { xabcd: objManual.value.xabcd, skala: skala.value })
+  hasilCek.value = cekManual(bars.value, alatManual.value, titikAlat.value, { xabcd: objManual.value.xabcd, skala: skalaPola.value })
 }
 // Proyeksi: pola yang benar dari tarikan XABCD (titik dirapikan, D di PRZ). Tekan lagi untuk menyembunyikan.
 function proyeksikan() {
   if (proyeksi.value) { proyeksi.value = null; return }
-  proyeksi.value = proyeksiXabcd(bars.value, manual.value.xabcd || [], { skala: skala.value })
+  proyeksi.value = proyeksiXabcd(bars.value, manual.value.xabcd || [], { skala: skalaPola.value })
   if (!proyeksi.value) toast('Tarik minimal empat titik (X, A, B, C) dulu.')
 }
 // ------------------------------------------------------------ cek silang ----
@@ -1181,7 +1182,7 @@ async function unduh() {
         <article>
           <h3>Cara menentukan titik X</h3>
           <p>X adalah awal pola. Untuk pola bullish, X adalah swing low (lembah) sebelum kenaikan XA. Untuk pola bearish, X adalah swing high (puncak) sebelum penurunan XA. Langkahnya:
-            (1) cari lembah atau puncak yang jelas, yaitu titik yang kemudian ditinggalkan harga dengan gerak cukup besar (zigzag, di sini minimal 4–30% di harian, lebih besar di mingguan dan bulanan);
+            (1) cari lembah atau puncak yang jelas, yaitu titik yang kemudian ditinggalkan harga dengan gerak cukup besar (zigzag; di harian ambangnya dicoba dari 4% sampai 50%, setiap 0,5%);
             (2) tarik kaki XA ke puncak atau lembah berikutnya;
             (3) cek titik B: harus di retracement 0,382–0,886 XA. Bila di luar itu, kemungkinan X salah, coba swing sebelumnya;
             (4) setelah semua titik cocok, X juga menjadi batas batal pola (kecuali pola yang D-nya memang melewati X).

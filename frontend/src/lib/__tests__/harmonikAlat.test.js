@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cariPola, diagramIdeal as diagramIdeal2, konfirmasiD as konfirmasiD2, skenarioD as skenarioD2, labPola, rasioContoh, jarakElliott, nilaiTren, trenBesar, alasanPola, alasanX, candleBalik, skenarioD, konfirmasiD, rsi, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag, basi } from '../harmonikAlat.js'
+import { cariPola, diagramIdeal as diagramIdeal2, konfirmasiD as konfirmasiD2, skenarioD as skenarioD2, labPola, rasioContoh, jarakElliott, nilaiTren, trenBesar, alasanPola, alasanX, candleBalik, skenarioD, konfirmasiD, rsi, aturanElliott, cariElliott, cariXabcd, diagramIdeal, fibExtension, fibRetracement, kelompokBar, przPola, rencanaPosisi, zigzag, basi, SKALA_POLA } from '../harmonikAlat.js'
 
 // Bar sintetis: harga bergerak lurus antar titik, 10 bar per kaki, tanggal hari kerja berurutan.
 function bangun(titik, per = 10) {
@@ -107,15 +107,24 @@ describe('cariXabcd', () => {
   })
 })
 
+describe('SKALA_POLA', () => {
+  it('harian 4% sampai 50% setiap 0,5%', () => {
+    expect(SKALA_POLA.D.length).toBe(93)
+    expect([SKALA_POLA.D[0], SKALA_POLA.D[1], SKALA_POLA.D.at(-1)]).toEqual([0.04, 0.045, 0.5])
+    expect(SKALA_POLA.D).toContain(0.07)
+  })
+})
+
 describe('cariXabcd: skala besar untuk saham bergerak lebar', () => {
   // Meniru KOTA 2026: Shark X 71, A 210, B 140, C 252, D 50, dengan pantulan 81 → 104 (naik 28%) di tengah kaki C→D.
   const kota = bangun([120, 71, 210, 140, 252, 81, 104, 50, 75])
-  it('pantulan 28% memecah kaki C→D di skala 4–15%', () => {
-    expect(cariXabcd(kota, [0.04, 0.06, 0.1, 0.15]).find(r => r.pola === 'shark')).toBeUndefined()
+  it('pantulan 28% memecah kaki C→D di skala jarang 4–25%', () => {
+    expect(cariXabcd(kota, [0.04, 0.06, 0.1, 0.15, 0.2, 0.25]).find(r => r.pola === 'shark')).toBeUndefined()
   })
-  it('skala harian 30% membaca Shark-nya', () => {
+  it('skala rapat membaca Shark-nya di sekitar 30%', () => {
     const s = cariXabcd(kota).find(r => r.pola === 'shark')
-    expect(s).toMatchObject({ arah: 'bullish', status: 'berbalik', skala: 0.3 })
+    expect(s).toMatchObject({ arah: 'bullish', status: 'berbalik' })
+    expect(s.skala).toBeGreaterThan(0.28)
     expect(s.titik.map(t => Math.round(t.p))).toEqual([71, 210, 140, 252, 50])
   })
 })

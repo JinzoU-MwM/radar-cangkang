@@ -3,7 +3,7 @@
 // sebaliknya atau X berbeda yang PRZ-nya masih jauh), dan titik untuk dicek ulang di tab Tutorial.
 // Fungsi murni. Baris pola bisa dari cariXabcd (klien) atau /api/harmonik (server): keduanya punya pola, status,
 // rasio, prz, dan titik [{n, p}].
-import { ABCD_TOL, MENUJU_MAKS, POLA, SKALA, TOL, cariXabcd, jarak, jarakKaki, rasioXabcd } from './harmonikAlat.js'
+import { ABCD_TOL, MENUJU_MAKS, POLA, SKALA_POLA, TOL, cariXabcd, jarak, jarakKaki, rasioXabcd } from './harmonikAlat.js'
 import { tick } from './ta.js'
 
 export const PAS = 0.02           // rasio ideal berupa angka tunggal (Gartley B 0,618): selisih sampai 2% masih dianggap pas
@@ -82,24 +82,15 @@ export function kekuatanPola(row) {
   return { tingkat, nama: TINGKAT[tingkat].nama, ket: TINGKAT[tingkat].ket, alasan }
 }
 
-// Skala zigzag lebih rapat untuk mencari skenario: dari skala terkecil sampai 4/3 skala terbesar dengan langkah
-// setengah skala terkecil, karena pantulan kecil di kaki CD bisa memecah swing di satu skala tetapi tidak di skala
-// sebelahnya (contoh ANDI: pantulan 10% memecah kaki CD di skala 10%, tetapi tidak di 12%).
-export function skalaRapat(skala = SKALA.D) {
-  const lo = Math.min(...skala), hi = Math.max(...skala) * 4 / 3, langkah = lo / 2, out = []
-  for (let v = lo; v <= hi + 1e-9; v += langkah) out.push(Math.round(v * 1000) / 1000)
-  return out
-}
-
 // Skenario lain: pola XABCD "menuju" yang tidak ada di daftar utama, misalnya PRZ-nya lebih jauh dari batas
-// pemindai (25%, di sini sampai SKENARIO_MAKS) atau hanya terbaca di skala zigzag sisipan. Gerak harga berikutnya
+// pemindai (25%, di sini sampai SKENARIO_MAKS). Gerak harga berikutnya
 // yang menentukan skenario mana yang jadi.
-export function skenarioLain(bars = [], utama = [], skala = SKALA.D, umurD = 30) {
+export function skenarioLain(bars = [], utama = [], skala = SKALA_POLA.D, umurD = 30) {
   const n = bars.length
   if (n < 30) return []
   const akhir = bars[n - 1].c, ada = new Set(utama.map(r => r.kunci))
   const sama = r => utama.some(u => u.pola === r.pola && u.arah === r.arah && u.titik?.[0]?.p === r.titik[0].p && u.titik?.[2]?.p === r.titik[2].p)
-  return cariXabcd(bars, skalaRapat(skala), umurD, SKENARIO_MAKS)
+  return cariXabcd(bars, skala, umurD, SKENARIO_MAKS)
     .filter(r => r.status === 'menuju' && !ada.has(r.kunci) && !sama(r))
     .map(r => {
       const bull = r.arah === 'bullish', tepi = bull ? r.prz[1] : r.prz[0]

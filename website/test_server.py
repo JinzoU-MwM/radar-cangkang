@@ -557,14 +557,15 @@ class HarmonikTest(unittest.TestCase):
                           if "Titik B" in t], [])
 
     def test_skala_besar_saham_lebar(self):
-        """Skala harian 20% dan 30% sama dengan SKALA.D di harmonikAlat.js. Meniru KOTA 2026: Shark 71-210-140-252-50
-        dengan pantulan 81 → 104 (naik 28%) di kaki C→D hanya terbaca di skala 30%."""
+        """Skala rapat 4–50% setiap 0,5% sama dengan SKALA_POLA.D di harmonikAlat.js. Meniru KOTA 2026: Shark
+        71-210-140-252-50 dengan pantulan 81 → 104 (naik 28%) di kaki C→D hanya terbaca di sekitar 30%."""
         import harmonik
-        self.assertEqual(harmonik.SKALA, (0.04, 0.06, 0.10, 0.15, 0.20, 0.30))
+        self.assertEqual((len(harmonik.SKALA), harmonik.SKALA[0], harmonik.SKALA[1], harmonik.SKALA[-1]), (93, 0.04, 0.045, 0.5))
         kota = self.bars([120, 71, 210, 140, 252, 81, 104, 50, 75])
         self.assertFalse(any(r["pola"] == "shark" for r in harmonik.cari(kota, skala=(0.04, 0.06, 0.10, 0.15), min_nilai=0)))
         s = next(r for r in harmonik.cari(kota, min_nilai=0) if r["pola"] == "shark")
-        self.assertEqual((s["arah"], s["skala"]), ("bullish", 0.30))
+        self.assertEqual(s["arah"], "bullish")
+        self.assertGreater(s["skala"], 0.28)
         for t, v in zip(s["titik"], (71, 210, 140, 252, 50)):   # high/low sintetis ±0,4%, dibulatkan ke fraksi harga
             self.assertAlmostEqual(t["p"], v, delta=v * 0.01)
 
