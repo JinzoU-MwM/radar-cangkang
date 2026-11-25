@@ -1181,7 +1181,7 @@ async function unduh() {
         <article>
           <h3>Cara menentukan titik X</h3>
           <p>X adalah awal pola. Untuk pola bullish, X adalah swing low (lembah) sebelum kenaikan XA. Untuk pola bearish, X adalah swing high (puncak) sebelum penurunan XA. Langkahnya:
-            (1) cari lembah atau puncak yang jelas, yaitu titik yang kemudian ditinggalkan harga dengan gerak cukup besar (zigzag, di sini minimal 4–15% tergantung timeframe);
+            (1) cari lembah atau puncak yang jelas, yaitu titik yang kemudian ditinggalkan harga dengan gerak cukup besar (zigzag, di sini minimal 4–30% di harian, lebih besar di mingguan dan bulanan);
             (2) tarik kaki XA ke puncak atau lembah berikutnya;
             (3) cek titik B: harus di retracement 0,382–0,886 XA. Bila di luar itu, kemungkinan X salah, coba swing sebelumnya;
             (4) setelah semua titik cocok, X juga menjadi batas batal pola (kecuali pola yang D-nya memang melewati X).

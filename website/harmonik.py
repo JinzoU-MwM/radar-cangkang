@@ -50,11 +50,11 @@ ABCD_C, ABCD_E = (0.382, 0.886), (1.13, 2.618)
 STOP_PRZ = {"altbat", "butterfly", "crab", "deepcrab", "shark"}   # D melewati/menyentuh X: stop di sisi luar PRZ
 # Versi aturan pemindai: naikkan setiap kali pola/rasio/aturan berubah. Server memindai ulang saat start bila hasil
 # tersimpan (.harmonik.json) dibuat dengan versi lain, tanpa menunggu jadwal malam.
-VERSI_ATURAN = 6   # 6: catatan swing (kaki, swingLemah) dan pola "cek swing" turun peringkat; 5: zigzag pindah pivot yang tertembus, D basi dibuang, skala 4%, umur 30 bar; 4: cek AB=CD (CD/AB) di pola XABCD; 3: AB=CD hanya di PRZ/berbalik; PRZ Three Drives 1,27/1,618
+VERSI_ATURAN = 7   # 7: skala zigzag harian 20% dan 30% untuk saham bergerak lebar; 6: catatan swing (kaki, swingLemah) dan pola "cek swing" turun peringkat; 5: zigzag pindah pivot yang tertembus, D basi dibuang, skala 4%, umur 30 bar; 4: cek AB=CD (CD/AB) di pola XABCD; 3: AB=CD hanya di PRZ/berbalik; PRZ Three Drives 1,27/1,618
 TOL = 0.05            # toleransi relatif batas rasio (±5%)
 ABCD_TOL = 0.15       # AB=CD di dalam pola: CD minimal 0,85 AB (kaki CD berakhir di ekstrem swing yang beragam)
 PRZ_LEBAR = 0.03      # lebar PRZ = ±3% panjang kaki acuan di sekitar level D
-SKALA = (0.04, 0.06, 0.10, 0.15)   # ambang zigzag (pembalikan minimal) dari swing kecil ke besar; sama dengan SKALA.D di harmonikAlat.js
+SKALA = (0.04, 0.06, 0.10, 0.15, 0.20, 0.30)   # ambang zigzag (pembalikan minimal) dari swing kecil ke besar; sama dengan SKALA.D di harmonikAlat.js
 MENUJU_MAKS = 12.0    # % jarak harga ke PRZ yang masih ditampilkan sebagai "menuju PRZ"
 BERBALIK_BAR = 30     # D terkonfirmasi paling lama sekian bar lalu (sama dengan umurD tab Saham harian)
 BAR_SIMPAN = 250      # bar terakhir yang disimpan/dikirim untuk chart analisa

@@ -34,8 +34,10 @@ export const TOL = 0.05          // toleransi relatif batas rasio (±5%)
 export const ABCD_TOL = 0.15    // AB=CD di dalam pola: CD minimal 0,85 AB (sama dengan website/harmonik.py)
 export const PRZ_LEBAR = 0.03    // PRZ minimal = ±3% kaki acuan di sekitar level D
 export const MENUJU_MAKS = 0.25  // jarak harga terakhir ke tepi PRZ yang masih digambar sebagai pola "menuju"
-// Ambang zigzag (pembalikan minimal) per timeframe, dari swing kecil ke besar.
-export const SKALA = { D: [0.04, 0.06, 0.1, 0.15], W: [0.08, 0.12, 0.18, 0.25], M: [0.12, 0.18, 0.25, 0.35] }
+// Ambang zigzag (pembalikan minimal) per timeframe, dari swing kecil ke besar. Skala harian 20% dan 30% untuk saham
+// bergerak lebar: pantulan besar di tengah kaki (contoh KOTA: 81 → 104, naik 28%, di kaki C→D 252 → 50) memecah
+// kaki di skala 4–15%, sehingga Shark 71-210-140-252-50 baru terbaca di skala 30%.
+export const SKALA = { D: [0.04, 0.06, 0.1, 0.15, 0.2, 0.3], W: [0.08, 0.12, 0.18, 0.25], M: [0.12, 0.18, 0.25, 0.35] }
 export const TF = [{ k: 'D', nama: 'Harian', pendek: '1D' }, { k: 'W', nama: 'Mingguan', pendek: '1W' }, { k: 'M', nama: 'Bulanan', pendek: '1M' }]
 
 export const FIB_RET = [0, 0.236, 0.382, 0.5, 0.618, 0.707, 0.786, 0.886, 1, 1.13, 1.27, 1.414, 1.618]
