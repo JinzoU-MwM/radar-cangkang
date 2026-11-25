@@ -5095,17 +5095,29 @@ def saham_detail(t: str, month: int) -> dict:
 HARMONIK_PATH = ROOT / ".harmonik.json"
 
 
+def harmonik_universe() -> tuple[list[str], set[str]]:
+    """Saham yang dipindai Harmonic: universe Recovery ditambah semua kode BEI yang dikenal, supaya tidak ada saham yang
+    terlewat (sebelumnya sekitar 150 kode BEI di luar Seasonality/Pola Broker tidak pernah dipindai). Kembali juga
+    himpunan Recovery, karena ringkasan momentum Rekomendasi tetap hanya untuk universe itu."""
+    rec = set(recovery_universe())
+    bei = {t for t in bei_kode_load() if re.match(r"^[A-Z]{4}$", t)}
+    return sorted(rec | bei), rec
+
+
 def harmonik_build(delay: float = 0.25) -> None:
-    """Screening Harmonic Pattern (POV) atas universe Recovery memakai bar harian 1 tahun yang sama (cache), sehingga
-    dijalankan tepat setelah recovery_build hampir tanpa panggilan Stockbit tambahan."""
+    """Screening Harmonic Pattern (POV) atas universe Recovery plus semua kode BEI memakai bar harian 1 tahun yang
+    sama (cache), sehingga dijalankan tepat setelah recovery_build dengan sedikit panggilan Stockbit tambahan."""
     rows, dinilai, simpan, mom = [], 0, {}, {}
     now = datetime.now(WIB)
     hari_ini, buka = now.strftime("%Y-%m-%d"), now.hour < 16
-    for t in recovery_universe():
+    semua, rec = harmonik_universe()
+    for t in semua:
         try:
             bars = get_ohlc(t, "1y")
         except Exception as e:
-            if "401" in str(e):
+            # Token mati menghentikan screening hanya untuk universe Recovery (yang biasanya sudah ada di cache);
+            # kode BEI tambahan yang gagal diambil cukup dilewati supaya hasil lain tetap tersimpan.
+            if "401" in str(e) and t in rec:
                 raise
             continue
         if bars:
@@ -5115,10 +5127,10 @@ def harmonik_build(delay: float = 0.25) -> None:
             if hasil:
                 # Salinan bar untuk chart analisa (dipakai bila cache harga kosong, mis. pengunjung publik).
                 simpan[t] = [{k: b[k] for k in ("d", "o", "h", "l", "c", "v")} for b in bars[-HM.BAR_SIMPAN:]]
-            # Ringkasan momentum semua saham untuk Rekomendasi (tanpa candle hari ini yang belum selesai).
-            bb = [b for b in bars if not (buka and str(b.get("d"))[:10] == hari_ini)]
+            # Ringkasan momentum saham universe Recovery untuk Rekomendasi (tanpa candle hari ini yang belum selesai).
+            bb = [b for b in bars if not (buka and str(b.get("d"))[:10] == hari_ini)] if t in rec else []
             try:
-                m = RK.momentum(bb)
+                m = RK.momentum(bb) if bb else None
                 if m:
                     mom[t] = {**m, "res": RK.resistensi(bb[-HM.BAR_SIMPAN:]), "l5": min(x["l"] for x in bb[-5:]),
                               "l20": min(x["l"] for x in bb[-20:]), "c": bb[-1]["c"]}
