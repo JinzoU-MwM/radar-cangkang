@@ -669,6 +669,25 @@ class HarmonikTest(unittest.TestCase):
         r = harmonik.cari(self.bars([150, 100, 200, 138.2, 175.3, 121.4, 130, 90]))
         self.assertFalse([x for x in r if x["pola"] == "gartley" and x["titik"][0]["p"] == 100])
 
+    def test_screening_memindai_semua_kode_bei(self):
+        """Screening memindai universe Recovery ditambah semua kode BEI (KOTA di luar Seasonality tetap dipindai);
+        ringkasan momentum Rekomendasi tetap hanya untuk universe Recovery."""
+        tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        jalur, dipanggil = Path(tmp.name) / ".harmonik.json", []
+        kota = self.bars([120, 71, 210, 140, 252, 81, 104, 50, 75], vol=1e9)
+        def ohlc(t, tf):
+            dipanggil.append(t)
+            if t == "BBBB":
+                raise RuntimeError("HTTP 401 Unauthorized")             # kode tambahan tanpa cache: dilewati
+            return kota if t == "KOTA" else self.bars([100, 120, 110], vol=1e9)
+        with unittest.mock.patch.object(server, "HARMONIK_PATH", jalur),                 unittest.mock.patch.object(server, "recovery_universe", lambda: ["AAAA"]),                 unittest.mock.patch.object(server, "bei_kode_load", lambda: {"KOTA": "2026-11-20", "AAAA": "2026-11-20", "BBBB": "", "X1": ""}),                 unittest.mock.patch.object(server, "get_ohlc", ohlc),                 unittest.mock.patch.object(server.RK, "momentum", lambda bb: {"m": 1}),                 unittest.mock.patch.object(server.RK, "resistensi", lambda bb: None):
+            server.harmonik_build(delay=0)
+            d = json.loads(jalur.read_text(encoding="utf-8"))
+        self.assertEqual(dipanggil, ["AAAA", "BBBB", "KOTA"])               # kode bukan 4 huruf dilewati
+        self.assertEqual(d["dinilai"], 2)
+        self.assertTrue(any(r["t"] == "KOTA" and r["pola"] == "shark" for r in d["rows"]))
+        self.assertEqual(list(d["momentum"]), ["AAAA"])
+
     def test_pindai_ulang_bila_aturan_berubah(self):
         tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         jalur = Path(tmp.name) / ".harmonik.json"
