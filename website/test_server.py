@@ -581,7 +581,8 @@ class TokenUiTest(unittest.TestCase):
         (self.root / ".stockbit-refresh").write_text(self.jwt(exp=int(time.time()) + 86400) + "\n")
         respons = json.dumps({"data": {"access": {"token": akses}, "refresh": {"token": ref2}}}).encode()
         wm = Path(server.__file__).resolve().parent.parent / "stockbit-token-watcher.py"
-        with unittest.mock.patch.object(server, "refresh_post", return_value=respons) as rp:
+        with unittest.mock.patch.object(server, "refresh_post", return_value=respons) as rp, \
+                unittest.mock.patch.object(server, "token_uji", return_value=True):
             # Parser respons ada di stockbit-token-watcher.py repo, bukan di folder uji.
             import importlib.util
             spec = importlib.util.spec_from_file_location("wm_uji", wm)
@@ -596,6 +597,44 @@ class TokenUiTest(unittest.TestCase):
                 # Token baru masih lama berlaku: tidak memanggil Stockbit lagi.
                 self.assertTrue(server.token_perbarui()["ok"])
                 self.assertEqual(rp.call_count, 1)
+
+    def test_token_baru_ditolak_token_lama_dipertahankan(self):
+        lama = self.jwt(exp=int(time.time()) + 600)
+        (self.root / ".stockbit-token").write_text(lama + "\n")
+        (self.root / ".stockbit-refresh").write_text(self.jwt(exp=int(time.time()) + 86400) + "\n")
+        akses, ref2 = self.jwt(exp=int(time.time()) + 86400), self.jwt(exp=int(time.time()) + 30 * 86400)
+        respons = json.dumps({"data": {"access": {"token": akses}, "refresh": {"token": ref2}}}).encode()
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("wm_uji2", Path(server.__file__).resolve().parent.parent / "stockbit-token-watcher.py")
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        with unittest.mock.patch.object(server, "refresh_post", return_value=respons), \
+                unittest.mock.patch.object(server, "_wmod", m), \
+                unittest.mock.patch.object(server, "token_uji", return_value=False):
+            st = server.token_perbarui()
+        self.assertIs(st["ok"], False)
+        self.assertIn("incognito", st["pesan"])
+        self.assertEqual(server.read_token(self.root / ".stockbit-token"), lama)      # token lama tetap dipakai
+        self.assertEqual(server.read_token(self.root / ".stockbit-refresh"), ref2)    # refresh baru tetap disimpan
+
+    def test_token_uji(self):
+        galat = lambda kode: urllib.error.HTTPError(server.SB, kode, "x", {}, None)
+        with unittest.mock.patch.object(server, "http_get_api", return_value="{}"):
+            self.assertTrue(server.token_uji("t"))
+        with unittest.mock.patch.object(server, "http_get_api", side_effect=galat(401)):
+            self.assertFalse(server.token_uji("t"))
+        with unittest.mock.patch.object(server, "http_get_api", side_effect=galat(500)):
+            self.assertTrue(server.token_uji("t"))                                   # gangguan server: jangan buang token
+        with unittest.mock.patch.object(server, "http_get_api", side_effect=OSError("putus")):
+            self.assertTrue(server.token_uji("t"))
+
+    def test_simpan_keduanya_tidak_memaksa_refresh(self):
+        baru = self.jwt(exp=int(time.time()) + 86400)
+        with unittest.mock.patch.object(server, "refresh_post") as rp:
+            code, res = server.token_simpan({"token": baru, "refresh": self.jwt(exp=int(time.time()) + 86400)})
+        self.assertEqual(code, 200)
+        rp.assert_not_called()                                                         # token masih lama: refresh menunggu
+        self.assertEqual(server.read_token(self.root / ".stockbit-token"), baru)
 
     def test_refresh_ditolak(self):
         (self.root / ".stockbit-refresh").write_text(self.jwt(exp=int(time.time()) + 86400) + "\n")

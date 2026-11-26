@@ -72,7 +72,7 @@ async function simpan() {
       <form class="isi" @submit.prevent="simpan">
         <label for="tk-ref">Refresh token <span class="tag t-good">disarankan</span></label>
         <input id="tk-ref" v-model="refresh" type="password" autocomplete="off" spellcheck="false" placeholder="eyJ…" />
-        <p class="small muted">Dengan refresh token, server memperpanjang token sendiri setiap kali sisanya kurang dari 2 jam, jadi token tidak habis. Isi di satu mesin saja (laptop atau server); token baru menyebar ke mesin lain lewat sinkron.</p>
+        <p class="small muted">Dengan refresh token, server memperpanjang token sendiri setiap kali sisanya kurang dari 2 jam, jadi token tidak habis. <b>Ambil dari jendela incognito, lalu tutup jendela itu tanpa logout.</b> Refresh token dari browser yang masih Anda pakai akan saling mencabut dengan server. Isi di satu mesin saja; token baru menyebar ke mesin lain lewat sinkron.</p>
 
         <label for="tk-tok">Token akses (Bearer)</label>
         <input id="tk-tok" v-model="token" type="password" autocomplete="off" spellcheck="false" placeholder="eyJ… (boleh dengan awalan Bearer)" />
