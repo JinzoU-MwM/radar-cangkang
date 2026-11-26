@@ -250,6 +250,7 @@ def token_simpan(body) -> tuple[int, dict]:
         hasil["perpanjang"] = token_perbarui(paksa=True)
     if not hasil:
         return 400, {"error": "Isi token atau refresh token."}
+    hasil["susulan"] = data_susulan("token diganti dari UI", paksa=True)
     return 200, {"ok": True, **hasil, "tokenExp": token_exp(), "watcher": watcher_status()}
 
 
@@ -258,6 +259,7 @@ def token_loop() -> None:
     while True:
         try:
             token_perbarui()
+            data_susulan("pemeriksaan berkala")
         except Exception as e:
             print(f"[token] {e}", file=sys.stderr)
         time.sleep(TOKEN_JEDA)
@@ -5506,6 +5508,49 @@ def daily_builds() -> None:
             except Exception as e:
                 print(f"[{fn.__name__}] gagal: {e}; dicoba lagi 30 menit", file=sys.stderr)
                 time.sleep(1800)
+
+
+# Susulan data harian: saat token mati, jadwal 00.01 tetap "berhasil" memakai cache basi sehingga tidak dicoba ulang
+# dan harga tertahan sampai jadwal berikutnya. Bila harga di data Recovery tertinggal >= 2 hari bursa dan token
+# berlaku, daily_builds dijalankan sekarang (dicek token_loop tiap 15 menit dan setiap token diganti dari UI).
+SUSULAN_JEDA = 6 * 3600
+_susulan_lock = threading.Lock()
+_susulan_at = 0.0
+
+
+def hari_bursa_mundur(d: date, n: int) -> date:
+    """Tanggal n hari kerja (Senin-Jumat) sebelum d."""
+    while n > 0:
+        d -= timedelta(days=1)
+        if d.weekday() < 5:
+            n -= 1
+    return d
+
+
+def data_tertinggal(now: datetime | None = None) -> bool:
+    """Candle terakhir di data Recovery lebih tua dari 2 hari bursa sebelum hari ini (WIB). Satu hari libur tidak
+    memicu, karena data normal paling lambat tertinggal satu hari bursa."""
+    now = now or datetime.now(timezone.utc)
+    tek = (RC.load(RECOVERY_PATH).get("tek") or {}).values()
+    akhir = max((str(x.get("tanggal") or "") for x in tek), default="")
+    if not akhir:
+        return False
+    return akhir < hari_bursa_mundur((now + timedelta(hours=7)).date(), 2).isoformat()
+
+
+def data_susulan(alasan: str, paksa: bool = False) -> bool:
+    """Bangun ulang data harian di latar bila tertinggal dan token berlaku; paling sering sekali per SUSULAN_JEDA
+    kecuali paksa (token baru dari UI)."""
+    global _susulan_at
+    if not get_token() or token_expired() or not data_tertinggal():
+        return False
+    with _susulan_lock:
+        if not paksa and time.time() - _susulan_at < SUSULAN_JEDA:
+            return False
+        _susulan_at = time.time()
+    print(f"[susulan] data harian tertinggal ({alasan}); membangun ulang sekarang", file=sys.stderr)
+    threading.Thread(target=daily_builds, daemon=True, name="susulan").start()
+    return True
 
 
 IHSG_PATH = ROOT / ".ihsg.json"

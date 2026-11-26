@@ -526,7 +526,8 @@ class TokenUiTest(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.patch = [unittest.mock.patch.object(server, "ROOT", self.root),
                       unittest.mock.patch.object(server, "TOKEN_PATH", self.root / ".stockbit-token"),
-                      unittest.mock.patch.object(server, "_wmod", None)]
+                      unittest.mock.patch.object(server, "_wmod", None),
+                      unittest.mock.patch.object(server, "data_susulan", return_value=False)]
         for x in self.patch:
             x.start()
         self.addCleanup(self.tmp.cleanup)
@@ -603,6 +604,54 @@ class TokenUiTest(unittest.TestCase):
             st = server.token_perbarui(paksa=True)
         self.assertIs(st["ok"], False)
         self.assertIn("401", st["pesan"])
+
+
+class SusulanDataTest(unittest.TestCase):
+    """Data harian yang dibangun saat token mati (harga tertahan) dibangun ulang begitu token berlaku lagi."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(self.tmp.cleanup)
+        self.path = Path(self.tmp.name) / ".recovery.json"
+        p = unittest.mock.patch.object(server, "RECOVERY_PATH", self.path)
+        p.start()
+        self.addCleanup(p.stop)
+
+    def tulis(self, *tanggal):
+        self.path.write_text(json.dumps({"tek": {f"K{i:03d}": {"tanggal": t} for i, t in enumerate(tanggal)}}))
+
+    def test_hari_bursa_mundur(self):
+        from datetime import date
+        self.assertEqual(server.hari_bursa_mundur(date(2026, 11, 26), 2), date(2026, 11, 24))   # Kamis -> Selasa
+        self.assertEqual(server.hari_bursa_mundur(date(2026, 11, 23), 2), date(2026, 11, 19))   # Senin -> Kamis
+
+    def test_data_tertinggal(self):
+        from datetime import datetime, timezone
+        kamis = datetime(2026, 11, 26, 5, 0, tzinfo=timezone.utc)                                  # 12.00 WIB
+        self.assertFalse(server.data_tertinggal(kamis))                                         # belum ada data
+        self.tulis("2026-11-20", "2026-11-19")
+        self.assertTrue(server.data_tertinggal(kamis))                                          # tertahan sejak Jumat
+        self.tulis("2026-11-20", "2026-11-25")
+        self.assertFalse(server.data_tertinggal(kamis))                                         # normal: candle kemarin
+        self.tulis("2026-11-20")
+        senin = datetime(2026, 11, 23, 1, 0, tzinfo=timezone.utc)
+        self.assertFalse(server.data_tertinggal(senin))                                         # akhir pekan bukan tertinggal
+
+    def test_susulan_sekali_lalu_jeda(self):
+        self.tulis("2020-01-02")
+        with unittest.mock.patch.object(server, "get_token", return_value="t"), \
+                unittest.mock.patch.object(server, "token_expired", return_value=False), \
+                unittest.mock.patch.object(server, "_susulan_at", 0.0), \
+                unittest.mock.patch.object(server, "daily_builds") as db:
+            self.assertTrue(server.data_susulan("uji"))
+            self.assertFalse(server.data_susulan("uji"))                                        # masih dalam jeda 6 jam
+            self.assertTrue(server.data_susulan("uji", paksa=True))                             # token baru dari UI
+            for th in [t for t in threading.enumerate() if t.name == "susulan"]:
+                th.join(5)
+            self.assertEqual(db.call_count, 2)
+        with unittest.mock.patch.object(server, "get_token", return_value="t"), \
+                unittest.mock.patch.object(server, "token_expired", return_value=True):
+            self.assertFalse(server.data_susulan("uji", paksa=True))                            # token mati: jangan bangun
 
 
 class WatcherSymlinkTest(unittest.TestCase):
