@@ -186,6 +186,18 @@ def refresh_post(ref: str) -> bytes:
         return r.read()
 
 
+def token_uji(tok: str) -> bool:
+    """Satu panggilan ringan ke API Stockbit dengan token ini; False hanya bila ditolak (401/403). Galat jaringan
+    dianggap lolos supaya gangguan sesaat tidak membuang token yang benar."""
+    try:
+        http_get_api(SB + "/emitten/BBCA/info", tok)
+        return True
+    except urllib.error.HTTPError as e:
+        return e.code not in (401, 403)
+    except Exception:
+        return True
+
+
 def _token_catat(ok, pesan: str) -> dict:
     TOKEN_STATE.update(at=datetime.now(timezone.utc).isoformat(timespec="seconds"), ok=ok, pesan=pesan)
     return dict(TOKEN_STATE)
@@ -214,10 +226,17 @@ def token_perbarui(paksa: bool = False) -> dict:
             toks = list(m.find_tokens(json.loads(raw)))
             akses, baru = m.pick(toks, False), m.pick(toks, True)
         except Exception:
-            akses = baru = None
+            toks, akses, baru = [], None, None
         if not akses or not baru:
             return _token_catat(False, "Format respons Stockbit tidak dikenal; token belum diganti.")
-        tulis_rahasia(ref_path, baru)
+        tulis_rahasia(ref_path, baru)   # refresh token lama sudah hangus: yang baru selalu disimpan
+        # Uji token akses baru sebelum menggantikan yang sedang dipakai (26 November 2026: token hasil perpanjangan
+        # ditolak 401 karena refresh token juga dipakai sesi browser yang masih aktif).
+        if not token_uji(akses):
+            jalur = ", ".join(sorted({p for p, _ in toks})) or "-"
+            return _token_catat(False, "Token hasil perpanjangan ditolak Stockbit, token lama tetap dipakai. Biasanya karena "
+                                "refresh token juga dipakai browser yang masih login; ambil ulang dari jendela incognito "
+                                f"lalu tutup tanpa logout. (Jalur token di respons: {jalur})")
         token_tulis(akses)
         exp = (jwt_klaim(akses) or {}).get("exp")
         sampai = datetime.fromtimestamp(exp).strftime("%d-%m-%Y %H:%M") if exp else "?"
@@ -247,7 +266,9 @@ def token_simpan(body) -> tuple[int, dict]:
             return 400, {"error": "Refresh token ini sudah kedaluwarsa."}
         tulis_rahasia(ROOT / ".stockbit-refresh", r)
         hasil["refresh"] = True
-        hasil["perpanjang"] = token_perbarui(paksa=True)
+        # Token akses ikut diisi: jangan langsung memakai refresh token (memutar rantai dan bisa mencabut token yang
+        # baru ditempel); watcher memakainya saat sisa token < TOKEN_AMBANG.
+        hasil["perpanjang"] = token_perbarui(paksa=not hasil.get("token"))
     if not hasil:
         return 400, {"error": "Isi token atau refresh token."}
     hasil["susulan"] = data_susulan("token diganti dari UI", paksa=True)
