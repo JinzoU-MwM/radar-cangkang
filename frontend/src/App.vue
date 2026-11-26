@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { store, toast, loadKandidat, autoKandidat } from './store.js'
 import { stageOf, isNewSince } from './lib/domain.js'
 import ChangelogPanel from './components/ChangelogPanel.vue'
+import TokenPanel from './components/TokenPanel.vue'
 import TickerJump from './components/TickerJump.vue'
 
 const router = useRouter()
@@ -49,7 +50,7 @@ watch([() => store.status?.tokenExp, now], ([exp, t]) => {
   const left = exp * 1000 - t
   if (left > 0 && left < 3600e3 && !tokenWarned) {
     tokenWarned = true
-    toast(`Token Stockbit habis dalam ${Math.floor(left / 60e3)} menit. Siapkan token baru di .stockbit-token`, true)
+    toast(`Token Stockbit habis dalam ${Math.floor(left / 60e3)} menit. Isi token baru lewat tombol Token Stockbit di kiri bawah`, true)
   }
   if (left > 2 * 3600e3) tokenWarned = false
 }, { immediate: true })
@@ -129,6 +130,7 @@ onBeforeUnmount(() => { clearInterval(timer); removeEventListener('keydown', onK
       <RouterLink class="nav" to="/rekomendasi" active-class="on">Rekomendasi <span class="cnt"></span></RouterLink>
       <div class="foot">
         <ChangelogPanel />
+        <TokenPanel v-if="store.status && !store.status.readOnly" />
         <span v-if="store.status?.readOnly" class="tok">Versi publik · hanya baca</span>
         <span v-else-if="token && token.cls !== 'bad'" class="tok" :class="token.cls">{{ token.text }}</span>
         <span v-else-if="dataWarn" class="tok bad">{{ dataWarn }}</span>

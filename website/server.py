@@ -123,6 +123,146 @@ def watcher_status() -> dict:
     }
 
 
+# ------------------------------------------- isi token dari UI + watcher bawaan ----
+# Token dan refresh token Stockbit bisa diisi dari UI (POST /api/token, hanya jaringan pribadi; domain publik 403).
+# Watcher bawaan (token_loop) memperpanjang token lewat refresh token sebelum habis, di laptop maupun jni-server.
+# Ambangnya 2 jam, lebih kecil dari stockbit-token-watcher.py (3 jam), supaya di jni-server timer systemd tetap jalan
+# lebih dulu dan keduanya jarang memakai refresh token yang sama. Refresh token berotasi: isi di satu mesin saja;
+# token akses baru menyebar ke mesin lain lewat sinkron (token yang paling lama berlaku menang).
+TOKEN_AMBANG = 2 * 3600
+TOKEN_JEDA = 15 * 60
+REFRESH_URL = "https://exodus.stockbit.com/login/refresh"
+TOKEN_STATE: dict = {"at": None, "ok": None, "pesan": ""}
+_token_lock = threading.Lock()
+_wmod = None
+JWT_RE = re.compile(r"[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*")
+
+
+def jwt_klaim(t: str) -> dict | None:
+    try:
+        p = t.split(".")[1]
+        d = json.loads(base64.urlsafe_b64decode(p + "=" * (-len(p) % 4)))
+        return d if isinstance(d, dict) else None
+    except Exception:
+        return None
+
+
+def token_bersih(t, butuh_exp: bool = True) -> str | None:
+    """JWT dari isian pengguna (boleh berawalan "Bearer "); None bila bentuknya bukan JWT."""
+    s = re.sub(r"(?i)^bearer\s+", "", str(t or "").strip())
+    if len(s) > 8000 or not JWT_RE.fullmatch(s):
+        return None
+    k = jwt_klaim(s)
+    if k is None or (butuh_exp and not k.get("exp")):
+        return None
+    return s
+
+
+def tulis_rahasia(f: Path, isi: str) -> None:
+    SK.tulis_atomik(f, (isi.strip() + "\n").encode())
+    try:
+        os.chmod(f, 0o600)
+    except OSError:
+        pass
+
+
+def _watcher_mod():
+    """stockbit-token-watcher.py (folder induk) dipakai ulang untuk membaca respons /login/refresh."""
+    global _wmod
+    if _wmod is None:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("stockbit_token_watcher", ROOT.parent / "stockbit-token-watcher.py")
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        _wmod = m
+    return _wmod
+
+
+def refresh_post(ref: str) -> bytes:
+    req = urllib.request.Request(REFRESH_URL, data=b"", method="POST", headers={
+        "Authorization": f"Bearer {ref}", "Accept": "application/json",
+        "Origin": "https://stockbit.com", "Referer": "https://stockbit.com/", "User-Agent": UA_BROWSER})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return r.read()
+
+
+def _token_catat(ok, pesan: str) -> dict:
+    TOKEN_STATE.update(at=datetime.now(timezone.utc).isoformat(timespec="seconds"), ok=ok, pesan=pesan)
+    return dict(TOKEN_STATE)
+
+
+def token_perbarui(paksa: bool = False) -> dict:
+    """Perpanjang token akses memakai refresh token bila sisa umurnya < TOKEN_AMBANG (atau paksa)."""
+    with _token_lock:
+        ref_path = ROOT / ".stockbit-refresh"
+        ref = read_token(ref_path)
+        sisa = (token_exp() or 0) - time.time()
+        if not ref:
+            return _token_catat(None, "Refresh token belum diisi, jadi token tidak bisa diperpanjang otomatis.")
+        if not paksa and sisa > TOKEN_AMBANG:
+            return _token_catat(True, f"Token masih berlaku {sisa / 3600:.1f} jam.")
+        try:
+            raw = refresh_post(ref)
+        except urllib.error.HTTPError as e:
+            return _token_catat(False, f"Stockbit menolak refresh token (HTTP {e.code}): sudah mati atau terpakai. Isi ulang dari menu Token.")
+        except Exception as e:
+            return _token_catat(False, f"Gagal menghubungi Stockbit: {e}")
+        # Cadangan respons mentah: refresh token lama sudah hangus, yang baru jangan sampai hilang.
+        tulis_rahasia(ROOT / ".stockbit-refresh-last.json", raw.decode("utf-8", "replace"))
+        try:
+            m = _watcher_mod()
+            toks = list(m.find_tokens(json.loads(raw)))
+            akses, baru = m.pick(toks, False), m.pick(toks, True)
+        except Exception:
+            akses = baru = None
+        if not akses or not baru:
+            return _token_catat(False, "Format respons Stockbit tidak dikenal; token belum diganti.")
+        tulis_rahasia(ref_path, baru)
+        token_tulis(akses)
+        exp = (jwt_klaim(akses) or {}).get("exp")
+        sampai = datetime.fromtimestamp(exp).strftime("%d-%m-%Y %H:%M") if exp else "?"
+        return _token_catat(True, f"Token diperpanjang, berlaku sampai {sampai}.")
+
+
+def token_simpan(body) -> tuple[int, dict]:
+    """POST /api/token: simpan token akses dan/atau refresh token dari UI, lalu coba perpanjang."""
+    if not isinstance(body, dict):
+        return 400, {"error": "Data tidak valid."}
+    now = time.time()
+    hasil: dict = {}
+    if str(body.get("token") or "").strip():
+        t = token_bersih(body["token"])
+        if not t:
+            return 400, {"error": "Token tidak dikenali. Salin nilai setelah kata Bearer (diawali eyJ)."}
+        if jwt_klaim(t)["exp"] <= now:
+            return 400, {"error": "Token ini sudah kedaluwarsa."}
+        token_tulis(t)
+        hasil["token"] = True
+    if str(body.get("refresh") or "").strip():
+        r = token_bersih(body["refresh"], butuh_exp=False)
+        if not r:
+            return 400, {"error": "Refresh token tidak dikenali. Salin dari respons login/refresh (diawali eyJ)."}
+        exp = jwt_klaim(r).get("exp")
+        if exp and exp <= now:
+            return 400, {"error": "Refresh token ini sudah kedaluwarsa."}
+        tulis_rahasia(ROOT / ".stockbit-refresh", r)
+        hasil["refresh"] = True
+        hasil["perpanjang"] = token_perbarui(paksa=True)
+    if not hasil:
+        return 400, {"error": "Isi token atau refresh token."}
+    return 200, {"ok": True, **hasil, "tokenExp": token_exp(), "watcher": watcher_status()}
+
+
+def token_loop() -> None:
+    time.sleep(30)
+    while True:
+        try:
+            token_perbarui()
+        except Exception as e:
+            print(f"[token] {e}", file=sys.stderr)
+        time.sleep(TOKEN_JEDA)
+
+
 # ------------------------------------------------------------ suara TTS ----
 # Narasi video dengan suara pria Indonesia (Azure Speech, id-ID-ArdiNeural). Kunci dibaca dari env
 # AZURE_SPEECH_KEY + AZURE_SPEECH_REGION atau file .azure-speech (baris 1 kunci, baris 2 region); file
@@ -6585,6 +6725,10 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 self.reply_json(sinkron_post(path, self.read_json(SINKRON_MAKS_BODY)))
                 return
+            if path == "api/token" and method == "POST":
+                code, res = token_simpan(self.read_json())
+                self.reply_json(res, code)
+                return
             body = None if method == "DELETE" else self.read_json()
             if len(parts) == 3 and parts[:2] == ["api", "items"] and TICKER_RE.match(parts[2]):
                 t = parts[2]
@@ -6725,7 +6869,7 @@ class Handler(BaseHTTPRequestHandler):
                 "ok": True, "tokenLoaded": bool(get_token()), "tokenExp": exp,
                 "sinkronStockbit": NEWS_STATE.get("sbOk") or sync_state().get("sbOk"),
                 "tts": bool(tts_config()) and tts_usage()["karakter"] < TTS_MONTHLY_CHARS,
-                "watcher": watcher_status(),
+                "watcher": watcher_status() | {"bawaan": dict(TOKEN_STATE)},
                 "deploy": deploy_status(),
                 "tokenStale": bool(exp and exp < time.time()),
                 "pageFallback": False,
@@ -7147,6 +7291,7 @@ def main() -> int:
     daemon.start()
     threading.Thread(target=kandidat_loop, daemon=True).start()
     threading.Thread(target=harga_loop, daemon=True).start()
+    threading.Thread(target=token_loop, daemon=True, name="token").start()
     threading.Thread(target=pd_latar_loop, daemon=True, name="pov-dalam-latar").start()
     threading.Thread(target=sinkron_loop, daemon=True, name="sinkron").start()
     threading.Thread(target=news_loop, daemon=True).start()

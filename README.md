@@ -79,9 +79,15 @@ Sumbernya `versi-claude/radar-cangkang.html`.
 
 Data di versi `website/` tersimpan di `website/.radar.sqlite`, terpisah dari versi Claude.
 
-## Token Stockbit otomatis (Linux)
+## Token Stockbit otomatis
 
-`stockbit-token-watcher.py` jalan tiap jam (systemd user timer `stockbit-token-watcher.timer`) dan memperbarui `website/.stockbit-token` bila sisa umurnya < 3 jam, memakai refresh token di `website/.stockbit-refresh`. Gagal = notifikasi desktop.
+**Dari UI (laptop dan server):** tombol **Token Stockbit** di kiri bawah membuka panel untuk mengisi refresh token
+(disarankan) atau token akses (`POST /api/token`, hanya jaringan pribadi; versi publik menolak). Server punya watcher
+bawaan (`token_loop`, tiap 15 menit) yang memperpanjang token lewat refresh token bila sisanya < 2 jam, jadi berjalan
+juga di Windows. Keadaannya ada di `/api/status` → `watcher.bawaan`. Isi refresh token di satu mesin saja; token akses
+baru menyebar lewat sinkron.
+
+**Timer systemd (Linux):** `stockbit-token-watcher.py` jalan tiap jam (systemd user timer `stockbit-token-watcher.timer`) dan memperbarui `website/.stockbit-token` bila sisa umurnya < 3 jam, memakai refresh token di `website/.stockbit-refresh`. Gagal = notifikasi desktop.
 
 Mengisi refresh token (sekali, atau tiap kali rantainya putus):
 1. Buka jendela **incognito**, login stockbit.com, F12 > Network sebelum halaman dimuat ulang.

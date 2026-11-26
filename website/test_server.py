@@ -512,6 +512,99 @@ class SinkronTest(unittest.TestCase):
             tmp.cleanup()
 
 
+class TokenUiTest(unittest.TestCase):
+    """Isi token dari UI (POST /api/token) dan watcher bawaan (token_perbarui) tanpa memanggil Stockbit sungguhan."""
+
+    @staticmethod
+    def jwt(**klaim):
+        import base64 as b64
+        enc = lambda d: b64.urlsafe_b64encode(json.dumps(d).encode()).decode().rstrip("=")
+        return f"{enc({'alg': 'HS256', 'typ': 'JWT'})}.{enc(klaim)}.tandatanganuji123"
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.root = Path(self.tmp.name)
+        self.patch = [unittest.mock.patch.object(server, "ROOT", self.root),
+                      unittest.mock.patch.object(server, "TOKEN_PATH", self.root / ".stockbit-token"),
+                      unittest.mock.patch.object(server, "_wmod", None)]
+        for x in self.patch:
+            x.start()
+        self.addCleanup(self.tmp.cleanup)
+
+    def tearDown(self):
+        for x in self.patch:
+            x.stop()
+
+    def test_token_bersih(self):
+        t = self.jwt(exp=int(time.time()) + 3600)
+        self.assertEqual(server.token_bersih("Bearer " + t), t)
+        self.assertIsNone(server.token_bersih("bukan token"))
+        self.assertIsNone(server.token_bersih(self.jwt(sub="x")))              # token akses wajib punya exp
+        self.assertIsNotNone(server.token_bersih(self.jwt(sub="x"), butuh_exp=False))
+
+    def test_endpoint_simpan_token(self):
+        srv = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        base = f"http://127.0.0.1:{srv.server_address[1]}"
+
+        def post(body, publik=False):
+            req = urllib.request.Request(base + "/api/token", data=json.dumps(body).encode(), method="POST",
+                                         headers={"Content-Type": "application/json"})
+            if publik:
+                req.add_header("Cf-Connecting-Ip", "203.0.113.9")
+            try:
+                with urllib.request.urlopen(req) as r:
+                    return r.status, json.loads(r.read())
+            except urllib.error.HTTPError as e:
+                return e.code, json.loads(e.read() or b"null")
+        try:
+            baru = self.jwt(exp=int(time.time()) + 86400)
+            self.assertEqual(post({"token": baru}, publik=True)[0], 403)        # domain publik tetap hanya baca
+            self.assertFalse((self.root / ".stockbit-token").exists())
+            self.assertEqual(post({"token": self.jwt(exp=int(time.time()) - 10)})[0], 400)
+            self.assertEqual(post({"token": "acak"})[0], 400)
+            self.assertEqual(post({})[0], 400)
+            st, r = post({"token": "Bearer " + baru})
+            self.assertEqual((st, r["token"]), (200, True))
+            self.assertEqual(server.read_token(self.root / ".stockbit-token"), baru)
+            self.assertNotIn(baru, json.dumps(r))                              # token tidak pernah dikembalikan
+        finally:
+            srv.shutdown()
+            srv.server_close()
+
+    def test_perbarui_lewat_refresh(self):
+        lama = self.jwt(exp=int(time.time()) + 600)                           # sisa 10 menit: perlu diperpanjang
+        (self.root / ".stockbit-token").write_text(lama + "\n")
+        akses, ref2 = self.jwt(exp=int(time.time()) + 86400), self.jwt(exp=int(time.time()) + 30 * 86400)
+        self.assertIsNone(server.token_perbarui()["ok"])                       # belum ada refresh token
+        (self.root / ".stockbit-refresh").write_text(self.jwt(exp=int(time.time()) + 86400) + "\n")
+        respons = json.dumps({"data": {"access": {"token": akses}, "refresh": {"token": ref2}}}).encode()
+        wm = Path(server.__file__).resolve().parent.parent / "stockbit-token-watcher.py"
+        with unittest.mock.patch.object(server, "refresh_post", return_value=respons) as rp:
+            # Parser respons ada di stockbit-token-watcher.py repo, bukan di folder uji.
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("wm_uji", wm)
+            m = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(m)
+            with unittest.mock.patch.object(server, "_wmod", m):
+                st = server.token_perbarui()
+                self.assertTrue(st["ok"], st["pesan"])
+                self.assertEqual(rp.call_count, 1)
+                self.assertEqual(server.read_token(self.root / ".stockbit-token"), akses)
+                self.assertEqual(server.read_token(self.root / ".stockbit-refresh"), ref2)
+                # Token baru masih lama berlaku: tidak memanggil Stockbit lagi.
+                self.assertTrue(server.token_perbarui()["ok"])
+                self.assertEqual(rp.call_count, 1)
+
+    def test_refresh_ditolak(self):
+        (self.root / ".stockbit-refresh").write_text(self.jwt(exp=int(time.time()) + 86400) + "\n")
+        galat = urllib.error.HTTPError(server.REFRESH_URL, 401, "Unauthorized", {}, None)
+        with unittest.mock.patch.object(server, "refresh_post", side_effect=galat):
+            st = server.token_perbarui(paksa=True)
+        self.assertIs(st["ok"], False)
+        self.assertIn("401", st["pesan"])
+
+
 class HarmonikTest(unittest.TestCase):
     """Screening Harmonic Pattern: Gartley bullish sintetis X 100, A 200, B 138,2 (0,618), C 175,3, D 121,4 (0,786)."""
 
