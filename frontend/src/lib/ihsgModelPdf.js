@@ -22,7 +22,11 @@ export function sampul(doc, { judul, sub, label, updated, seri, box, catatan, be
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(MUTED); doc.text(pdfText(`Edisi ${terbit} · data per ${updated || '-'} WIB`), 196, 26, { align: 'right' })
   doc.setDrawColor(GOLD); doc.setLineWidth(0.4); doc.line(28, 30, 196, 30)
   doc.setFont('times', 'bold'); doc.setFontSize(96); doc.setTextColor(PRIMER); doc.text(besar, 26, 92)
-  doc.setFont('times', 'italic'); doc.setFontSize(22); doc.setTextColor(INK); doc.text(pdfText(judul), 28, 108)
+  // Judul panjang dikecilkan sampai muat satu baris (lebar 168 mm, minimal 13 pt).
+  doc.setFont('times', 'italic'); doc.setTextColor(INK)
+  let uk = 22
+  while (uk > 13 && doc.getStringUnitWidth(pdfText(judul)) * uk * 0.3528 > 168) uk -= 1
+  doc.setFontSize(uk); doc.text(pdfText(judul), 28, 108)
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(GOLD); doc.text(pdfText(label), 28, 118)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(MUTED); doc.text(doc.splitTextToSize(pdfText(sub), 168), 28, 127)
   const s = (seri || []).filter(x => x > 0)

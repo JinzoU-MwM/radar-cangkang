@@ -1,8 +1,11 @@
 <script setup>
 // Tab Wawasan di halaman Rekomendasi: untuk setiap menu Radar, apa yang sudah ada dan ilmu yang masih kurang beserta
 // wawasan baru yang perlu didalami. Dua tampilan: per menu, atau urutan belajar (prioritas). Data di lib/wawasan.js.
+// Setiap topik bisa dibuka sebagai presentasi per slide (lib/wawasanSlide.js) dan diunduh sebagai PDF.
 import { computed, ref } from 'vue'
 import { BAGIAN, PRIORITAS, hitungPrioritas, urutanBelajar } from '../lib/wawasan.js'
+import { MARKET_MAKER, deckTopik } from '../lib/wawasanSlide.js'
+import WawasanPresentasi from './WawasanPresentasi.vue'
 
 const mode = ref('menu')
 const pilih = ref('semua')
@@ -11,6 +14,20 @@ const total = nP[1] + nP[2] + nP[3]
 const bagian = computed(() => pilih.value === 'semua' ? BAGIAN : BAGIAN.filter(b => b.id === pilih.value))
 const urutan = urutanBelajar()
 const kelasP = { 1: 't-strong', 2: 't-warn', 3: 't-calm' }
+const KHUSUS = { 'dunia-market-maker': MARKET_MAKER.length }
+
+// Presentasi dan unduhan PDF per topik (jsPDF dimuat saat tombol ditekan).
+const buka = ref(null)
+const deck = computed(() => buka.value ? deckTopik(buka.value.k, buka.value.menu) : [])
+const busyPdf = ref('')
+async function unduh(k, menu) {
+  if (busyPdf.value) return
+  busyPdf.value = k.id
+  try {
+    const [{ jsPDF }, P] = await Promise.all([import('jspdf'), import('../lib/wawasanPdf.js')])
+    P.wawasanPdf(k, menu, jsPDF).save(P.wawasanPdfName(k))
+  } finally { busyPdf.value = '' }
+}
 </script>
 
 <template>
@@ -61,6 +78,10 @@ const kelasP = { 1: 't-strong', 2: 't-warn', 3: 't-calm' }
             <p class="lbl">Yang dipelajari</p>
             <ul class="pel"><li v-for="(x, i) in k.pelajari" :key="i">{{ x }}</li></ul>
             <p class="small muted sumber">Sumber: {{ k.sumber.join(' · ') }}</p>
+            <div class="aksi">
+              <button type="button" class="btn main" @click="buka = { k, menu: b.menu }">▶ Presentasi<template v-if="KHUSUS[k.id]"> interaktif ({{ KHUSUS[k.id] }} slide)</template></button>
+              <button type="button" class="btn" :disabled="!!busyPdf" @click="unduh(k, b.menu)">{{ busyPdf === k.id ? 'Menyiapkan PDF…' : 'Unduh PDF' }}</button>
+            </div>
           </section>
         </div>
       </article>
@@ -73,9 +94,15 @@ const kelasP = { 1: 't-strong', 2: 't-warn', 3: 't-calm' }
           <p class="baris"><b>{{ k.judul }}</b> <span class="tag" :class="kelasP[k.prioritas]">{{ PRIORITAS[k.prioritas] }}</span>
             <RouterLink v-if="k.rute" class="small buka" :to="k.rute">{{ k.menu }}</RouterLink><span v-else class="small muted">{{ k.menu }}</span></p>
           <p class="small">{{ k.wawasan }}</p>
+          <div class="aksi">
+            <button type="button" class="btn main" @click="buka = { k, menu: k.menu }">▶ Presentasi</button>
+            <button type="button" class="btn" :disabled="!!busyPdf" @click="unduh(k, k.menu)">{{ busyPdf === k.id ? 'Menyiapkan PDF…' : 'Unduh PDF' }}</button>
+          </div>
         </div>
       </li>
     </ol>
+
+    <WawasanPresentasi v-if="buka" :deck="deck" :judul="buka.k.judul" :busy-pdf="busyPdf === buka.k.id" @tutup="buka = null" @unduh="unduh(buka.k, buka.menu)" />
 
     <p class="small muted">Bahan belajar, bukan saran investasi. Topik yang bersumber dari buku lanjutan Carney belum dirangkum di website; nomor pasal dan isi peraturan cek langsung ke dokumen resminya di ojk.go.id dan idx.co.id.</p>
   </section>
@@ -117,6 +144,10 @@ const kelasP = { 1: 't-strong', 2: 't-warn', 3: 't-calm' }
 .dalam p{margin:6px 0 0}
 .contoh{background:var(--sheet-2);border-left:3px solid var(--accent);padding:6px 10px;border-radius:0 6px 6px 0}
 .keliru li::marker{color:var(--strong)}
+.aksi{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.aksi .btn{font-size:12.5px}
+.aksi .btn.main{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.aksi .btn:disabled{opacity:.5;cursor:default}
 .urut{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .urut li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:10px 14px}
 .urut p{margin:0}
