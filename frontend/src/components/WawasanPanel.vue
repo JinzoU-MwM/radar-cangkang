@@ -16,7 +16,7 @@ const kelasP = { 1: 't-strong', 2: 't-warn', 3: 't-calm' }
 <template>
   <section class="ww" aria-label="Wawasan">
     <p class="small ket">Isi Radar sudah banyak: berita, radar backdoor, kandidat cangkang, analisa IHSG, Harmonic Pattern, dan rekomendasi harian.
-      Tab ini mencatat ilmu yang masih kurang di setiap menu, alasan perlu didalami, dan wawasan baru yang bisa langsung dipakai.
+      Tab ini mencatat ilmu yang masih kurang di setiap menu, ditambah ilmu dasar dunia saham, lengkap dengan alasan, wawasan baru, penjelasan, contoh, dan kesalahan umum.
       Ada {{ total }} topik: <b>{{ nP[1] }}</b> dalami dulu, <b>{{ nP[2] }}</b> penting, dan <b>{{ nP[3] }}</b> pelengkap.</p>
 
     <div class="bar">
@@ -35,7 +35,7 @@ const kelasP = { 1: 't-strong', 2: 't-warn', 3: 't-calm' }
       <article v-for="b in bagian" :key="b.id" class="menu">
         <header>
           <h2>{{ b.menu }}</h2>
-          <RouterLink class="small buka" :to="b.rute">Buka menu {{ b.menu }}</RouterLink>
+          <RouterLink v-if="b.rute" class="small buka" :to="b.rute">Buka menu {{ b.menu }}</RouterLink>
         </header>
         <p class="inti">{{ b.inti }}</p>
         <p class="lbl">Sudah ada</p>
@@ -49,6 +49,15 @@ const kelasP = { 1: 't-strong', 2: 't-warn', 3: 't-calm' }
             </div>
             <p class="kenapa">{{ k.kenapa }}</p>
             <p class="baru"><b>Wawasan baru.</b> {{ k.wawasan }}</p>
+            <details v-if="k.detail" class="dalam">
+              <summary>Pelajari lebih dalam</summary>
+              <p v-for="(x, i) in k.detail" :key="i">{{ x }}</p>
+              <p v-if="k.contoh" class="contoh">{{ k.contoh }}</p>
+              <template v-if="k.keliru?.length">
+                <p class="lbl">Kesalahan umum</p>
+                <ul class="pel keliru"><li v-for="(x, i) in k.keliru" :key="i">{{ x }}</li></ul>
+              </template>
+            </details>
             <p class="lbl">Yang dipelajari</p>
             <ul class="pel"><li v-for="(x, i) in k.pelajari" :key="i">{{ x }}</li></ul>
             <p class="small muted sumber">Sumber: {{ k.sumber.join(' · ') }}</p>
@@ -62,7 +71,7 @@ const kelasP = { 1: 't-strong', 2: 't-warn', 3: 't-calm' }
         <span class="no">{{ i + 1 }}</span>
         <div>
           <p class="baris"><b>{{ k.judul }}</b> <span class="tag" :class="kelasP[k.prioritas]">{{ PRIORITAS[k.prioritas] }}</span>
-            <RouterLink class="small buka" :to="k.rute">{{ k.menu }}</RouterLink></p>
+            <RouterLink v-if="k.rute" class="small buka" :to="k.rute">{{ k.menu }}</RouterLink><span v-else class="small muted">{{ k.menu }}</span></p>
           <p class="small">{{ k.wawasan }}</p>
         </div>
       </li>
@@ -103,6 +112,11 @@ const kelasP = { 1: 't-strong', 2: 't-warn', 3: 't-calm' }
 .baru b{color:var(--accent)}
 .pel{margin:0;padding-left:18px;font-size:13px;line-height:1.5;display:grid;gap:2px}
 .sumber{margin:6px 0 0}
+.dalam{font-size:13.5px;line-height:1.55;border-top:1px dashed var(--rule-2);padding-top:6px;margin-top:4px}
+.dalam summary{cursor:pointer;font-weight:700;color:var(--accent);font-size:13px}
+.dalam p{margin:6px 0 0}
+.contoh{background:var(--sheet-2);border-left:3px solid var(--accent);padding:6px 10px;border-radius:0 6px 6px 0}
+.keliru li::marker{color:var(--strong)}
 .urut{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .urut li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:10px 14px}
 .urut p{margin:0}
