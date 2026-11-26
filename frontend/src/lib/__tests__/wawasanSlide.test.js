@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { jsPDF } from 'jspdf'
 import { BAGIAN } from '../wawasan.js'
 import { MARKET_MAKER, LANGKAH_OB, bagianDeck, butirWawasan, deckTopik, lotRisiko } from '../wawasanSlide.js'
+import { ADA, ANALOGI } from '../wawasanAnalogi.js'
 import { slideCetak, wawasanPdf, wawasanPdfName } from '../wawasanPdf.js'
 
 const GAMBAR = ['keset', 'grosir', 'pohon', 'antrean', 'belanja', 'akumulasi', 'shakeout', 'distribusi', 'stop']
@@ -31,6 +32,16 @@ describe('presentasi Wawasan', () => {
     }
     expect(MARKET_MAKER.filter(s => s.analogi).length).toBeGreaterThanOrEqual(4)
     expect(MARKET_MAKER.filter(s => s.pilihan).length).toBe(3)
+  })
+  it('setiap topik punya analogi, gambar hanya untuk yang sudah dibuat', () => {
+    for (const { k } of semua) {
+      if (k.id === 'dunia-market-maker') continue
+      expect(ANALOGI[k.id]?.teks?.length, k.id).toBeGreaterThan(40)
+      const s2 = deckTopik(k)[1]
+      expect(s2.analogi, k.id).toBe(ANALOGI[k.id].teks)
+      expect(s2.gambar, k.id).toBe(ADA.includes(k.id) ? k.id : undefined)
+    }
+    for (const id of ADA) expect(semua.some(x => x.k.id === id), id).toBe(true)
   })
   it('kalkulator ukuran posisi', () => {
     const r = lotRisiko({ modal: 100_000_000, risiko: 1, beli: 200, stop: 188 })
