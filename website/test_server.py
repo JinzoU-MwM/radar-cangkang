@@ -693,6 +693,58 @@ class SusulanDataTest(unittest.TestCase):
             self.assertFalse(server.data_susulan("uji", paksa=True))                            # token mati: jangan bangun
 
 
+class LanjutanHarianTest(unittest.TestCase):
+    """Harmonic/Rekomendasi/audit yang terputus setelah Recovery selesai dilanjutkan, tanpa dobel saat rangkaian jalan."""
+
+    def test_lanjutan(self):
+        import os
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
+            root = Path(d)
+            p = {n: root / n for n in (".recovery.json", ".harmonik.json", ".rekomendasi.json", ".audit-monitor.json")}
+            for f in p.values():
+                f.write_text("{}")
+            sekarang = time.time()
+            os.utime(p[".recovery.json"], (sekarang, sekarang))
+            lama = sekarang - 12 * 3600
+            for n in (".harmonik.json", ".rekomendasi.json"):
+                os.utime(p[n], (lama, lama))
+            dipanggil = []
+            with unittest.mock.patch.multiple(server, RECOVERY_PATH=p[".recovery.json"], HARMONIK_PATH=p[".harmonik.json"],
+                                              REKO_PATH=p[".rekomendasi.json"], AUDIT_PATH=p[".audit-monitor.json"],
+                                              harmonik_build=lambda: dipanggil.append("h"),
+                                              rekomendasi_build=lambda: dipanggil.append("r"),
+                                              audit_monitor_build=lambda: dipanggil.append("a"),
+                                              get_token=lambda: "t", token_expired=lambda: False, _susulan_at=0.0):
+                self.assertEqual(len(server.lanjutan_tertunda()), 2)                            # audit masih segar
+                with server._harian_lock:
+                    self.assertFalse(server.data_lanjutan("uji"))                               # rangkaian sedang jalan
+                self.assertTrue(server.data_lanjutan("uji"))
+                for th in [t for t in threading.enumerate() if t.name == "susulan"]:
+                    th.join(5)
+                self.assertEqual(dipanggil, ["h", "r"])
+                self.assertFalse(server.data_lanjutan("uji"))                                   # jeda 6 jam
+
+
+class Saham50SusulanTest(unittest.TestCase):
+    """Saham 50 yang tertinggal (jadwal sore terlewat saat token mati) disusun tanpa menunggu pukul 17.00."""
+
+    def test_s50_tertinggal(self):
+        import os
+        from datetime import datetime, timezone
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
+            f = Path(d) / ".saham50.json"
+            with unittest.mock.patch.object(server, "S50_PATH", f):
+                kamis = datetime(2026, 11, 26, 5, 0, tzinfo=timezone.utc)                       # Kamis 12.00 WIB
+                self.assertFalse(server.s50_tertinggal(kamis))                                  # belum ada berkas
+                f.write_text("{}")
+                jumat = datetime(2026, 11, 21, 10, 29, tzinfo=timezone.utc).timestamp()         # Sabtu 21 Nov 17.29 WIB
+                os.utime(f, (jumat, jumat))
+                self.assertTrue(server.s50_tertinggal(kamis))
+                rabu = datetime(2026, 11, 25, 10, 5, tzinfo=timezone.utc).timestamp()           # Rabu 17.05 WIB
+                os.utime(f, (rabu, rabu))
+                self.assertFalse(server.s50_tertinggal(kamis))                                  # normal: dibuat kemarin sore
+
+
 class WatcherSymlinkTest(unittest.TestCase):
     """stockbit-token-watcher.py menulis ke berkas tujuan symlink, bukan mengganti symlink-nya."""
 
