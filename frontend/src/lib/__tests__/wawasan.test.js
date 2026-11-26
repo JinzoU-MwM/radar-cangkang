@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { BAGIAN, PRIORITAS, hitungPrioritas, urutanBelajar } from '../wawasan.js'
+import { DETAIL } from '../wawasanDetail.js'
 import { readFileSync } from 'node:fs'
 
 describe('wawasan', () => {
   it('mencakup semua menu utama Radar dengan rute yang ada', () => {
-    expect(BAGIAN.map(b => b.menu)).toEqual(['Berita', 'Monitor', 'Kandidat', 'IHSG', 'Harmonic Pattern', 'Rekomendasi'])
+    expect(BAGIAN.map(b => b.menu)).toEqual(['Berita', 'Monitor', 'Kandidat', 'IHSG', 'Harmonic Pattern', 'Rekomendasi', 'Dunia saham'])
     // router.js butuh window (hash history), jadi rute dicek dari teks berkasnya.
     const teks = readFileSync(new URL('../../router.js', import.meta.url), 'utf8')
-    for (const b of BAGIAN) expect(teks).toContain(`path: '${b.rute}', name:`)
+    for (const b of BAGIAN) if (b.rute) expect(teks).toContain(`path: '${b.rute}', name:`)
   })
 
   it('setiap topik lengkap dan id-nya unik', () => {
@@ -23,6 +24,15 @@ describe('wawasan', () => {
         expect(k.pelajari.length).toBeGreaterThan(0)
         expect(k.sumber.length).toBeGreaterThan(0)
       }
+    }
+  })
+
+  it('setiap topik punya pendalaman, dan tidak ada pendalaman tanpa topik', () => {
+    const ids = BAGIAN.flatMap(b => b.kurang.map(k => k.id))
+    for (const id of Object.keys(DETAIL)) expect(ids).toContain(id)
+    for (const b of BAGIAN) for (const k of b.kurang) {
+      expect(k.detail?.length, k.id).toBeGreaterThan(0)
+      for (const p of k.detail) expect(p.length).toBeGreaterThan(30)
     }
   })
 

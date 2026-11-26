@@ -1,12 +1,16 @@
 // Menu Wawasan: untuk setiap menu Radar (Berita, Monitor, Kandidat, IHSG, Harmonic Pattern, Rekomendasi) dicatat apa
 // yang sudah tersedia, ilmu yang masih kurang, dan wawasan baru yang perlu didalami supaya isi menu itu terpakai penuh.
 // Hanya memuat sumber yang bisa dicek (nama peraturan, judul buku, halaman Radar); topik yang belum dirangkum di
-// website ditandai "belum dirangkum". Data murni + fungsi pengurut, diuji di __tests__/wawasan.test.js.
+// website ditandai "belum dirangkum". Pendalaman tiap topik (penjelasan, contoh, kesalahan umum) ada di wawasanDetail.js;
+// ilmu dasar pasar modal di luar menu Radar ada di wawasanDunia.js. Data murni + fungsi pengurut, diuji di
+// __tests__/wawasan.test.js.
+import { DETAIL } from './wawasanDetail.js'
+import { DUNIA } from './wawasanDunia.js'
 
 // prioritas: 1 = dalami dulu (dipakai hampir setiap hari), 2 = penting, 3 = pelengkap.
 export const PRIORITAS = { 1: 'Dalami dulu', 2: 'Penting', 3: 'Pelengkap' }
 
-export const BAGIAN = [
+const MENU = [
   {
     id: 'berita', menu: 'Berita', rute: '/berita',
     inti: 'Berita adalah bahan mentah. Nilainya bergantung pada kemampuan memilah fakta resmi dari rumor dan menghubungkannya dengan pergerakan harga.',
@@ -204,6 +208,9 @@ export const BAGIAN = [
     ],
   },
 ]
+
+// Menu Radar ditambah bagian Dunia saham; tiap topik digabung dengan pendalamannya.
+export const BAGIAN = [...MENU, DUNIA].map(b => ({ ...b, kurang: b.kurang.map(k => ({ ...k, ...(DETAIL[k.id] || {}) })) }))
 
 // Semua topik kurang, diurutkan prioritas lalu urutan menu: dipakai sebagai "urutan belajar".
 export function urutanBelajar(bagian = BAGIAN) {
