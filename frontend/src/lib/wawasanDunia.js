@@ -1,11 +1,11 @@
 // Bagian "Dunia saham" di tab Wawasan: ilmu dasar pasar modal Indonesia di luar menu Radar (valuasi, laporan
-// keuangan, aksi korporasi, mekanisme perdagangan, pajak, siklus pasar, psikologi). Contoh hitungan memakai angka
+// keuangan, aksi korporasi, mekanisme perdagangan, pajak, siklus pasar, psikologi, pola market maker). Contoh hitungan memakai angka
 // rekaan yang diberi label "contoh", bukan data emiten. Aturan yang angkanya bisa berubah (batas auto rejection,
 // tarif) dirujuk ke sumber resminya. Skema topik sama dengan lib/wawasan.js. Data murni.
 
 export const DUNIA = {
   id: 'dunia', menu: 'Dunia saham', rute: null,
-  inti: 'Ilmu dasar pasar modal yang dipakai di semua menu: cara menilai harga wajar, membaca laporan keuangan, aksi korporasi, aturan main bursa, pajak, siklus pasar, dan psikologi investor.',
+  inti: 'Ilmu dasar pasar modal yang dipakai di semua menu: cara menilai harga wajar, membaca laporan keuangan, aksi korporasi, aturan main bursa, pajak, siklus pasar, psikologi investor, dan pola pemain besar.',
   sudah: ['Valuasi dan simulasi rights issue di halaman emiten', 'Penyaring laporan keuangan di menu IHSG', 'Ukuran lot rencana posisi di Harmonic Pattern'],
   kurang: [
     {
@@ -134,6 +134,33 @@ export const DUNIA = {
       keliru: ['Menganggap UMA sebagai tanda saham akan terus naik', 'Membeli karena ajakan grup tanpa memeriksa keterbukaan informasi'],
       pelajari: ['Ciri manipulasi pasar', 'Unusual Market Activity dan suspensi', 'Larangan manipulasi dalam UU Pasar Modal'],
       sumber: ['UU No. 8 Tahun 1995 tentang Pasar Modal (larangan manipulasi pasar)', 'idx.co.id, pengumuman UMA dan suspensi'],
+    },
+    {
+      id: 'dunia-market-maker', prioritas: 1, judul: 'Pola market maker: kenapa harga sering berbalik melawan ritel',
+      kenapa: 'Banyak trader merasa harga turun tepat setelah ritel membeli dan naik tepat setelah ritel menjual, seolah ada algoritma yang membaca ritel. Tanpa memahami cara pemain besar bertransaksi, reaksi yang wajar adalah mengejar harga atau panik jual, dan keduanya justru memberi likuiditas yang dicari pemain besar.',
+      wawasan: 'Pemain besar butuh lawan transaksi. Mereka menjual saat banyak yang ingin membeli dan membeli saat banyak yang ingin menjual, jadi pergerakan yang paling memancing emosi sering menjadi tempat mereka keluar atau masuk. Cara bertahan: putuskan harga beli, stop, dan ukuran posisi sebelum pasar buka, pakai order limit di level itu, dan nilai pergerakan dari candle penutupan dan data beberapa hari, bukan dari running trade beberapa menit.',
+      detail: [
+        'Istilah. Di BEI, "market maker" atau "bandar" dalam bahasa trader berarti pihak yang cukup besar untuk menggerakkan harga: institusi, pemegang saham besar, atau kelompok yang bertransaksi bersama. Sebagian memakai algoritma eksekusi (memecah order besar jadi banyak order kecil, mengikuti volume, atau menampilkan sebagian order saja). Klaim bahwa algoritma tertentu membaca ritel tidak bisa dibuktikan dari luar, tetapi polanya bisa dijelaskan tanpa itu.',
+        'Kenapa terasa membaca ritel. Order book, running trade, dan broker summary terlihat oleh semua orang, termasuk pemain besar. Antrean beli ritel yang menumpuk di satu harga dan stop yang dipasang di bawah support yang jelas adalah kumpulan order yang mudah ditebak. Untuk menjual banyak saham tanpa menjatuhkan harga, penjual besar butuh pembeli yang antusias; untuk membeli banyak, mereka butuh penjual yang panik.',
+        'Akumulasi. Harga dibuat lesu atau turun pelan, kadang ditekan sampai menembus support supaya stop ritel terpicu (shakeout atau spring), lalu cepat kembali ke atas support. Di broker summary beberapa hari, broker yang banyak dipakai ritel cenderung net jual sementara segelintir broker lain net beli dengan harga rata-rata yang berdekatan.',
+        'Distribusi. Harga dinaikkan dan ramai dibicarakan, antrean beli terlihat tebal, lalu penjual besar melepas barang sedikit demi sedikit ke pembeli yang mengejar. Tandanya: volume besar di harga atas tetapi harga tidak naik lagi, ekor atas panjang (upthrust), dan broker ritel menjadi pembeli bersih terbesar sementara broker yang sebelumnya mengumpulkan berganti menjadi penjual.',
+        'Order book bisa menipu. Antrean bid atau offer yang sangat tebal bisa ditarik sebelum tersentuh, sekadar untuk memberi kesan harga tertahan atau tertekan. Sebaliknya order besar bisa disembunyikan dan dieksekusi sedikit demi sedikit. Antrean hanya menunjukkan niat yang bisa dibatalkan; transaksi yang benar-benar terjadi lebih bisa dipercaya. Membuat gambaran semu tentang perdagangan termasuk manipulasi yang dilarang UU Pasar Modal, tetapi tetap terjadi.',
+        'Jam yang paling sering memancing. Pembukaan (gap naik atau turun saat pra-pembukaan), menit-menit awal sesi, dan pra-penutupan (call auction, harga penutupan bisa digeser dengan order besar di menit terakhir). Keputusan yang diambil di jam-jam ini karena kaget lebih sering keliru.',
+        'Cara tidak terpancing saat ingin membeli. Tentukan area beli dari level yang dihitung sebelumnya (support, PRZ Harmonic, area akumulasi), pasang order limit dan tunggu harga datang. Jangan HAKA setelah running trade hijau beruntun. Bila harga sudah lari jauh dari area, anggap peluang itu lewat. Bagi pembelian menjadi dua atau tiga bagian supaya shakeout tidak menghabiskan seluruh rencana.',
+        'Cara tidak terpancing saat ingin menjual. Stop ditentukan saat merencanakan, diberi jarak beberapa fraksi di luar level yang jelas (di saham murah satu fraksi bisa lebih dari 1%), dan dinilai dari harga penutupan bila rencananya memakai candle harian. Penurunan tajam di menit awal yang langsung kembali ke atas support adalah ciri shakeout, bukan alasan menambah jual. Ukuran posisi dibuat cukup kecil sehingga stop yang tersentuh hanya kerugian yang sudah diterima sejak awal.',
+        'Daftar periksa sebelum klik: apakah keputusan ini ada di rencana tertulis; apakah saya bereaksi pada pergerakan beberapa menit; siapa yang kemungkinan menjadi lawan transaksi saya sekarang; apa yang dilakukan broker besar selama beberapa hari terakhir di Pola Broker; dan berapa rugi rupiah bila salah.',
+      ],
+      contoh: 'Contoh rekaan: saham bertahan di support Rp200 selama dua minggu. Suatu pagi harga dibuka Rp200 lalu dijatuhkan ke Rp188 dalam 10 menit, running trade merah beruntun, dan banyak stop di Rp198 terpicu. Siang hari harga kembali ke Rp202 dan ditutup Rp205. Di broker summary hari itu, beberapa broker yang biasa dipakai ritel net jual besar, sementara dua broker net beli dengan rata-rata sekitar Rp192. Yang menjual panik di Rp190 menyerahkan barang ke pembeli besar. Trader yang memakai stop berdasarkan penutupan di bawah Rp196 tidak keluar, karena penutupan Rp205 masih di atas support.',
+      keliru: [
+        'Menganggap antrean bid tebal pasti menahan harga',
+        'HAKA mengejar setelah harga naik beberapa persen dalam hitungan menit',
+        'Panik jual saat gap turun di pembukaan tanpa melihat penutupan',
+        'Memasang stop tepat di angka bulat atau tepat di bawah support yang dilihat semua orang',
+        'Membaca satu hari broker summary sebagai akumulasi atau distribusi, padahal butuh rangkaian beberapa hari',
+        'Mengira semua transaksi broker asing adalah institusi asing',
+      ],
+      pelajari: ['Metode Wyckoff: fase akumulasi, markup, distribusi, markdown, spring, dan upthrust', 'Membaca order book dan running trade: niat (antrean) dibanding transaksi', 'Broker summary beberapa hari dan harga rata-rata broker', 'Penempatan stop berbasis penutupan dan jarak fraksi', 'Aturan tertulis entry, stop, dan ukuran posisi'],
+      sumber: ['Tab Pola Broker di menu IHSG Radar', 'Topik Bandarmologi di bagian IHSG tab Wawasan ini', 'UU No. 8 Tahun 1995 tentang Pasar Modal, larangan gambaran semu dan manipulasi harga', 'Richard D. Wyckoff, metode akumulasi dan distribusi (banyak dibahas ulang dalam literatur analisa teknikal)'],
     },
   ],
 }
