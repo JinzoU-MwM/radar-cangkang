@@ -4,6 +4,7 @@
 // tabel, rujukan) ditambah: analogi (teks perumpamaan), gambar (kunci ilustrasi di WawasanGambar.vue), alat
 // (orderbook | kalkulator), pilihan (latihan: situasi + opsi dengan satu jawaban paling tepat), periksa (daftar
 // centang). Semua angka di skenario adalah contoh rekaan, bukan data emiten. Data murni.
+import { ADA, ANALOGI } from './wawasanAnalogi.js'
 
 export const MARKET_MAKER = [
   {
@@ -203,12 +204,12 @@ export const MARKET_MAKER = [
 
 const DECK = { 'dunia-market-maker': MARKET_MAKER }
 
-// Deck otomatis dari isi kartu topik: pembuka, wawasan baru, penjelasan (dua butir per slide), contoh, kesalahan
+// Deck otomatis dari isi kartu topik: pembuka, wawasan baru (dengan analogi dan gambarnya bila ada), penjelasan (dua butir per slide), contoh, kesalahan
 // umum, dan penutup berisi yang perlu dipelajari beserta sumbernya.
 export function deckTopik(k, menu = '') {
   if (DECK[k.id]) return DECK[k.id]
   const s = [{ id: k.id + '-1', bagian: 'Pengantar', judul: k.judul, sub: menu ? `Wawasan · ${menu}` : 'Wawasan', paragraf: [k.kenapa] },
-    { id: k.id + '-2', bagian: 'Pengantar', judul: 'Wawasan baru', paragraf: [k.wawasan] }]
+    { id: k.id + '-2', bagian: 'Pengantar', judul: 'Wawasan baru', paragraf: [k.wawasan], analogi: ANALOGI[k.id]?.teks, gambar: ADA.includes(k.id) ? k.id : undefined }]
   const d = k.detail || []
   for (let i = 0; i < d.length; i += 2) {
     s.push({ id: `${k.id}-d${i}`, bagian: 'Pembahasan', judul: d.length > 2 ? `Penjelasan (${i / 2 + 1}/${Math.ceil(d.length / 2)})` : 'Penjelasan', poin: d.slice(i, i + 2) })

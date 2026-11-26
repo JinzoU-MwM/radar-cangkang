@@ -4,6 +4,7 @@
 // pembeli sungguhan datang. Grafik adalah skema rekaan, bukan harga emiten. sebagian = grafik dipotong sampai titik
 // keputusan (dipakai slide latihan sebelum dijawab).
 import { computed, ref } from 'vue'
+import WawasanAnalogi from './WawasanAnalogi.vue'
 
 const props = defineProps({ nama: { type: String, required: true }, sebagian: { type: Boolean, default: false } })
 
@@ -167,6 +168,9 @@ const POHON = [[150, 52, 0], [178, 64, 1], [130, 72, 1], [196, 44, 0], [160, 86,
       <text x="252" y="80" class="tb tengah">promo di lorong</text>
       <text x="252" y="92" class="tb tengah">tidak menggoda</text>
     </svg>
+
+    <!-- Gambar analogi topik lain (kunci = id topik) -->
+    <WawasanAnalogi v-else :nama="nama" />
 
     <figcaption v-if="g" class="ket">{{ sebagian && g.potong ? 'Grafik berhenti di titik keputusan. Pilih jawaban untuk melihat kelanjutannya.' : g.ket }}</figcaption>
   </figure>
