@@ -4,12 +4,16 @@
 // sehari (/api/rekomendasi, website/rekomendasi.py); halaman ini hanya menampilkan peringkat, alasan, risiko, dan rencana.
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../api.js'
+import WawasanPanel from '../components/WawasanPanel.vue'
 
 const data = ref(null), err = ref('')
 onMounted(() => api.get('/api/rekomendasi').then(v => { data.value = v }, e => { err.value = e.message || String(e) }))
 // Kelompok: Non HSC (masuk IHSG) dan HSC (konsentrasi kepemilikan tinggi, dikeluarkan dari IHSG), peringkat terpisah.
 const KELOMPOK = [{ k: 'non', nama: 'Non HSC' }, { k: 'hsc', nama: 'HSC' }]
 const kel = ref('non')
+// Tab halaman: Rekomendasi (daftar harian) dan Wawasan (ilmu yang masih kurang di setiap menu Radar, lib/wawasan.js).
+const HALAMAN = [{ k: 'rek', nama: 'Rekomendasi' }, { k: 'wawasan', nama: 'Wawasan' }]
+const hal = ref('rek')
 const daftarKel = k => (k === 'hsc' ? data.value?.hsc : data.value?.rows) || []
 const rows = computed(() => daftarKel(kel.value))
 // Pantauan: saham berpotensi di luar daftar utama (cadangan yang lolos syarat, atau sinyal kuat yang belum punya rencana).
@@ -22,8 +26,12 @@ const pct = (a, b) => a && b ? `${a >= b ? '+' : ''}${n1((a / b - 1) * 100)}%` :
 
 <template>
   <div class="rk">
+    <nav class="hal" role="tablist" aria-label="Bagian halaman">
+      <button v-for="x in HALAMAN" :key="x.k" type="button" role="tab" :aria-selected="String(hal === x.k)" :class="{ on: hal === x.k }" @click="hal = x.k">{{ x.nama }}</button>
+    </nav>
+    <WawasanPanel v-if="hal === 'wawasan'" />
+    <template v-else>
     <header>
-      <h1>Rekomendasi</h1>
       <p class="small ket">Paling banyak 5 saham terbaik per kelompok hari ini dengan harga di bawah {{ rp(data?.batasHarga || 2000) }}, dipisah antara saham Non HSC dan HSC, dipilih dari gabungan semua screening Radar dan sinyal backdoor. Hanya saham dengan target 1 naik 10–20% dan target 2 naik 25–100% dari entry, R:R minimal 1, dan stop paling jauh 15%. Diperbarui setiap hari pukul 00.01 WIB.</p>
       <p v-if="data" class="small muted">Dihitung {{ data.updated }} · {{ data.dinilai }} saham dinilai; lolos syarat {{ data.lolos }} Non HSC dan {{ data.lolosHsc ?? 0 }} HSC (harga di bawah batas dan didukung minimal dua sumber).</p>
     </header>
@@ -121,12 +129,17 @@ const pct = (a, b) => a && b ? `${a >= b ? '+' : ''}${n1((a / b - 1) * 100)}%` :
       </template>
       <p class="small muted">Bahan belajar dan kerangka berpikir, bukan rekomendasi beli atau jual. Tetap tunggu konfirmasi dan pasang stop.</p>
     </details>
+    </template>
   </div>
 </template>
 
 <style scoped>
 .rk{display:flex;flex-direction:column;gap:14px}
 header h1{margin:0}
+.hal{display:flex;gap:22px;align-items:baseline}
+.hal button{border:0;background:none;padding:0 0 4px;cursor:pointer;font:700 30px var(--f-display);color:var(--ink-2);border-bottom:3px solid transparent;line-height:1.1}
+.hal button.on{color:var(--ink);border-bottom-color:var(--accent)}
+.hal button:hover{color:var(--ink)}
 .ket{margin:4px 0 2px;max-width:760px}
 .muted{color:var(--ink-2)}.small{font-size:12px}.err{color:var(--strong)}
 .kel{display:flex;gap:4px}
