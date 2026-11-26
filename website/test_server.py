@@ -605,6 +605,29 @@ class TokenUiTest(unittest.TestCase):
         self.assertIn("401", st["pesan"])
 
 
+class WatcherSymlinkTest(unittest.TestCase):
+    """stockbit-token-watcher.py menulis ke berkas tujuan symlink, bukan mengganti symlink-nya."""
+
+    def test_write_secret_mengikuti_symlink(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("wm_symlink", Path(server.__file__).resolve().parent.parent / "stockbit-token-watcher.py")
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
+            root = Path(d)
+            asli, tautan = root / "asli-token", root / ".stockbit-token"
+            asli.write_text("lama\n")
+            try:
+                tautan.symlink_to(asli)
+            except OSError:
+                self.skipTest("membuat symlink butuh hak khusus di sistem ini")
+            m.write_secret(tautan, "baru")
+            self.assertTrue(tautan.is_symlink())
+            self.assertEqual(asli.read_text(), "baru\n")
+            m.write_secret(root / ".stockbit-refresh", "ref")           # berkas biasa tetap ditulis seperti dulu
+            self.assertEqual((root / ".stockbit-refresh").read_text(), "ref\n")
+
+
 class HarmonikTest(unittest.TestCase):
     """Screening Harmonic Pattern: Gartley bullish sintetis X 100, A 200, B 138,2 (0,618), C 175,3, D 121,4 (0,786)."""
 
