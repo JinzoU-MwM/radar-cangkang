@@ -155,7 +155,7 @@ async function loadData() {
   store.updates = updates
 }
 
-async function loadStatus() {
+export async function loadStatus() {
   try { store.status = await api.get('/api/status') } catch { store.status = null }
   // Deploy baru sudah live tetapi tab ini masih menjalankan kode lama (aplikasi satu halaman tidak memuat ulang sendiri).
   const dep = store.status?.deploy
