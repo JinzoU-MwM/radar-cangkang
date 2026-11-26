@@ -87,6 +87,12 @@ bawaan (`token_loop`, tiap 15 menit) yang memperpanjang token lewat refresh toke
 juga di Windows. Keadaannya ada di `/api/status` → `watcher.bawaan`. Isi refresh token di satu mesin saja; token akses
 baru menyebar lewat sinkron.
 
+**Cepat dari laptop ke server live (SSH):** `.\deploy\ganti-token.ps1` meminta token akses secara tersembunyi,
+memeriksa bentuk dan masa berlakunya, menulisnya ke `jni-server` lewat SSH (symlink tetap utuh), lalu mengecek
+`/api/status` live. Tambahkan `-Refresh` untuk refresh token (diperpanjang otomatis oleh watcher bawaan), atau
+`-Server <host>` bila nama host SSH berbeda. Bila diblokir ExecutionPolicy:
+`powershell -NoProfile -ExecutionPolicy Bypass -File .\deploy\ganti-token.ps1`.
+
 **Timer systemd (Linux):** `stockbit-token-watcher.py` jalan tiap jam (systemd user timer `stockbit-token-watcher.timer`) dan memperbarui `website/.stockbit-token` bila sisa umurnya < 3 jam, memakai refresh token di `website/.stockbit-refresh`. Gagal = notifikasi desktop.
 
 Mengisi refresh token (sekali, atau tiap kali rantainya putus):
