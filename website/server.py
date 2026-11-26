@@ -280,7 +280,7 @@ def token_loop() -> None:
     while True:
         try:
             token_perbarui()
-            data_susulan("pemeriksaan berkala")
+            data_susulan("pemeriksaan berkala") or data_lanjutan("pemeriksaan berkala")
         except Exception as e:
             print(f"[token] {e}", file=sys.stderr)
         time.sleep(TOKEN_JEDA)
@@ -3723,6 +3723,16 @@ def saham50_api() -> dict:
     return d
 
 
+def s50_tertinggal(now: datetime) -> bool:
+    """Daftar disusun sebelum hari bursa kemarin (WIB), mis. jadwal sore terlewat saat token mati: susun sekarang
+    tanpa menunggu pukul 17.00. Normalnya daftar dibuat sore hari bursa sebelumnya, jadi tidak memicu."""
+    try:
+        dibuat = datetime.fromtimestamp(S50_PATH.stat().st_mtime, timezone.utc).astimezone(timezone(timedelta(hours=7))).date()
+    except OSError:
+        return False
+    return dibuat < hari_bursa_mundur(now.astimezone(timezone(timedelta(hours=7))).date(), 1)
+
+
 def s50_data_kosong() -> bool:
     """Daftar tersimpan disusun saat Key Stats belum tersedia (valuasi kosong hampir semua) padahal kini sudah ada."""
     try:
@@ -3747,7 +3757,8 @@ def saham50_loop() -> None:
         try:
             jam = datetime.now(timezone(timedelta(hours=7)))
             lama = not S50_PATH.exists() or datetime.fromtimestamp(S50_PATH.stat().st_mtime).date() < jam.date()
-            if get_token() and not token_expired() and (not S50_PATH.exists() or (lama and jam.hour >= 17) or s50_data_kosong()):
+            if get_token() and not token_expired() and (not S50_PATH.exists() or (lama and jam.hour >= 17) or s50_data_kosong()
+                                                        or s50_tertinggal(jam)):
                 d = saham50_build()
                 tmp = S50_PATH.with_suffix(".tmp")
                 tmp.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
@@ -5518,17 +5529,27 @@ def audit_monitor_api() -> dict:
     return {**d, "temuan": [x for x in d.get("temuan") or [] if x.get("t") in ada]}
 
 
+_harian_lock = threading.Lock()
+
+
 def daily_builds() -> None:
     """Pembaruan terjadwal: Seasonality, Pola Broker, Recovery, Harmonic Pattern, Rekomendasi, lalu audit Monitor; masing-masing
     dicoba ulang tiap 30 menit (maks. 3 jam)."""
-    for fn in (season_build, broker_build, recovery_build, harmonik_build, rekomendasi_build, audit_monitor_build):
-        for _ in range(6):
-            try:
-                fn()
-                break
-            except Exception as e:
-                print(f"[{fn.__name__}] gagal: {e}; dicoba lagi 30 menit", file=sys.stderr)
-                time.sleep(1800)
+    # Satu rangkaian sekaligus: jadwal 00.01 dan susulan tidak berjalan bersamaan.
+    if not _harian_lock.acquire(blocking=False):
+        print("[harian] rangkaian lain masih berjalan; dilewati", file=sys.stderr)
+        return
+    try:
+        for fn in (season_build, broker_build, recovery_build, harmonik_build, rekomendasi_build, audit_monitor_build):
+            for _ in range(6):
+                try:
+                    fn()
+                    break
+                except Exception as e:
+                    print(f"[{fn.__name__}] gagal: {e}; dicoba lagi 30 menit", file=sys.stderr)
+                    time.sleep(1800)
+    finally:
+        _harian_lock.release()
 
 
 # Susulan data harian: saat token mati, jadwal 00.01 tetap "berhasil" memakai cache basi sehingga tidak dicoba ulang
@@ -5571,6 +5592,55 @@ def data_susulan(alasan: str, paksa: bool = False) -> bool:
         _susulan_at = time.time()
     print(f"[susulan] data harian tertinggal ({alasan}); membangun ulang sekarang", file=sys.stderr)
     threading.Thread(target=daily_builds, daemon=True, name="susulan").start()
+    return True
+
+
+def lanjutan_tertunda() -> list:
+    """Langkah akhir daily_builds (Harmonic, Rekomendasi, audit Monitor) yang berkasnya lebih tua dari Recovery lebih
+    dari 1 jam: rangkaian terputus di tengah (mis. server restart karena deploy) setelah Recovery selesai."""
+    try:
+        rec = RECOVERY_PATH.stat().st_mtime
+    except OSError:
+        return []
+    out = []
+    for path, fn in ((HARMONIK_PATH, harmonik_build), (REKO_PATH, rekomendasi_build), (AUDIT_PATH, audit_monitor_build)):
+        try:
+            lama = path.stat().st_mtime < rec - 3600
+        except OSError:
+            lama = True
+        if lama:
+            out.append(fn)
+    return out
+
+
+def data_lanjutan(alasan: str) -> bool:
+    """Jalankan langkah akhir yang tertunda di latar bila token berlaku; berbagi jeda dengan data_susulan."""
+    global _susulan_at
+    if not get_token() or token_expired():
+        return False
+    if _harian_lock.locked():
+        return False                     # rangkaian harian sedang berjalan
+    fns = lanjutan_tertunda()
+    if not fns:
+        return False
+    with _susulan_lock:
+        if time.time() - _susulan_at < SUSULAN_JEDA:
+            return False
+        _susulan_at = time.time()
+    print(f"[susulan] melanjutkan {', '.join(f.__name__ for f in fns)} ({alasan})", file=sys.stderr)
+
+    def jalan():
+        if not _harian_lock.acquire(blocking=False):
+            return
+        try:
+            for fn in fns:
+                try:
+                    fn()
+                except Exception as e:
+                    print(f"[{fn.__name__}] gagal: {e}", file=sys.stderr)
+        finally:
+            _harian_lock.release()
+    threading.Thread(target=jalan, daemon=True, name="susulan").start()
     return True
 
 
