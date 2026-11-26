@@ -17,9 +17,17 @@ export function lebarKolom(kolom, baris, total = 182) {
   return w.map(x => x * skala)
 }
 
-export function materiPdf({ slide, bagian }, jsPDF) {
+// Sampul bawaan materi Harmonic; topik Wawasan mengirim meta sendiri (lib/wawasanPdf.js).
+const META_HARMONIK = {
+  seri: 'Materi Harmonic Pattern', besar: 'XABCD', judul: 'Harmonic Pattern pada Saham BEI', label: 'Kajian Harmonic Trading Vol. 1 (Scott M. Carney)',
+  sub: 'Pendahuluan, landasan teori, pembahasan pola, eksekusi dan manajemen, metodologi deteksi otomatis, penerapan di saham Bursa Efek Indonesia, dan penutup.',
+  sumber: ['Sumber utama', 'Carney (2010)'],
+  catatan: 'Ringkasan dengan kata sendiri, disesuaikan untuk saham BEI. Bahan belajar analisa teknikal, bukan saran membeli atau menjual efek.',
+}
+
+export function materiPdf({ slide, bagian, meta = META_HARMONIK }, jsPDF) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
-  const seri = 'Materi Harmonic Pattern'
+  const seri = meta.seri
   let hal = 1, y = 0, judulKini = ''
   const halaman = judul => { judulKini = judul; doc.addPage(); hal += 1; frame(doc, judul, hal, seri); heading(doc, judul, 26); y = 37 }
   const ruang = h => { if (y + h > BAWAH) halaman(`${judulKini.replace(/ \(lanjutan\)$/, '')} (lanjutan)`) }
@@ -37,11 +45,10 @@ export function materiPdf({ slide, bagian }, jsPDF) {
   }
 
   sampul(doc, {
-    besar: 'XABCD', judul: 'Harmonic Pattern pada Saham BEI', label: 'Kajian Harmonic Trading Vol. 1 (Scott M. Carney)',
-    sub: 'Pendahuluan, landasan teori, pembahasan pola, eksekusi dan manajemen, metodologi deteksi otomatis, penerapan di saham Bursa Efek Indonesia, dan penutup.',
+    besar: meta.besar, judul: meta.judul, label: meta.label, sub: meta.sub,
     updated: new Date().toISOString().slice(0, 10), seri: [],
-    box: [['Bagian', String(bagian.length)], ['Slide', String(slide.length)], ['Sumber utama', 'Carney (2010)']],
-    catatan: 'Ringkasan dengan kata sendiri, disesuaikan untuk saham BEI. Bahan belajar analisa teknikal, bukan saran membeli atau menjual efek.',
+    box: [['Bagian', String(bagian.length)], ['Slide', String(slide.length)], meta.sumber],
+    catatan: meta.catatan,
   })
 
   // Daftar isi.
@@ -71,6 +78,12 @@ export function materiPdf({ slide, bagian }, jsPDF) {
         y = tabel(doc, 14, y + 4, s.tabel.kolom.map((t, i) => ({ t, w: w[i] })), baris, 8.3,
           { baru: () => { halaman(`${judulKini.replace(/ \(lanjutan\)$/, '')} (lanjutan)`); return y }, bawah: BAWAH }) + 1
       }
+      if (s.pilihan) {
+        teks(`Situasi: ${s.pilihan.situasi}`, { size: 9.5, font: 'italic', jarak: 1.5 })
+        s.pilihan.opsi.forEach((o, i) => teks(`${'ABCD'[i]}. ${o.teks}${o.benar ? ' (paling tepat)' : ''}`, { size: 9.5, indent: 18, lebar: 176, font: o.benar ? 'bold' : 'normal', jarak: 0.5 }))
+        teks(`Pembahasan: ${s.pilihan.opsi.find(o => o.benar)?.alasan || ''}`, { size: 9.2, warna: MUTED, jarak: 1.5 })
+      }
+      if (s.analogi) teks(`Ibaratnya: ${s.analogi}`, { size: 9.5, font: 'italic', warna: PRIMER, jarak: 2 })
       if (s.rujukan) teks(`Rujukan: ${s.rujukan}`, { size: 8, warna: GOLD })
       y += 3
     }
