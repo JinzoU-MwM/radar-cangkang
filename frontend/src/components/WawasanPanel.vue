@@ -6,6 +6,8 @@ import { computed, ref } from 'vue'
 import { BAGIAN, PRIORITAS, hitungPrioritas, urutanBelajar } from '../lib/wawasan.js'
 import { MARKET_MAKER, deckTopik } from '../lib/wawasanSlide.js'
 import WawasanPresentasi from './WawasanPresentasi.vue'
+import WawasanInfografik from './WawasanInfografik.vue'
+import { deckBergambar } from '../lib/wawasanGambarSlide.js'
 
 const mode = ref('menu')
 const pilih = ref('semua')
@@ -18,14 +20,15 @@ const KHUSUS = { 'dunia-market-maker': MARKET_MAKER.length }
 
 // Presentasi dan unduhan PDF per topik (jsPDF dimuat saat tombol ditekan).
 const buka = ref(null)
-const deck = computed(() => buka.value ? deckTopik(buka.value.k, buka.value.menu) : [])
+const deck = computed(() => !buka.value ? [] : buka.value.gambar ? deckBergambar(buka.value.k, buka.value.menu) : deckTopik(buka.value.k, buka.value.menu))
 const busyPdf = ref('')
-async function unduh(k, menu) {
+async function unduh(k, menu, bergambar = false) {
   if (busyPdf.value) return
-  busyPdf.value = k.id
+  busyPdf.value = k.id + (bergambar ? ':g' : '')
   try {
     const [{ jsPDF }, P] = await Promise.all([import('jspdf'), import('../lib/wawasanPdf.js')])
-    P.wawasanPdf(k, menu, jsPDF).save(P.wawasanPdfName(k))
+    const doc = bergambar ? await P.wawasanPdfBergambar(k, menu, jsPDF, P.svgKePng) : P.wawasanPdf(k, menu, jsPDF)
+    doc.save(P.wawasanPdfName(k, bergambar))
   } finally { busyPdf.value = '' }
 }
 </script>
@@ -79,8 +82,14 @@ async function unduh(k, menu) {
             <ul class="pel"><li v-for="(x, i) in k.pelajari" :key="i">{{ x }}</li></ul>
             <p class="small muted sumber">Sumber: {{ k.sumber.join(' · ') }}</p>
             <div class="aksi">
-              <button type="button" class="btn main" @click="buka = { k, menu: b.menu }">▶ Presentasi<template v-if="KHUSUS[k.id]"> interaktif ({{ KHUSUS[k.id] }} slide)</template></button>
-              <button type="button" class="btn" :disabled="!!busyPdf" @click="unduh(k, b.menu)">{{ busyPdf === k.id ? 'Menyiapkan PDF…' : 'Unduh PDF' }}</button>
+              <span class="lbl-aksi">Presentasi</span>
+              <button type="button" class="btn main" @click="buka = { k, menu: b.menu }">▶ Biasa<template v-if="KHUSUS[k.id]"> ({{ KHUSUS[k.id] }} slide)</template></button>
+              <button type="button" class="btn main gambar" @click="buka = { k, menu: b.menu, gambar: true }">▶ Bergambar</button>
+            </div>
+            <div class="aksi">
+              <span class="lbl-aksi">Unduh</span>
+              <button type="button" class="btn" :disabled="!!busyPdf" @click="unduh(k, b.menu)">{{ busyPdf === k.id ? 'Menyiapkan…' : 'PDF' }}</button>
+              <button type="button" class="btn" :disabled="!!busyPdf" @click="unduh(k, b.menu, true)">{{ busyPdf === k.id + ':g' ? 'Menyiapkan…' : 'PDF bergambar' }}</button>
             </div>
           </section>
         </div>
@@ -95,14 +104,17 @@ async function unduh(k, menu) {
             <RouterLink v-if="k.rute" class="small buka" :to="k.rute">{{ k.menu }}</RouterLink><span v-else class="small muted">{{ k.menu }}</span></p>
           <p class="small">{{ k.wawasan }}</p>
           <div class="aksi">
-            <button type="button" class="btn main" @click="buka = { k, menu: k.menu }">▶ Presentasi</button>
-            <button type="button" class="btn" :disabled="!!busyPdf" @click="unduh(k, k.menu)">{{ busyPdf === k.id ? 'Menyiapkan PDF…' : 'Unduh PDF' }}</button>
+            <button type="button" class="btn main" @click="buka = { k, menu: k.menu }">▶ Biasa</button>
+            <button type="button" class="btn main gambar" @click="buka = { k, menu: k.menu, gambar: true }">▶ Bergambar</button>
+            <button type="button" class="btn" :disabled="!!busyPdf" @click="unduh(k, k.menu)">{{ busyPdf === k.id ? 'Menyiapkan…' : 'PDF' }}</button>
+            <button type="button" class="btn" :disabled="!!busyPdf" @click="unduh(k, k.menu, true)">{{ busyPdf === k.id + ':g' ? 'Menyiapkan…' : 'PDF bergambar' }}</button>
           </div>
         </div>
       </li>
     </ol>
 
-    <WawasanPresentasi v-if="buka" :deck="deck" :judul="buka.k.judul" :busy-pdf="busyPdf === buka.k.id" @tutup="buka = null" @unduh="unduh(buka.k, buka.menu)" />
+    <WawasanInfografik v-if="buka?.gambar" :deck="deck" :judul="buka.k.judul" :busy-pdf="busyPdf === buka.k.id + ':g'" @tutup="buka = null" @unduh="unduh(buka.k, buka.menu, true)" />
+    <WawasanPresentasi v-else-if="buka" :deck="deck" :judul="buka.k.judul" :busy-pdf="busyPdf === buka.k.id" @tutup="buka = null" @unduh="unduh(buka.k, buka.menu)" />
 
     <p class="small muted">Bahan belajar, bukan saran investasi. Topik yang bersumber dari buku lanjutan Carney belum dirangkum di website; nomor pasal dan isi peraturan cek langsung ke dokumen resminya di ojk.go.id dan idx.co.id.</p>
   </section>
@@ -148,6 +160,9 @@ async function unduh(k, menu) {
 .aksi .btn{font-size:12.5px}
 .aksi .btn.main{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .aksi .btn:disabled{opacity:.5;cursor:default}
+.aksi .btn.main.gambar{background:var(--viz-a);border-color:var(--viz-a);color:var(--sheet)}
+.aksi + .aksi{margin-top:4px}
+.lbl-aksi{font-size:11px;font-weight:700;color:var(--ink-2);min-width:68px;align-self:center}
 .urut{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .urut li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:10px 14px}
 .urut p{margin:0}

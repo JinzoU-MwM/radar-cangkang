@@ -83,7 +83,17 @@ export function materiPdf({ slide, bagian, meta = META_HARMONIK }, jsPDF) {
         s.pilihan.opsi.forEach((o, i) => teks(`${'ABCD'[i]}. ${o.teks}${o.benar ? ' (paling tepat)' : ''}`, { size: 9.5, indent: 18, lebar: 176, font: o.benar ? 'bold' : 'normal', jarak: 0.5 }))
         teks(`Pembahasan: ${s.pilihan.opsi.find(o => o.benar)?.alasan || ''}`, { size: 9.2, warna: MUTED, jarak: 1.5 })
       }
-      if (s.analogi) teks(`Ibaratnya: ${s.analogi}`, { size: 9.5, font: 'italic', warna: PRIMER, jarak: 2 })
+      // Gambar analogi (PNG hasil rasterisasi, versi bergambar Wawasan) di kiri, perumpamaannya di sampingnya.
+      if (s.gambarPng) {
+        ruang(50)
+        doc.addImage(s.gambarPng, 'PNG', 14, y, 80, 45)
+        const yAwal = y
+        if (s.analogi) {
+          doc.setFont('helvetica', 'italic'); doc.setFontSize(9.5); doc.setTextColor(PRIMER)
+          doc.text(doc.splitTextToSize(pdfText(`Ibaratnya: ${s.analogi}`), 96), 100, y + 5, { lineHeightFactor: 1.45 })
+        }
+        y = yAwal + 49
+      } else if (s.analogi) teks(`Ibaratnya: ${s.analogi}`, { size: 9.5, font: 'italic', warna: PRIMER, jarak: 2 })
       if (s.rujukan) teks(`Rujukan: ${s.rujukan}`, { size: 8, warna: GOLD })
       y += 3
     }
