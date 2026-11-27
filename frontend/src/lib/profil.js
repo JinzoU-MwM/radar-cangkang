@@ -1,4 +1,5 @@
 // Logika murni untuk pendalaman profil pengendali (profil-pengendali.json) dan rekam jejak harga.
+import { kodeSah, serbaKapital } from './kodeKata.js'
 
 // Tingkat keyakinan sebuah klaim: dokumen resmi, satu media, atau dugaan dari pola.
 export function yakinOf(k) {
@@ -8,13 +9,15 @@ export function yakinOf(k) {
   return { id: 'media', label: 'disebut media', cls: 't-warn' }
 }
 
-// Pecah teks menjadi potongan biasa dan kode saham 4 huruf yang dikenal (bisa dijadikan tautan).
+// Pecah teks menjadi potongan biasa dan kode saham 4 huruf yang dikenal (bisa dijadikan tautan). Kata kapital di
+// judul serba kapital ("KEMBALI PADA 8 DESEMBER") dan singkatan umum (MSCI) tidak dijadikan tautan; lihat kodeKata.js.
 export function tickerParts(text, known) {
   const s = String(text ?? '')
   const out = []
+  const kapital = serbaKapital(s)
   let last = 0
   for (const m of s.matchAll(/\b[A-Z]{4}\b/g)) {
-    if (!known?.has(m[0])) continue
+    if (!known?.has(m[0]) || !kodeSah(s, m[0], m.index, kapital)) continue
     if (m.index > last) out.push({ text: s.slice(last, m.index) })
     out.push({ ticker: m[0] })
     last = m.index + 4
