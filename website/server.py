@@ -651,6 +651,37 @@ def updates_put(ups: list[dict]) -> None:
               [(str(u["id"]), json.dumps(u, ensure_ascii=False), str(u.get("date") or "")) for u in ups])
 
 
+def perbaiki_kode_berita() -> dict:
+    """Bersihkan berita tersimpan yang salah kode karena tanda otomatis Stockbit (mis. berita "PADA" dari kata "pada"
+    di judul kapital, 27 Nov 2026). Hanya berita (sb-news/news) yang diperiksa (kode_salah); keterbukaan Stockbit
+    Reports tidak disentuh karena diambil per emiten. Bila teks menyebut
+    emiten radar lain dalam kurung ("... Tbk (PACK)"), kodenya dipindah ke sana; selain itu kodenya dikosongkan
+    (tidak dihapus, supaya sinkron antarserver tidak mengembalikannya). updatedAt diperbarui agar versi ini menang."""
+    try:
+        nama = nama_semua()
+    except Exception:
+        nama = {}
+    radar = {it["ticker"] for it in items_all()}
+    ubah, pindah, kosong = [], 0, 0
+    for u in updates_all():
+        t, uid = u.get("ticker") or "", str(u.get("id") or "")
+        if not t or not uid.startswith(("sb-news-", "news-")):
+            continue
+        title, summ = str(u.get("title") or ""), str(u.get("summary") or "")
+        if not kode_salah(u, nama.get(t, "")):
+            continue
+        lain = [a or b for a, b in dict.fromkeys(re.findall(r"\(([A-Z]{4})\)|\$([A-Z]{4})\b", f"{title} {summ}"))]
+        baru = next((k for k in lain if k != t and k in radar and k not in KODE_SINGKATAN
+                     and kode_disebut(k, [title, summ], nama.get(k, ""))), "")
+        pindah += bool(baru)
+        kosong += not baru
+        ubah.append({**u, "ticker": baru, "updatedAt": iso_now()})
+    if ubah:
+        updates_put(ubah)
+        print(f"[berita] kode diperbaiki: {pindah} dipindah, {kosong} dikosongkan", file=sys.stderr)
+    return {"dipindah": pindah, "dikosongkan": kosong}
+
+
 def valid_item(it) -> bool:
     return isinstance(it, dict) and isinstance(it.get("ticker"), str) and bool(TICKER_RE.match(it["ticker"]))
 
@@ -971,9 +1002,12 @@ def source_articles(src: dict) -> list[dict]:
 def get_news(cfg_news: dict, tickers: list[str], fresh: bool = False) -> dict:
     kw = cfg_news.get("keywords", r"$^")
     items, errors = [], []
+    # Kata pengantar ("saham", "Tbk") boleh huruf apa saja, tetapi kodenya harus kapital: dengan re.I penuh,
+    # "harga saham pada hari ini" terbaca sebagai kode PADA.
+    kodes = "(?-i:" + "|".join(tickers) + ")"
     tick_re = (re.compile(
-        r"Tbk\.?\s*\((" + "|".join(tickers) + r")\)|\b(?:saham|emiten|kode|perseroan)\s+("
-        + "|".join(tickers) + r")\b|\b(" + "|".join(tickers) + r")\s+Tbk\b", re.I)
+        r"Tbk\.?\s*\((" + kodes + r")\)|\b(?:saham|emiten|kode|perseroan)\s+("
+        + kodes + r")\b|\b(" + kodes + r")\s+Tbk\b", re.I)
         if tickers else None)
     today = datetime.now().strftime("%Y-%m-%d")
     for src in cfg_news.get("sources", []):
@@ -983,6 +1017,9 @@ def get_news(cfg_news: dict, tickers: list[str], fresh: bool = False) -> dict:
                 hit = ""
                 if tick_re and (m := tick_re.search(text)):
                     hit = next(g for g in m.groups() if g).upper()
+                    # "SAHAM PADA HARI INI" di judul kapital: kode yang juga kata umum butuh bukti kuat.
+                    if hit in KODE_KATA | KODE_SINGKATAN and not kode_disebut(hit, [a["title"], a["desc"]], nama_semua().get(hit, "")):
+                        hit = ""
                 if not (re.search(kw, text, re.I) or hit):
                     continue
                 if not hit:
@@ -1565,14 +1602,95 @@ def convert_reports(res: dict, ticker: str, cfg_reports: dict) -> list[dict]:
                     "url": f"https://stockbit.com/post/{s.get('stream_id')}"})
     return out
 
-def convert_sb_news(res: dict, ticker: str, days: int = 365) -> list[dict]:
-    """Berita StockbitNews yang ditandai Stockbit untuk satu emiten (sumber asli: katadata, emitennews, dst.)."""
+# Kode saham BEI yang juga kata atau singkatan umum. Stockbit menandai berita secara otomatis dari teks, sehingga judul
+# huruf kapital ("JADWALKAN KEMBALI PADA 8 DESEMBER") ikut ditandai PADA. Untuk kode ini, berita baru dianggap tentang
+# emitennya bila ada bukti kuat: "(PADA)", "$PADA", atau nama perusahaannya. Daftar diambil dari kata 4 huruf yang
+# sering muncul huruf kecil di judul dan ringkasan berita radar (audit 27 Nov 2026) ditambah singkatan umum.
+# Salinan untuk tautan kode di antarmuka: frontend/src/lib/kodeKata.js (dicek sama oleh tes).
+KODE_KATA = frozenset("""
+ADHI AGAR AGRO AKSI AMAN ANDI AREA ASLI ASRI ATAP AUTO BAIK BAJA BALI BANK BELI BIKE BLUE BOGA BUDI BUKA BUMI BUMN
+CARE CASH CHIP CITY COAL COIN CUAN DATA DAYA DEWI EMAS FAST FILM FOOD GEMA GOLD GOLF GUNA IDEA IKAN INDO JAWA JAYA
+KAYU KOIN KOKA KOTA LABA LAJU LAND LIFE MAIN MEGA META MINA MSCI NAIK NATO PACK PADA PIPA POLA PORT PURI RAJA RATU
+REAL RELI ROTI SAFE SATU SIAP STAR TIRA TRUK UANG UNIT VISI WIFI""".split())
+# Singkatan umum yang ditulis kapital di teks biasa (MSCI, NATO, BUMN, WIFI): butuh bukti kuat atau berada di daftar kode.
+KODE_SINGKATAN = frozenset({"BUMN", "MSCI", "NATO", "WIFI"})
+NAMA_LEPAS = {"pt", "tbk", "persero", "the", "dan"}
+
+
+def nama_frasa(nama: str) -> str:
+    """Dua kata pertama nama perusahaan tanpa PT/Tbk (mis. "personel alih" dari "Personel Alih Daya Tbk."), sebagai
+    bukti kuat bahwa teks menyebut emiten itu; kosong bila nama tidak diketahui."""
+    kata = [w.lower() for w in re.findall(r"[A-Za-z0-9]+", nama or "") if w.lower() not in NAMA_LEPAS]
+    return " ".join(kata[:2]) if len(kata) >= 2 else (kata[0] if kata and len(kata[0]) >= 5 else "")
+
+
+def serba_kapital(s: str) -> bool:
+    """Teks yang hurufnya hampir semua kapital (judul IQPlus): kata biasa di dalamnya tidak bisa dibedakan dari kode."""
+    # Kode 4 huruf (daftar saham) tidak ikut dihitung: "Daftar UMA KIOS, GMFI, KETR Dibuka" bukan judul kapital.
+    huruf = [c for c in re.sub(r"\b[A-Z]{4}\b", " ", s or "") if c.isalpha()]
+    return len(huruf) >= 12 and sum(c.isupper() for c in huruf) / len(huruf) > 0.8
+
+
+def kode_disebut(t: str, teks: list[str], nama: str = "") -> bool:
+    """Teks benar-benar menyebut emiten `t`, dengan cara yang sama seperti keterbukaan Stockbit Reports mengenali
+    emiten: kode dalam kurung, berawalan $, didahului "saham", atau nama perusahaannya. Kode yang ditulis polos
+    (mis. "PACK Tunda RUPSLB") hanya dihitung di teks yang tidak serba kapital dan bila polos_sah. teks[0] = judul."""
+    gabung = " ".join(x for x in teks if x)
+    if re.search(rf"\${t}\b|\({t}\)|\b[Ss]aham\s+{t}\b", gabung):
+        return True
+    frasa = nama_frasa(nama)
+    if frasa and re.search(rf"\b{re.escape(frasa)}", re.sub(r"[^a-z0-9]+", " ", gabung.lower())):
+        return True
+    return any(polos_sah(x, t, m.start(), judul=(j == 0)) for j, x in enumerate(teks) if x and not serba_kapital(x)
+               for m in re.finditer(rf"\b{t}\b", x))
+
+
+def polos_sah(x: str, t: str, i: int, judul: bool = False) -> bool:
+    """Kode polos di posisi i pada teks campuran huruf besar-kecil memang kode saham ("PACK Tunda RUPSLB",
+    "KIJA-PADA Deretan Teratas"), kecuali diapit kata kapital biasa ("PEMERINTAH KOTA BATAM") atau, untuk kode
+    yang juga kata umum, di awal isi berita ("PADA 22 November 2026, ...", gaya dateline)."""
+    sebelum = re.findall(r"[A-Za-z]+", x[:i])[-1:]
+    sesudah = re.findall(r"[A-Za-z]+", x[i + len(t):])[:1]
+    # Diapit kata kapital yang bukan kode 4 huruf ("KEMBALI PADA DESEMBER") = kata biasa; diapit kode lain
+    # ("JARR, PACK, RANS", "ICBP INCO JPFA KLBF") = daftar kode.
+    kata = lambda w: bool(w) and len(w[0]) >= 2 and w[0].isupper() and len(w[0]) != 4
+    if kata(sebelum) and kata(sesudah):
+        return False
+    # Singkatan umum (MSCI, NATO) hanya dihitung di dalam daftar kode ("ERAA, WIFI, PWON").
+    if t in KODE_SINGKATAN:
+        kode = lambda w: bool(w) and len(w[0]) == 4 and w[0].isupper()
+        return kode(sebelum) or kode(sesudah)
+    return not (t in KODE_KATA and not judul and not x[:i].strip())
+
+
+def kode_salah(u: dict, nama: str = "") -> bool:
+    """Berita tersimpan yang kodenya jelas salah: kodenya singkatan umum tanpa bukti kuat, atau kodenya muncul di judul
+    dan ringkasan tetapi hanya sebagai kata biasa (judul kapital "... KEMBALI PADA 8 DESEMBER"). Bila kodenya tidak
+    muncul sama sekali, tanda Stockbit berasal dari isi lengkap yang tidak disimpan, jadi dibiarkan."""
+    t = u.get("ticker") or ""
+    teks = [str(u.get("title") or ""), str(u.get("summary") or "")]
+    if not t or kode_disebut(t, teks, nama):
+        return False
+    return t in KODE_SINGKATAN or bool(re.search(rf"\b{t}\b", " ".join(teks)))
+
+
+def convert_sb_news(res: dict, ticker: str, days: int = 365, nama: str | None = None) -> list[dict]:
+    """Berita StockbitNews yang ditandai Stockbit untuk satu emiten (sumber asli: katadata, emitennews, dst.).
+    Tanda Stockbit diperiksa ulang dengan kode_disebut: berita yang hanya memuat kata serupa kode (mis. "pada" untuk
+    PADA) dibuang."""
     cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    if nama is None:
+        try:
+            nama = nama_semua().get(ticker, "")
+        except Exception:
+            nama = ""
     out = []
     for s in res.get("data", {}).get("stream") or []:
         title = str(s.get("title") or "").strip()
         date = str(s.get("created_at") or "")[:10]
         if not title or date < cutoff:
+            continue
+        if not kode_disebut(ticker, [title, str(s.get("content") or "")], nama):
             continue
         body = re.sub(r"\s+", " ", str(s.get("content") or "")).strip().rstrip(".").removesuffix("...").strip()
         # Cuplikan Stockbit terpotong ("..."): simpan sampai kalimat lengkap terakhir.
@@ -1644,6 +1762,12 @@ KANDIDAT_SIG = [
 ]
 
 
+def kode_bei(t: str) -> bool:
+    """Kode benar-benar saham BEI (pernah muncul di akun StockbitReports). Bila daftar belum ada, dianggap benar."""
+    bei = bei_kode_load()
+    return len(bei) < 300 or t in bei
+
+
 def market_reports(days: int = 14, pages: int = 40, fresh: bool = False, akun: str = "StockbitReports") -> list[dict]:
     """Posting seluruh BEI dari akun Stockbit `akun` (StockbitReports = keterbukaan, StockbitNews = berita; terbaru
     dulu) dalam `days` hari: [{ticker, date, title, url}]. Dipakai Kandidat agar laporan dan berita pergantian
@@ -1658,9 +1782,15 @@ def market_reports(days: int = 14, pages: int = 40, fresh: bool = False, akun: s
         for p in page:
             day = str(p.get("created_at") or "")[:10]
             title = re.sub(r"\s*\[[A-Z0-9]{4}\]\s*$", "", str(p.get("title") or p.get("content") or "").split(chr(10))[0]).strip()
+            isi = str(p.get("content") or "")
             for t in p.get("topics") or []:
-                if TICKER_RE.match(str(t)) and day >= cutoff:
-                    out.append({"ticker": t, "date": day, "title": title[:200], "url": f"https://stockbit.com/post/{p.get('stream_id')}"})
+                # Tanda topik Stockbit diperiksa ulang: bukan kode BEI (MSCI, BUMN, IHSG) atau kata biasa ("PADA" di
+                # judul kapital) dibuang. Keterbukaan StockbitReports cukup dicek kode BEI-nya.
+                if not (TICKER_RE.match(str(t)) and day >= cutoff and kode_bei(t)):
+                    continue
+                if akun != "StockbitReports" and not kode_disebut(t, [title, isi], nama_semua().get(t, "")):
+                    continue
+                out.append({"ticker": t, "date": day, "title": title[:200], "url": f"https://stockbit.com/post/{p.get('stream_id')}"})
         if not page or (d.get("pagination") or {}).get("is_last_page") or str(page[-1].get("created_at") or "")[:10] < cutoff:
             break
         cursor = (d.get("pagination") or {}).get("next_cursor") or page[-1].get("stream_id")
@@ -1915,7 +2045,9 @@ def rencana_cocok(t: str, teks: str, nama: str = "", resmi: bool = False) -> boo
     if objek and t not in objek:
         return False
     khas = nama_khas(nama)
-    posisi = [m.start() for m in re.finditer(rf"\b{t}\b", teks)]
+    # Kode polos yang juga kata umum, atau di judul serba kapital, bukan bukti judul menyebut emiten ini.
+    polos_sah = t not in KODE_KATA | KODE_SINGKATAN and not serba_kapital(teks)
+    posisi = [m.start() for m in re.finditer(rf"\b{t}\b" if polos_sah else rf"\${t}\b|\({t}\)", teks)]
     if khas:
         posisi += [m.start() for m in re.finditer(rf"\b{re.escape(khas)}", teks, re.I)]
     if not posisi:
@@ -1968,6 +2100,12 @@ def auto_monitor(kd: dict, now: datetime | None = None) -> list[str]:
     Emiten yang sudah di Monitor atau disembunyikan tim dari Kandidat dilewati; data yang sudah ada tidak ditimpa,
     kecuali item otomatis yang masih di tahap penyaringan tanpa tonggak: tahapnya dinaikkan sesuai bukti."""
     semua = items_all()
+    # Item otomatis yang ternyata bukan kode saham BEI (mis. MSCI, BUMN dari judul "... Jelang MSCI") dihapus.
+    for it in [i for i in semua if i.get("auto") and not kode_bei(i["ticker"])]:
+        data_exec("DELETE FROM items WHERE ticker=?", [(it["ticker"],)])
+        jejak_catat("items", it["ticker"], hapus=True)
+        print(f"[kandidat] {it['ticker']} bukan kode BEI, dihapus dari Monitor", file=sys.stderr)
+    semua = [i for i in semua if not (i.get("auto") and not kode_bei(i["ticker"]))]
     ada = {i["ticker"] for i in semua}
     awal = "Otomatis: rencana pengambilalihan, belum terkonfirmasi di KSEI. "
     for it in semua:
@@ -2006,7 +2144,7 @@ def auto_monitor(kd: dict, now: datetime | None = None) -> list[str]:
         t = k["ticker"]
         ev = (k.get("signals") or {}).get("akuisisi", {}).get("ev") or []
         lap = [e for e in ev if "stockbit.com/post/" in (e.get("src") or "") and PENGENDALI_RX.search(e.get("text") or "")]
-        if t in ada:
+        if t in ada or not kode_bei(t):
             continue
         if not (k.get("pengendaliBaru") and lap):
             ren = [e for e in ev if (e.get("d") or "") >= batas and rencana_cocok(t, e.get("text") or "", k.get("name") or "",
@@ -2258,6 +2396,10 @@ def catchup_plan(last_ok: str | None, now: float | None = None) -> tuple[int, st
 def sync_updates(cfg: dict, delay: float = 0.4) -> dict:
     """Setara syncReports di browser: keterbukaan Stockbit per emiten backdoor + berita media,
     digabung ke tabel updates berdasarkan id (stempel updatedAt laporan lama dipertahankan)."""
+    try:
+        perbaiki_kode_berita()   # berita lama yang salah kode (data dari peer sinkron juga ikut dibersihkan)
+    except Exception as e:
+        print(f"[berita] perbaikan kode gagal: {e}", file=sys.stderr)
     old = {str(u["id"]): u for u in updates_all()}
     changed, errors, added, added_news = [], [], 0, 0
     # Semua emiten di monitor (termasuk tahap radar) agar keterbukaan & berita tidak ada yang terlewat.
@@ -7428,6 +7570,7 @@ def main() -> int:
     threading.Thread(target=kandidat_loop, daemon=True).start()
     threading.Thread(target=harga_loop, daemon=True).start()
     threading.Thread(target=token_loop, daemon=True, name="token").start()
+    threading.Thread(target=perbaiki_kode_berita, daemon=True, name="kode-berita").start()
     threading.Thread(target=pd_latar_loop, daemon=True, name="pov-dalam-latar").start()
     threading.Thread(target=sinkron_loop, daemon=True, name="sinkron").start()
     threading.Thread(target=news_loop, daemon=True).start()

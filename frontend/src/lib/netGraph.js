@@ -1,6 +1,7 @@
 // Peta jaringan pengendali: orang ↔ badan usaha ↔ emiten ↔ pihak lawan, dari profil riset
 // (profil-pengendali.json) dan indeks entitas Alur saham (relasi-verified.json). Logika murni, tanpa DOM.
 import { entityKey, buildEntityIndex } from './relasiAuto.js'
+import { kodeSah } from './kodeKata.js'
 
 export const NET_TYPE = {
   emiten: 'Emiten radar', orang: 'Pengendali/UBO', entitas: 'Badan usaha pengendali',
@@ -35,7 +36,8 @@ export function buildNetwork({ profil = {}, relasi = {} } = {}) {
     seen.add(k); edges.push({ a: a.id, b: b.id, label: label || '' })
   }
   const em = t => node('em:' + t, t, 'emiten')
-  const codesIn = (s, self) => (String(s || '').match(TICK) || []).filter(c => c !== self && known.has(c))
+  // Kode yang disebut di teks riset; kata kapital yang juga kode (mis. "BANK") hanya dihitung bila sah (kodeKata.js).
+  const codesIn = (s, self) => { const t = String(s || ''); return [...t.matchAll(TICK)].filter(m => m[0] !== self && known.has(m[0]) && kodeSah(t, m[0], m.index)).map(m => m[0]) }
   tickers.forEach(em)
 
   for (const t of tickers) {

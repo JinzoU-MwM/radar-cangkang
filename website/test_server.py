@@ -3,6 +3,7 @@
 Jalankan: python3 website/test_server.py
 """
 import json
+import re
 import time
 import tempfile
 import threading
@@ -284,7 +285,7 @@ class KandidatTest(unittest.TestCase):
         def fake(url, fresh=False):
             calls.append(url)
             n = len(calls)
-            return {"data": {"stream": [{"stream_id": n, "title": f"Berita {n}", "created_at": f"2026-10-{24 - n * 3:02d} 10:00:00", "content": ""}],
+            return {"data": {"stream": [{"stream_id": n, "title": f"Berita DOOH {n}", "created_at": f"2026-10-{24 - n * 3:02d} 10:00:00", "content": ""}],
                              "pagination": {"is_last_page": False, "next_cursor": 100 + n}}}
         old, server.stockbit_api = server.stockbit_api, fake
         try:
@@ -1010,7 +1011,8 @@ class AutoMonitorTest(unittest.TestCase):
         simpan = []
         with unittest.mock.patch.object(server, "items_all", return_value=[{"ticker": t} for t in ada]), \
                 unittest.mock.patch.object(server, "data_rows", return_value=[(t,) for t in sembunyi]), \
-                unittest.mock.patch.object(server, "item_put", side_effect=simpan.append):
+                unittest.mock.patch.object(server, "item_put", side_effect=simpan.append), \
+                unittest.mock.patch.object(server, "kode_bei", side_effect=lambda t: t not in ("MSCI", "BUMN")):
             hasil = server.auto_monitor({"items": items}, now=datetime(2026, 11, 6))
         return hasil, simpan
 
@@ -2145,6 +2147,91 @@ class RekomendasiTest(unittest.TestCase):
             self.assertEqual(r1["tanggal"], r2["tanggal"])
             self.assertEqual(r1["rows"][0]["t"], "AAAA")
             self.assertEqual(r1["sumber"], {"harga": 5})
+
+
+class KodeBeritaTest(unittest.TestCase):
+    """Kasus 27 Nov 2026: berita IQPlus "PACK TUNDA RUPSLB, JADWALKAN KEMBALI PADA 8 DESEMBER 2026" tampil sebagai PADA
+    karena Stockbit menandai kata "PADA" di judul kapital sebagai kode saham."""
+    PACK_JUDUL = "PACK TUNDA RUPSLB, JADWALKAN KEMBALI PADA 8 DESEMBER 2026"
+    PACK_ISI = "IQPlus, (27/11) - PT Abadi Nusantara Hijau Investama Tbk (PACK) menunda pelaksanaan RUPSLB."
+
+    def test_kode_disebut(self):
+        kd = server.kode_disebut
+        self.assertFalse(kd("PADA", [self.PACK_JUDUL, self.PACK_ISI], "Personel Alih Daya Tbk."))
+        self.assertTrue(kd("PACK", [self.PACK_JUDUL, self.PACK_ISI], "Abadi Nusantara Hijau Investama Tbk"))
+        self.assertTrue(kd("PADA", ["Tumbuh Solid, Pendapatan Personel Alih Daya Rp1,4T", ""], "Personel Alih Daya Tbk."))
+        self.assertTrue(kd("PADA", ["10 Saham Top Gainer Selasa, KIJA-PADA Deretan Teratas", ""], ""))   # judul campuran
+        self.assertFalse(kd("PADA", ["Rp 514 Triliun Sebelum Tahun Berganti", "PADA 22 November 2026, NEXT merilis"], ""))
+        self.assertTrue(kd("PADA", ["Laba $PADA naik", ""], ""))
+        self.assertFalse(kd("MSCI", ["Top sepekan: Tekanan MSCI dan manuver Boy Thohir", ""], ""))   # singkatan umum
+        self.assertTrue(kd("VKTR", ["Intip 10 Saham Merugi Sepekan, VKTR Pimpin Top Losers", ""], ""))
+        self.assertFalse(kd("VKTR", ["VKTR DAN SAHAM LAIN MELEMAH HARI INI DI BURSA", ""], ""))   # judul serba kapital
+        self.assertEqual(server.nama_frasa("PT Personel Alih Daya Tbk."), "personel alih")
+        self.assertTrue(kd("NATO", ["BEI Cabut Suspensi MKAP, MGNA, SPRE, NATO, Saham ELPI", ""], ""))   # singkatan di daftar kode
+        self.assertTrue(kd("MGLV", ["Daftar UMA KIOS, GMFI, KETR, CARE: PUDP, TRON, MGLV, CITY, INET Dibuka", ""], ""))
+        self.assertTrue(kd("PACK", ["Membedah Gurita Bisnis Haji Isam di JARR, PACK, RANS hingga BYAN", ""], ""))
+        self.assertFalse(kd("KOTA", ["Wali kota resmikan PEMERINTAH KOTA BATAM baru", ""], ""))
+
+    def test_convert_sb_news_buang_kata_umum(self):
+        res = {"data": {"stream": [
+            {"stream_id": 1, "title": self.PACK_JUDUL, "content": self.PACK_ISI, "created_at": datetime.now().strftime("%Y-%m-%d")},
+            {"stream_id": 2, "title": "PADA Kantongi Pinjaman Rp5 Miliar Garap Proyek", "content": "Personel Alih Daya (PADA) ...",
+             "created_at": datetime.now().strftime("%Y-%m-%d")}]}}
+        out = server.convert_sb_news(res, "PADA", nama="Personel Alih Daya Tbk.")
+        self.assertEqual([x["id"] for x in out], ["sb-news-2"])
+        out = server.convert_sb_news(res, "PACK", nama="Abadi Nusantara Hijau Investama Tbk")
+        self.assertEqual([x["id"] for x in out], ["sb-news-1"])
+
+    def test_get_news_kode_harus_kapital(self):
+        artikel = [{"title": "Harga saham pada hari ini bergerak datar di tengah sentimen global", "url": "u1", "desc": "", "date": "2026-11-27"},
+                   {"title": "Personel Alih Daya Tbk (PADA) raih kontrak baru", "url": "u2", "desc": "", "date": "2026-11-27"}]
+        with unittest.mock.patch.object(server, "source_articles", return_value=artikel), \
+             unittest.mock.patch.object(server, "nama_semua", return_value={"PADA": "Personel Alih Daya Tbk."}):
+            res = server.get_news({"sources": [{"name": "uji"}], "keywords": "sentimen"}, ["PADA", "PACK"])
+        kode = {x["title"][:12]: x["ticker"] for x in res["items"]}
+        self.assertEqual(kode["Harga saham "], "")
+        self.assertEqual(kode["Personel Ali"], "PADA")
+
+    def test_perbaiki_kode_berita(self):
+        ups = [
+            {"id": "sb-news-1", "ticker": "PADA", "date": "2026-11-27", "title": self.PACK_JUDUL, "summary": self.PACK_ISI},
+            {"id": "sb-news-2", "ticker": "PADA", "date": "2026-11-23", "title": "TINGKAT INFLASI SINGAPURA MELANDAI PADA OKTOBER 2026", "summary": ""},
+            {"id": "sb-news-3", "ticker": "PADA", "date": "2026-11-20", "title": "PADA Kantongi Pinjaman Rp5 Miliar", "summary": ""},
+            {"id": "sb-report-4", "ticker": "PADA", "date": "2026-11-20", "title": "PENJELASAN ATAS PEMBERITAAN PADA MEDIA", "summary": ""},
+            {"id": "sb-news-5", "ticker": "MORA", "date": "2026-11-20", "title": "Grup Salim dan Sinar Mas Berebut Posisi", "summary": ""},
+        ]
+        disimpan = []
+        with unittest.mock.patch.object(server, "updates_all", return_value=ups), \
+             unittest.mock.patch.object(server, "items_all", return_value=[{"ticker": "PACK"}, {"ticker": "PADA"}, {"ticker": "MORA"}]), \
+             unittest.mock.patch.object(server, "nama_semua", return_value={"PADA": "Personel Alih Daya Tbk.", "PACK": "Abadi Nusantara Hijau Investama Tbk"}), \
+             unittest.mock.patch.object(server, "updates_put", side_effect=disimpan.extend):
+            hasil = server.perbaiki_kode_berita()
+        self.assertEqual(hasil, {"dipindah": 1, "dikosongkan": 1})
+        baru = {u["id"]: u["ticker"] for u in disimpan}
+        self.assertEqual(baru, {"sb-news-1": "PACK", "sb-news-2": ""})   # keterbukaan, judul campuran, dan MORA tidak disentuh
+
+    def test_market_reports_saring_kode(self):
+        hari = datetime.now().strftime("%Y-%m-%d")
+        pos = [{"stream_id": 1, "created_at": hari, "title": "Pengendali Beli 5,84% Saham ENRG Jelang MSCI", "content": "", "topics": ["ENRG", "MSCI"]},
+               {"stream_id": 2, "created_at": hari, "title": self.PACK_JUDUL, "content": self.PACK_ISI, "topics": ["PACK", "PADA"]}]
+        bei = {k: hari for k in ["ENRG", "PACK", "PADA"] + [f"K{i:03d}" for i in range(400)]}
+        with unittest.mock.patch.object(server, "stockbit_post_api", return_value={"data": {"stream": pos, "pagination": {"is_last_page": True}}}), \
+             unittest.mock.patch.object(server, "bei_kode_load", return_value=bei), \
+             unittest.mock.patch.object(server, "nama_semua", return_value={"PACK": "Abadi Nusantara Hijau Investama Tbk"}):
+            berita = server.market_reports(akun="StockbitNews")
+            lapor = server.market_reports()
+        self.assertEqual(sorted((r["ticker"], r["url"][-1]) for r in berita), [("ENRG", "1"), ("PACK", "2")])
+        self.assertEqual(sorted(r["ticker"] for r in lapor), ["ENRG", "PACK", "PADA"])   # keterbukaan: cukup kode BEI
+        with unittest.mock.patch.object(server, "bei_kode_load", return_value=bei):
+            self.assertFalse(server.kode_bei("MSCI"))
+            self.assertTrue(server.kode_bei("PADA"))
+
+    def test_daftar_sama_dengan_frontend(self):
+        js = (Path(__file__).resolve().parent.parent / "frontend" / "src" / "lib" / "kodeKata.js").read_text(encoding="utf-8")
+        kata = set(js.split("new Set(`")[1].split("`")[0].split())
+        self.assertEqual(kata, set(server.KODE_KATA))
+        singkatan = set(re.findall(r"'([A-Z]{4})'", js.split("export const KODE_SINGKATAN")[1].split("\n")[0]))
+        self.assertEqual(singkatan, set(server.KODE_SINGKATAN))
 
 
 if __name__ == "__main__":
