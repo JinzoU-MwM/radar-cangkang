@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { jsPDF } from 'jspdf'
+import { readFileSync } from 'node:fs'
 import { BAGIAN } from '../wawasan.js'
 import { MARKET_MAKER, LANGKAH_OB, bagianDeck, butirWawasan, deckTopik, lotRisiko } from '../wawasanSlide.js'
 import { ADA, ANALOGI } from '../wawasanAnalogi.js'
@@ -42,6 +43,10 @@ describe('presentasi Wawasan', () => {
       expect(s2.gambar, k.id).toBe(ADA.includes(k.id) ? k.id : undefined)
     }
     for (const id of ADA) expect(semua.some(x => x.k.id === id), id).toBe(true)
+    // setiap topik bergambar punya adegan di WawasanAnalogi.vue
+    const vue = readFileSync(new URL('../../components/WawasanAnalogi.vue', import.meta.url), 'utf8')
+    for (const id of ADA) expect(vue.includes(`nama === '${id}'`), id).toBe(true)
+    expect(ADA).toHaveLength(semua.length - 1)
   })
   it('kalkulator ukuran posisi', () => {
     const r = lotRisiko({ modal: 100_000_000, risiko: 1, beli: 200, stop: 188 })
