@@ -108,5 +108,5 @@ export const ANALOGI = {
   },
 }
 
-// Topik yang gambar analoginya sudah dibuat di WawasanAnalogi.vue (sisanya menyusul; sementara teks saja).
-export const ADA = ['dunia-valuasi', 'dunia-lk', 'dunia-aksi', 'dunia-mekanisme', 'dunia-dividen', 'dunia-pajak', 'dunia-siklus', 'dunia-psikologi', 'dunia-gorengan']
+// Semua topik sudah punya gambar analogi di WawasanAnalogi.vue (kunci = id topik).
+export const ADA = Object.keys(ANALOGI)
