@@ -1,8 +1,10 @@
 // Versi bergambar presentasi Wawasan: setiap slide diberi gambar analogi diam (lib/wawasanMotif.js) dan satu
 // kalimat perumpamaan, tanpa mengurangi penjelasannya. Kunci = id slide dari deckTopik / MARKET_MAKER.
-// Slide yang belum punya perumpamaan khusus memakai gambar umum menurut jenis slidenya (gambarUmum).
+// Topik menu lain ada di lib/wawasanGambarMenu.js. gambarUmum hanya cadangan bila ada slide baru yang belum diberi
+// perumpamaan.
 // Semua angka di perumpamaan adalah contoh rekaan. Data murni.
 import { MARKET_MAKER, deckTopik } from './wawasanSlide.js'
+import { GAMBAR_MENU } from './wawasanGambarMenu.js'
 
 const G = (m, teks, label = {}) => ({ m, teks, ...label })
 
@@ -84,6 +86,9 @@ export const GAMBAR_SLIDE = {
   'mm-ingat': G('kompas','Saat bingung di tengah hutan, kompas mengembalikan kita ke arah yang sudah ditentukan. Rencana tertulis adalah kompasnya.', { a: 'rencana tertulis' }),
 }
 
+// Semua perumpamaan per slide: Dunia saham dan market maker (di atas) ditambah topik menu lain.
+const SEMUA = { ...GAMBAR_SLIDE, ...GAMBAR_MENU }
+
 // Gambar umum untuk slide yang belum punya perumpamaan khusus, menurut jenis slidenya (akhiran id).
 const pendek = t => (t.length > 26 ? t.slice(0, 25).replace(/\s+\S*$/, '') + '…' : t)
 export function gambarUmum(s, k) {
@@ -101,8 +106,8 @@ export function gambarUmum(s, k) {
 export function deckBergambar(k, menu = '') {
   const deck = k.id === 'dunia-market-maker' ? MARKET_MAKER : deckTopik(k, menu)
   return deck.map(s => {
-    if (s.gambar || s.alat) return GAMBAR_SLIDE[s.id] ? { ...s, analogi: GAMBAR_SLIDE[s.id].teks } : s
-    const g = (GAMBAR_SLIDE[s.id]?.m && GAMBAR_SLIDE[s.id]) || gambarUmum(s, k)
+    if (s.gambar || s.alat) return SEMUA[s.id] ? { ...s, analogi: SEMUA[s.id].teks } : s
+    const g = (SEMUA[s.id]?.m && SEMUA[s.id]) || gambarUmum(s, k)
     if (!g) return s
     const { teks, ...motif } = g
     return { ...s, motif, analogi: teks || s.analogi }

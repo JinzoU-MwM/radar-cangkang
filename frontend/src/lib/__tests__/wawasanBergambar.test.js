@@ -3,6 +3,7 @@ import { jsPDF } from 'jspdf'
 import { BAGIAN } from '../wawasan.js'
 import { MARKET_MAKER, deckTopik } from '../wawasanSlide.js'
 import { GAMBAR_SLIDE, deckBergambar } from '../wawasanGambarSlide.js'
+import { GAMBAR_MENU } from '../wawasanGambarMenu.js'
 import { DAFTAR_MOTIF, WARNA_HEX, svgMotif } from '../wawasanMotif.js'
 import { wawasanPdfBergambar, wawasanPdfName } from '../wawasanPdf.js'
 
@@ -20,13 +21,15 @@ describe('presentasi bergambar', () => {
       for (const s of biasa) expect(s.motif, s.id).toBeUndefined()
     }
   })
-  it('Dunia saham dan market maker: setiap slide punya perumpamaan sendiri', () => {
-    for (const { k, menu, bagian } of semua.filter(x => x.bagian === 'dunia')) {
-      for (const s of deckBergambar(k, menu)) expect(s.analogi?.length, s.id).toBeGreaterThan(20)
+  it('setiap slide di semua topik punya perumpamaan sendiri, tanpa kunci yang salah ketik', () => {
+    const ids = new Set()
+    for (const { k, menu } of semua) {
+      for (const s of deckBergambar(k, menu)) { ids.add(s.id); expect(s.analogi?.length, s.id).toBeGreaterThan(20) }
     }
+    for (const id of [...Object.keys(GAMBAR_SLIDE), ...Object.keys(GAMBAR_MENU)]) expect(ids.has(id), id).toBe(true)
   })
   it('semua motif yang dipakai tersedia dan labelnya di-escape', () => {
-    for (const [id, g] of Object.entries(GAMBAR_SLIDE).filter(([, g]) => g.m)) {
+    for (const [id, g] of Object.entries({ ...GAMBAR_SLIDE, ...GAMBAR_MENU }).filter(([, g]) => g.m)) {
       expect(DAFTAR_MOTIF, id).toContain(g.m)
       const svg = svgMotif(g)
       expect(svg.startsWith('<svg'), id).toBe(true)
